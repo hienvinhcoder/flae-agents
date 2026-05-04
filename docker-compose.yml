@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  firebase-emulator:
+    build:
+      context: ./firebase
+      dockerfile: Dockerfile
+    ports:
+      - "4000:4000" # UI
+      - "8080:8080" # Firestore
+      - "9099:9099" # Auth
+      - "9199:9199" # Storage
+    volumes:
+      - ./firebase/data:/firebase/data
+    networks:
+      - app-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - /app/.venv # Tránh mount đè thư mục virtual environment của uv
+    environment:
+      - FIRESTORE_EMULATOR_HOST=firebase-emulator:8080
+      - FIREBASE_AUTH_EMULATOR_HOST=firebase-emulator:9099
+      - FIREBASE_STORAGE_EMULATOR_HOST=firebase-emulator:9199
+      - GOOGLE_CLOUD_PROJECT=demo-project
+    depends_on:
+      - firebase-emulator
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "4200:4200"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules # Tránh mount đè thư mục node_modules
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
