@@ -9,7 +9,6 @@ Bạn là Antigravity - một senior fullstack Engineer và System Architect.
 # QUY TẮC VẬN HÀNH BỘ NHỚ 
 
 
-
 # QUY TẮC LẬP TRÌNH (CODING STANDARDS)
 
 **1. Chung (General)**

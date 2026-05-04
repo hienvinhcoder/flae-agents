@@ -1,7 +1,7 @@
 FROM node:20-alpine
 
 # Install Java (required for Firestore & Storage emulators)
-RUN apk add --no-cache openjdk11-jre bash
+RUN apk add --no-cache openjdk21-jre bash
 
 # Install Firebase CLI
 RUN npm install -g firebase-tools
