@@ -23,26 +23,30 @@ class ExceptionType(enum.Enum):
 class CustomException(Exception):
     http_code: int
     code: str
-    message: str
+    message: str | None
 
-    def __init__(self, http_code: int = None, code: str = None, message: str = None):
+    def __init__(self, http_code: int | None = None, code: str | None = None, message: str | None = None):
         self.http_code = http_code if http_code else 500
         self.code = code if code else str(self.http_code)
         self.message = message
 
-async def http_exception_handler(request: Request, exc: CustomException):
+from fastapi.exceptions import RequestValidationError
+
+async def http_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    assert isinstance(exc, CustomException)
     return JSONResponse(
         status_code=exc.http_code,
-        content=jsonable_encoder(ResponseSchemaBase.custom_response(exc.code, exc.message))
+        content=jsonable_encoder(ResponseSchemaBase.custom_response(exc.code, exc.message or ""))
     )
 
-async def validation_exception_handler(request: Request, exc):
+async def validation_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    assert isinstance(exc, RequestValidationError)
     return JSONResponse(
         status_code=400,
         content=jsonable_encoder(ResponseSchemaBase.custom_response('400', get_message_validation(exc)))
     )
 
-async def fastapi_error_handler(request: Request, exc: Exception):
+async def fastapi_error_handler(request: Request, exc: Exception) -> JSONResponse:
     return JSONResponse(
         status_code=500,
         content=jsonable_encoder(ResponseSchemaBase.custom_response('500', "Có lỗi xảy ra, vui lòng liên hệ admin!"))

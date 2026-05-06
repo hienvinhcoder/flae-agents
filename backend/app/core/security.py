@@ -1,13 +1,17 @@
 import firebase_admin
-from firebase_admin import auth
+from firebase_admin import auth, credentials
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from app.core.config import settings
 
 security = HTTPBearer()
 
 try:
-    # Automatically uses GOOGLE_APPLICATION_CREDENTIALS for initialization
-    firebase_admin.initialize_app()
+    if settings.GOOGLE_APPLICATION_CREDENTIALS:
+        cred = credentials.Certificate(settings.GOOGLE_APPLICATION_CREDENTIALS)
+        firebase_admin.initialize_app(cred)
+    else:
+        firebase_admin.initialize_app()
 except ValueError:
     # Firebase app already initialized
     pass
@@ -29,3 +33,42 @@ async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(secur
             detail=f"Invalid authentication credentials: {str(e)}",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+
+from app.models.user import User
+from firedantic.exceptions import ModelNotFoundError
+
+async def get_current_user_uid(decoded_token: dict = Depends(verify_token)) -> str:
+    """
+    Extracts firebase_uid from the decoded Firebase JWT token.
+    """
+    uid = decoded_token.get("uid")
+    if not uid:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token does not contain a valid user ID",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return uid
+
+async def get_current_user(firebase_uid: str = Depends(get_current_user_uid)) -> User:
+    """
+    Retrieves the full User object from the database using the firebase_uid as the document ID.
+    This should be used for endpoints that require the user to be fully synced.
+    """
+    try:
+        user = User.get_by_doc_id(firebase_uid)
+    except ModelNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found in database. Please sync user first."
+        )
+    
+    # Check if user is active
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User account is inactive"
+        )
+        
+    return user

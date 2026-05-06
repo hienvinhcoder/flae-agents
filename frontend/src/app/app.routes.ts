@@ -8,8 +8,8 @@ export const routes: Routes = [
     pathMatch: 'full'
   },
   {
-    path: 'auth/login',
-    loadComponent: () => import('./features/auth/login.component').then(c => c.LoginComponent),
+    path: 'auth',
+    loadChildren: () => import('./features/auth/auth.routes').then(m => m.authRoutes),
     canActivate: [requireNoAuthGuard]
   },
   {
