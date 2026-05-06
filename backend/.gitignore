@@ -8,3 +8,12 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Environment variables
+.env
+
+# Firebase & GCP credentials (NEVER commit these)
+firebaseadmin.json
+*-credentials.json
+*-service-account.json
+service-account*.json
