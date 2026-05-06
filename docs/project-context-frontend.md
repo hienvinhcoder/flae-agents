@@ -1,62 +1,84 @@
 # Project Context - Frontend
+_Last Updated: 2026-05-06_
 
-## 1. Project Identity
-- **Name**: FLAE Agent Frontend
-- **Type**: Single Page Application (SPA) / Web Application
-- **Purpose**: Giao diện người dùng cho chủ doanh nghiệp tương tác với hệ thống quản lý AI, theo dõi báo cáo Morning Briefing, quản lý Omnichannel Inbox, và thiết lập cấu hình Agent Harness.
-- **Domain**: Conversational AI for SMBs (AI Workforce)
+## 1. Tech Stack
+- **Framework**: Angular v20 (Standalone Components, no NgModules)
+- **Styling**: Tailwind CSS v4 (via `@tailwindcss/postcss`, không có `tailwind.config.js`)
+- **Language**: TypeScript ~5.9 (strict mode)
+- **State**: Angular Signals (`signal`, `computed`, `effect`)
+- **Firebase**: `@angular/fire` v20 + `firebase` v11 (Auth + Firestore)
+- **Forms**: Angular Reactive Forms
+- **Test**: Karma + Jasmine (coverage target > 75%)
 
-## 2. Technology Stack
-- **Framework**: Angular (v20.3.x)
-- **Styling**: Tailwind CSS (v4.x)
-- **Language**: TypeScript (v5.9.x)
-- **State Management & Reactivity**: Angular Signals
-- **Architecture Pattern**: Standalone Components
+## 2. Project Structure
+```
+frontend/src/app/
+├── core/
+│   ├── guards/
+│   │   └── auth.guard.ts               # authGuard, requireNoAuthGuard (async Observable, chờ isAuthReady)
+│   ├── models/
+│   │   └── auth.model.ts               # User, SyncUserPayload, ApiResponse<T>, LoginProvider
+│   ├── stores/
+│   │   └── auth.store.ts               # AuthStore: currentUser, isLoading, error, isAuthReady (Signals)
+│   └── services/
+│       ├── auth.service.ts             # Wrap Firebase Auth: signIn, register, signInWithGoogle, logout, getIdToken
+│       ├── auth-initializer.service.ts # APP_INITIALIZER: authState() → sync backend → update store
+│       ├── mock-auth.service.ts        # [DEV ONLY] Mock auth service
+│       ├── mock-workspace.service.ts   # [DEV ONLY] Mock workspace/invitation service (chưa có API thật)
+│       └── api/
+│           └── auth-api.service.ts     # POST /auth/sync-user (gửi Firebase JWT)
+├── features/
+│   ├── auth/
+│   │   ├── auth.routes.ts              # Lazy-loaded child routes cho /auth
+│   │   ├── components/                 # LoginFormComponent, RegisterFormComponent (Dumb/Presentational)
+│   │   └── pages/
+│   │       └── auth-container.component.ts  # Smart container: mode login|register, effect() → navigate
+│   └── onboarding/
+│       ├── create-workspace.component.ts    # Form 2-step tạo workspace (đang dùng MockWorkspaceService)
+│       └── accept-invite.component.ts       # Chấp nhận lời mời (đang dùng MockWorkspaceService)
+├── app.config.ts   # provideFirebaseApp, provideAuth, APP_INITIALIZER, provideRouter, provideHttpClient
+├── app.routes.ts   # Routes cấp 1
+├── app.ts          # Root component
+└── app.html / app.css
 
-## 3. Project Structure
-```text
-frontend/
-├── public/                 # Các static assets (favicon, images, fonts)
-├── src/
-│   ├── app/
-│   │   ├── core/           # Guards (auth.guard), Services (auth.service, api/auth-api.service), Stores (auth.store), Models (auth.model)
-│   │   ├── features/       # Feature modules: auth (login-form, register-form, auth-container), onboarding...
-│   │   ├── app.config.ts   # Cấu hình application, providers, router tổng
-│   │   ├── app.routes.ts   # Định nghĩa các routes cấp 1 của ứng dụng
-│   │   ├── app.ts / app.html / app.css # Root Component
-│   ├── index.html          # HTML entry point (chứa thẻ root)
-│   ├── main.ts             # Bootstrapper (bootstrapApplication)
-│   └── styles.css          # Global CSS (chứa khai báo Tailwind)
-├── angular.json            # Cấu hình workspace của Angular CLI
-├── package.json            # Định nghĩa NPM dependencies và scripts
-└── Dockerfile              # Cấu hình containerization cho Frontend
+src/environments/
+├── environment.ts              # apiUrl: http://localhost:8000/api/v1, firebase config (dev)
+└── environment.development.ts  # Override cho ng serve
 ```
 
-## 4. Configuration
-- **Tailwind CSS**: Sử dụng phiên bản Tailwind CSS v4 thông qua plugin `@tailwindcss/postcss`.
-- **Angular CLI**: Quản lý build, serve, test thông qua `angular.json` theo chuẩn Angular 20.
-- **TypeScript**: Cấu hình chặt chẽ strict type với `tsconfig.json` và `tsconfig.app.json`.
+## 3. Routes
+| Path | Guard | Component | Ghi chú |
+|---|---|---|---|
+| `/` | — | — | redirect → `/auth/login` |
+| `/auth/login` | requireNoAuthGuard | AuthContainerComponent | mode=login |
+| `/auth/register` | requireNoAuthGuard | AuthContainerComponent | mode=register |
+| `/onboarding` | authGuard | — | redirect → `/onboarding/create-workspace` |
+| `/onboarding/create-workspace` | authGuard | CreateWorkspaceComponent | Lazy-loaded |
+| `/onboarding/accept-invite` | authGuard | AcceptInviteComponent | Lazy-loaded |
 
-## 5. Architecture Patterns
-- **Standalone Components**: Ứng dụng theo triết lý Standalone hoàn toàn, không sử dụng `NgModules` truyền thống.
-- **Smart/Dumb Components**: 
-  - *Dumb/Presentational*: Các component thuần túy hiển thị UI, nhận data qua `@Input` và kích hoạt sự kiện bằng `@Output`.
-  - *Smart/Container*: Các component quản lý nghiệp vụ logic, khởi tạo state và gọi service.
-- **Realtime Data Fetching**: Trực tiếp query dữ liệu và lắng nghe cập nhật realtime (snapshot listener) từ Firestore thay vì gọi API GET backend. Backend chỉ xử lý ghi.
-- **Styling Utility-First**: Xây dựng UI thông qua các class tiện ích của Tailwind CSS, tuân thủ "Green Growth" design system và glassmorphism cho ứng dụng có cảm giác premium, sạch sẽ.
-- **State Management**: Áp dụng triệt để hệ sinh thái Reactivity của Angular bằng Signals (signal, computed, effect) thay thế RxJS ở phần lớn logic giao diện (trừ các luồng Async event/stream phức tạp).
-- **Authentication Flow**: Sử dụng Firebase Auth SDK (Email/Password, Google SSO) ở Client-side. Gửi Firebase JWT Token tới Backend API (`POST /api/v1/auth/sync-user`) để đồng bộ dữ liệu. Kết quả User được lưu trữ toàn cục qua `AuthStore` Signal.
-- **Security Guards**: Sử dụng `authGuard` để chặn User chưa đăng nhập vào các trang bảo vệ (chuyển về `/auth/login`), và `requireNoAuthGuard` (Guest Guard) để điều hướng User đã đăng nhập rời khỏi các trang xác thực.
+## 4. Architecture Rules
+- **Dumb components**: Chỉ `@Input`/`@Output`, không inject Service, không business logic.
+- **Smart components**: Inject Service, điều phối state qua Signals, dùng `effect()` để react.
+- **Không dùng API GET**: Frontend query/lắng nghe Firestore trực tiếp. Backend chỉ POST/PATCH/DELETE.
+- **Guards là async**: Dùng `toObservable(isAuthReady).pipe(filter(ready => ready), take(1))` — đảm bảo Firebase khởi tạo xong trước khi router quyết định redirect.
+- **Design system**: "Green Growth" — Tailwind custom tokens (`primary`, `accent`, `dark-green`, `mint-white`, `soft-green`), glassmorphism, font Inter/Plus Jakarta Sans.
 
-## 6. Routing / Entry Points
-- Bootstrapped thông qua file `src/main.ts` nạp component gốc từ `app.ts` cùng với config `app.config.ts`.
-- Các Route đang cấu trúc:
-  - **Auth**: Quản lý bởi `AuthContainerComponent`.
-    - `/auth/login`: Hiển thị Component form đăng nhập (`LoginFormComponent`).
-    - `/auth/register`: Hiển thị Component form đăng ký (`RegisterFormComponent`).
-  - **Onboarding**: Khởi tạo workspace, xác nhận lời mời tham gia (`/features/onboarding`).
+## 5. Authentication Flow
+1. `APP_INITIALIZER` → `AuthInitializerService.initialize()` chạy trước khi router resolve bất kỳ route nào.
+2. `authState(firebase).pipe(first())` emit → nếu có session: `getIdToken()` → `POST /auth/sync-user` → `AuthStore.setCurrentUser()`.
+3. `AuthStore.setAuthReady(true)` → Guards được phép chạy.
+4. `_watchAuthStateChanges()` chạy liên tục: reset store khi Firebase emit `null` (token thu hồi/logout), sync lại khi user đăng nhập mới.
+5. Sau `signIn()`: Firebase emit `authState` → `_watchAuthStateChanges` detect → sync backend → `AuthStore.setCurrentUser()` → `effect()` trong `AuthContainerComponent` navigate.
 
-## 7. Development Workflow
-- **Serve Locally**: Chạy `npm start` (thực thi ng serve) để phát triển ở môi trường local.
-- **Build**: Chạy `npm run build` để tối ưu hóa code.
-- **Testing**: Yêu cầu bắt buộc viết test với coverage > 75%, sử dụng `npm test` thông qua Karma và Jasmine.
+## 6. Trạng thái hiện tại (Development Status)
+- ✅ **Auth**: Login (Email/Password + Google SSO), Register, session persistence (F5-safe)
+- ⚠️ **Onboarding**: UI hoàn chỉnh nhưng logic đang dùng `MockWorkspaceService` — chưa có API backend thật
+- 🔲 **Dashboard**: Chưa có route, `CreateWorkspaceComponent` hiện `alert()` sau submit thành công
+
+## 7. Development Commands
+```bash
+npm start       # ng serve (http://localhost:4200)
+npm run build   # Production build → dist/
+npm test        # Karma + Jasmine
+```
+**API Backend**: `http://localhost:8000/api/v1` (cấu hình trong `environment.ts`)

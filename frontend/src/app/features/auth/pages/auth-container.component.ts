@@ -1,14 +1,11 @@
-import { Component, inject, OnInit, OnDestroy } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, effect } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthStore } from '../../../core/stores/auth.store';
 import { AuthService } from '../../../core/services/auth.service';
-import { AuthApiService } from '../../../core/services/api/auth-api.service';
 import { LoginFormComponent } from '../components/login-form.component';
 import { RegisterFormComponent } from '../components/register-form.component';
-import { Subscription, switchMap, catchError, of, tap } from 'rxjs';
-import { SyncUserPayload } from '../../../core/models/auth.model';
-import { UserCredential } from '@angular/fire/auth';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-auth-container',
@@ -100,15 +97,25 @@ export class AuthContainerComponent implements OnInit, OnDestroy {
   
   authStore = inject(AuthStore);
   private authService = inject(AuthService);
-  private authApiService = inject(AuthApiService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   
   private routeSub?: Subscription;
-  private authSub?: Subscription;
+
+  constructor() {
+    /**
+     * Watch AuthStore.currentUser — khi AuthInitializerService cập nhật store
+     * sau khi đăng nhập thành công, tự động navigate đến dashboard.
+     */
+    effect(() => {
+      if (this.authStore.isAuthenticated()) {
+        const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/onboarding';
+        this.router.navigateByUrl(returnUrl);
+      }
+    });
+  }
 
   ngOnInit(): void {
-    // Determine mode from route data
     this.routeSub = this.route.data.subscribe(data => {
       if (data['mode']) {
         this.mode = data['mode'];
@@ -119,84 +126,52 @@ export class AuthContainerComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     if (this.routeSub) this.routeSub.unsubscribe();
-    if (this.authSub) this.authSub.unsubscribe();
-    // Don't reset the store entirely because we want the user to stay if logged in
-    // Just clear error
     this.authStore.clearError();
   }
 
-  onLoginEmail(payload: any): void {
+  onLoginEmail(payload: { email: string; password: string }): void {
     this.authStore.setLoading(true);
     this.authStore.clearError();
     
-    this.authSub = this.authService.signInWithEmail(payload.email, payload.password)
-      .subscribe({
-        next: (credential) => this.handleAuthSuccess(credential, 'email_password'),
-        error: (err) => this.handleAuthError(err)
-      });
+    this.authService.signInWithEmail(payload.email, payload.password).subscribe({
+      next: () => {
+        // AuthInitializerService._watchAuthStateChanges() sẽ detect và xử lý
+        // effect() sẽ tự navigate khi store.currentUser được cập nhật
+        this.authStore.setLoading(false);
+      },
+      error: (err) => this.handleAuthError(err)
+    });
   }
 
-  onRegisterEmail(payload: any): void {
+  onRegisterEmail(payload: { email: string; password: string; fullName?: string }): void {
     this.authStore.setLoading(true);
     this.authStore.clearError();
     
-    this.authSub = this.authService.registerWithEmail(payload.email, payload.password)
-      .subscribe({
-        next: (credential) => this.handleAuthSuccess(credential, 'email_password', payload.fullName),
-        error: (err) => this.handleAuthError(err)
-      });
+    this.authService.registerWithEmail(payload.email, payload.password).subscribe({
+      next: () => {
+        this.authStore.setLoading(false);
+      },
+      error: (err) => this.handleAuthError(err)
+    });
   }
 
   onGoogleLogin(): void {
     this.authStore.setLoading(true);
     this.authStore.clearError();
     
-    this.authSub = this.authService.signInWithGoogle()
-      .subscribe({
-        next: (credential) => this.handleAuthSuccess(credential, 'google'),
-        error: (err) => this.handleAuthError(err)
-      });
-  }
-
-  private handleAuthSuccess(credential: UserCredential, provider: 'email_password' | 'google' | 'facebook', fullName?: string): void {
-    // Get the JWT token
-    const user = credential.user;
-    
-    this.authService.getFirebaseToken(user).pipe(
-      switchMap(token => {
-        const payload: SyncUserPayload = {
-          email: user.email || '',
-          full_name: fullName || user.displayName || 'User',
-          avatar_url: user.photoURL || undefined,
-          login_provider: provider
-        };
-        
-        return this.authApiService.syncUser(payload, token);
-      }),
-      catchError(err => {
-        // If sync backend fails, we might want to sign out of Firebase
-        // this.authService.logout().subscribe();
-        throw err;
-      })
-    ).subscribe({
-      next: (dbUser) => {
-        this.authStore.setCurrentUser(dbUser);
+    this.authService.signInWithGoogle().subscribe({
+      next: () => {
         this.authStore.setLoading(false);
-        this.router.navigate(['/']); // Go to dashboard
       },
-      error: (err) => {
-        console.error('Sync user error:', err);
-        this.authStore.setLoading(false);
-        this.authStore.setError('Lỗi đồng bộ dữ liệu. Vui lòng thử lại sau.');
-      }
+      error: (err) => this.handleAuthError(err)
     });
   }
 
-  private handleAuthError(err: any): void {
+  private handleAuthError(err: unknown): void {
     this.authStore.setLoading(false);
     
     let errorMessage = 'Đã có lỗi xảy ra. Vui lòng thử lại.';
-    const errorCode = err?.code || '';
+    const errorCode = (err as { code?: string })?.code ?? '';
     
     if (errorCode === 'auth/wrong-password' || errorCode === 'auth/user-not-found' || errorCode === 'auth/invalid-credential') {
       errorMessage = 'Email hoặc mật khẩu không chính xác.';

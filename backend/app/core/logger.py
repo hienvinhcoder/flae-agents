@@ -1,7 +1,7 @@
 import logging
 import sys
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from app.core.config import settings
 
 
@@ -15,7 +15,7 @@ class JSONFormatter(logging.Formatter):
         log_record = {
             "severity": record.levelname,
             "message": record.getMessage(),
-            "time": datetime.utcnow().isoformat() + "Z",
+            "time": datetime.now(timezone.utc).isoformat(),
             "name": record.name,
         }
         if record.exc_info:

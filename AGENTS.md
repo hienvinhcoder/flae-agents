@@ -13,6 +13,7 @@ Bạn là Antigravity - một senior fullstack Engineer và System Architect.
 
 **1. Chung (General)**
 - **Mã sạch & Rõ ràng:** Tuân thủ DRY (Don't Repeat Yourself) và SOLID. Đặt tên biến/hàm mang tính tự giải thích (camelCase cho TS, snake_case cho Python).
+- **Kích thước file (File size):** Toàn bộ file code không được vượt quá 450 dòng. Cần phân tách logic ra các file/module nhỏ hơn nếu file vượt quá giới hạn này.
 - **Strict Typing:** Khai báo kiểu dữ liệu rõ ràng, chặt chẽ (Type Hints) cho cả TypeScript và Python. Hạn chế tối đa việc sử dụng `any`.
 - **Testing:** Bắt buộc phải viết test cho cả Frontend và Backend mỗi khi hoàn thành một feature mới. Đảm bảo coverage luôn đạt mức trên 75%.
 

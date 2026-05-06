@@ -9,12 +9,18 @@ export class AuthStore {
   private readonly _currentUser = signal<User | null>(null);
   private readonly _isLoading = signal<boolean>(false);
   private readonly _error = signal<string | null>(null);
+  /**
+   * Đánh dấu Firebase Auth SDK đã hoàn tất việc khởi tạo và kiểm tra session.
+   * Guard phải chờ signal này = true trước khi quyết định redirect.
+   */
+  private readonly _isAuthReady = signal<boolean>(false);
 
   // Selectors
   readonly currentUser = computed(() => this._currentUser());
   readonly isAuthenticated = computed(() => !!this._currentUser());
   readonly isLoading = computed(() => this._isLoading());
   readonly error = computed(() => this._error());
+  readonly isAuthReady = computed(() => this._isAuthReady());
 
   // Updaters
   setCurrentUser(user: User | null): void {
@@ -31,6 +37,10 @@ export class AuthStore {
 
   clearError(): void {
     this._error.set(null);
+  }
+
+  setAuthReady(ready: boolean): void {
+    this._isAuthReady.set(ready);
   }
 
   reset(): void {
