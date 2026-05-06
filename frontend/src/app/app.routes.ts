@@ -15,20 +15,11 @@ export const routes: Routes = [
   {
     path: 'onboarding',
     canActivate: [authGuard],
-    children: [
-      {
-        path: '',
-        redirectTo: 'create-workspace',
-        pathMatch: 'full'
-      },
-      {
-        path: 'create-workspace',
-        loadComponent: () => import('./features/onboarding/create-workspace.component').then(c => c.CreateWorkspaceComponent)
-      },
-      {
-        path: 'accept-invite',
-        loadComponent: () => import('./features/onboarding/accept-invite.component').then(c => c.AcceptInviteComponent)
-      }
-    ]
+    loadChildren: () => import('./features/onboarding/onboarding.routes').then(m => m.routes)
+  },
+  {
+    path: 'dashboard',
+    canActivate: [authGuard],
+    loadChildren: () => import('./features/dashboard/dashboard.routes').then(m => m.dashboardRoutes)
   }
 ];

@@ -85,6 +85,19 @@ Fields: `firebase_uid: str`, `email: EmailStr`, `full_name: str`, `is_active: bo
 
 Truy vấn: `User.get_by_doc_id(firebase_uid)` → ném `ModelNotFoundError` nếu không tồn tại.
 
+### Workspace (`workspaces` collection)
+Fields: `name: str`, `industry: Optional[str]`, `description: Optional[str]`, `website: Optional[str]`, `platform: PlatformEnum`, `platform_store_id: Optional[str]`, `owner_uid: str`
+
+### IntegrationConfig (`integration_configs` collection)
+Fields: `workspace_id: str`, `platform: PlatformEnum`, `access_token: str`, `refresh_token: Optional[str]`, `expires_at: Optional[str]`, `meta_data: Dict[str, Any]`
+**Lưu ý:** Document ID của collection này luôn được đặt bằng `workspace_id` để đảm bảo mối quan hệ 1-1 (một workspace chỉ integrate với duy nhất một nền tảng).
+
+### UserWorkspace (`user_workspaces` collection)
+Fields: `user_uid: str`, `workspace_id: str`, `role: WorkspaceRole`
+
+### BriefingItem (`briefing_items` collection)
+Fields: `workspace_id: str`, `title: str`, `content: str`, `type: str`, `is_read: bool`
+
 ## 6. Security Dependencies (`app/core/security.py`)
 
 | Depends | Returns | Dùng khi |
@@ -113,6 +126,11 @@ Global handlers đã đăng ký trong `main.py` cho: `CustomException`, `Request
 | `POST` | `/api/v1/users` | `UserCreateRequest` | `DataResponse[UserItemResponse]` | Tạo user profile (201) |
 | `PUT` | `/api/v1/users/{user_id}` | _(chưa implement)_ | `DataResponse[dict]` | Cập nhật user |
 | `DELETE` | `/api/v1/users/{user_id}` | — | `DataResponse[dict]` | Xoá user |
+| `POST` | `/api/v1/workspaces/manual` | `WorkspaceManualCreateRequest` | `DataResponse[WorkspaceItemResponse]` | Tạo workspace thủ công và seed dữ liệu |
+| `POST` | `/api/v1/workspaces/oauth/url` | `OAuthUrlRequest` | `DataResponse[OAuthUrlResponse]` | Lấy URL OAuth cho platform tích hợp |
+| `POST` | `/api/v1/workspaces/oauth/callback` | `OAuthCallbackRequest` | `DataResponse[WorkspaceItemResponse]` | Callback xử lý OAuth (tạo workspace & lưu config) |
+
+> **Lưu ý:** Chức năng tích hợp nền tảng thứ ba (OAuth URL và OAuth Callback) hiện tại đang được **mock (giả lập)** để hoàn thiện luồng người dùng (UX) và sẽ được implement logic gọi API thực tế ở các phase sau.
 
 ## 9. Dev Commands
 

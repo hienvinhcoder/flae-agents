@@ -43,9 +43,7 @@ Nếu có các file sau thì đọc thêm nếu tồn tại:
 
 ```md
 @docs/features/[feature-name]/IDEA.md
-@docs/features/[feature-name]/DESIGN_BRIEF.md
 @docs/features/[feature-name]/FULLSTACK_PLAN.md
-@docs/features/[feature-name]/API_CONTRACT.md
 ```
 
 Nếu thiếu `Agent.md` hoặc `docs/project context backend.md`, hãy **dừng lại** và báo rõ file nào bị thiếu.  

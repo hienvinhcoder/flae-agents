@@ -3,6 +3,8 @@ import { provideRouter } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
 import { initializeApp, provideFirebaseApp } from '@angular/fire/app';
 import { getAuth, provideAuth } from '@angular/fire/auth';
+import { importProvidersFrom } from '@angular/core';
+import { LucideAngularModule, icons } from 'lucide-angular';
 
 import { routes } from './app.routes';
 import { environment } from '../environments/environment';
@@ -21,7 +23,8 @@ export const appConfig: ApplicationConfig = {
       useFactory: (authInit: AuthInitializerService) => () => authInit.initialize(),
       deps: [AuthInitializerService],
       multi: true
-    }
+    },
+    importProvidersFrom(LucideAngularModule.pick(icons))
   ]
 };
 

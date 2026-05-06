@@ -43,10 +43,12 @@ name = "backend"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "cryptography" },
     { name = "fastapi" },
     { name = "firebase-admin" },
     { name = "firedantic" },
     { name = "google-cloud-firestore" },
+    { name = "httpx" },
     { name = "pydantic", extra = ["email"] },
     { name = "pydantic-settings" },
     { name = "pytest" },
@@ -56,10 +58,12 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "cryptography", specifier = ">=47.0.0" },
     { name = "fastapi", specifier = ">=0.136.1" },
     { name = "firebase-admin", specifier = ">=7.4.0" },
     { name = "firedantic", specifier = ">=0.12.0" },
     { name = "google-cloud-firestore", specifier = ">=2.27.0" },
+    { name = "httpx", specifier = ">=0.28.1" },
     { name = "pydantic", extras = ["email"], specifier = ">=2.13.3" },
     { name = "pydantic-settings", specifier = ">=2.14.0" },
     { name = "pytest", specifier = ">=9.0.3" },

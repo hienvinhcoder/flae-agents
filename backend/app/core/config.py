@@ -16,6 +16,15 @@ class Settings(BaseSettings):
     # Firebase / GCP configuration
     GOOGLE_APPLICATION_CREDENTIALS: str = os.getenv('GOOGLE_APPLICATION_CREDENTIALS', '')
     
+    # OAuth Configurations
+    HARAVAN_CLIENT_ID: str = os.getenv('HARAVAN_CLIENT_ID', '')
+    HARAVAN_CLIENT_SECRET: str = os.getenv('HARAVAN_CLIENT_SECRET', '')
+    KIOTVIET_CLIENT_ID: str = os.getenv('KIOTVIET_CLIENT_ID', '')
+    KIOTVIET_CLIENT_SECRET: str = os.getenv('KIOTVIET_CLIENT_SECRET', '')
+    
+    # Security
+    ENCRYPTION_KEY: str = os.getenv('ENCRYPTION_KEY', '') # 32 bytes base64 encoded for Fernet
+
     model_config = SettingsConfigDict(
         env_file=os.path.join(BASE_DIR, '.env'),
         env_file_encoding='utf-8',

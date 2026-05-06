@@ -1,7 +1,6 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { MockWorkspaceService } from '../../core/services/mock-workspace.service';
 
 @Component({
   selector: 'app-accept-invite',
@@ -59,29 +58,27 @@ import { MockWorkspaceService } from '../../core/services/mock-workspace.service
   `
 })
 export class AcceptInviteComponent implements OnInit {
-  private workspaceService = inject(MockWorkspaceService);
   private router = inject(Router);
 
-  isLoading = this.workspaceService.isLoading;
-  error = this.workspaceService.error;
-  invite = this.workspaceService.pendingInvitation();
+  isLoading = signal(false);
+  error = signal<string | null>(null);
+  invite: { id: string, workspaceName: string, role: string } | null = {
+    id: 'inv_123',
+    workspaceName: 'Sample Workspace',
+    role: 'Admin'
+  };
 
   ngOnInit() {
-    // Nếu không có invite nào trong state, có thể người dùng refresh trang -> quay về login
-    if (!this.invite) {
-      // Trong thực tế, có thể lấy ID từ URL và gọi API lấy chi tiết.
-      // Ở đây ta dùng mock data.
-    }
   }
 
   async onAccept() {
     if (this.invite) {
-      try {
-        await this.workspaceService.acceptInvitation(this.invite.id);
+      this.isLoading.set(true);
+      setTimeout(() => {
+        this.isLoading.set(false);
         alert('Đã vào Workspace thành công!');
-      } catch (e) {
-        // Lỗi đã được báo lên signal
-      }
+        this.router.navigate(['/dashboard']);
+      }, 1000);
     }
   }
 

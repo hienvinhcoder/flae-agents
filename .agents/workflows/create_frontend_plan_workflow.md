@@ -42,20 +42,20 @@ Trước khi tạo plan, bạn **BẮT BUỘC** phải đọc các file sau:
 
 ```md
 @AGENTS.md
-@docs/project context frontend.md
+@docs/project-context-frontend.md
 ```
 
 Nếu có các file sau thì đọc thêm nếu tồn tại:
 
 ```md
 @docs/features/[feature-name]/IDEA.md
-@docs/features/[feature-name]/DESIGN_BRIEF.md
+@docs/DESIGN.md
 @docs/features/[feature-name]/BACKEND_PLAN.md
 @docs/features/[feature-name]/API_CONTRACT.md
 @docs/features/[feature-name]/FULLSTACK_PLAN.md
 ```
 
-Nếu thiếu `AGENTS.md` hoặc `docs/project context frontend.md`, hãy **dừng lại** và báo rõ file nào bị thiếu.  
+Nếu thiếu `AGENTS.md` hoặc `docs/project-context-frontend.md`, hãy **dừng lại** và báo rõ file nào bị thiếu.  
 Không được tự tạo frontend plan khi chưa đọc đủ context bắt buộc.
 
 ---

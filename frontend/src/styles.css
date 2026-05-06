@@ -31,6 +31,17 @@
       transform: translateY(0);
     }
   }
+
+  --animate-shine: shine 1.5s infinite;
+
+  @keyframes shine {
+    0% {
+      left: -125%;
+    }
+    100% {
+      left: 125%;
+    }
+  }
 }
 
 @layer base {
