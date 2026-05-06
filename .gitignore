@@ -1,2 +1,3 @@
 # Ignore Firebase Emulator data
 firebase/data/
+backend/firebaseadmin.json
