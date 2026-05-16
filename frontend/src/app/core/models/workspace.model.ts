@@ -10,6 +10,8 @@ export interface Workspace {
   industry?: string;
   platform: PlatformType;
   owner_uid: string;
+  admins?: Record<string, boolean>;
+  members?: Record<string, boolean>;
 }
 
 export interface CreateManualWorkspacePayload {

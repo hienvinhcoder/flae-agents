@@ -12,7 +12,10 @@ class Settings(BaseSettings):
     BACKEND_CORS_ORIGINS: list[str] = ['*']
     ENVIRONMENT: str = os.getenv('ENVIRONMENT', 'local')
 
-    
+    # Database
+    POSTGRES_URL: str = os.getenv('POSTGRES_URL', 'postgresql+asyncpg://postgres:postgres@localhost:5432/flae_db')
+    REDIS_URL: str = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+
     # Firebase / GCP configuration
     GOOGLE_APPLICATION_CREDENTIALS: str = os.getenv('GOOGLE_APPLICATION_CREDENTIALS', '')
     

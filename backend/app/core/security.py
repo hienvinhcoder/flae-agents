@@ -36,7 +36,11 @@ async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(secur
 
 
 from app.models.user import User
-from firedantic.exceptions import ModelNotFoundError
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from sqlalchemy.exc import NoResultFound
+from app.db.database import get_db
+
 
 async def get_current_user_uid(decoded_token: dict = Depends(verify_token)) -> str:
     """
@@ -51,24 +55,24 @@ async def get_current_user_uid(decoded_token: dict = Depends(verify_token)) -> s
         )
     return uid
 
-async def get_current_user(firebase_uid: str = Depends(get_current_user_uid)) -> User:
+
+async def get_current_user(
+    firebase_uid: str = Depends(get_current_user_uid), db: AsyncSession = Depends(get_db)
+) -> User:
     """
-    Retrieves the full User object from the database using the firebase_uid as the document ID.
+    Retrieves the full User object from the database using the firebase_uid.
     This should be used for endpoints that require the user to be fully synced.
     """
     try:
-        user = User.get_by_doc_id(firebase_uid)
-    except ModelNotFoundError:
+        result = await db.execute(select(User).where(User.firebase_uid == firebase_uid))
+        user = result.scalar_one()
+    except NoResultFound:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found in database. Please sync user first."
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found in database. Please sync user first."
         )
-    
+
     # Check if user is active
     if not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="User account is inactive"
-        )
-        
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User account is inactive")
+
     return user

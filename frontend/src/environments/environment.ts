@@ -1,6 +1,7 @@
 export const environment = {
   production: false,
   apiUrl: 'http://localhost:8000/api/v1',
+  wsUrl: 'ws://localhost:8000/ws',
   firebase: {
     apiKey: "AIzaSyAZSX4E1OeJ6p-aeehbfDmejofdRqvmMPE",
     authDomain: "flae-agents.firebaseapp.com",

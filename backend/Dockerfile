@@ -23,5 +23,5 @@ RUN uv sync --frozen
 
 EXPOSE 8000
 
-# Start Uvicorn with hot-reload enabled via uv run
-CMD ["uv", "run", "main.py"]
+# Chạy script khởi tạo (migrate, cài đặt database) trước khi khởi động Uvicorn
+CMD ["/bin/bash", "-c", "uv run python -m scripts.prestart && uv run main.py"]

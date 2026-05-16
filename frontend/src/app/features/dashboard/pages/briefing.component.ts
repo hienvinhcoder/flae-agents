@@ -1,42 +1,20 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { LucideAngularModule, Clock, TrendingUp, MessageCircle, CheckCircle2, AlertTriangle, BarChart2, MessageSquare, Phone, Bell, ArrowRight, ExternalLink } from 'lucide-angular';
-
-interface SummaryCard {
-  title: string;
-  value: string;
-  meta: string;
-  icon: string;
-  type: 'revenue' | 'chat' | 'approval' | 'alert';
-}
-
-interface BriefingItem {
-  id: string;
-  agentName: string;
-  agentType: 'analyst' | 'chat' | 'voice' | 'system';
-  time: string;
-  title: string;
-  content: string;
-  metaData?: string;
-  primaryAction: string;
-  secondaryAction?: string;
-}
-
-interface ActionItem {
-  id: string;
-  priority: 'high' | 'medium' | 'low';
-  type: string;
-  title: string;
-  description: string;
-  actionText: string;
-}
+import { LucideAngularModule } from 'lucide-angular';
+import { SummaryCardComponent, SummaryCardData } from '../../../shared/ui/summary-card/summary-card.component';
+import { BriefingItemComponent, BriefingItemData } from '../../../shared/ui/briefing-item/briefing-item.component';
+import { ActionItemComponent, ActionItemData } from '../../../shared/ui/action-item/action-item.component';
+// import { WebsocketService } from '../../../core/services/realtime/websocket.service';
 
 @Component({
   selector: 'app-briefing',
   standalone: true,
   imports: [
     CommonModule, 
-    LucideAngularModule
+    LucideAngularModule,
+    SummaryCardComponent,
+    BriefingItemComponent,
+    ActionItemComponent
   ],
   template: `
     <div class="space-y-6 pb-12">
@@ -47,7 +25,7 @@ interface ActionItem {
           <p class="text-dark-green/70 mt-1">FLAE đã tổng hợp những điều quan trọng nhất cho cửa hàng hôm nay.</p>
           <div class="flex items-center gap-2 mt-3 text-xs text-dark-green/50">
             <lucide-icon name="clock" class="w-3.5 h-3.5"></lucide-icon>
-            <span>Cập nhật lần cuối: 08:15 · Website Chat · Facebook · Zalo</span>
+            <span>Cập nhật lần cuối: {{ lastUpdated() }} · Website Chat · Facebook · Zalo</span>
           </div>
         </div>
         <div class="flex items-center gap-3 shrink-0">
@@ -67,20 +45,7 @@ interface ActionItem {
       <!-- Today Summary (4 cards) -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         @for (card of summaryCards(); track card.title) {
-          <div class="bg-white/90 backdrop-blur-md rounded-2xl p-5 border border-soft-green/50 shadow-soft hover:shadow-md hover:border-primary/30 transition-all cursor-pointer group">
-            <div class="text-sm font-medium text-dark-green/60 mb-2 group-hover:text-dark-green transition-colors">{{ card.title }}</div>
-            <div class="text-2xl font-heading font-semibold text-dark-green">{{ card.value }}</div>
-            <div class="mt-2 text-sm font-medium flex items-center gap-1"
-                 [ngClass]="{
-                   'text-primary': card.type === 'revenue',
-                   'text-orange-500': card.type === 'chat',
-                   'text-blue-500': card.type === 'approval',
-                   'text-red-500': card.type === 'alert'
-                 }">
-              <lucide-icon [name]="card.icon" class="w-4 h-4"></lucide-icon>
-              {{ card.meta }}
-            </div>
-          </div>
+          <app-summary-card [card]="card"></app-summary-card>
         }
       </div>
 
@@ -92,80 +57,12 @@ interface ActionItem {
           <h3 class="font-heading font-semibold text-lg text-dark-green mb-4">Morning Briefing</h3>
 
           @for (item of briefingItems(); track item.id) {
-            <div class="bg-white/90 backdrop-blur-md rounded-2xl p-6 shadow-soft relative overflow-hidden"
-                 [ngClass]="{
-                   'border border-soft-green/50': item.agentType !== 'system',
-                   'border border-red-100 bg-gradient-to-br from-white to-red-50/30': item.agentType === 'system'
-                 }">
-              
-              <!-- Color Indicator for Chat Agent -->
-              @if (item.agentType === 'chat') {
-                <div class="absolute top-0 left-0 w-1 h-full bg-orange-400"></div>
-              }
-
-              <!-- Header -->
-              <div class="flex items-center gap-3 mb-4 border-b pb-3"
-                   [ngClass]="item.agentType === 'system' ? 'border-red-100' : 'border-soft-green/30'">
-                
-                <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
-                     [ngClass]="{
-                       'bg-blue-50 text-blue-600': item.agentType === 'analyst',
-                       'bg-orange-50 text-orange-500': item.agentType === 'chat',
-                       'bg-indigo-50 text-indigo-600': item.agentType === 'voice',
-                       'bg-red-100 text-red-600': item.agentType === 'system'
-                     }">
-                  <lucide-icon [name]="getAgentIcon(item.agentType)" class="w-4 h-4"></lucide-icon>
-                </div>
-                
-                <div>
-                  <div class="font-medium text-sm" [ngClass]="item.agentType === 'system' ? 'text-red-800' : 'text-dark-green'">
-                    {{ item.agentName }}
-                  </div>
-                  <div class="text-xs" [ngClass]="item.agentType === 'system' ? 'text-red-600/70' : 'text-dark-green/50'">
-                    {{ item.time }}
-                  </div>
-                </div>
-              </div>
-              
-              <!-- Content -->
-              <h4 class="text-lg font-heading font-semibold mb-2"
-                  [ngClass]="item.agentType === 'system' ? 'text-red-900' : 'text-dark-green'">
-                {{ item.title }}
-              </h4>
-              <p class="text-sm leading-relaxed mb-4"
-                 [ngClass]="item.agentType === 'system' ? 'text-red-800/80' : 'text-dark-green/80'">
-                {{ item.content }}
-              </p>
-              
-              <!-- Meta Data (if any) -->
-              @if (item.metaData) {
-                <div class="flex items-center gap-2 mb-5">
-                  <span class="px-2.5 py-1 bg-mint-white border border-soft-green rounded text-xs font-medium text-dark-green/70">
-                    {{ item.metaData }}
-                  </span>
-                </div>
-              }
-
-              <!-- Actions -->
-              <div class="flex gap-3" [class.mt-5]="!item.metaData">
-                <button [ngClass]="{
-                          'bg-dark-green text-white hover:bg-dark-green/90': item.agentType === 'chat',
-                          'bg-red-600 text-white hover:bg-red-700': item.agentType === 'system',
-                          'bg-white border border-soft-green hover:bg-mint-white text-dark-green': item.agentType !== 'chat' && item.agentType !== 'system'
-                        }"
-                        class="px-4 py-2 rounded-xl text-sm font-medium transition-colors cursor-pointer">
-                  {{ item.primaryAction }}
-                </button>
-                
-                @if (item.secondaryAction) {
-                  <button class="bg-white border border-soft-green hover:bg-mint-white text-dark-green px-4 py-2 rounded-xl text-sm font-medium transition-colors cursor-pointer">
-                    {{ item.secondaryAction }}
-                  </button>
-                }
-              </div>
-            </div>
+            <app-briefing-item 
+              [item]="item"
+              (onPrimaryAction)="handlePrimaryAction($event)"
+              (onSecondaryAction)="handleSecondaryAction($event)">
+            </app-briefing-item>
           }
-
         </div>
 
         <!-- Right Column: Action Queue (30-35%) -->
@@ -174,13 +71,14 @@ interface ActionItem {
             
             <div class="p-5 border-b border-soft-green/50 shrink-0">
               <h3 class="font-heading font-semibold text-lg text-dark-green">Action Queue</h3>
-              <p class="text-sm text-dark-green/60 mt-1">12 việc cần xử lý hôm nay</p>
+              <p class="text-sm text-dark-green/60 mt-1">{{ actionItems().length }} việc cần xử lý hôm nay</p>
               
               <!-- Tabs -->
               <div class="flex gap-2 mt-4 overflow-x-auto pb-2" style="scrollbar-width: none;">
                 @for (tab of actionTabs(); track tab) {
                   <button class="px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap cursor-pointer transition-colors"
-                          [ngClass]="tab === 'Ưu tiên' ? 'bg-primary text-white' : 'bg-mint-white text-dark-green/70 hover:bg-soft-green/50'">
+                          [ngClass]="tab === activeTab() ? 'bg-primary text-white' : 'bg-mint-white text-dark-green/70 hover:bg-soft-green/50'"
+                          (click)="setActiveTab(tab)">
                     {{ tab }}
                   </button>
                 }
@@ -189,57 +87,22 @@ interface ActionItem {
 
             <!-- Action Items List -->
             <div class="flex-1 overflow-y-auto p-3 space-y-2">
-              
               @for (action of actionItems(); track action.id; let last = $last) {
-                <div class="p-4 rounded-xl hover:bg-mint-white border border-transparent hover:border-soft-green/50 transition-all cursor-pointer group">
-                  <div class="flex items-center gap-2 mb-2">
-                    <span class="w-2 h-2 rounded-full"
-                          [ngClass]="{
-                            'bg-red-500': action.priority === 'high' && action.type !== 'Cần duyệt',
-                            'bg-orange-500': action.type === 'Cần duyệt',
-                            'bg-blue-500': action.priority === 'medium'
-                          }"></span>
-                    <span class="text-xs font-medium"
-                          [ngClass]="{
-                            'text-red-600': action.priority === 'high' && action.type !== 'Cần duyệt',
-                            'text-orange-600': action.type === 'Cần duyệt',
-                            'text-blue-600': action.priority === 'medium'
-                          }">
-                      {{ action.priority === 'high' ? 'Cao' : (action.priority === 'medium' ? 'Trung bình' : 'Thấp') }} · {{ action.type }}
-                    </span>
-                  </div>
-                  
-                  <div class="font-medium text-sm text-dark-green mb-1 group-hover:text-primary transition-colors">{{ action.title }}</div>
-                  <p class="text-xs text-dark-green/60 mb-3">{{ action.description }}</p>
-                  
-                  @if (action.type === 'Cần duyệt') {
-                    <div class="flex gap-2">
-                      <button class="px-3 py-1.5 bg-primary/10 text-primary rounded-lg text-xs font-medium hover:bg-primary hover:text-white transition-colors cursor-pointer">
-                        {{ action.actionText }}
-                      </button>
-                      <button class="px-3 py-1.5 bg-white border border-soft-green text-dark-green rounded-lg text-xs font-medium hover:bg-mint-white transition-colors cursor-pointer">
-                        Sửa
-                      </button>
-                    </div>
-                  } @else {
-                    <button class="text-xs font-medium transition-colors flex items-center gap-1 cursor-pointer"
-                            [ngClass]="action.priority === 'medium' ? 'text-blue-600 hover:text-blue-700' : 'text-primary hover:text-primary/80'">
-                      {{ action.actionText }}
-                      <lucide-icon [name]="action.priority === 'medium' ? 'external-link' : 'arrow-right'" class="w-3 h-3"></lucide-icon>
-                    </button>
-                  }
-                </div>
+                <app-action-item 
+                  [item]="action"
+                  (onAction)="handleQueueAction($event)"
+                  (onSecondaryAction)="handleQueueSecondaryAction($event)">
+                </app-action-item>
 
                 @if (!last) {
                   <div class="h-px bg-soft-green/30 mx-4"></div>
                 }
               }
-
             </div>
             
             <div class="p-3 border-t border-soft-green/50 shrink-0 text-center">
               <button class="text-xs font-medium text-dark-green/60 hover:text-primary transition-colors cursor-pointer">
-                Xem tất cả 12 việc
+                Xem tất cả {{ actionItems().length }} việc
               </button>
             </div>
 
@@ -249,16 +112,19 @@ interface ActionItem {
     </div>
   `
 })
-export class BriefingComponent {
+export class BriefingComponent implements OnInit {
+  // private wsService = inject(WebsocketService);
   
-  summaryCards = signal<SummaryCard[]>([
+  lastUpdated = signal<string>('08:15');
+  
+  summaryCards = signal<SummaryCardData[]>([
     { title: 'Doanh thu', value: '12.4M ₫', meta: '+8% so với hôm qua', icon: 'trending-up', type: 'revenue' },
     { title: 'Hội thoại mới', value: '38', meta: '12 chưa phản hồi', icon: 'message-circle', type: 'chat' },
     { title: 'Cần duyệt', value: '6', meta: 'AI đang chờ bạn', icon: 'check-circle-2', type: 'approval' },
     { title: 'Cảnh báo', value: '2', meta: 'Cần xem hôm nay', icon: 'alert-triangle', type: 'alert' }
   ]);
 
-  briefingItems = signal<BriefingItem[]>([
+  briefingItems = signal<BriefingItemData[]>([
     {
       id: '1',
       agentName: 'Analyst Agent',
@@ -302,8 +168,9 @@ export class BriefingComponent {
   ]);
 
   actionTabs = signal(['Ưu tiên', 'Cần duyệt', 'Phản hồi', 'Lỗi']);
+  activeTab = signal('Ưu tiên');
 
-  actionItems = signal<ActionItem[]>([
+  actionItems = signal<ActionItemData[]>([
     {
       id: '1',
       priority: 'high',
@@ -330,13 +197,30 @@ export class BriefingComponent {
     }
   ]);
 
-  getAgentIcon(type: string): string {
-    switch (type) {
-      case 'analyst': return 'bar-chart-2';
-      case 'chat': return 'message-square';
-      case 'voice': return 'phone';
-      case 'system': return 'alert-triangle';
-      default: return 'bell';
-    }
+  ngOnInit() {
+    // TODO: Fetch initial data from API
+    // this.wsService.connect();
+  }
+
+  setActiveTab(tab: string) {
+    this.activeTab.set(tab);
+    // TODO: Lọc actionItems theo tab
+  }
+
+  handlePrimaryAction(item: BriefingItemData) {
+    console.log('Primary action:', item);
+  }
+
+  handleSecondaryAction(item: BriefingItemData) {
+    console.log('Secondary action:', item);
+  }
+
+  handleQueueAction(item: ActionItemData) {
+    console.log('Queue action:', item);
+  }
+
+  handleQueueSecondaryAction(item: ActionItemData) {
+    console.log('Queue secondary action:', item);
   }
 }
+

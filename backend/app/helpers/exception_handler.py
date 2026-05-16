@@ -4,10 +4,11 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from app.schemas.sche_base import ResponseSchemaBase
 
+
 class ExceptionType(enum.Enum):
-    MS_UNAVAILABLE = 500, '990', 'Hệ thống đang bảo trì, quý khách vui lòng thử lại sau'
-    MS_INVALID_API_PATH = 500, '991', 'Hệ thống đang bảo trì, quý khách vui lòng thử lại sau'
-    DATA_RESPONSE_MALFORMED = 500, '992', 'Có lỗi xảy ra, vui lòng liên hệ admin!'
+    MS_UNAVAILABLE = 500, "990", "Hệ thống đang bảo trì, quý khách vui lòng thử lại sau"
+    MS_INVALID_API_PATH = 500, "991", "Hệ thống đang bảo trì, quý khách vui lòng thử lại sau"
+    DATA_RESPONSE_MALFORMED = 500, "992", "Có lỗi xảy ra, vui lòng liên hệ admin!"
 
     def __new__(cls, *args, **kwds):
         value = len(cls.__members__) + 1
@@ -20,6 +21,7 @@ class ExceptionType(enum.Enum):
         self.code = code
         self.message = message
 
+
 class CustomException(Exception):
     http_code: int
     code: str
@@ -30,27 +32,45 @@ class CustomException(Exception):
         self.code = code if code else str(self.http_code)
         self.message = message
 
+
 from fastapi.exceptions import RequestValidationError
+
 
 async def http_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     assert isinstance(exc, CustomException)
     return JSONResponse(
         status_code=exc.http_code,
-        content=jsonable_encoder(ResponseSchemaBase.custom_response(exc.code, exc.message or ""))
+        content=jsonable_encoder(ResponseSchemaBase.custom_response(exc.code, exc.message or "")),
     )
+
 
 async def validation_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     assert isinstance(exc, RequestValidationError)
     return JSONResponse(
         status_code=400,
-        content=jsonable_encoder(ResponseSchemaBase.custom_response('400', get_message_validation(exc)))
+        content=jsonable_encoder(ResponseSchemaBase.custom_response("400", get_message_validation(exc))),
     )
 
+
 async def fastapi_error_handler(request: Request, exc: Exception) -> JSONResponse:
+    import logging
+
+    logging.error(f"Internal server error: {exc}", exc_info=True)
     return JSONResponse(
         status_code=500,
-        content=jsonable_encoder(ResponseSchemaBase.custom_response('500', "Có lỗi xảy ra, vui lòng liên hệ admin!"))
+        content=jsonable_encoder(ResponseSchemaBase.custom_response("500", "Có lỗi xảy ra, vui lòng liên hệ admin!")),
     )
+
+
+from sqlalchemy.exc import NoResultFound
+
+
+async def sqlalchemy_not_found_handler(request: Request, exc: Exception) -> JSONResponse:
+    return JSONResponse(
+        status_code=404,
+        content=jsonable_encoder(ResponseSchemaBase.custom_response("404", "Không tìm thấy dữ liệu yêu cầu")),
+    )
+
 
 def get_message_validation(exc):
     message = ""

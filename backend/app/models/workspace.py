@@ -1,5 +1,8 @@
 from enum import Enum
-from typing import Optional, Dict, Any
+from typing import Optional, Any
+from sqlalchemy import String, Boolean, Enum as SQLEnum
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import Mapped, mapped_column
 from app.models.base import BaseModel
 
 class PlatformEnum(str, Enum):
@@ -13,39 +16,33 @@ class WorkspaceRole(str, Enum):
     member = "member"
 
 class Workspace(BaseModel):
-    __collection__ = "workspaces"
+    __tablename__ = "workspaces"
 
-    name: str
-    industry: Optional[str] = None
-    description: Optional[str] = None
-    website: Optional[str] = None
-    platform: PlatformEnum = PlatformEnum.manual
-    platform_store_id: Optional[str] = None
-    owner_uid: str
+    name: Mapped[str] = mapped_column(String)
+    industry: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    website: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    platform: Mapped[PlatformEnum] = mapped_column(SQLEnum(PlatformEnum), default=PlatformEnum.manual)
+    platform_store_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    owner_uid: Mapped[str] = mapped_column(String, index=True)
+    admins: Mapped[dict[str, bool]] = mapped_column(JSONB, default=dict)
+    members: Mapped[dict[str, bool]] = mapped_column(JSONB, default=dict)
 
 class IntegrationConfig(BaseModel):
-    __collection__ = "integration_configs"
+    __tablename__ = "integration_configs"
 
-    workspace_id: str
-    platform: PlatformEnum
-    access_token: str
-    refresh_token: Optional[str] = None
-    expires_at: Optional[str] = None 
-    meta_data: Dict[str, Any] = {}
-
-class UserWorkspace(BaseModel):
-    __collection__ = "user_workspaces"
-
-    user_uid: str
-    workspace_id: str
-    role: WorkspaceRole = WorkspaceRole.member
+    workspace_id: Mapped[str] = mapped_column(String, index=True)
+    platform: Mapped[PlatformEnum] = mapped_column(SQLEnum(PlatformEnum))
+    access_token: Mapped[str] = mapped_column(String)
+    refresh_token: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    expires_at: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    meta_data: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
 
 class BriefingItem(BaseModel):
-    __collection__ = "briefing_items"
+    __tablename__ = "briefing_items"
 
-    workspace_id: str
-    title: str
-    content: str
-    type: str = "welcome"
-    is_read: bool = False
-
+    workspace_id: Mapped[str] = mapped_column(String, index=True)
+    title: Mapped[str] = mapped_column(String)
+    content: Mapped[str] = mapped_column(String)
+    type: Mapped[str] = mapped_column(String, default="welcome")
+    is_read: Mapped[bool] = mapped_column(Boolean, default=False)

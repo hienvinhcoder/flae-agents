@@ -1,4 +1,6 @@
 from fastapi import APIRouter, Depends, status
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.db.database import get_db
 from app.core.security import verify_token
 from app.core.logger import get_logger
 from app.schemas.sche_base import DataResponse
@@ -17,6 +19,7 @@ router = APIRouter()
 async def create_user(
     request: UserCreateRequest,
     current_user: dict = Depends(verify_token),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     API tạo profile người dùng mới sau khi đăng nhập Firebase.
@@ -24,7 +27,7 @@ async def create_user(
     """
     logger.info(f"Creating user profile for firebase_uid={current_user.get('uid')}")
 
-    user_model = await UserService.create_user(request, current_user)
+    user_model = await UserService.create_user(db, request, current_user)
 
     logger.info(f"User profile created successfully: id={user_model.id}")
 
@@ -32,7 +35,7 @@ async def create_user(
         code="201",
         message="Profile created successfully",
         data=UserItemResponse(
-            id=user_model.id or "",
+            id=str(user_model.id) if user_model.id else "",
             firebase_uid=user_model.firebase_uid,
             email=user_model.email,
             full_name=user_model.full_name,
@@ -48,6 +51,7 @@ async def update_user(
     user_id: str,
     # request: UserUpdateRequest,  # Sẽ implement sau
     current_user: dict = Depends(verify_token),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     API cập nhật thông tin user.
@@ -64,6 +68,7 @@ async def update_user(
 async def delete_user(
     user_id: str,
     current_user: dict = Depends(verify_token),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     API xoá user.

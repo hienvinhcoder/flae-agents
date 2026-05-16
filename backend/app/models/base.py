@@ -1,17 +1,19 @@
+import uuid
 from datetime import datetime, timezone
-from typing import Optional
-from pydantic import Field
-from firedantic import Model
+from sqlalchemy import DateTime
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
+class Base(DeclarativeBase):
+    pass
 
-class BaseModel(Model):
+class BaseModel(Base):
     """
-    Base model class for all firedantic models in the application.
-    Includes common timestamp fields and optional id for custom document IDs.
+    Base model class for all SQLAlchemy models in the application.
+    Includes common timestamp fields and a UUID primary key.
     """
+    __abstract__ = True
 
-    __collection__ = "base_collection"  # Should be overridden by subclasses
-
-    id: Optional[str] = None
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))

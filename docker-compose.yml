@@ -1,15 +1,44 @@
 version: '3.8'
 
 services:
+  postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: flae_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     ports:
       - "8000:8000"
+    environment:
+      - POSTGRES_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/flae_db
+      - REDIS_URL=redis://redis:6379/0
     volumes:
       - ./backend:/app
       - /app/.venv # Tránh mount đè thư mục virtual environment của uv
+    depends_on:
+      - postgres
+      - redis
     networks:
       - app-network
 
@@ -27,6 +56,12 @@ services:
     networks:
       - app-network
 
+
+
 networks:
   app-network:
     driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:

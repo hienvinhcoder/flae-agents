@@ -11,13 +11,15 @@ from app.helpers.exception_handler import (
     http_exception_handler,
     validation_exception_handler,
     fastapi_error_handler,
+    sqlalchemy_not_found_handler,
 )
+from sqlalchemy.exc import NoResultFound
 from app.db.database import setup_database
 
 # Configure logging
 setup_logging()
 
-# Configure database (Firestore & firedantic)
+# Configure database
 setup_database()
 
 
@@ -28,10 +30,9 @@ def get_application() -> FastAPI:
         redoc_url="/redoc",
         openapi_url=f"{settings.API_V1_STR}/openapi.json",
         description="""
-        FastAPI Base configured for Firestore and Firebase Auth
+        FastAPI Base configured for PostgreSQL and Firebase Auth
         - Firebase Authentication (JWT) via Depends
-        - Firestore connection via firedantic
-        - No GET endpoints (Frontend queries directly)
+        - PostgreSQL connection via SQLAlchemy AsyncSession
         """,
     )
 
@@ -49,6 +50,7 @@ def get_application() -> FastAPI:
     # Exception Handlers
     application.add_exception_handler(CustomException, http_exception_handler)
     application.add_exception_handler(RequestValidationError, validation_exception_handler)
+    application.add_exception_handler(NoResultFound, sqlalchemy_not_found_handler)
     application.add_exception_handler(Exception, fastapi_error_handler)
 
     return application
