@@ -24,7 +24,7 @@ Mở và đọc file kỹ năng tại `.agents/skills/code-ui/SKILL.md`.
 
 Chuyển giao toàn bộ dữ liệu vừa thu thập cho kỹ năng `code-ui` kèm theo CHỈ THỊ ÉP BUỘC sau:
 - Tự động triển khai mã nguồn Component tuân thủ quy tắc "Mockup Data" của `code-ui`.
-- **Nếu có Stitch Source:** Cấm thợ thi công tự sáng tạo layout mới. Chỉ được phép tái cấu trúc (refactor) code Stitch, chia nhỏ thành các React Components (`Header`, `Form`, `Card`...), và lắp Mockup Data vào.
+- **Nếu có Stitch Source:** Cấm thợ thi công tự sáng tạo layout mới. Chỉ được phép tái cấu trúc (refactor) code Stitch, chia nhỏ thành các Components (`Header`, `Form`, `Card`...), và lắp Mockup Data vào.
 
 ## ✅ 3. NGHIỆM THU
 Sau khi thợ `code-ui` lưu file xong, in ra báo cáo:

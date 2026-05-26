@@ -6,6 +6,7 @@ description: Tư vấn giải pháp kỹ thuật, cấu trúc DB và luồng h�
 Người dùng yêu cầu tư vấn kỹ thuật cho bài toán: **$ARGUMENTS**
 
 **NGUYÊN TẮC TỐI THƯỢNG:** 
+- Nếu một câu hỏi có thể được trả lời bằng cách khám phá mã nguồn, hãy ưu tiên khám phá mã nguồn.
 - KHÔNG BAO GIỜ sinh ra code hoàn chỉnh.
 - Thực hiện nghiêm ngặt theo 3 giai đoạn dưới đây.
 
@@ -16,6 +17,7 @@ Trước khi đề xuất giải pháp, bạn PHẢI hỏi người dùng để 
 3. Trong mỗi câu hỏi, phải cung cấp **3 phương án lựa chọn** cho người dùng.
 4. Bạn BẮT BUỘC phải **đề xuất 1 phương án** (trong số 3 phương án đó) phù hợp nhất với context dự án hiện tại.
 5. Đợi người dùng trả lời xong mới tiến hành hỏi câu tiếp theo.
+6. **LƯU TRỮ DỮ LIỆU**: Sau mỗi lượt hỏi và đáp, BẮT BUỘC phải sử dụng tool để cập nhật câu hỏi và câu trả lời vào một file nháp tại `.docs/features/[tên-tính-năng]/draft_qa.md` (Tự trích xuất tên tính năng ngắn gọn dạng kebab-case). **Đặc biệt lưu ý:** Nội dung câu hỏi phải được ghi lại ĐẦY ĐỦ và câu trả lời phải thật CHI TIẾT (không tóm tắt hay cắt xén), vì toàn bộ nội dung file draft này sẽ là nguyên liệu trực tiếp để tạo ra `IDEAS.md`.
 
 ## 🗣️ PHASE 2: ĐỐI THOẠI & PHÂN TÍCH (Chưa chốt)
 (Chỉ thực hiện sau khi đã hoàn tất các câu hỏi ở Phase 1)
@@ -27,6 +29,7 @@ Trước khi đề xuất giải pháp, bạn PHẢI hỏi người dùng để 
 ## ✍️ PHASE 3: CHỐT HẠ & GHI FILE (Chỉ chạy khi người dùng đã chọn phương án)
 1. Dừng thảo luận. Tổng hợp phương án đã chọn thành một Tài liệu Đặc tả Yêu cầu sắc bén.
 2. **BẮT BUỘC** lưu nội dung này vào file vật lý tại: `.docs/features/[tên-tính-năng]/IDEAS.md` (Tự trích xuất tên tính năng ngắn gọn dạng kebab-case từ cuộc trò chuyện để làm tên file).
-3. In ra thông báo:
+3. **DỌN DẸP**: BẮT BUỘC sử dụng tool (`run_command` chạy lệnh `rm`) để xóa file nháp `.docs/features/[tên-tính-năng]/draft_qa.md` sau khi file `IDEAS.md` đã được tạo thành công.
+4. In ra thông báo:
 *"✅ Đã chốt giải pháp kỹ thuật và lưu thành Nguồn chân lý tại `.docs/features/[tên-tính-năng]/IDEAS.md`
-Next step: Hãy gõ lệnh `/create_backend_plan_workflow` hoặc `/create_frontend_plan_workflow` để hệ thống rải bản vẽ!"*
+Next step: Hãy gõ lệnh `/create_plan` để hệ thống rải bản vẽ!"*

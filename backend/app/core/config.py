@@ -14,7 +14,12 @@ class Settings(BaseSettings):
 
     # Database
     POSTGRES_URL: str = os.getenv('POSTGRES_URL', 'postgresql+asyncpg://postgres:postgres@localhost:5432/flae_db')
+    RAG_DATABASE_URL: str = os.getenv('RAG_DATABASE_URL', 'postgresql+asyncpg://postgres:postgres@localhost:5432/rag_db')
     REDIS_URL: str = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+
+    # Temporal
+    TEMPORAL_HOST: str = os.getenv('TEMPORAL_HOST', 'localhost:7233')
+    TEMPORAL_NAMESPACE: str = os.getenv('TEMPORAL_NAMESPACE', 'default')
 
     # Firebase / GCP configuration
     GOOGLE_APPLICATION_CREDENTIALS: str = os.getenv('GOOGLE_APPLICATION_CREDENTIALS', '')

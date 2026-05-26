@@ -4,6 +4,7 @@ import { Workspace } from '../models/workspace.model';
 export const workspaceStore = () => {
   const currentWorkspaceId = signal<string | null>(null);
   const workspaces = signal<Workspace[]>([]);
+  const isSyncing = signal<boolean>(false);
   
   const currentWorkspace = computed(() => {
     const id = currentWorkspaceId();
@@ -15,6 +16,11 @@ export const workspaceStore = () => {
     currentWorkspaceId: currentWorkspaceId.asReadonly(),
     workspaces: workspaces.asReadonly(),
     currentWorkspace,
+    isSyncing: isSyncing.asReadonly(),
+    
+    setIsSyncing: (status: boolean) => {
+      isSyncing.set(status);
+    },
     
     setWorkspaces: (data: Workspace[]) => {
       workspaces.set(data);
@@ -53,7 +59,12 @@ export class WorkspaceStore {
   readonly currentWorkspaceId = this.store.currentWorkspaceId;
   readonly workspaces = this.store.workspaces;
   readonly currentWorkspace = this.store.currentWorkspace;
+  readonly isSyncing = this.store.isSyncing;
   
+  setIsSyncing(status: boolean) {
+    this.store.setIsSyncing(status);
+  }
+
   setWorkspaces(data: Workspace[]) {
     this.store.setWorkspaces(data);
   }

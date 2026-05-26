@@ -2,15 +2,17 @@ import { Component, HostListener, OnInit, inject } from '@angular/core';
 
 import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
-import { SidebarComponent } from '../sidebar/sidebar.component';
-import { TopbarComponent } from '../topbar/topbar.component';
+import { SidebarComponent } from './ui/sidebar.component';
+import { TopbarComponent } from './ui/topbar.component';
+import { SyncStatusBannerComponent } from './ui/sync-status-banner.component';
+import { WorkspaceStore } from '../../stores/workspace.store';
 
 @Component({
   selector: 'app-admin-layout',
   standalone: true,
-  imports: [RouterOutlet, SidebarComponent, TopbarComponent],
+  imports: [RouterOutlet, SidebarComponent, TopbarComponent, SyncStatusBannerComponent],
   template: `
-    <div class="flex h-screen w-full bg-mint-white overflow-hidden text-dark-green font-sans relative">
+    <div class="flex h-screen w-full bg-surface-main overflow-hidden text-text-body font-sans relative">
       <!-- Sidebar -->
       <app-sidebar 
         [currentPath]="currentPath" 
@@ -26,10 +28,12 @@ import { TopbarComponent } from '../topbar/topbar.component';
           [pageTitle]="pageTitle"
           (menuToggle)="toggleMobileMenu()">
         </app-topbar>
+        
+        <app-sync-status-banner [isSyncing]="workspaceStore.isSyncing()"></app-sync-status-banner>
 
         <!-- Main Content Area -->
         <main class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 scroll-smooth">
-          <div class="max-w-7xl mx-auto w-full h-full">
+          <div class="max-w-[1440px] mx-auto w-full h-full">
             <router-outlet></router-outlet>
           </div>
         </main>
@@ -46,6 +50,7 @@ import { TopbarComponent } from '../topbar/topbar.component';
 })
 export class AdminLayoutComponent implements OnInit {
   private router = inject(Router);
+  public workspaceStore = inject(WorkspaceStore);
 
   sidebarCollapsed = false;
   isMobile = false;

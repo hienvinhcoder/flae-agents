@@ -1,22 +1,62 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 @theme {
   /* Colors */
-  --color-primary: #00C27A;
-  --color-accent: #B9FF3B;
+  --color-primary: #006c49;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #10b981;
+  --color-on-primary-container: #00422b;
+  --color-inverse-primary: #4edea3;
+  --color-secondary: #59605d;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #dae1dd;
+  --color-on-secondary-container: #5d6461;
+  --color-tertiary: #a43a3a;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #fc7c78;
+  --color-on-tertiary-container: #711419;
+  --color-error: #ba1a1a;
+  --color-on-error: #ffffff;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #93000a;
+  --color-background: #fbf8ff;
+  --color-on-background: #1a1b22;
+  --color-surface: #fbf8ff;
+  --color-surface-dim: #dad9e3;
+  --color-surface-bright: #fbf8ff;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f4f2fd;
+  --color-surface-container: #eeedf7;
+  --color-surface-container-high: #e8e7f1;
+  --color-surface-container-highest: #e3e1ec;
+  --color-on-surface: #1a1b22;
+  --color-on-surface-variant: #3c4a42;
+  --color-outline: #6c7a71;
+  --color-outline-variant: #bbcabf;
+  --color-surface-variant: #e3e1ec;
+
+  /* Custom Semantic Colors from DESIGN.md */
+  --color-surface-main: #F4FBF7;
+  --color-surface-card: #FFFFFF;
+  --color-text-heading: #18181B;
+  --color-text-body: #3F3F46;
+  --color-status-active: #10B981;
+  --color-status-pending: #F59E0B;
+  --color-status-approval: #EF4444;
+  --color-border-subtle: #E4E4E7;
+  --color-accent: #10B981;
   --color-dark-green: #062E24;
-  --color-mint-white: #F3FBF7;
-  --color-surface: #FFFFFF;
   --color-soft-green: #D1EAE0;
 
   /* Typography */
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-heading: "Plus Jakarta Sans", sans-serif;
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: "Outfit", sans-serif;
 
   /* Shadows */
-  --shadow-ai-glow: 0 0 10px rgba(185, 255, 59, 0.4);
-  --shadow-soft: 0 4px 20px rgba(6, 46, 36, 0.05);
+  --shadow-ai-glow: 0 0 12px rgba(16, 185, 129, 0.3);
+  --shadow-soft: 0px 4px 20px rgba(0, 0, 0, 0.04);
+  --shadow-glass: 0px 10px 30px rgba(16, 185, 129, 0.08);
 
   /* Animations */
   --animate-fade-in-up: fade-in-up 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
@@ -46,10 +86,30 @@
 
 @layer base {
   body {
-    @apply bg-mint-white text-dark-green/80 font-sans;
+    @apply bg-surface-main text-text-body font-sans antialiased;
+    line-height: 1.5;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-heading text-dark-green tracking-tight;
+    @apply font-heading text-text-heading tracking-tight font-semibold;
   }
+}
+
+/* Custom UI/UX classes */
+.border-dashed-ai {
+  border: 1.5px dashed rgba(16, 185, 129, 0.4);
+}
+
+.glass-morphism {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.glass-morphism-dark {
+  background: rgba(6, 46, 36, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(16, 185, 129, 0.1);
 }

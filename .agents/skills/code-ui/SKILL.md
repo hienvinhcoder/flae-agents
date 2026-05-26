@@ -17,12 +17,13 @@ Trước khi làm bất cứ điều gì, bạn BẮT BUỘC phải đọc ngầ
 
 ## BƯỚC 2: QUÉT THƯ VIỆN & TÁI SỬ DỤNG (QUAN TRỌNG TỐI THƯỢNG)
 - Quét thư mục `frontend/src/app/shared/ui/` (Thư viện UI dùng chung).
-- Nếu bản vẽ của Stitch có chứa Nút bấm (Button), Input, Thẻ (Card)... BẠN PHẢI TÌM XEM component đó đã tồn tại chưa.
+- Nếu giao diện yêu cầu có chứa Nút bấm (Button), Input, Thẻ (Card)... BẠN PHẢI TÌM XEM component đó đã tồn tại chưa.
 - **Luật thép:** Nếu ĐÃ CÓ, tuyệt đối không code lại, BẮT BUỘC phải import component đó vào để dùng. Chỉ tạo file mới cho những cấu trúc UI đặc thù chưa từng xuất hiện.
 
-## BƯỚC 3: ĐỌC BẢN VẼ TỪ STITCH
-- Kết nối với bản vẽ mà người dùng vừa cung cấp.
-- Ánh xạ (Map) các thuộc tính đồ hoạ sang các class của **Tailwind CSS**. Không dùng CSS thuần hay mã HEX lạ.
+## BƯỚC 3: ĐỌC BẢN VẼ HOẶC TỰ THIẾT KẾ
+- **Nếu có bản vẽ từ Stitch:** Kết nối với bản vẽ mà người dùng cung cấp và ánh xạ (Map) các thuộc tính đồ hoạ sang các class của **Tailwind CSS**.
+- **Nếu KHÔNG có bản vẽ Stitch:** Dựa hoàn toàn vào mô tả UI trong file Frontend Plan và TỰ ĐỘNG THIẾT KẾ layout/UI bằng các class Tailwind CSS.
+- **Luật màu sắc:** Dù có hay không có bản vẽ, luôn sử dụng Tailwind CSS config variable cho các màu sắc để sau này có thể dễ dàng chuyển đổi màu sắc. Tuyệt đối không dùng CSS thuần hay hardcode mã màu HEX/RGB/HSL lạ trực tiếp vào code.
 
 ## BƯỚC 4: SINH CODE VÀ ÉP KHUÔN FRAMEWORK
 Tiến hành gõ code vào thư mục dự án theo các quy tắc của bản Kế hoạch, ĐỒNG THỜI tuân thủ tuyệt đối Đạo luật CODE Framework sau:

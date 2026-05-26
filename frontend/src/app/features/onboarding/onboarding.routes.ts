@@ -8,7 +8,7 @@ export const routes: Routes = [
   },
   {
     path: 'create-workspace',
-    loadComponent: () => import('./pages/onboarding-container.component').then(m => m.OnboardingContainerComponent)
+    loadComponent: () => import('../workspace-onboarding/workspace-onboarding.component').then(m => m.WorkspaceOnboardingComponent)
   },
   {
     path: 'oauth-callback',

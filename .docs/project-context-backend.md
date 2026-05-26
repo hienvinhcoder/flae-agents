@@ -1,17 +1,18 @@
 # Project Context - Backend
 
-> **Last Updated**: 2026-05-07
+> **Last Updated**: 2026-05-26
 
 ## 1. Overview
-Hệ thống backend xử lý API mutations và business logic phức tạp cho ứng dụng FLAE, làm việc cùng frontend thông qua Firebase và Firestore.
+Hệ thống backend xử lý API mutations và business logic phức tạp cho ứng dụng FLAE, tích hợp PostgreSQL (cho metadata và dữ liệu RAG), Redis (cho cache và realtime Pub/Sub), Firebase (xác thực), và Temporal (cho việc quản lý và thực thi các long-running workflows).
 
 ## 2. Stack
 - Python ≥ 3.11
 - FastAPI · Uvicorn
-- PostgreSQL · SQLAlchemy · asyncpg · Alembic
+- PostgreSQL · SQLAlchemy (v2) · asyncpg · Alembic · pgvector (vector search)
 - Redis (Caching & Pub/Sub) · WebSockets
 - Firebase Admin SDK (Auth, Storage)
-- pydantic v2
+- Temporal Python SDK (`temporalio`)
+- pydantic v2 · pandas · numpy
 - `uv` (package manager)
 
 ## 3. Project Structure
@@ -19,16 +20,34 @@ Hệ thống backend xử lý API mutations và business logic phức tạp cho 
 backend/
 ├── app/
 │   ├── agents/           # LangGraph/LangChain agents (reserved)
-│   ├── api/v1/           # API Routers & Endpoints (REST & WebSockets)
-│   ├── core/             # Config, Security, Logger
-│   ├── db/               # Database Setup (SQLAlchemy engines, Redis client)
+│   ├── api/              # API Routers
+│   │   └── v1/           # API v1 endpoints
+│   │       ├── endpoints/
+│   │       │   ├── auth.py          # Đồng bộ và xác thực Firebase User
+│   │       │   ├── user.py          # Profile user & workspace hiện tại
+│   │       │   ├── workspace.py     # Onboarding và quản lý Workspaces
+│   │       │   └── temporal_demo.py # Tích hợp gọi Temporal workflows
+│   │       └── api_router.py
+│   ├── core/             # Cấu hình hệ thống, logging, security, temporal client setup
+│   ├── db/               # Khởi tạo DB sessions
+│   │   ├── database.py   # PostgreSQL flae_db (metadata) & Redis client
+│   │   └── rag_db.py     # PostgreSQL flae_knowledge_db (RAG DB manager với RLS & Partition)
 │   ├── helpers/          # Exception Handlers
-│   ├── models/           # SQLAlchemy Models
-│   ├── schemas/          # Pydantic Schemas (Request/Response)
-│   └── services/         # Business Logic & Caching Logic
+│   ├── models/           # Các Model SQLAlchemy
+│   │   ├── base.py       # BaseModel (id UUID, timestamps)
+│   │   ├── user.py       # Model User
+│   │   └── workspace.py  # Model Workspace, IntegrationConfig, BriefingItem
+│   ├── schemas/          # Pydantic Schemas (Request/Response validation)
+│   ├── services/         # Business & DB service layers
+│   └── temporal/         # Logic chạy Temporal
+│       ├── workflows/    # Định nghĩa các Temporal Workflows (ví dụ: GreetingWorkflow)
+│       └── activities/   # Định nghĩa các Temporal Activities (ví dụ: greet)
 ├── migrations/           # Alembic Migration Scripts
-├── scripts/              # Helper Scripts
+├── scripts/              # Helper Scripts (e.g. migrate.py)
+├── workers/              # Temporal workers
+│   └── flae_worker.py    # Background worker lắng nghe task queue chạy workflow/activity
 ├── tests/                # Pytest Test Cases
+├── pyproject.toml        # Cấu hình dependency qua uv
 └── main.py               # FastAPI Entry Point
 ```
 
@@ -37,15 +56,19 @@ backend/
 - **Realtime (WebSockets):** Các sự kiện cần realtime (như nhận tin nhắn mới) phải được publish qua Redis Pub/Sub và đẩy tới Angular client bằng WebSockets.
 - **API prefix**: `/api/v1` (cấu hình tại `settings.API_V1_STR`).
 - **Database operations:** Tất cả thao tác với SQLAlchemy phải dùng `async` session (`asyncpg`).
+- **Row-Level Security (RLS) & Partitioning:**
+  - Đối với các bảng trong `flae_knowledge_db` (chunks, entities, relationships), bắt buộc thiết lập RLS dựa trên `workspace_id` và session context (`SET LOCAL app.current_workspace_id = :workspace_id`).
+  - Áp dụng phân vùng bảng (Partition Table) cho dữ liệu RAG theo từng `workspace_id` (`CREATE TABLE chunks_safe PARTITION OF chunks FOR VALUES IN ('workspace_id')`).
 - **Package manager**: luôn dùng `uv add`, `uv run`, `uv sync` — không dùng `pip`.
 - **Logging**: luôn dùng `get_logger(__name__)` — tuyệt đối không dùng `print()`.
 
 ## 5. Dev Commands
 ```bash
-uv run python main.py   # Chạy server (port 8000, hot-reload)
-uv add <pkg>            # Thêm dependency
-uv run migrate          # Chạy migrations
-uv run pytest tests/    # Chạy tests
+uv run python main.py     # Chạy FastAPI server (port 8000, hot-reload)
+uv run flae-worker        # Chạy background Temporal worker
+uv add <pkg>              # Thêm dependency
+uv run migrate            # Chạy migrations
+uv run pytest tests/      # Chạy tests
 ```
 
 ## 6. Chi tiết hệ thống
