@@ -1,7 +1,5 @@
 export enum PlatformType {
-  MANUAL = 'manual',
-  HARAVAN = 'haravan',
-  KIOTVIET = 'kiotviet'
+  MANUAL = 'manual'
 }
 
 export interface Workspace {
@@ -22,16 +20,16 @@ export interface CreateManualWorkspacePayload {
 }
 
 export interface GetOauthUrlPayload {
-  platform: PlatformType;
-  shop_domain?: string; // Required for Haravan
+  platform: string;
+  redirect_uri?: string;
 }
 
 export interface GetOauthUrlResponse {
-  auth_url: string;
+  oauth_url: string;
 }
 
 export interface HandleOauthCallbackPayload {
-  platform: PlatformType;
   code: string;
-  shop_domain?: string;
+  state?: string;
+  platform?: string;
 }

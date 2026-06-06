@@ -1,9 +1,9 @@
 # Project Context - Backend
 
-> **Last Updated**: 2026-05-26
+> **Last Updated**: 2026-06-05
 
 ## 1. Overview
-Hệ thống backend xử lý API mutations và business logic phức tạp cho ứng dụng FLAE, tích hợp PostgreSQL (cho metadata và dữ liệu RAG), Redis (cho cache và realtime Pub/Sub), Firebase (xác thực), và Temporal (cho việc quản lý và thực thi các long-running workflows).
+Hệ thống backend xử lý API mutations và business logic phức tạp cho ứng dụng FLAE (Company Memory AI), tích hợp PostgreSQL (cho metadata và dữ liệu RAG), Redis (cho cache và realtime Pub/Sub), Firebase (xác thực), và Temporal (cho việc quản lý và thực thi các long-running workflows).
 
 ## 2. Stack
 - Python ≥ 3.11
@@ -19,13 +19,13 @@ Hệ thống backend xử lý API mutations và business logic phức tạp cho 
 ```text
 backend/
 ├── app/
-│   ├── agents/           # LangGraph/LangChain agents (reserved)
+│   ├── agents/           # Các LLM Agents (Slack Digest, Stale Doc Detector, v.v.)
 │   ├── api/              # API Routers
 │   │   └── v1/           # API v1 endpoints
 │   │       ├── endpoints/
 │   │       │   ├── auth.py          # Đồng bộ và xác thực Firebase User
 │   │       │   ├── user.py          # Profile user & workspace hiện tại
-│   │       │   ├── workspace.py     # Onboarding và quản lý Workspaces
+│   │       │   ├── workspace.py     # Quản lý Workspaces thủ công
 │   │       │   └── temporal_demo.py # Tích hợp gọi Temporal workflows
 │   │       └── api_router.py
 │   ├── core/             # Cấu hình hệ thống, logging, security, temporal client setup
@@ -53,7 +53,7 @@ backend/
 
 ## 4. Quy tắc kiến trúc (BẮT BUỘC)
 - **API GET & Caching:** Tự do tạo API GET, nhưng BẮT BUỘC phải suy nghĩ và phân tích xem có nên áp dụng Redis Cache (ví dụ: Cache-Aside) hay không để tối ưu chi phí và tải cho Database.
-- **Realtime (WebSockets):** Các sự kiện cần realtime (như nhận tin nhắn mới) phải được publish qua Redis Pub/Sub và đẩy tới Angular client bằng WebSockets.
+- **Realtime (WebSockets):** Các sự kiện cần realtime (như trạng thái sync, cập nhật tin nhắn) phải được publish qua Redis Pub/Sub và đẩy tới Angular client bằng WebSockets.
 - **API prefix**: `/api/v1` (cấu hình tại `settings.API_V1_STR`).
 - **Database operations:** Tất cả thao tác với SQLAlchemy phải dùng `async` session (`asyncpg`).
 - **Row-Level Security (RLS) & Partitioning:**

@@ -1,65 +1,97 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Geist+Mono:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @theme {
-  /* Colors */
-  --color-primary: #006c49;
-  --color-on-primary: #ffffff;
-  --color-primary-container: #10b981;
-  --color-on-primary-container: #00422b;
-  --color-inverse-primary: #4edea3;
-  --color-secondary: #59605d;
-  --color-on-secondary: #ffffff;
-  --color-secondary-container: #dae1dd;
-  --color-on-secondary-container: #5d6461;
-  --color-tertiary: #a43a3a;
-  --color-on-tertiary: #ffffff;
-  --color-tertiary-container: #fc7c78;
-  --color-on-tertiary-container: #711419;
-  --color-error: #ba1a1a;
-  --color-on-error: #ffffff;
-  --color-error-container: #ffdad6;
-  --color-on-error-container: #93000a;
-  --color-background: #fbf8ff;
-  --color-on-background: #1a1b22;
-  --color-surface: #fbf8ff;
-  --color-surface-dim: #dad9e3;
-  --color-surface-bright: #fbf8ff;
-  --color-surface-container-lowest: #ffffff;
-  --color-surface-container-low: #f4f2fd;
-  --color-surface-container: #eeedf7;
-  --color-surface-container-high: #e8e7f1;
-  --color-surface-container-highest: #e3e1ec;
-  --color-on-surface: #1a1b22;
-  --color-on-surface-variant: #3c4a42;
-  --color-outline: #6c7a71;
-  --color-outline-variant: #bbcabf;
-  --color-surface-variant: #e3e1ec;
+  /* Colors from Sunset Fire Theme */
+  --color-app: #140F0B;
+  --color-surface: #1F1711;
+  --color-elevated: #2A1D14;
+  --color-subtle: #201712;
 
-  /* Custom Semantic Colors from DESIGN.md */
-  --color-surface-main: #F4FBF7;
-  --color-surface-card: #FFFFFF;
-  --color-text-heading: #18181B;
-  --color-text-body: #3F3F46;
-  --color-status-active: #10B981;
-  --color-status-pending: #F59E0B;
-  --color-status-approval: #EF4444;
-  --color-border-subtle: #E4E4E7;
-  --color-accent: #10B981;
-  --color-dark-green: #062E24;
-  --color-soft-green: #D1EAE0;
+  --color-border: #3F2A1A;
+  --color-border-strong: #5A3822;
+
+  --color-text-primary: #FFF7ED;
+  --color-text-secondary: #FCD7AA;
+  --color-text-muted: #DDB991;
+  --color-text-disabled: #8A6A4F;
+
+  --color-primary: #FB923C;
+  --color-primary-hover: #F97316;
+  --color-primary-active: #EA580C;
+  --color-primary-soft: rgba(251, 146, 60, 0.14);
+  --color-primary-border: rgba(251, 146, 60, 0.36);
+
+  --color-ai: #C084FC;
+  --color-ai-hover: #A855F7;
+  --color-ai-soft: rgba(192, 132, 252, 0.14);
+  --color-ai-border: rgba(192, 132, 252, 0.36);
+
+  --color-graph: #4ADE80;
+  --color-graph-soft: rgba(74, 222, 128, 0.12);
+  --color-graph-border: rgba(74, 222, 128, 0.32);
+
+  --color-success: #4ADE80;
+  
+  --color-warning: #FBBF24;
+  --color-warning-soft: rgba(251, 191, 36, 0.14);
+  --color-warning-border: rgba(251, 191, 36, 0.32);
+  
+  --color-error: #F87171;
+  --color-error-soft: rgba(248, 113, 113, 0.14);
+  --color-error-border: rgba(248, 113, 113, 0.32);
+  
+  --color-info: #60A5FA;
+  --color-info-soft: rgba(96, 165, 250, 0.12);
+
+  /* Aliases for backward compatibility to prevent UI breaking */
+  --color-surface-main: var(--color-app);
+  --color-surface-card: var(--color-surface);
+  --color-text-heading: var(--color-text-primary);
+  --color-text-body: var(--color-text-secondary);
+  --color-border-subtle: var(--color-border);
+  --color-outline-variant: var(--color-border);
+  --color-outline: var(--color-border-strong);
+  --color-accent: var(--color-primary);
+
+  --color-dark-green: var(--color-text-primary);
+  --color-soft-green: var(--color-border);
+  --color-mint-white: var(--color-app);
+
+  --color-primary-container: var(--color-primary-soft);
+  --color-on-primary: var(--color-app);
+  --color-on-primary-container: var(--color-primary);
+
+  /* Custom Semantic Colors */
+  --color-status-active: var(--color-success);
+  --color-status-pending: var(--color-warning);
+  --color-status-approval: var(--color-error);
 
   /* Typography */
-  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-heading: "Outfit", sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono", "JetBrains Mono", "SF Mono", Consolas, monospace;
+  --font-heading: "Inter", sans-serif;
 
-  /* Shadows */
-  --shadow-ai-glow: 0 0 12px rgba(16, 185, 129, 0.3);
-  --shadow-soft: 0px 4px 20px rgba(0, 0, 0, 0.04);
-  --shadow-glass: 0px 10px 30px rgba(16, 185, 129, 0.08);
+  /* Border Radius */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
+
+  /* Box Shadows */
+  --shadow-soft: 0 8px 32px rgba(0, 0, 0, 0.24);
+  --shadow-elevated: 0 16px 56px rgba(0, 0, 0, 0.36);
+  --shadow-primary: 0 0 32px rgba(251, 146, 60, 0.18);
+  --shadow-ai: 0 0 32px rgba(192, 132, 252, 0.18);
+  --shadow-glass: 0px 10px 30px rgba(251, 146, 60, 0.08);
+  --shadow-ai-glow: 0 0 12px rgba(192, 132, 252, 0.3);
 
   /* Animations */
   --animate-fade-in-up: fade-in-up 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  --animate-shine: shine 1.5s infinite;
 
   @keyframes fade-in-up {
     0% {
@@ -71,8 +103,6 @@
       transform: translateY(0);
     }
   }
-
-  --animate-shine: shine 1.5s infinite;
 
   @keyframes shine {
     0% {
@@ -86,30 +116,174 @@
 
 @layer base {
   body {
-    @apply bg-surface-main text-text-body font-sans antialiased;
+    @apply min-h-screen bg-app text-text-secondary font-sans antialiased;
     line-height: 1.5;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-heading text-text-heading tracking-tight font-semibold;
+    @apply font-heading text-text-primary tracking-tight font-semibold;
   }
 }
 
 /* Custom UI/UX classes */
 .border-dashed-ai {
-  border: 1.5px dashed rgba(16, 185, 129, 0.4);
+  border: 1.5px dashed rgba(192, 132, 252, 0.4);
 }
 
 .glass-morphism {
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(31, 23, 17, 0.75);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(63, 42, 26, 0.45);
 }
 
 .glass-morphism-dark {
-  background: rgba(6, 46, 36, 0.08);
+  background: rgba(20, 15, 11, 0.65);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(90, 56, 34, 0.25);
+}
+
+/* --- Component Class Recipes --- */
+
+/* Buttons */
+@utility btn-primary {
+  @apply inline-flex items-center justify-center rounded-lg border border-primary/40 bg-primary px-4 py-2 text-sm font-semibold text-app shadow-primary transition hover:bg-primary-hover active:bg-primary-active focus:outline-none focus:ring-2 focus:ring-ai/30;
+}
+
+@utility btn-secondary {
+  @apply inline-flex items-center justify-center rounded-lg border border-border bg-elevated px-4 py-2 text-sm font-medium text-text-primary transition hover:border-border-strong hover:bg-subtle focus:outline-none focus:ring-2 focus:ring-ai/30;
+}
+
+@utility btn-ghost {
+  @apply inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium text-text-secondary transition hover:bg-white/5 hover:text-text-primary focus:outline-none focus:ring-2 focus:ring-ai/30;
+}
+
+@utility btn-ai {
+  @apply inline-flex items-center justify-center rounded-lg border border-ai/30 bg-ai-soft px-4 py-2 text-sm font-semibold text-ai transition hover:bg-ai/20 focus:outline-none focus:ring-2 focus:ring-ai/30;
+}
+
+@utility btn-destructive {
+  @apply inline-flex items-center justify-center rounded-lg border border-error/30 bg-error/10 px-4 py-2 text-sm font-semibold text-error transition hover:bg-error/20 focus:outline-none focus:ring-2 focus:ring-error/30;
+}
+
+/* Cards */
+@utility card-default {
+  @apply rounded-2xl border border-border bg-surface p-5 shadow-soft;
+}
+
+@utility card-elevated {
+  @apply rounded-2xl border border-border-strong bg-elevated p-5 shadow-elevated;
+}
+
+@utility card-ai {
+  @apply rounded-2xl border border-ai/30 bg-ai-soft p-5 shadow-ai;
+}
+
+@utility card-warning {
+  @apply rounded-2xl border border-warning/30 bg-warning/10 p-5;
+}
+
+@utility card-error {
+  @apply rounded-2xl border border-error/30 bg-error/10 p-5;
+}
+
+/* Inputs */
+@utility input-default {
+  @apply w-full rounded-xl border border-border bg-app px-3 py-2 text-sm text-text-primary placeholder:text-text-disabled outline-none transition focus:border-ai focus:ring-2 focus:ring-ai/30;
+}
+
+@utility textarea-default {
+  @apply min-h-28 w-full rounded-xl border border-border bg-app px-3 py-2 text-sm leading-6 text-text-primary placeholder:text-text-disabled outline-none transition focus:border-ai focus:ring-2 focus:ring-ai/30;
+}
+
+@utility input-search {
+  @apply w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-text-primary placeholder:text-text-disabled outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20;
+}
+
+/* Badges */
+@utility badge-base {
+  @apply inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium;
+}
+
+@utility badge-connected {
+  @apply border-success/30 bg-success/10 text-success;
+}
+
+@utility badge-syncing {
+  @apply border-primary/30 bg-primary-soft text-primary;
+}
+
+@utility badge-ai {
+  @apply border-ai/30 bg-ai-soft text-ai;
+}
+
+@utility badge-warning {
+  @apply border-warning/30 bg-warning/10 text-warning;
+}
+
+@utility badge-error {
+  @apply border-error/30 bg-error/10 text-error;
+}
+
+@utility badge-info {
+  @apply border-info/30 bg-info/10 text-info;
+}
+
+/* Sidebar */
+@utility sidebar-container {
+  @apply h-screen w-64 border-r border-border bg-surface;
+}
+
+@utility sidebar-item {
+  @apply flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-text-secondary transition hover:bg-white/5 hover:text-text-primary;
+}
+
+@utility sidebar-item-active {
+  @apply flex items-center gap-2 rounded-lg border border-primary/30 bg-primary-soft px-3 py-2 text-sm font-medium text-primary;
+}
+
+/* Table */
+@utility table-wrapper {
+  @apply overflow-hidden rounded-2xl border border-border bg-surface;
+}
+
+@utility table-header {
+  @apply bg-subtle text-text-muted;
+}
+
+@utility table-row {
+  @apply border-t border-border text-text-secondary hover:bg-white/5;
+}
+
+@utility table-cell {
+  @apply px-4 py-3 text-sm;
+}
+
+/* Modal */
+@utility modal-backdrop {
+  @apply fixed inset-0 bg-app/80 backdrop-blur-md;
+}
+
+@utility modal-panel {
+  @apply rounded-2xl border border-border-strong bg-surface p-6 shadow-elevated;
+}
+
+/* Dropdown / Popover */
+@utility dropdown-container {
+  @apply rounded-xl border border-border-strong bg-elevated p-2 shadow-elevated;
+}
+
+@utility dropdown-item {
+  @apply rounded-lg px-3 py-2 text-sm text-text-secondary transition hover:bg-white/5 hover:text-text-primary;
+}
+
+/* Citation Chip */
+@utility citation-chip {
+  @apply inline-flex items-center rounded-full border border-primary/30 bg-primary-soft px-2.5 py-1 text-xs font-medium text-primary transition hover:bg-primary/20;
+}
+
+/* Spinner */
+@utility spinner {
+  @apply h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent;
 }

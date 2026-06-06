@@ -13,32 +13,27 @@ export const dashboardRoutes: Routes = [
       },
       {
         path: 'briefing',
-        loadComponent: () => import('./pages/briefing.component').then(m => m.BriefingComponent)
+        loadComponent: () => import('./pages/placeholder.component').then(m => m.PlaceholderComponent)
       },
-      // Placeholders for other routes mentioned in the PRD
       {
         path: 'inbox',
-        loadComponent: () => import('./pages/briefing.component').then(m => m.BriefingComponent)
+        loadComponent: () => import('./pages/placeholder.component').then(m => m.PlaceholderComponent)
       },
       {
         path: 'agents',
-        loadComponent: () => import('./pages/briefing.component').then(m => m.BriefingComponent)
+        loadComponent: () => import('./pages/placeholder.component').then(m => m.PlaceholderComponent)
       },
       {
         path: 'knowledge',
-        loadComponent: () => import('./pages/briefing.component').then(m => m.BriefingComponent)
+        loadComponent: () => import('./pages/placeholder.component').then(m => m.PlaceholderComponent)
       },
       {
         path: 'reports',
-        loadComponent: () => import('./pages/briefing.component').then(m => m.BriefingComponent)
-      },
-      {
-        path: 'voice',
-        loadComponent: () => import('./pages/briefing.component').then(m => m.BriefingComponent)
+        loadComponent: () => import('./pages/placeholder.component').then(m => m.PlaceholderComponent)
       },
       {
         path: 'settings',
-        loadComponent: () => import('./pages/briefing.component').then(m => m.BriefingComponent)
+        loadComponent: () => import('./pages/placeholder.component').then(m => m.PlaceholderComponent)
       }
     ]
   }

@@ -118,7 +118,6 @@ export class SidebarComponent {
     { name: 'My Agent Team', path: '/dashboard/agents', icon: 'bot' },
     { name: 'Knowledge Base', path: '/dashboard/knowledge', icon: 'book-open' },
     { name: 'Analyst Reports', path: '/dashboard/reports', icon: 'bar-chart-2' },
-    { name: 'Voice Calls', path: '/dashboard/voice', icon: 'phone-call' },
     { name: 'Settings', path: '/dashboard/settings', icon: 'settings' }
   ];
 

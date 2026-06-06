@@ -1,707 +1,1797 @@
-# PRD Lean — FLAE Agent
+# PRD: Company Memory AI
 
-## 1. Tóm tắt sản phẩm
+## 1. Tổng quan sản phẩm
 
-**FLAE Agent** là nền tảng AI Workforce dành cho SMB tại Việt Nam, giúp doanh nghiệp vận hành chăm sóc khách hàng, phân tích dữ liệu và xử lý tương tác đa kênh bằng một đội ngũ agent có kiểm soát.
+### Tên tạm thời
 
-Thay vì bắt chủ doanh nghiệp dùng nhiều dashboard và phần mềm rời rạc, FLAE gom các tác vụ vận hành hằng ngày vào một trải nghiệm hội thoại: đọc báo cáo, xử lý inbox, nhận cảnh báo, duyệt hành động AI và theo dõi khách hàng.
+**FLAE**
+Tên thay thế: CompanyBrain, TeamMind, MemoGraph, Atlas AI.
 
-**Định vị:**
-FLAE là “đội ngũ nhân viên AI có kiểm soát” cho SMB Việt Nam: dễ dùng như chat, nhưng có memory, approval, audit log và human takeover.
+### Mô tả ngắn
 
----
+FLAE là một nền tảng **AI company memory** giúp startup và team kỹ thuật kết nối dữ liệu từ Slack, Notion, Google Drive, GitHub, Linear/Jira và Gmail để xây dựng một **living knowledge graph** về dự án, con người, quyết định, tài liệu, khách hàng, codebase và rủi ro.
 
-## 2. Người dùng mục tiêu
-
-### Nhóm chính
-
-* Chủ shop online.
-* Chủ doanh nghiệp nhỏ.
-* Quản lý bán hàng/vận hành.
-* Đội chăm sóc khách hàng nhỏ từ 1–10 người.
-
-### Ngành ưu tiên ban đầu
-
-* Shop thương mại điện tử.
-* Local brand.
-* Spa/phòng khám nhỏ.
-* Trung tâm đào tạo nhỏ.
-* F&B quy mô nhỏ.
-* Doanh nghiệp bán hàng qua Facebook, Zalo, website và hotline.
+Người dùng có thể hỏi AI về tình trạng dự án, quyết định gần đây, nguyên nhân chậm tiến độ, thay đổi trong code, tài liệu lỗi thời, hoặc tạo các agent tự động như weekly digest, stale-doc detector, project risk monitor.
 
 ---
 
-## 3. Vấn đề cần giải quyết
+## 2. Vấn đề cần giải quyết
 
-SMB tại Việt Nam thường gặp 5 vấn đề chính:
+Các công ty hiện đại dùng quá nhiều công cụ:
 
-1. **Tin nhắn phân tán nhiều kênh**: Facebook, Zalo, website, hotline khiến phản hồi dễ sót và thiếu nhất quán.
-2. **Thiếu nhân sự vận hành**: chủ doanh nghiệp phải kiêm bán hàng, CSKH, phân tích và marketing.
-3. **Dữ liệu rời rạc**: đơn hàng, khách hàng, chat, cuộc gọi và báo cáo không nằm chung một nơi.
-4. **Dashboard khó hành động**: nhiều số liệu nhưng không trả lời rõ “hôm nay cần làm gì?”.
-5. **AI thiếu kiểm soát**: chatbot dễ trả lời sai, bịa thông tin hoặc vượt quyền nếu không có guardrails.
+```text
+Slack
+Notion
+Google Drive
+GitHub
+Linear/Jira
+Gmail
+HubSpot
+Figma
+```
 
----
+Thông tin bị phân mảnh:
 
-## 4. Nguyên tắc sản phẩm
+* Quyết định nằm trong Slack.
+* Tài liệu nằm trong Notion.
+* Code nằm trong GitHub.
+* Ticket nằm trong Linear/Jira.
+* Khách hàng phản hồi qua email hoặc CRM.
+* Tài liệu thường không cập nhật theo code.
+* Người mới join team mất nhiều thời gian để hiểu context.
+* AI coding agents thiếu business context và thường dựa vào thông tin cũ.
 
-* **Conversational-first:** người dùng giao việc cho AI như giao việc cho nhân viên.
-* **Human-in-control:** hành động nhạy cảm cần duyệt, sửa hoặc takeover.
-* **Memory-first:** agent hiểu doanh nghiệp, sản phẩm, chính sách, khách hàng và lịch sử tương tác.
-* **Realtime-first:** inbox, briefing, approval và agent state cập nhật theo thời gian thực.
-* **Reliability-first:** agent phải có quyền hạn rõ ràng, log, eval và cơ chế học từ lỗi.
+### Pain points chính
 
----
-
-## 5. Phạm vi MVP
-
-### In scope
-
-1. **Authentication & Workspace Setup**
-
-   * Đăng nhập.
-   * Tạo workspace doanh nghiệp.
-   * Nhập thông tin cơ bản về ngành hàng, sản phẩm/dịch vụ.
-
-2. **Knowledge Base / Trí nhớ doanh nghiệp**
-
-   * Upload tài liệu.
-   * Thêm FAQ, chính sách, link sản phẩm.
-   * Agent truy xuất tri thức để trả lời và phân tích.
-
-3. **My Agent Team**
-
-   * Quản lý 3 agent MVP: Chat Agent, Analyst Agent, Voice Agent.
-   * Bật/tắt agent.
-   * Xem trạng thái, vai trò và quyền hạn cơ bản.
-
-4. **Omnichannel Inbox**
-
-   * Hợp nhất hội thoại từ Website Chat, Facebook Messenger và Zalo OA.
-   * Xem/gửi tin nhắn.
-   * AI draft reply.
-   * Auto-reply cho tình huống an toàn.
-   * Human takeover.
-
-5. **Business Data Integrations**
-
-   * Tích hợp với nền tảng quản lý bán hàng để lấy dữ liệu doanh thu, đơn hàng, sản phẩm, tồn kho và khách hàng.
-   * MVP bắt buộc hỗ trợ trước Haravan và KiotViet.
-   * Giai đoạn đầu ưu tiên quyền đọc dữ liệu, tạo báo cáo, cảnh báo và đề xuất hành động.
-   * Chưa cho agent tự ghi ngược dữ liệu quan trọng nếu chưa có approval rõ ràng.
-
-6. **Flae Agent tổng**
-
-   * Là agent giao tiếp chính với chủ doanh nghiệp.
-   * Có thể trả lời câu hỏi về doanh số, đơn hàng, sản phẩm, tồn kho, khách hàng thông qua tools được cấp quyền.
-   * Có thể điều phối các agent chuyên môn để thực hiện yêu cầu phức tạp, ví dụ tạo chiến dịch khảo sát bằng voice.
-
-7. **Morning Briefing**
-
-   * Feed báo cáo buổi sáng.
-   * Tóm tắt doanh thu, khách hàng, hội thoại cần xử lý, cảnh báo bất thường.
-
-8. **Voice Agent MVP**
-
-   * Nhận transcript cuộc gọi.
-   * Tóm tắt nội dung.
-   * Trích xuất intent, thông tin khách hàng và follow-up task.
-   * Hỗ trợ tạo và chuẩn bị chiến dịch khảo sát bằng voice khi được Flae Agent điều phối.
-
-9. **Agent Reliability Harness**
-
-   * Agent Contract.
-   * Tool guardrails.
-   * Approval queue.
-   * Audit log.
-   * Evals nội bộ cơ bản.
-
-### Out of scope
-
-* Growth Hub đầy đủ.
-* Growth Agent tự chạy chiến dịch marketing.
-* Tự động chạy ads.
-* Workflow automation phức tạp kiểu Zapier.
-* Tích hợp sâu nhiều sàn thương mại điện tử.
-* Multi-branch enterprise management.
-* AI tự ra quyết định tài chính/khuyến mãi mà không cần duyệt.
+1. **Không biết source of truth nằm ở đâu.**
+2. **AI trả lời sai vì tài liệu lỗi thời.**
+3. **Code thay đổi nhưng docs không đổi.**
+4. **Các quyết định quan trọng bị trôi trong Slack.**
+5. **Founder/PM/Engineer phải tự tổng hợp thông tin thủ công.**
+6. **Coding agents không hiểu business decisions phía sau code.**
 
 ---
 
-## 6. Agent trong MVP
+## 3. Mục tiêu sản phẩm
 
-| Agent         | Vai trò                                   | Phạm vi MVP                                                                                            |
-| ------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| Flae Agent    | Agent tổng giao tiếp với chủ doanh nghiệp | Nhận yêu cầu, trả lời câu hỏi kinh doanh, gọi tool dữ liệu, điều phối Chat/Analyst/Voice Agent khi cần |
-| Chat Agent    | Chăm sóc khách hàng đa kênh               | Draft reply, auto-reply an toàn, phân loại intent, chuyển người khi cần                                |
-| Analyst Agent | Phân tích số liệu và tạo báo cáo          | Daily briefing, cảnh báo bất thường, trả lời câu hỏi phân tích cơ bản                                  |
-| Voice Agent   | Xử lý tương tác giọng nói                 | Tóm tắt transcript, trích xuất intent, tạo follow-up task, hỗ trợ tạo chiến dịch khảo sát bằng voice   |
-| Growth Agent  | Tăng trưởng/marketing                     | Post-MVP                                                                                               |
+### Mục tiêu chính
 
----
+Xây dựng một hệ thống AI có khả năng:
 
-## 7. Tính năng chính
+* Kết nối dữ liệu công ty.
+* Cập nhật dữ liệu gần realtime bằng ingestion pipeline.
+* Tạo knowledge graph về người, dự án, tài liệu, code, quyết định và khách hàng.
+* Cho phép hỏi đáp có citation.
+* Phát hiện tài liệu lỗi thời so với code.
+* Tự động tạo digest, cảnh báo và báo cáo theo lịch.
 
-## 7.1 Morning Briefing
+### Không phải mục tiêu ở MVP
 
-**Mục tiêu:** giúp chủ doanh nghiệp biết ngay hôm nay cần tập trung vào việc gì.
+Trong MVP, sản phẩm **không** cần:
 
-**Nội dung MVP:**
-
-* Doanh thu hôm qua/hôm nay.
-* Số khách mới.
-* Hội thoại chưa xử lý.
-* Khách cần phản hồi gấp.
-* Cảnh báo bất thường.
-* Gợi ý hành động trong ngày.
-
-**Acceptance criteria:**
-
-* Người dùng thấy briefing feed sau khi đăng nhập.
-* Mỗi item có tiêu đề, nội dung ngắn, agent gửi, thời gian và CTA.
-* CTA điều hướng sang inbox, báo cáo hoặc approval queue.
-* Feed cập nhật realtime.
+* Clone toàn bộ Pensieve.
+* Hỗ trợ tất cả connector ngay từ đầu.
+* Xây graph visualization quá phức tạp.
+* Fine-tune model riêng.
+* Làm autonomous agent có quyền tự sửa code/tài liệu.
+* Hỗ trợ enterprise permission model quá sâu ngay từ v0.
 
 ---
 
-## 7.2 Omnichannel Inbox
+## 4. Đối tượng người dùng
 
-**Kênh MVP:**
+### Persona 1: Founder / CEO
 
-| Kênh               | Ưu tiên | Ghi chú                                       |
-| ------------------ | ------: | --------------------------------------------- |
-| Website Chat       |      P0 | Widget do FLAE kiểm soát, dễ triển khai trước |
-| Facebook Messenger |      P0 | Kênh phổ biến với shop online Việt Nam        |
-| Zalo OA            |      P0 | Kênh quan trọng cho SMB Việt Nam              |
+**Nhu cầu:**
 
-**Chức năng MVP:**
+* Biết công ty đang làm gì.
+* Biết dự án nào đang bị block.
+* Biết tuần này có quyết định quan trọng gì.
+* Biết khách hàng đang phàn nàn điều gì.
+* Không muốn đọc từng Slack thread, Notion doc, GitHub PR.
 
-* Xem danh sách hội thoại realtime.
-* Xem và gửi tin nhắn.
-* AI tạo draft reply.
-* Approve/edit/reject draft.
-* Auto-reply cho FAQ an toàn.
-* Human takeover.
-* Gắn trạng thái: new, open, waiting, resolved.
-* Gắn intent: hỏi giá, tư vấn, đổi trả, khiếu nại, đặt lịch, khác.
+**Câu hỏi mẫu:**
 
-**AI response mode:**
-
-| Mode            | Mô tả                            | Dùng khi                                         |
-| --------------- | -------------------------------- | ------------------------------------------------ |
-| Draft only      | AI chỉ soạn nháp                 | Giai đoạn đầu hoặc nội dung nhạy cảm             |
-| Auto-reply safe | AI tự trả lời khi confidence cao | FAQ, chính sách rõ ràng                          |
-| Human takeover  | Người thật tiếp quản             | Khiếu nại, hoàn tiền, giá đặc biệt, lỗi hệ thống |
+```text
+Tuần này team product có quyết định gì quan trọng?
+Dự án mobile launch đang bị block bởi gì?
+Khách hàng enterprise gần đây phàn nàn điều gì?
+```
 
 ---
 
-## 7.3 Knowledge Base
+### Persona 2: Product Manager
 
-**Mục tiêu:** giúp agent trả lời dựa trên dữ liệu thật của doanh nghiệp thay vì suy đoán.
+**Nhu cầu:**
 
-**Input MVP:**
+* Theo dõi roadmap.
+* Tóm tắt feedback khách hàng.
+* Biết feature nào bị delay.
+* So sánh docs, tickets và code.
+* Tạo weekly update cho stakeholders.
 
-* PDF, DOCX, TXT, CSV.
-* Link sản phẩm/chính sách.
-* FAQ thủ công.
-* Chính sách đổi trả, bảo hành, thanh toán, giao hàng.
+**Câu hỏi mẫu:**
 
-**Yêu cầu:**
-
-* Agent ưu tiên thông tin từ Knowledge Base của workspace.
-* Nếu không có thông tin chắc chắn, agent không được bịa.
-* Câu trả lời nhạy cảm nên có nguồn nội bộ.
-* Người dùng xem được trạng thái tài liệu: pending, processing, ready, failed.
-
----
-
-## 7.4 Business Data Integrations
-
-**Mục tiêu:** kết nối FLAE với các nền tảng quản lý bán hàng/POS để agent có dữ liệu vận hành thật, từ đó trả lời câu hỏi, tạo báo cáo, phát hiện vấn đề và đề xuất hành động.
-
-**Nền tảng MVP:**
-
-| Nền tảng | Ưu tiên | Dữ liệu cần lấy                                    |
-| -------- | ------: | -------------------------------------------------- |
-| Haravan  |      P0 | Doanh thu, đơn hàng, sản phẩm, tồn kho, khách hàng |
-| KiotViet |      P0 | Doanh thu, đơn hàng, sản phẩm, tồn kho, khách hàng |
-
-**Loại dữ liệu cần đồng bộ:**
-
-* Doanh thu.
-* Đơn hàng.
-* Sản phẩm.
-* Tồn kho.
-* Khách hàng.
-
-**Quyền agent trong MVP:**
-
-* Đọc dữ liệu từ nền tảng tích hợp.
-* Trả lời câu hỏi của chủ doanh nghiệp.
-* Tạo báo cáo và cảnh báo.
-* Đề xuất hành động tiếp theo.
-* Không tự động ghi ngược dữ liệu quan trọng nếu chưa có approval/harness rõ ràng.
-
-**Ví dụ câu hỏi:**
-
-* “Hôm nay doanh thu bao nhiêu?”
-* “Đơn hàng nào chưa giao?”
-* “Sản phẩm nào bán chạy nhất tuần này?”
-* “Khách hàng nào mua nhiều nhất?”
-* “Tồn kho sản phẩm A còn bao nhiêu?”
-* “Vì sao doanh thu hôm qua giảm?”
-
-**Acceptance criteria:**
-
-* Người dùng có thể kết nối Haravan hoặc KiotViet trong workspace.
-* Hệ thống hiển thị trạng thái kết nối: active, needs_auth, error, paused.
-* Flae Agent có thể gọi tool đọc dữ liệu để trả lời câu hỏi kinh doanh.
-* Analyst Agent có thể dùng dữ liệu tích hợp để tạo briefing và báo cáo.
-* Mỗi lần agent truy xuất dữ liệu phải được ghi log để audit.
+```text
+Feature billing hiện đang ở trạng thái nào?
+Có quyết định nào gần đây ảnh hưởng đến roadmap Q3 không?
+Docs API billing có còn đúng với code hiện tại không?
+```
 
 ---
 
-## 7.5 Flae Agent tổng
+### Persona 3: Engineer / Tech Lead
 
-**Mục tiêu:** Flae Agent là đầu mối giao tiếp chính giữa chủ doanh nghiệp và toàn bộ hệ thống agent.
+**Nhu cầu:**
 
-Người dùng không cần biết nên hỏi Chat Agent, Analyst Agent hay Voice Agent. Họ chỉ cần nói với Flae Agent, còn Flae sẽ tự hiểu ý định, gọi tool phù hợp hoặc điều phối agent chuyên môn.
+* Hiểu vì sao code được viết như vậy.
+* Tìm các quyết định liên quan đến một module.
+* Biết docs nào bị stale sau khi code thay đổi.
+* Cho AI coding agent thêm context chính xác.
 
-**Nhiệm vụ MVP:**
+**Câu hỏi mẫu:**
 
-* Trả lời câu hỏi về doanh số, đơn hàng, tồn kho, sản phẩm và khách hàng.
-* Gọi data tools từ Haravan/KiotViet.
-* Tạo báo cáo nhanh theo yêu cầu.
-* Tạo cảnh báo hoặc insight cho Morning Briefing.
-* Điều phối Chat Agent, Analyst Agent và Voice Agent khi yêu cầu liên quan đến nhiều bước.
-
-**Ví dụ yêu cầu:**
-
-* “Hôm nay tình hình kinh doanh sao rồi?”
-* “Có đơn nào chưa giao không?”
-* “Sản phẩm nào đang sắp hết hàng?”
-* “Tạo cho tôi một chiến dịch khảo sát bằng voice.”
-
-**Ví dụ luồng điều phối chiến dịch khảo sát bằng voice:**
-
-1. Chủ shop yêu cầu Flae Agent tạo chiến dịch khảo sát bằng voice.
-2. Flae Agent hỏi hoặc suy ra mục tiêu khảo sát, nhóm khách hàng và nội dung cần hỏi.
-3. Flae Agent gọi Analyst Agent để chọn nhóm khách hàng phù hợp từ dữ liệu đơn hàng/khách hàng.
-4. Flae Agent gọi Voice Agent để tạo kịch bản cuộc gọi và cấu hình chiến dịch.
-5. Nếu chiến dịch có tác động ra ngoài, hệ thống tạo approval request.
-6. Chủ shop approve/edit/reject trước khi chiến dịch được kích hoạt.
-
-**Yêu cầu reliability:**
-
-* Flae Agent phải phân biệt rõ câu trả lời dựa trên dữ liệu thật và nhận định/gợi ý.
-* Các hành động tác động ra ngoài như gọi khách, gửi khảo sát, gửi tin hàng loạt phải cần approval.
-* Flae Agent không được tự thay đổi dữ liệu đơn hàng, tồn kho, khách hàng nếu chưa được cấp quyền rõ ràng.
+```text
+Vì sao endpoint /api/users được đổi từ name sang firstName/lastName?
+PR nào thay đổi logic billing gần đây?
+Tài liệu nào cần cập nhật sau commit mới nhất?
+```
 
 ---
 
-## 7.6 Analyst Agent
+### Persona 4: New Joiner
 
-**Nhiệm vụ MVP:**
+**Nhu cầu:**
 
-* Tạo báo cáo ngày/tuần.
-* Phát hiện hội thoại quá hạn xử lý.
-* Cảnh báo doanh thu hoặc lượng hội thoại bất thường.
-* Trả lời câu hỏi phân tích bằng ngôn ngữ tự nhiên.
-* Tạo item cho Morning Briefing.
+* Onboarding nhanh.
+* Hiểu dự án, người phụ trách, tài liệu quan trọng.
+* Hỏi AI thay vì hỏi đồng nghiệp liên tục.
 
-**Yêu cầu:**
+**Câu hỏi mẫu:**
 
-* Báo cáo phải nêu rõ khoảng thời gian dữ liệu.
-* Phân biệt số liệu thực tế và nhận định/gợi ý.
-* Không suy diễn nếu thiếu dữ liệu.
-* Báo cáo quan trọng phải lưu lại để audit.
-
----
-
-## 7.7 Voice Agent
-
-**Phạm vi MVP:**
-
-* Lưu transcript cuộc gọi.
-* Tóm tắt nội dung.
-* Trích xuất intent.
-* Trích xuất thông tin khách hàng.
-* Tạo follow-up task.
-* Đánh dấu transcript confidence thấp.
-
-**Post-MVP:**
-
-* Nhận cuộc gọi inbound tự động.
-* Gọi outbound theo kịch bản.
-* Voice bot xử lý FAQ.
-* Live handoff cho người thật.
+```text
+Cho tôi tổng quan về dự án mobile app.
+Ai đang phụ trách billing system?
+Các quyết định quan trọng trong 3 tháng qua là gì?
+```
 
 ---
 
-## 7.8 Agent Reliability Harness
+## 5. Value proposition
 
-**Mục tiêu:** đảm bảo agent hoạt động đúng quyền hạn, có kiểm soát và có thể kiểm tra lại.
+FLAE giúp team có một **bộ nhớ công ty sống**, luôn cập nhật theo dữ liệu thực tế.
 
-**Thành phần MVP:**
+### Giá trị cốt lõi
 
-1. **Agent Contract**
+```text
+Từ dữ liệu rời rạc
+-> thành knowledge graph
+-> thành AI context chính xác
+-> thành agents tự động
+```
 
-   * Vai trò agent.
-   * Tool được phép dùng.
-   * Hành động cần duyệt.
-   * Tình huống phải chuyển người.
-   * Output schema bắt buộc.
+### Khác biệt so với RAG thông thường
 
-2. **Tool Guardrails**
+RAG thông thường chỉ search text. FLAE cần hiểu:
 
-   * Kiểm tra quyền agent.
-   * Validate input/output.
-   * Chặn hành động vượt quyền.
-   * Chặn gửi thông tin nhạy cảm hoặc không có nguồn.
-
-3. **Approval Queue**
-
-   * Người dùng approve/edit/reject hành động AI.
-   * Áp dụng cho hoàn tiền, giảm giá, khiếu nại, hủy đơn, nội dung confidence thấp.
-
-4. **Audit Log & Trace**
-
-   * Lưu agent run.
-   * Lưu tool call.
-   * Lưu context/retrieval đã dùng.
-   * Lưu người duyệt và quyết định duyệt.
-
-5. **Evaluation Harness**
-
-   * Test case cho Chat Agent.
-   * Test case cho Analyst Agent.
-   * Test case cho Voice Agent summary.
-   * Replay các hội thoại lỗi.
+* Ai nói?
+* Nói lúc nào?
+* Nguồn nào đáng tin hơn?
+* Code đã đổi chưa?
+* Tài liệu có lỗi thời không?
+* Quyết định nào mới nhất?
+* Entity nào liên quan entity nào?
 
 ---
 
-## 8. Luồng người dùng chính
+# 6. Scope MVP
 
-## 8.1 Onboarding
+## 6.1 MVP phải có
 
-1. Người dùng đăng ký/đăng nhập.
-2. Tạo workspace.
-3. Nhập thông tin doanh nghiệp.
-4. Upload tài liệu hoặc thêm FAQ.
-5. Bật Chat Agent, Analyst Agent, Voice Agent.
-6. Kết nối Website Chat, Facebook Messenger và Zalo OA.
-7. Kết nối Haravan hoặc KiotViet để lấy dữ liệu kinh doanh.
-8. Hệ thống tạo Morning Briefing mẫu.
+### Connectors
 
-## 8.2 Xử lý tin nhắn khách hàng
+P0:
 
-1. Khách gửi tin qua Website Chat, Facebook Messenger hoặc Zalo OA.
-2. Tin nhắn được lưu vào Firestore.
-3. Inbox cập nhật realtime.
-4. Chat Agent phân loại intent và truy xuất Knowledge Base.
-5. Harness kiểm tra confidence, nguồn và quyền hạn.
-6. Nếu an toàn: AI tạo draft hoặc auto-reply.
-7. Nếu nhạy cảm: tạo approval request.
-8. Người dùng approve/edit/reject.
-9. Hệ thống gửi tin và lưu audit log.
+* Google Drive
+* Notion
+* Slack
+* GitHub
 
-## 8.3 Hỏi đáp dữ liệu kinh doanh
+P1:
 
-1. Chủ doanh nghiệp hỏi Flae Agent về doanh thu, đơn hàng, tồn kho, sản phẩm hoặc khách hàng.
-2. Flae Agent xác định intent và nguồn dữ liệu cần dùng.
-3. Flae Agent gọi tool đọc dữ liệu từ Haravan/KiotViet hoặc dữ liệu đã đồng bộ.
-4. Analyst Agent hỗ trợ phân tích nếu câu hỏi cần so sánh, tìm nguyên nhân hoặc tạo insight.
-5. Flae Agent trả lời bằng ngôn ngữ tự nhiên, nêu rõ khoảng thời gian và nguồn dữ liệu.
-6. Nếu có đề xuất hành động, hệ thống phân biệt rõ giữa số liệu thực tế và gợi ý.
+* Linear hoặc Jira
+* Gmail
+* HubSpot
 
-## 8.4 Tạo chiến dịch khảo sát bằng voice
+P2:
 
-1. Chủ shop nói: “Tạo cho tôi một chiến dịch khảo sát bằng voice.”
-2. Flae Agent xác định mục tiêu chiến dịch, nhóm khách hàng và nội dung cần khảo sát.
-3. Nếu thiếu thông tin quan trọng, Flae Agent hỏi bổ sung.
-4. Analyst Agent chọn hoặc đề xuất segment khách hàng từ dữ liệu tích hợp.
-5. Voice Agent tạo kịch bản gọi và nội dung khảo sát.
-6. Hệ thống tạo approval request trước khi kích hoạt chiến dịch.
-7. Sau khi được duyệt, chiến dịch mới được thực hiện hoặc chuyển sang trạng thái sẵn sàng chạy.
-
-## 8.5 Morning Briefing
-
-1. Scheduled job tổng hợp dữ liệu.
-2. Analyst Agent phân tích.
-3. Harness kiểm tra output schema.
-4. Item được lưu vào `briefing_items`.
-5. Frontend hiển thị trong feed realtime.
-
-## 8.6 Voice call summary
-
-1. Transcript được import hoặc ghi nhận.
-2. Voice Agent tóm tắt.
-3. Trích xuất intent, thông tin khách hàng và việc cần làm.
-4. Nếu transcript không rõ, đánh dấu cần kiểm tra.
-5. Lưu summary vào customer profile/conversation.
+* Figma
+* Confluence
+* Salesforce
+* Zendesk
+* Zalo OA / Telegram
 
 ---
 
-## 9. Yêu cầu chức năng MVP
+### Core features
 
-| Nhóm        | Requirement                                                | Priority |
-| ----------- | ---------------------------------------------------------- | -------: |
-| Auth        | Đăng nhập bằng Firebase Auth                               |       P0 |
-| Workspace   | Tạo workspace và tenant isolation                          |       P0 |
-| Workspace   | Role cơ bản: owner, admin, member                          |       P1 |
-| KB          | Upload tài liệu và lưu metadata                            |       P0 |
-| KB          | Background job xử lý tài liệu                              |       P0 |
-| KB          | Agent retrieval từ KB                                      |       P0 |
-| Inbox       | Realtime conversation list                                 |       P0 |
-| Inbox       | Gửi tin nhắn thủ công                                      |       P0 |
-| Inbox       | AI draft reply                                             |       P0 |
-| Inbox       | Approve/edit/reject draft                                  |       P0 |
-| Inbox       | Human takeover                                             |       P0 |
-| Inbox       | Website Chat connector                                     |       P0 |
-| Inbox       | Facebook Messenger connector                               |       P0 |
-| Inbox       | Zalo OA connector                                          |       P0 |
-| Integration | Haravan connector                                          |       P0 |
-| Integration | KiotViet connector                                         |       P0 |
-| Integration | Đồng bộ doanh thu, đơn hàng, sản phẩm, tồn kho, khách hàng |       P0 |
-| Integration | Theo dõi trạng thái kết nối                                |       P0 |
-| Flae Agent  | Hỏi đáp dữ liệu kinh doanh qua tools                       |       P0 |
-| Flae Agent  | Điều phối agent chuyên môn theo yêu cầu chủ shop           |       P0 |
-| Flae Agent  | Tạo approval request cho hành động tác động ra ngoài       |       P0 |
-| Analyst     | Daily briefing                                             |       P0 |
-| Analyst     | Phát hiện hội thoại quá hạn                                |       P0 |
-| Analyst     | Phân biệt fact và insight                                  |       P0 |
-| Voice       | Lưu transcript                                             |       P0 |
-| Voice       | Tóm tắt transcript                                         |       P0 |
-| Voice       | Trích xuất intent/follow-up                                |       P0 |
-| Voice       | Chuẩn bị chiến dịch khảo sát bằng voice                    |       P1 |
-| Harness     | Agent Contract                                             |       P0 |
-| Harness     | Tool call log                                              |       P0 |
-| Harness     | Guardrails cho side-effect tools                           |       P0 |
-| Harness     | Approval queue                                             |       P0 |
-| Harness     | Agent run trace                                            |       P0 |
-| Harness     | Evals cơ bản                                               |       P1 |
+P0:
+
+1. Workspace / organization management.
+2. User authentication.
+3. Connect data sources.
+4. Initial data sync.
+5. Incremental ingestion.
+6. Document chunking + embedding.
+7. Entity extraction.
+8. Basic knowledge graph.
+9. AI chat with citations.
+10. GitHub code index.
+11. Stale-doc detection.
+12. Weekly digest agent.
+
+P1:
+
+1. Graph explorer UI.
+2. Project page.
+3. Person page.
+4. Decision log.
+5. Project risk monitor.
+6. Slack notification.
+7. Permission-aware search.
+
+P2:
+
+1. Multi-agent workflow.
+2. Auto-generated documentation PR.
+3. CRM intelligence.
+4. Custom agent builder.
+5. Advanced graph analytics.
 
 ---
 
-## 10. Security & permissions
+# 7. User stories
 
-### Tenant isolation
+## 7.1 Connect data source
 
-* Mọi dữ liệu nằm trong tenant namespace hoặc có `tenant_id`.
-* Firestore Security Rules giới hạn user chỉ đọc/ghi workspace của mình.
-* Backend mutation verify JWT và role trước khi ghi dữ liệu.
+### User story
 
-### Role cơ bản
+Là admin, tôi muốn kết nối Slack, Notion, Google Drive và GitHub để FLAE có thể đọc dữ liệu công ty.
 
-| Role   | Quyền                                                       |
-| ------ | ----------------------------------------------------------- |
-| Owner  | Toàn quyền workspace, billing, integrations, agent settings |
-| Admin  | Quản lý agent, inbox, KB, approvals                         |
-| Member | Xử lý inbox, xem briefing, gửi phản hồi                     |
-| Viewer | Chỉ xem báo cáo và briefing                                 |
+### Acceptance criteria
 
-### AI permissions
+* User có thể chọn source cần kết nối.
+* App mở OAuth flow.
+* Sau khi OAuth thành công, source hiển thị trạng thái `Connected`.
+* App bắt đầu initial sync.
+* User nhìn thấy trạng thái sync:
 
-Agent không có toàn quyền như user. Mỗi agent bị giới hạn bởi Agent Contract.
+```text
+Pending
+Syncing
+Completed
+Failed
+```
+
+* User có thể disconnect source.
+* Khi disconnect, dữ liệu source đó có thể bị giữ lại hoặc xóa tùy setting.
+
+---
+
+## 7.2 Initial ingestion
+
+### User story
+
+Là admin, tôi muốn hệ thống sync dữ liệu cũ lần đầu để có thể hỏi AI ngay sau khi kết nối.
+
+### Acceptance criteria
+
+* Hệ thống fetch dữ liệu theo batch.
+* Có retry nếu API lỗi.
+* Có rate limit handling.
+* Có progress tracking.
+* Dữ liệu được lưu vào `source_objects`.
+* Nội dung được extract, chunk, embed.
+* Metadata source được lưu đầy đủ.
+* Không tạo duplicate khi sync lại.
+
+---
+
+## 7.3 Incremental ingestion
+
+### User story
+
+Là user, tôi muốn dữ liệu mới từ Slack, Notion, GitHub, Drive được cập nhật gần realtime.
+
+### Acceptance criteria
+
+* Hệ thống nhận webhook từ source nếu source hỗ trợ.
+* Với source không hỗ trợ webhook ổn định, hệ thống dùng polling định kỳ.
+* Mỗi event được lưu vào `ingestion_events`.
+* Event có `dedupe_key` để tránh xử lý trùng.
+* Chỉ object bị thay đổi mới được fetch lại.
+* Nếu content hash không đổi, bỏ qua processing.
+* Nếu content hash đổi, chỉ reprocess phần bị ảnh hưởng.
+* Knowledge graph được cập nhật theo affected entities.
+
+---
+
+## 7.4 Ask company memory
+
+### User story
+
+Là user, tôi muốn hỏi AI về thông tin công ty và nhận câu trả lời có citation.
+
+### Câu hỏi mẫu
+
+```text
+Dự án mobile app đang bị block bởi gì?
+Ai quyết định delay launch sang Q3?
+Docs billing API có còn đúng không?
+Tuần này khách hàng nói gì về onboarding?
+```
+
+### Acceptance criteria
+
+* AI trả lời bằng ngữ cảnh từ connected sources.
+* Mỗi claim quan trọng có citation.
+* Citation trỏ về source gốc: Slack thread, Notion page, Drive doc, GitHub PR.
+* Nếu thông tin mâu thuẫn, AI phải nói rõ.
+* Nếu không đủ dữ liệu, AI phải nói không chắc.
+* AI không được bịa source.
+
+---
+
+## 7.5 Knowledge graph
+
+### User story
+
+Là user, tôi muốn hệ thống hiểu quan hệ giữa người, dự án, quyết định, tài liệu, code và khách hàng.
+
+### Node types P0
+
+```text
+Person
+Project
+Document
+Decision
+Repository
+File
+Function
+APIEndpoint
+PullRequest
+Commit
+Customer
+Issue
+Risk
+```
+
+### Relationship types P0
+
+```text
+Person -> works_on -> Project
+Person -> authored -> Document
+Person -> made -> Decision
+Document -> mentions -> Project
+Document -> documents -> APIEndpoint
+APIEndpoint -> implemented_by -> Function
+Function -> located_in -> File
+PullRequest -> changed -> File
+PullRequest -> changed -> Function
+Commit -> modified -> File
+Decision -> affects -> Project
+Customer -> reported -> Issue
+Project -> blocked_by -> Risk
+```
+
+### Acceptance criteria
+
+* Hệ thống extract entities từ document/message/code.
+* Hệ thống tạo relationship có evidence.
+* Mỗi relationship phải có source.
+* Mỗi fact có confidence score.
+* Có timestamp để phân biệt thông tin cũ/mới.
+* Graph có thể được query để tìm context liên quan.
+
+---
+
+## 7.6 Code ingestion
+
+### User story
+
+Là engineer, tôi muốn FLAE hiểu codebase để AI không chỉ dựa vào tài liệu cũ.
+
+### Requirements
+
+Hệ thống cần ingest GitHub:
+
+```text
+Repositories
+Branches
+Commits
+Pull requests
+Changed files
+Diffs
+README
+Code files
+Issues
+Release notes
+```
+
+### Với code files
+
+P0 hỗ trợ:
+
+```text
+TypeScript
+JavaScript
+Python
+Markdown
+JSON
+YAML
+SQL
+```
+
+P1 hỗ trợ:
+
+```text
+Go
+Java
+Rust
+Ruby
+PHP
+```
+
+### Code intelligence P0
+
+Hệ thống cần extract:
+
+```text
+File path
+Function name
+Class name
+API endpoint
+Database table
+Environment variable
+Import/dependency
+Changed lines
+```
+
+### Acceptance criteria
+
+* Khi có GitHub push event, hệ thống nhận event.
+* Hệ thống fetch changed files.
+* Hệ thống parse symbol bị ảnh hưởng.
+* Hệ thống update code graph.
+* Hệ thống mark related docs là `possibly_stale` nếu docs liên quan đến code vừa đổi.
+
+---
+
+## 7.7 Stale documentation detection
+
+### User story
+
+Là engineer hoặc PM, tôi muốn biết tài liệu nào đã lỗi thời so với code mới nhất.
+
+### Ví dụ
+
+Code mới:
+
+```text
+POST /api/users now requires:
+- firstName
+- lastName
+```
+
+Docs cũ:
+
+```text
+POST /api/users requires:
+- name
+```
+
+Hệ thống cần cảnh báo:
+
+```text
+API docs for POST /api/users may be stale.
+Code now requires firstName and lastName, but docs still mention name.
+```
+
+### Flow
+
+```text
+GitHub push event
+-> detect changed endpoint/function
+-> find related docs
+-> compare docs vs code
+-> create stale-doc finding
+-> notify relevant users
+```
+
+### Stale status
+
+```text
+fresh
+possibly_stale
+stale
+ignored
+resolved
+```
+
+### Acceptance criteria
+
+* Hệ thống tìm được docs liên quan đến changed code symbol.
+* Hệ thống chạy comparison agent.
+* Hệ thống tạo finding có reason.
+* Finding có source code citation và doc citation.
+* User có thể mark finding là resolved hoặc ignored.
+* Khi docs được update, hệ thống re-check finding.
+
+---
+
+## 7.8 Weekly digest agent
+
+### User story
+
+Là founder hoặc PM, tôi muốn nhận weekly digest tự động về những thay đổi quan trọng trong công ty.
+
+### Digest nên bao gồm
+
+```text
+Key decisions
+Project updates
+New risks
+Blocked work
+Customer feedback
+Important PRs
+Docs that became stale
+People involved
+```
+
+### Acceptance criteria
+
+* User có thể bật/tắt weekly digest.
+* User chọn ngày/giờ nhận digest.
+* Digest được tạo từ dữ liệu tuần gần nhất.
+* Digest có citation.
+* Digest có thể gửi qua email hoặc Slack.
+* Digest được lưu lại trong app.
+
+---
+
+# 8. Functional requirements
+
+## 8.1 Authentication
+
+P0:
+
+* Email/password hoặc magic link.
+* Google login.
+* Organization/workspace.
+* Role cơ bản:
+
+```text
+Owner
+Admin
+Member
+Viewer
+```
+
+P1:
+
+* SSO/SAML.
+* SCIM.
+* Granular permissions.
+
+---
+
+## 8.2 Workspace
+
+Mỗi workspace có:
+
+```text
+organization_id
+name
+members
+connected_sources
+billing_plan
+settings
+```
+
+Workspace settings:
+
+```text
+Allowed sources
+Retention policy
+Default model
+Digest schedule
+Permission mode
+```
+
+---
+
+## 8.3 Data source management
+
+Mỗi source có:
+
+```text
+source_type
+connection_status
+oauth_token
+refresh_token
+last_synced_at
+sync_status
+error_message
+sync_cursor
+```
+
+Source status:
+
+```text
+connected
+syncing
+failed
+disconnected
+needs_reauth
+```
+
+---
+
+## 8.4 Ingestion pipeline
+
+Pipeline chính:
+
+```text
+External event
+-> Event inbox
+-> Sync worker
+-> Change detector
+-> Text/code extraction
+-> Chunking
+-> Embedding
+-> Entity extraction
+-> Relationship extraction
+-> Graph update
+-> Agent triggers
+```
+
+### Requirements
+
+* Idempotent processing.
+* Retry failed jobs.
+* Store raw payload.
+* Store source object metadata.
+* Detect deletions.
+* Handle rate limits.
+* Support partial reprocessing.
+* Track processing status per object.
+
+---
+
+## 8.5 Chunking
+
+### Document chunking
+
+Default:
+
+```text
+chunk_size: 800-1200 tokens
+overlap: 100-200 tokens
+```
+
+Chunk metadata:
+
+```text
+document_id
+source
+section_title
+author
+created_at
+updated_at
+url
+permission_scope
+content_hash
+```
+
+### Code chunking
+
+Code không nên chunk như text thường. Cần ưu tiên:
+
+```text
+function-level chunk
+class-level chunk
+file-level summary
+diff-level chunk
+```
+
+---
+
+## 8.6 Embeddings
+
+Mỗi chunk cần embedding để semantic search.
+
+Requirements:
+
+* Store vector in pgvector hoặc vector DB.
+* Re-embed only changed chunks.
+* Support metadata filtering.
+* Support hybrid search:
+
+```text
+keyword search + vector search + graph expansion
+```
+
+---
+
+## 8.7 Entity extraction
+
+LLM hoặc rule-based extractor cần nhận diện:
+
+```text
+Person
+Project
+Customer
+Feature
+Decision
+Risk
+APIEndpoint
+Repository
+Function
+File
+Issue
+Metric
+Date
+```
+
+Output mẫu:
+
+```json
+{
+  "entities": [
+    {
+      "name": "Mobile Launch",
+      "type": "Project",
+      "confidence": 0.91
+    },
+    {
+      "name": "Alice Nguyen",
+      "type": "Person",
+      "confidence": 0.86
+    }
+  ]
+}
+```
+
+---
+
+## 8.8 Relationship extraction
+
+Output mẫu:
+
+```json
+{
+  "relationships": [
+    {
+      "from": "Alice Nguyen",
+      "relation": "works_on",
+      "to": "Mobile Launch",
+      "confidence": 0.84,
+      "evidence": "Alice is handling the launch checklist."
+    }
+  ]
+}
+```
+
+Requirements:
+
+* Relationship phải có evidence.
+* Relationship phải liên kết tới chunk gốc.
+* Relationship có confidence.
+* Relationship có timestamp.
+
+---
+
+## 8.9 Fact versioning
+
+Mọi fact quan trọng cần có temporal metadata.
+
+```text
+fact_id
+subject
+predicate
+object/value
+source
+confidence
+valid_from
+valid_to
+created_at
+updated_at
+```
 
 Ví dụ:
 
-* Chat Agent không được xóa khách hàng.
-* Analyst Agent không được gửi tin nhắn cho khách.
-* Voice Agent không được cam kết hoàn tiền.
-* Growth Agent không được gửi broadcast nếu chưa được duyệt.
+```text
+Mobile Launch target date = Q2
+valid_from = 2026-01-01
+valid_to = 2026-03-15
+
+Mobile Launch target date = Q3
+valid_from = 2026-03-15
+valid_to = null
+```
 
 ---
 
-## 14. UI/UX MVP
+## 8.10 Conflict handling
 
-### Nguyên tắc trải nghiệm
+Khi nguồn mâu thuẫn, hệ thống cần xếp hạng độ tin cậy.
 
-* Thân thiện.
-* Rõ ràng.
-* Có kiểm soát.
-* Realtime.
-* Ít thuật ngữ kỹ thuật.
-* Tập trung vào hành động tiếp theo.
+Default source authority:
 
-### Visual direction
+```text
+1. Production code
+2. Merged PR
+3. Release notes
+4. Linear/Jira status
+5. Recent Slack decision
+6. Notion/Google Docs
+7. Old meeting notes
+```
 
-* **Primary Accent:** Vibrant Green `#10B981`.
-* **Background:** Soft Mint `#F4FBF7`.
-* **Typography:** Outfit cho heading, Plus Jakarta Sans cho body.
-* **Layout:** conversational cards, soft borders, subtle shadows.
+AI response cần nói rõ:
 
-### Màn hình MVP
-
-1. Login / Signup.
-2. Workspace onboarding.
-3. Morning Briefing feed.
-4. My Agent Team.
-5. Knowledge Base.
-6. Omnichannel Inbox.
-7. Conversation detail.
-8. Approval Queue.
-9. Analyst Reports.
-10. Voice Call Summaries.
-11. Settings / Integrations.
+```text
+Tôi tìm thấy thông tin mâu thuẫn:
+- Notion doc nói launch ở Q2.
+- Slack decision ngày 15/03 nói delay sang Q3.
+Nguồn Slack mới hơn, nên khả năng Q3 là trạng thái hiện tại.
+```
 
 ---
 
-## 15. Non-functional requirements
+# 9. Non-functional requirements
 
-### Performance
+## 9.1 Performance
 
-* Inbox realtime update dưới 1–2 giây sau khi Firestore có dữ liệu mới.
-* Background jobs không block UI.
-* AI draft reply xuất hiện đủ nhanh cho ngữ cảnh CSKH.
+P0 targets:
 
-### Reliability
+```text
+Chat response first token: < 5s
+Search retrieval: < 2s
+Webhook event accepted: < 500ms
+Small object ingestion: < 60s
+Large document ingestion: async
+```
 
-* Tool calls có side effect phải idempotent nếu có thể.
-* Agent run lỗi phải có trạng thái `failed` và error reason.
-* Không gửi tin nhắn nếu guardrail fail.
+## 9.2 Scalability
 
-### Observability
+MVP cần xử lý:
 
-* Log agent runs.
-* Log tool calls.
-* Log approval decisions.
-* Log integration errors.
-* Dashboard nội bộ cho failed jobs và failed agent runs.
+```text
+1 workspace: 10-100 users
+Documents: 10k-100k
+Slack messages: 100k-1M
+GitHub files: 10k-100k
+Chunks: 500k-5M
+```
 
-### Scalability
+## 9.3 Reliability
 
-* Firestore schema tối ưu theo tenant.
-* Messages nằm trong subcollection.
-* Background workers có thể scale ngang.
-* Knowledge processing tách khỏi request lifecycle.
+Requirements:
 
----
+* Job retry.
+* Dead letter queue.
+* Sync cursor persistence.
+* Idempotency key.
+* Webhook deduplication.
+* Monitoring dashboard.
 
-## 16. Success metrics
+## 9.4 Security
 
-### Product metrics
+Requirements:
 
-* Số workspace tạo mới.
-* Tỉ lệ hoàn tất onboarding.
-* Số tài liệu KB được upload.
-* Số hội thoại được xử lý.
-* Số AI drafts được tạo.
-* Tỉ lệ draft được approve.
-* Tỉ lệ human takeover.
-* Số briefing item được đọc/click.
+* Encrypt OAuth tokens.
+* Encrypt sensitive data at rest.
+* Use least-privilege OAuth scopes.
+* Respect source permissions where possible.
+* Audit log for data access.
+* Admin can delete source data.
+* No training on customer data by default.
 
-### Agent quality metrics
+## 9.5 Privacy
 
-* Answer accuracy.
-* Hallucination rate.
-* Escalation precision.
-* Approval rate.
-* Edit rate.
-* Reject rate.
-* Tool guardrail failure rate.
+Requirements:
 
-### Business outcome metrics
-
-* Thời gian phản hồi khách giảm.
-* Tỉ lệ bỏ sót tin nhắn giảm.
-* Chủ doanh nghiệp đọc báo cáo thường xuyên hơn.
-* Số việc được xử lý từ Morning Briefing tăng.
+* Workspace data isolated.
+* User can request deletion.
+* Admin can set retention policy.
+* Sensitive content classification P1.
+* PII detection P1.
 
 ---
 
-## 17. Roadmap
+# 10. Permission model
 
-### Phase 0 — Foundation
+## MVP
 
-* Frontend Angular.
-* Backend FastAPI.
-* Firebase Auth + Firestore + Storage.
-* Tenant model.
-* Firestore Security Rules.
-* Base design system.
+MVP có thể dùng workspace-level access:
 
-### Phase 1 — Knowledge Base + Harness Core
+```text
+Nếu user trong workspace -> có thể hỏi dữ liệu workspace
+```
 
-* Upload tài liệu.
-* Processing pipeline.
-* Agent Contract Registry.
-* Agent run logs.
-* Tool call logs.
-* Basic retrieval tool.
+## P1
 
-### Phase 2 — Inbox + Chat Agent
+Permission-aware retrieval:
 
-* Inbox UI.
-* Website Chat widget.
-* Facebook Messenger connector.
-* Zalo OA connector.
-* AI draft reply.
-* Human takeover.
-* Approval queue.
-* Send-message guardrails.
+```text
+User chỉ thấy nội dung mà họ có quyền thấy ở source gốc
+```
 
-### Phase 3 — Analyst Agent + Morning Briefing
+Ví dụ:
 
-* Daily briefing generator.
-* Analyst reports.
-* Basic anomaly detection.
-* Briefing feed realtime.
-
-### Phase 4 — Voice Agent MVP
-
-* Transcript ingestion.
-* Call summary.
-* Intent extraction.
-* Follow-up task.
-* Confidence/escalation handling.
-
-### Phase 5 — Evals & Production Hardening
-
-* Eval cases cho Chat Agent.
-* Eval cases cho Analyst/Voice.
-* Replay failed traces.
-* Internal quality dashboard.
-* Better observability.
-
-### Phase 6 — Growth Hub Post-MVP
-
-* Growth suggestions.
-* Campaign drafts.
-* Customer segment insights.
-* Marketing approval workflow.
+* Slack private channel chỉ searchable bởi members của channel.
+* Google Drive private doc chỉ searchable bởi người có quyền.
+* GitHub private repo chỉ searchable bởi người có quyền repo.
 
 ---
 
-## 18. Rủi ro chính
+# 11. Data model đề xuất
 
-| Rủi ro                                      |     Mức độ | Giảm thiểu                                                                   |
-| ------------------------------------------- | ---------: | ---------------------------------------------------------------------------- |
-| Agent trả lời sai chính sách                |        Cao | KB citation, confidence threshold, approval, evals                           |
-| AI gửi tin nhắn không phù hợp               |        Cao | Draft-first, guardrails, human takeover                                      |
-| Tích hợp Zalo/Facebook phức tạp             |        Cao | Triển khai theo thứ tự Website Chat → Facebook → Zalo, có integration health |
-| Tích hợp Haravan/KiotViet khác biệt dữ liệu |        Cao | Chuẩn hóa data adapter, mapping schema nội bộ, log lỗi đồng bộ               |
-| Firestore schema khó scale                  | Trung bình | Query-first design, subcollection messages                                   |
-| Voice Agent vượt phạm vi MVP                | Trung bình | Bắt đầu từ transcript summary, chưa làm outbound                             |
-| Chi phí graph/vector tăng                   | Trung bình | Bắt đầu tối giản, theo dõi usage, tách storage theo giai đoạn                |
+## 11.1 organizations
+
+```sql
+create table organizations (
+  id uuid primary key,
+  name text not null,
+  created_at timestamptz default now()
+);
+```
+
+## 11.2 users
+
+```sql
+create table users (
+  id uuid primary key,
+  email text unique not null,
+  name text,
+  created_at timestamptz default now()
+);
+```
+
+## 11.3 organization_members
+
+```sql
+create table organization_members (
+  id uuid primary key,
+  organization_id uuid not null,
+  user_id uuid not null,
+  role text not null,
+  created_at timestamptz default now()
+);
+```
+
+## 11.4 data_sources
+
+```sql
+create table data_sources (
+  id uuid primary key,
+  organization_id uuid not null,
+  source_type text not null,
+  status text not null,
+  oauth_metadata jsonb,
+  sync_cursor text,
+  last_synced_at timestamptz,
+  created_at timestamptz default now()
+);
+```
+
+## 11.5 source_objects
+
+```sql
+create table source_objects (
+  id uuid primary key,
+  organization_id uuid not null,
+  data_source_id uuid not null,
+  source text not null,
+  external_id text not null,
+  external_url text,
+  object_type text not null,
+  title text,
+  author text,
+  version text,
+  content_hash text,
+  metadata jsonb,
+  last_seen_at timestamptz,
+  last_synced_at timestamptz,
+  deleted_at timestamptz,
+  unique (organization_id, source, external_id)
+);
+```
+
+## 11.6 documents
+
+```sql
+create table documents (
+  id uuid primary key,
+  organization_id uuid not null,
+  source_object_id uuid not null,
+  title text,
+  content text,
+  summary text,
+  created_at timestamptz,
+  updated_at timestamptz
+);
+```
+
+## 11.7 document_chunks
+
+```sql
+create table document_chunks (
+  id uuid primary key,
+  organization_id uuid not null,
+  document_id uuid not null,
+  chunk_index int not null,
+  content text not null,
+  content_hash text not null,
+  embedding vector(1536),
+  metadata jsonb,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+```
+
+## 11.8 entities
+
+```sql
+create table entities (
+  id uuid primary key,
+  organization_id uuid not null,
+  name text not null,
+  type text not null,
+  canonical_name text,
+  summary text,
+  confidence float,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+```
+
+## 11.9 relationships
+
+```sql
+create table relationships (
+  id uuid primary key,
+  organization_id uuid not null,
+  from_entity_id uuid not null,
+  to_entity_id uuid not null,
+  relation_type text not null,
+  evidence_chunk_id uuid,
+  confidence float,
+  valid_from timestamptz,
+  valid_to timestamptz,
+  created_at timestamptz default now()
+);
+```
+
+## 11.10 facts
+
+```sql
+create table facts (
+  id uuid primary key,
+  organization_id uuid not null,
+  subject_entity_id uuid,
+  predicate text not null,
+  object_entity_id uuid,
+  value text,
+  source_chunk_id uuid,
+  confidence float,
+  authority_score float,
+  valid_from timestamptz,
+  valid_to timestamptz,
+  created_at timestamptz default now()
+);
+```
+
+## 11.11 code_symbols
+
+```sql
+create table code_symbols (
+  id uuid primary key,
+  organization_id uuid not null,
+  repository text not null,
+  file_path text not null,
+  symbol_name text not null,
+  symbol_type text not null,
+  signature text,
+  start_line int,
+  end_line int,
+  content_hash text,
+  summary text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+```
+
+## 11.12 stale_doc_findings
+
+```sql
+create table stale_doc_findings (
+  id uuid primary key,
+  organization_id uuid not null,
+  document_id uuid not null,
+  code_symbol_id uuid,
+  status text not null,
+  severity text,
+  reason text,
+  code_evidence text,
+  doc_evidence text,
+  detected_at timestamptz default now(),
+  resolved_at timestamptz
+);
+```
+
+## 11.13 agents
+
+```sql
+create table agents (
+  id uuid primary key,
+  organization_id uuid not null,
+  name text not null,
+  type text not null,
+  prompt text not null,
+  schedule text,
+  enabled boolean default true,
+  created_at timestamptz default now()
+);
+```
+
+## 11.14 agent_runs
+
+```sql
+create table agent_runs (
+  id uuid primary key,
+  organization_id uuid not null,
+  agent_id uuid not null,
+  status text not null,
+  input jsonb,
+  output jsonb,
+  started_at timestamptz,
+  completed_at timestamptz,
+  error text
+);
+```
 
 ---
 
-## 19. Quyết định hiện tại
+# 12. System architecture
 
-| Chủ đề               | Quyết định                                                                            |
-| -------------------- | ------------------------------------------------------------------------------------- |
-| Agent MVP            | Flae Agent tổng, Chat, Analyst, Voice                                                 |
-| Growth Hub           | Post-MVP                                                                              |
-| Data read            | Firestore Real-time First                                                             |
-| Backend              | FastAPI + Firebase Admin + Firedantic                                                 |
-| Background jobs      | Celery + Redis                                                                        |
-| Frontend             | Angular 19+ + Signals + NgRx SignalStore                                              |
-| Memory               | Knowledge Base + Knowledge Graph + vector retrieval                                   |
-| Reliability          | Agent Reliability Harness bắt buộc                                                    |
-| Human control        | Human takeover + approval queue                                                       |
-| Kênh inbox MVP       | Website Chat + Facebook Messenger + Zalo OA                                           |
-| Tích hợp quản lý MVP | Haravan + KiotViet                                                                    |
-| Quyền dữ liệu agent  | Đọc dữ liệu, tạo báo cáo/cảnh báo, đề xuất hành động; ghi ngược cần approval/post-MVP |
+## 12.1 MVP architecture
+
+```text
+Frontend:
+Next.js
+
+Backend:
+FastAPI hoặc NestJS
+
+Database:
+PostgreSQL + pgvector
+
+Queue:
+BullMQ / Trigger.dev / Inngest / Temporal
+
+Object storage:
+S3 / Cloudflare R2
+
+LLM:
+OpenAI / Anthropic / Gemini
+
+Auth:
+Clerk / Auth0 / Supabase Auth
+
+Deployment:
+Vercel + Railway/Fly.io/AWS
+```
+
+## 12.2 High-level flow
+
+```text
+User connects source
+-> OAuth stored securely
+-> Initial sync job starts
+-> Source objects saved
+-> Content extracted
+-> Chunks generated
+-> Embeddings stored
+-> Entities extracted
+-> Relationships extracted
+-> Graph updated
+-> User can chat/search
+-> Agents run periodically
+```
+
+## 12.3 Realtime ingestion flow
+
+```text
+Source webhook
+-> /webhooks/:source
+-> Validate signature
+-> Store ingestion event
+-> Return 200 quickly
+-> Queue worker processes event
+-> Fetch changed object
+-> Compare version/hash
+-> Reprocess changed parts
+-> Update graph
+-> Trigger relevant agents
+```
 
 ---
+
+# 13. AI retrieval design
+
+## 13.1 Retrieval pipeline
+
+```text
+User question
+-> classify intent
+-> extract entities
+-> graph lookup
+-> vector search
+-> keyword search
+-> reranking
+-> source authority ranking
+-> context assembly
+-> LLM answer
+-> citation rendering
+```
+
+## 13.2 Query types
+
+System cần nhận diện:
+
+```text
+Project status question
+Decision question
+Person responsibility question
+Code question
+Documentation freshness question
+Customer feedback question
+Weekly summary request
+```
+
+## 13.3 Answer requirements
+
+AI answer phải:
+
+* Có citation.
+* Nêu rõ uncertainty.
+* Nêu rõ conflict nếu có.
+* Ưu tiên nguồn mới hơn và có authority cao hơn.
+* Không bịa dữ liệu.
+* Không trả lời ngoài quyền truy cập của user.
+
+---
+
+# 14. Agent requirements
+
+## 14.1 Weekly Digest Agent
+
+Input:
+
+```text
+Data changes in last 7 days
+Important Slack threads
+Updated docs
+Merged PRs
+New stale-doc findings
+Project status changes
+Customer feedback
+```
+
+Output:
+
+```text
+Executive summary
+Key decisions
+Project updates
+Risks/blockers
+Customer insights
+Engineering changes
+Stale docs
+Recommended actions
+```
+
+---
+
+## 14.2 Stale Doc Agent
+
+Trigger:
+
+```text
+GitHub push
+Merged PR
+Updated code symbol
+Manual run
+```
+
+Output:
+
+```text
+Finding title
+Affected document
+Affected code symbol
+Reason
+Severity
+Suggested update
+Citations
+```
+
+---
+
+## 14.3 Project Risk Agent
+
+Trigger:
+
+```text
+Daily
+Weekly
+Manual
+```
+
+Signals:
+
+```text
+Tickets overdue
+Many Slack messages mentioning blocked/delay
+PRs stuck
+Docs inconsistent
+Customer complaints
+No activity for long time
+```
+
+Output:
+
+```text
+Project risk score
+Reasons
+Evidence
+Suggested next steps
+```
+
+---
+
+# 15. UI requirements
+
+## 15.1 Main navigation
+
+```text
+Home
+Ask
+Sources
+Memory Graph
+Projects
+Decisions
+Stale Docs
+Agents
+Settings
+```
+
+---
+
+## 15.2 Home dashboard
+
+Widgets:
+
+```text
+Connected sources
+Sync status
+Recent decisions
+Open stale-doc findings
+Project risks
+Weekly digest
+Recent important changes
+```
+
+---
+
+## 15.3 Ask page
+
+Components:
+
+* Chat input.
+* Source filters.
+* Time filters.
+* Entity filters.
+* Answer area.
+* Citations panel.
+* Related entities.
+* Suggested follow-up questions.
+
+---
+
+## 15.4 Sources page
+
+Display:
+
+```text
+Source name
+Connection status
+Last synced
+Objects synced
+Errors
+Actions
+```
+
+Actions:
+
+```text
+Connect
+Reconnect
+Pause sync
+Run sync now
+Disconnect
+Delete data
+```
+
+---
+
+## 15.5 Stale Docs page
+
+Columns:
+
+```text
+Status
+Severity
+Document
+Related code
+Reason
+Detected at
+Owner
+Actions
+```
+
+Actions:
+
+```text
+View details
+Mark resolved
+Ignore
+Re-check
+Create issue
+```
+
+---
+
+## 15.6 Memory Graph page
+
+MVP có thể đơn giản:
+
+* Search entity.
+* Entity detail page.
+* Related entities list.
+* Evidence list.
+
+P1 mới cần visual graph.
+
+---
+
+# 16. API endpoints đề xuất
+
+## Auth / workspace
+
+```http
+GET /api/me
+GET /api/orgs
+POST /api/orgs
+GET /api/orgs/:id
+```
+
+## Sources
+
+```http
+GET /api/sources
+POST /api/sources/:source/connect
+POST /api/sources/:id/disconnect
+POST /api/sources/:id/sync
+GET /api/sources/:id/status
+```
+
+## Webhooks
+
+```http
+POST /api/webhooks/slack
+POST /api/webhooks/github
+POST /api/webhooks/notion
+POST /api/webhooks/google-drive
+```
+
+## Chat
+
+```http
+POST /api/chat
+GET /api/chat/:conversationId
+```
+
+## Graph
+
+```http
+GET /api/entities
+GET /api/entities/:id
+GET /api/entities/:id/relationships
+GET /api/facts
+```
+
+## Stale docs
+
+```http
+GET /api/stale-docs
+GET /api/stale-docs/:id
+POST /api/stale-docs/:id/resolve
+POST /api/stale-docs/:id/ignore
+POST /api/stale-docs/:id/recheck
+```
+
+## Agents
+
+```http
+GET /api/agents
+POST /api/agents
+PATCH /api/agents/:id
+POST /api/agents/:id/run
+GET /api/agents/:id/runs
+```
+
+---
+
+# 17. Metrics
+
+## Product metrics
+
+```text
+Number of connected sources per workspace
+Number of weekly active users
+Number of questions asked
+Question answer satisfaction
+Citation click-through rate
+Weekly digest open rate
+Number of stale docs detected
+Number of stale docs resolved
+```
+
+## Technical metrics
+
+```text
+Ingestion latency
+Webhook processing delay
+Embedding cost per workspace
+LLM cost per answer
+Sync failure rate
+Queue backlog size
+Average retrieval latency
+Answer generation latency
+```
+
+## Quality metrics
+
+```text
+Answer groundedness
+Citation correctness
+Stale-doc false positive rate
+Stale-doc false negative rate
+Entity extraction accuracy
+Relationship extraction accuracy
+```
+
+---
+
+# 18. MVP success criteria
+
+MVP được xem là thành công nếu:
+
+```text
+10 pilot teams connect at least 2 data sources.
+70%+ answers have useful citations.
+Users ask at least 20 questions per workspace per week.
+Weekly digest is read by at least 50% of active workspaces.
+Stale-doc detector finds real issues in at least 30% of engineering workspaces.
+Initial sync succeeds for 90%+ connected sources.
+Incremental sync latency under 5 minutes for common events.
+```
+
+---
+
+# 19. Roadmap
+
+## Phase 1: Core RAG + connectors
+
+Deliverables:
+
+```text
+Auth
+Workspace
+Google Drive connector
+Notion connector
+Manual file upload
+Chunking
+Embedding
+Basic chat with citations
+```
+
+## Phase 2: Slack + GitHub
+
+Deliverables:
+
+```text
+Slack connector
+GitHub connector
+Webhook ingestion
+Incremental sync
+Code file indexing
+PR/commit ingestion
+```
+
+## Phase 3: Knowledge graph
+
+Deliverables:
+
+```text
+Entity extraction
+Relationship extraction
+Entity pages
+Decision log
+Graph-based retrieval
+Fact timestamping
+Conflict handling
+```
+
+## Phase 4: Stale-doc detection
+
+Deliverables:
+
+```text
+Code symbol parser
+Doc-code relationship mapping
+Stale-doc agent
+Stale-doc dashboard
+Resolve/ignore/recheck flow
+```
+
+## Phase 5: Agents
+
+Deliverables:
+
+```text
+Weekly digest
+Project risk monitor
+Custom scheduled agent
+Slack/email notifications
+Agent run history
+```
+
+## Phase 6: Enterprise readiness
+
+Deliverables:
+
+```text
+Permission-aware retrieval
+Audit logs
+SSO
+Advanced admin controls
+Retention policies
+Billing
+```
+
+---
+
+# 20. Risks
+
+## Risk 1: Data quá lớn, ingestion chậm
+
+### Mitigation
+
+* Incremental sync.
+* Hash-based change detection.
+* Chunk-level reprocessing.
+* Queue workers.
+* Rate limit handling.
+* Prioritize recent and important data.
+
+---
+
+## Risk 2: AI hallucination
+
+### Mitigation
+
+* Citation bắt buộc.
+* “Use only provided context” prompt.
+* Retrieval quality scoring.
+* Refuse when insufficient evidence.
+* Answer confidence display.
+
+---
+
+## Risk 3: Graph extraction sai
+
+### Mitigation
+
+* Confidence score.
+* Human feedback.
+* Evidence required.
+* Entity deduplication.
+* Periodic graph cleanup.
+
+---
+
+## Risk 4: Stale-doc false positive
+
+### Mitigation
+
+* Status `possibly_stale` trước khi khẳng định `stale`.
+* Require code evidence + doc evidence.
+* Allow user ignore/resolve.
+* Learn from feedback.
+
+---
+
+## Risk 5: Permission leak
+
+### Mitigation
+
+* Start with trusted pilot teams.
+* Add permission-aware retrieval before enterprise launch.
+* Store source permission metadata.
+* Filter retrieval by user access.
+
+---
+
+# 21. Open questions
+
+1. MVP nên ưu tiên Slack + GitHub hay Notion + Google Drive trước?
+2. Target customer đầu tiên là startup engineering team hay founder/operator?
+3. Có cần hỗ trợ tiếng Việt từ đầu không?
+4. Có cần self-hosted option không?
+5. Dữ liệu code nên parse bằng tree-sitter hay LSP?
+6. Có nên cho agent tạo PR cập nhật docs tự động ở P1 không?
+7. Billing theo seat, theo source, theo số chunks, hay theo agent runs?
+8. Permission model có cần ngay ở MVP không?
+9. Có cần graph visualization ngay từ đầu không?
+10. Nên tích hợp Linear hay Jira trước?
+
+---
+
+# 22. Định nghĩa MVP gọn nhất
+
+Phiên bản đầu tiên nên tập trung vào:
+
+```text
+Company Memory AI cho engineering/product team.
+Kết nối Notion, Slack, Google Drive, GitHub.
+Cho phép hỏi đáp có citation.
+Tự phát hiện docs có thể lỗi thời khi code thay đổi.
+Tạo weekly digest tự động.
+```
+
+### P0 feature list cuối cùng
+
+```text
+1. Auth + workspace
+2. Source connection: Notion, Slack, Google Drive, GitHub
+3. Initial sync
+4. Webhook/incremental sync
+5. Chunking + embeddings
+6. Entity extraction
+7. Basic knowledge graph
+8. AI chat with citations
+9. GitHub code indexing
+10. Stale-doc detection
+11. Weekly digest agent
+12. Admin source status dashboard
+```
+
+---
+
+# 23. One-liner positioning
+
+**FLAE là bộ nhớ AI sống cho công ty, giúp team hỏi đáp, hiểu quyết định, theo dõi dự án, và phát hiện tài liệu lỗi thời khi code thay đổi.**

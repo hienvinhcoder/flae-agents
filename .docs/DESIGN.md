@@ -1,208 +1,878 @@
----
-name: FLAE Agent
-colors:
-  surface: '#fbf8ff'
-  surface-dim: '#dad9e3'
-  surface-bright: '#fbf8ff'
-  surface-container-lowest: '#ffffff'
-  surface-container-low: '#f4f2fd'
-  surface-container: '#eeedf7'
-  surface-container-high: '#e8e7f1'
-  surface-container-highest: '#e3e1ec'
-  on-surface: '#1a1b22'
-  on-surface-variant: '#3c4a42'
-  inverse-surface: '#2f3038'
-  inverse-on-surface: '#f1effa'
-  outline: '#6c7a71'
-  outline-variant: '#bbcabf'
-  surface-tint: '#006c49'
-  primary: '#006c49'
-  on-primary: '#ffffff'
-  primary-container: '#10b981'
-  on-primary-container: '#00422b'
-  inverse-primary: '#4edea3'
-  secondary: '#59605d'
-  on-secondary: '#ffffff'
-  secondary-container: '#dae1dd'
-  on-secondary-container: '#5d6461'
-  tertiary: '#a43a3a'
-  on-tertiary: '#ffffff'
-  tertiary-container: '#fc7c78'
-  on-tertiary-container: '#711419'
-  error: '#ba1a1a'
-  on-error: '#ffffff'
-  error-container: '#ffdad6'
-  on-error-container: '#93000a'
-  primary-fixed: '#6ffbbe'
-  primary-fixed-dim: '#4edea3'
-  on-primary-fixed: '#002113'
-  on-primary-fixed-variant: '#005236'
-  secondary-fixed: '#dde4e0'
-  secondary-fixed-dim: '#c1c8c4'
-  on-secondary-fixed: '#161d1b'
-  on-secondary-fixed-variant: '#414846'
-  tertiary-fixed: '#ffdad7'
-  tertiary-fixed-dim: '#ffb3af'
-  on-tertiary-fixed: '#410005'
-  on-tertiary-fixed-variant: '#842225'
-  background: '#fbf8ff'
-  on-background: '#1a1b22'
-  surface-variant: '#e3e1ec'
-  surface-main: '#F4FBF7'
-  surface-card: '#FFFFFF'
-  text-heading: '#18181B'
-  text-body: '#3F3F46'
-  status-active: '#10B981'
-  status-pending: '#F59E0B'
-  status-approval: '#EF4444'
-  border-subtle: '#E4E4E7'
-typography:
-  headline-xl:
-    fontFamily: Outfit
-    fontSize: 40px
-    fontWeight: '700'
-    lineHeight: 48px
-    letterSpacing: -0.02em
-  headline-lg:
-    fontFamily: Outfit
-    fontSize: 32px
-    fontWeight: '600'
-    lineHeight: 40px
-    letterSpacing: -0.01em
-  headline-lg-mobile:
-    fontFamily: Outfit
-    fontSize: 24px
-    fontWeight: '600'
-    lineHeight: 32px
-  headline-md:
-    fontFamily: Outfit
-    fontSize: 24px
-    fontWeight: '600'
-    lineHeight: 32px
-  body-lg:
-    fontFamily: Plus Jakarta Sans
-    fontSize: 18px
-    fontWeight: '400'
-    lineHeight: 28px
-  body-md:
-    fontFamily: Plus Jakarta Sans
-    fontSize: 16px
-    fontWeight: '400'
-    lineHeight: 24px
-  body-sm:
-    fontFamily: Plus Jakarta Sans
-    fontSize: 14px
-    fontWeight: '400'
-    lineHeight: 20px
-  label-md:
-    fontFamily: Plus Jakarta Sans
-    fontSize: 14px
-    fontWeight: '600'
-    lineHeight: 20px
-    letterSpacing: 0.01em
-  label-sm:
-    fontFamily: Plus Jakarta Sans
-    fontSize: 12px
-    fontWeight: '700'
-    lineHeight: 16px
-rounded:
-  sm: 0.25rem
-  DEFAULT: 0.5rem
-  md: 0.75rem
-  lg: 1rem
-  xl: 1.5rem
-  full: 9999px
-spacing:
-  margin-page: 2rem
-  gutter-grid: 1.5rem
-  padding-card: 1.25rem
-  stack-gap: 0.75rem
-  agent-feed-gap: 1rem
+# FALE Design System
+
+Design system for AI company memory / knowledge graph / coding context app.
+
+Primary Style:
+
+```text
+Warm
+Dark
+Technical
+Focused
+Premium
+AI-native
+```
+
+Interface Goal:
+
+```text
+A dark, warm, clear, and professional AI command center.
+```
+
 ---
 
-## Brand & Style
-The design system for FLAE Agent is built on an **Agent-First** philosophy, reimagining the enterprise dashboard as a collaborative workspace where AI agents and humans coexist. The brand personality is professional yet approachable, tailored specifically for SMB owners who require clarity and reliability without the cold complexity of traditional SaaS.
+# 1. Design Principles
 
-The visual style is **Modern / Minimalist** with a focus on **Tonal Layering**. It utilizes generous whitespace, a soft "Mint" canvas, and vibrant green accents to create a sense of growth and activity. Every interface element is designed to feel like a "briefing"—concise, actionable, and trustworthy. The system prioritizes "Human-in-the-Loop" interactions, ensuring that while the agents are powerful, the user always feels in control through clear status indicators and conversational card layouts.
+## 1.1 Visual Direction
 
-## Colors
-The palette is dominated by the **Primary Vibrant Green (#10B981)**, which represents the "Active" and "Reliable" state of the AI workforce. This is supported by a **Soft Mint (#F4FBF7)** foundation that reduces eye strain and provides a modern alternative to pure white or gray backgrounds.
+Sunset Fire Dark Mode is not a bright orange/red interface.
 
-- **Primary:** Used for the most important actions (CTAs) and active agent states.
-- **Surface:** The background is Mint, while functional cards and interaction areas are pure white to provide depth.
-- **Status Tones:** A semantic set is used to communicate agent reliability: Green for *Active/Resolved*, Amber for *Pending/Waiting*, and Red for *Approval Required/Critical*.
-- **Neutrals:** Zinc and Slate tones are used for typography and borders to maintain a professional, grounded feel.
+It is a dark, warm interface with orange accents to create a sense of energy, proactivity, and compatibility with the Fire element.
 
-## Typography
-The typographic system uses a dual-font approach to balance brand character with functional utility:
+```text
+Dark warm background
+Orange for primary actions
+Purple for AI intelligence
+Green for graph/system health
+Yellow for warnings
+Red only for errors
+```
 
-- **Outfit (Headings):** Used for titles, agent names, and high-level summaries. Its geometric nature feels modern and innovative.
-- **Plus Jakarta Sans (Body & UI):** Chosen for its exceptional legibility in Vietnamese. It is used for chat logs, document previews, and form fields.
+## 1.2 Color Usage Ratio
 
-**Language Support:** Ensure all weights are loaded with the Vietnamese character set. Line heights are slightly increased (1.5x for body) to accommodate the diacritics common in Vietnamese text without overcrowding the line.
+```text
+70% dark warm neutral
+20% sunset orange
+10% purple / green / semantic colors
+```
 
-## Layout & Spacing
-The layout follows a **Fluid Grid** model with a "Workspace" structure. Instead of a standard dashboard, the interface is centered around a "Briefing Feed"—a vertical stream of conversational cards.
+## 1.3 Do
 
-- **Desktop:** A fixed side navigation (collapsed or slim) with a fluid content area. The content area uses a maximum width of 1440px to prevent text lines from becoming too long.
-- **Mobile:** Transition to a single-column stack. Margins reduce to 1rem.
-- **Rhythm:** An 8px base grid is used. Elements within a "Conversation Card" use tighter spacing (12px), while the gap between different agent activities is larger (24px) to denote context switches.
+* Use a dark warm background as the foundation.
+* Use orange for CTA, active state, and primary action.
+* Use purple for AI answer, reasoning, agent, and generated insight.
+* Use green for connected, success, resolved, and healthy graph.
+* Use yellow for warning, pending, and possibly stale.
+* Use red for error, failed, and destructive action.
 
-## Elevation & Depth
-Depth in the design system is achieved through **Tonal Layers**, **Ambient Shadows**, and **Glassmorphism** rather than heavy borders.
+## 1.4 Avoid
 
-1.  **Level 0 (Foundation):** The Soft Mint surface (`#F4FBF7`).
-2.  **Level 1 (Cards/Containers):** Pure white surfaces (`#FFFFFF`) with a very soft, diffused shadow (0px 4px 20px rgba(0, 0, 0, 0.04)). This elevates "Agent Briefings" from the background.
-3.  **Level 2 (Interaction/Popovers/Modals):** Active elements like dropdowns, hovering cards, or modal overlays use a slightly deeper shadow (0px 10px 30px rgba(16, 185, 129, 0.08)) and integrate **Glassmorphism** (backdrop blur 10-20px with subtle 1px white/0.2 border) to indicate they are "closer" to the user and create multi-layer depth.
+* Do not use orange as the full-page background.
+* Do not use red as the main brand color.
+* Do not use too much glow.
+* Do not use light brown text with low contrast.
+* Do not make the UI too neon/cyberpunk.
 
-**Agent Visibility:** AI-generated "Drafts" should use a subtle dashed border instead of a shadow to indicate their "unverified" or "ghost" state.
+---
 
-## Shapes
-The shape language is soft and approachable.
-- **Cards & Primary Containers:** Use a 16px (`rounded-xl`) corner radius.
-- **Buttons & Input Fields:** Use an 8px (`rounded-lg`) corner radius.
-- **Status Tags/Chips:** Use a fully pill-shaped (rounded-full) radius to distinguish them from interactive buttons.
+# 2. Color Tokens
 
-This high level of roundedness reinforces the "friendly" and "human-centric" philosophy of the AI Workforce.
+## 2.1 Background
 
-## Components
+| Token    |       Hex | Tailwind Name | Usage                     |
+| -------- | --------: | ------------- | ------------------------- |
+| App      | `#140F0B` | `bg-app`      | Main background           |
+| Surface  | `#1F1711` | `bg-surface`  | Card, sidebar, panel      |
+| Elevated | `#2A1D14` | `bg-elevated` | Modal, dropdown, popover  |
+| Subtle   | `#201712` | `bg-subtle`   | Table header, hover panel |
 
-### Buttons
-- **Primary:** Background `#10B981`, white text, 8px radius. Subtle scale-down effect on click.
-- **Secondary:** White background with a 1px Zinc-200 border.
-- **Ghost:** No background, primary color text for low-priority agent actions.
+## 2.2 Border
 
-### Conversational Cards
-The core unit of the UI. Must feature:
-- An "Agent Avatar" (Chat, Analyst, or Voice).
-- A timestamp and channel icon (Zalo, FB, Web).
-- A clear "Status Badge" in the top right.
-- Actionable buttons at the bottom (e.g., "Phê duyệt", "Chỉnh sửa").
+| Token   |       Hex | Tailwind Name          | Usage                      |
+| ------- | --------: | ---------------------- | -------------------------- |
+| Default | `#3F2A1A` | `border-border`        | Card, input, divider       |
+| Strong  | `#5A3822` | `border-border-strong` | Active, selected, elevated |
 
-### Status Indicators
-Small, high-contrast badges used throughout the system:
-- **Active (Hoạt động):** Primary Green.
-- **Pending (Đang chờ):** Amber.
-- **Approval Required (Cần duyệt):** Red background with white text to demand attention.
+## 2.3 Text
 
-### Input Fields
-- Soft borders (1px Zinc-200) that transition to 2px Primary Green on focus.
-- Placeholder text in Zinc-400.
-- Labels in `label-md` (Outfit) for clear hierarchy.
+| Token     |       Hex | Tailwind Name         | Usage                   |
+| --------- | --------: | --------------------- | ----------------------- |
+| Primary   | `#FFF7ED` | `text-text-primary`   | Heading, important text |
+| Secondary | `#FCD7AA` | `text-text-secondary` | Body text               |
+| Muted     | `#DDB991` | `text-text-muted`     | Metadata, helper text   |
+| Disabled  | `#8A6A4F` | `text-text-disabled`  | Disabled, placeholder   |
 
-### Agent Briefing Feed
-A vertical stack of cards with a "connector line" on the left side, visually linking the agent's sequence of thoughts or actions into a single audit log.
+## 2.4 Brand
 
-## Anti-patterns (Những điều cần tránh)
-- **Excessive Animation:** Tránh lạm dụng quá nhiều hiệu ứng hoạt hình gây rườm rà.
-- **Dark Mode by Default:** Tránh việc ép buộc giao diện mặc định là Chế độ ban đêm (Dark Mode) nếu không có tùy chọn thay đổi.
+| Token          |                     Hex | Tailwind Name       | Usage           |
+| -------------- | ----------------------: | ------------------- | --------------- |
+| Primary        |               `#FB923C` | `bg-primary`        | Main CTA        |
+| Primary Hover  |               `#F97316` | `bg-primary-hover`  | Hover           |
+| Primary Active |               `#EA580C` | `bg-primary-active` | Active/pressed  |
+| Primary Soft   | `rgba(251,146,60,0.14)` | `bg-primary-soft`   | Soft background |
 
-## Pre-Delivery Checklist
-Để đảm bảo chất lượng UI/UX theo chuẩn hệ thống:
-- [ ] Không dùng biểu tượng cảm xúc (emoji) làm icon (chỉ sử dụng SVG từ Heroicons/Lucide).
-- [ ] Đảm bảo có class `cursor-pointer` trên tất cả các thành phần có thể nhấp chuột.
-- [ ] Các trạng thái `:hover` phải có hiệu ứng chuyển đổi mượt mà (`duration-150` đến `duration-300`).
-- [ ] Chế độ sáng (Light mode): Độ tương phản văn bản/nền tối thiểu là 4.5:1.
-- [ ] Các trạng thái khi `:focus` phải hiển thị viền/nền rõ ràng hỗ trợ điều hướng bằng bàn phím.
-- [ ] Tôn trọng thiết lập CSS `prefers-reduced-motion` của trình duyệt.
-- [ ] Responsive hoàn thiện hiển thị tốt trên các mốc kích thước: 375px, 768px, 1024px, 1440px.
+## 2.5 AI Accent
+
+| Token    |                      Hex | Tailwind Name       | Usage              |
+| -------- | -----------------------: | ------------------- | ------------------ |
+| AI       |                `#C084FC` | `text-ai` / `bg-ai` | AI states          |
+| AI Hover |                `#A855F7` | `bg-ai-hover`       | AI hover           |
+| AI Soft  | `rgba(192,132,252,0.14)` | `bg-ai-soft`        | AI card background |
+
+## 2.6 Graph Accent
+
+| Token      |                     Hex | Tailwind Name             | Usage                         |
+| ---------- | ----------------------: | ------------------------- | ----------------------------- |
+| Graph      |               `#4ADE80` | `text-graph` / `bg-graph` | Graph, success, healthy state |
+| Graph Soft | `rgba(74,222,128,0.12)` | `bg-graph-soft`           | Success background            |
+
+## 2.7 Semantic
+
+| Token   |       Hex | Tailwind Name | Usage                   |
+| ------- | --------: | ------------- | ----------------------- |
+| Success | `#4ADE80` | `success`     | Connected, resolved     |
+| Warning | `#FBBF24` | `warning`     | Possibly stale, pending |
+| Error   | `#F87171` | `error`       | Failed, destructive     |
+| Info    | `#60A5FA` | `info`        | Info state              |
+
+---
+
+# 3. Tailwind Config
+
+```ts
+import type { Config } from "tailwindcss";
+
+const config: Config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      colors: {
+        app: "#140F0B",
+        surface: "#1F1711",
+        elevated: "#2A1D14",
+        subtle: "#201712",
+
+        border: {
+          DEFAULT: "#3F2A1A",
+          strong: "#5A3822",
+        },
+
+        text: {
+          primary: "#FFF7ED",
+          secondary: "#FCD7AA",
+          muted: "#DDB991",
+          disabled: "#8A6A4F",
+        },
+
+        primary: {
+          DEFAULT: "#FB923C",
+          hover: "#F97316",
+          active: "#EA580C",
+          soft: "rgba(251,146,60,0.14)",
+        },
+
+        ai: {
+          DEFAULT: "#C084FC",
+          hover: "#A855F7",
+          soft: "rgba(192,132,252,0.14)",
+        },
+
+        graph: {
+          DEFAULT: "#4ADE80",
+          soft: "rgba(74,222,128,0.12)",
+        },
+
+        success: "#4ADE80",
+        warning: "#FBBF24",
+        error: "#F87171",
+        info: "#60A5FA",
+      },
+
+      boxShadow: {
+        soft: "0 8px 32px rgba(0,0,0,0.24)",
+        elevated: "0 16px 56px rgba(0,0,0,0.36)",
+        primary: "0 0 32px rgba(251,146,60,0.18)",
+        ai: "0 0 32px rgba(192,132,252,0.18)",
+      },
+
+      borderRadius: {
+        xs: "4px",
+        sm: "6px",
+        md: "8px",
+        lg: "12px",
+        xl: "16px",
+        "2xl": "24px",
+      },
+    },
+  },
+  plugins: [],
+};
+
+export default config;
+```
+
+---
+
+# 4. Typography
+
+## 4.1 Font Family
+
+Primary UI font:
+
+```css
+Inter, Geist, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
+```
+
+Mono font:
+
+```css
+"Geist Mono", "JetBrains Mono", "SF Mono", Consolas, monospace
+```
+
+Use mono font for:
+
+```text
+Code
+API path
+Commit hash
+Database name
+Environment variable
+Technical metadata
+```
+
+## 4.2 Type Scale
+
+| Usage         | Tailwind Class                        |
+| ------------- | ------------------------------------- |
+| Display       | `text-4xl font-bold tracking-tight`   |
+| Page Title    | `text-3xl font-bold tracking-tight`   |
+| Section Title | `text-xl font-semibold`               |
+| Card Title    | `text-base font-semibold`             |
+| Body          | `text-sm leading-6`                   |
+| Small         | `text-xs leading-5`                   |
+| Label         | `text-[11px] uppercase tracking-wide` |
+
+## 4.3 Text Color
+
+| Usage        | Class                                   |
+| ------------ | --------------------------------------- |
+| Heading      | `text-text-primary`                     |
+| Body         | `text-text-secondary`                   |
+| Metadata     | `text-text-muted`                       |
+| Placeholder  | `placeholder:text-text-disabled`        |
+| Disabled     | `text-text-disabled`                    |
+| Link         | `text-primary hover:text-primary-hover` |
+| AI highlight | `text-ai`                               |
+
+---
+
+# 5. Spacing
+
+Use Tailwind default spacing scale.
+
+Recommended spacing:
+
+| Usage            | Class         |
+| ---------------- | ------------- |
+| App page padding | `p-6` / `p-8` |
+| Mobile padding   | `p-4`         |
+| Card padding     | `p-5`         |
+| Section gap      | `gap-6`       |
+| Grid gap         | `gap-4`       |
+| Form gap         | `space-y-3`   |
+| Inline gap       | `gap-2`       |
+
+---
+
+# 6. Radius
+
+| Component | Class          |
+| --------- | -------------- |
+| Button    | `rounded-lg`   |
+| Input     | `rounded-xl`   |
+| Card      | `rounded-2xl`  |
+| Modal     | `rounded-2xl`  |
+| Badge     | `rounded-full` |
+| Avatar    | `rounded-full` |
+
+---
+
+# 7. Shadows
+
+| Usage            | Class             |
+| ---------------- | ----------------- |
+| Default card     | `shadow-soft`     |
+| Modal / Popover  | `shadow-elevated` |
+| Primary CTA glow | `shadow-primary`  |
+| AI glow          | `shadow-ai`       |
+
+Use glow only for important elements.
+
+Good usage:
+
+```text
+Primary CTA
+Selected graph node
+AI insight card
+Active agent
+```
+
+Avoid:
+
+```text
+Every card
+Every sidebar item
+Every button
+```
+
+---
+
+# 8. Base Layout Classes
+
+## App Body
+
+```text
+min-h-screen bg-app text-text-secondary antialiased
+```
+
+## Default Surface
+
+```text
+bg-surface border border-border rounded-2xl
+```
+
+## Elevated Surface
+
+```text
+bg-elevated border border-border-strong rounded-2xl shadow-elevated
+```
+
+## Divider
+
+```text
+border-border
+```
+
+---
+
+# 9. Component Class Recipes
+
+## 9.1 Button
+
+### Primary Button
+
+Use for main action.
+
+```text
+inline-flex items-center justify-center rounded-lg border border-primary/40 bg-primary px-4 py-2 text-sm font-semibold text-app shadow-primary transition hover:bg-primary-hover active:bg-primary-active focus:outline-none focus:ring-2 focus:ring-ai/30
+```
+
+### Secondary Button
+
+Use for neutral action.
+
+```text
+inline-flex items-center justify-center rounded-lg border border-border bg-elevated px-4 py-2 text-sm font-medium text-text-primary transition hover:border-border-strong hover:bg-subtle focus:outline-none focus:ring-2 focus:ring-ai/30
+```
+
+### Ghost Button
+
+Use for low emphasis action.
+
+```text
+inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium text-text-secondary transition hover:bg-white/5 hover:text-text-primary focus:outline-none focus:ring-2 focus:ring-ai/30
+```
+
+### AI Button
+
+Use for AI-specific action.
+
+```text
+inline-flex items-center justify-center rounded-lg border border-ai/30 bg-ai-soft px-4 py-2 text-sm font-semibold text-ai transition hover:bg-ai/20 focus:outline-none focus:ring-2 focus:ring-ai/30
+```
+
+### Destructive Button
+
+Use for dangerous action.
+
+```text
+inline-flex items-center justify-center rounded-lg border border-error/30 bg-error/10 px-4 py-2 text-sm font-semibold text-error transition hover:bg-error/20 focus:outline-none focus:ring-2 focus:ring-error/30
+```
+
+---
+
+## 9.2 Card
+
+### Default Card
+
+```text
+rounded-2xl border border-border bg-surface p-5 shadow-soft
+```
+
+### Elevated Card
+
+```text
+rounded-2xl border border-border-strong bg-elevated p-5 shadow-elevated
+```
+
+### AI Card
+
+```text
+rounded-2xl border border-ai/30 bg-ai-soft p-5 shadow-ai
+```
+
+### Warning Card
+
+```text
+rounded-2xl border border-warning/30 bg-warning/10 p-5
+```
+
+### Error Card
+
+```text
+rounded-2xl border border-error/30 bg-error/10 p-5
+```
+
+---
+
+## 9.3 Input
+
+### Text Input
+
+```text
+w-full rounded-xl border border-border bg-app px-3 py-2 text-sm text-text-primary placeholder:text-text-disabled outline-none transition focus:border-ai focus:ring-2 focus:ring-ai/30
+```
+
+### Textarea
+
+```text
+min-h-28 w-full rounded-xl border border-border bg-app px-3 py-2 text-sm leading-6 text-text-primary placeholder:text-text-disabled outline-none transition focus:border-ai focus:ring-2 focus:ring-ai/30
+```
+
+### Search Input
+
+```text
+w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-text-primary placeholder:text-text-disabled outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20
+```
+
+---
+
+## 9.4 Badge
+
+### Base Badge
+
+```text
+inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium
+```
+
+### Connected Badge
+
+```text
+border-success/30 bg-success/10 text-success
+```
+
+### Syncing Badge
+
+```text
+border-primary/30 bg-primary-soft text-primary
+```
+
+### AI Badge
+
+```text
+border-ai/30 bg-ai-soft text-ai
+```
+
+### Warning Badge
+
+```text
+border-warning/30 bg-warning/10 text-warning
+```
+
+### Error Badge
+
+```text
+border-error/30 bg-error/10 text-error
+```
+
+### Info Badge
+
+```text
+border-info/30 bg-info/10 text-info
+```
+
+---
+
+## 9.5 Sidebar
+
+### Sidebar Container
+
+```text
+h-screen w-64 border-r border-border bg-surface
+```
+
+### Sidebar Item
+
+```text
+flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-text-secondary transition hover:bg-white/5 hover:text-text-primary
+```
+
+### Sidebar Active Item
+
+```text
+flex items-center gap-2 rounded-lg border border-primary/30 bg-primary-soft px-3 py-2 text-sm font-medium text-primary
+```
+
+---
+
+## 9.6 Table
+
+### Table Wrapper
+
+```text
+overflow-hidden rounded-2xl border border-border bg-surface
+```
+
+### Table Header
+
+```text
+bg-subtle text-text-muted
+```
+
+### Table Row
+
+```text
+border-t border-border text-text-secondary hover:bg-white/5
+```
+
+### Table Cell
+
+```text
+px-4 py-3 text-sm
+```
+
+---
+
+## 9.7 Modal
+
+### Backdrop
+
+```text
+fixed inset-0 bg-app/80 backdrop-blur-md
+```
+
+### Modal Panel
+
+```text
+rounded-2xl border border-border-strong bg-surface p-6 shadow-elevated
+```
+
+---
+
+## 9.8 Dropdown / Popover
+
+### Container
+
+```text
+rounded-xl border border-border-strong bg-elevated p-2 shadow-elevated
+```
+
+### Item
+
+```text
+rounded-lg px-3 py-2 text-sm text-text-secondary transition hover:bg-white/5 hover:text-text-primary
+```
+
+---
+
+## 9.9 Citation Chip
+
+Use for source reference.
+
+```text
+inline-flex items-center rounded-full border border-primary/30 bg-primary-soft px-2.5 py-1 text-xs font-medium text-primary transition hover:bg-primary/20
+```
+
+---
+
+# 10. Graph Colors
+
+## 10.1 Node Colors
+
+| Node Type | Class                       |
+| --------- | --------------------------- |
+| Project   | `bg-primary text-app`       |
+| Decision  | `bg-primary-hover text-app` |
+| Document  | `bg-ai text-app`            |
+| Person    | `bg-purple-400 text-app`    |
+| System    | `bg-graph text-app`         |
+| Customer  | `bg-pink-400 text-app`      |
+| Risk      | `bg-warning text-app`       |
+| Stale     | `bg-error text-app`         |
+
+## 10.2 Edge Colors
+
+| Edge Type   | Class                     |
+| ----------- | ------------------------- |
+| Default     | `stroke-text-muted/30`    |
+| Active      | `stroke-primary`          |
+| AI Inferred | `stroke-ai stroke-dashed` |
+| Verified    | `stroke-graph`            |
+| Warning     | `stroke-warning`          |
+| Error       | `stroke-error`            |
+
+---
+
+# 11. Forms
+
+## Label
+
+```text
+text-sm font-medium text-text-primary
+```
+
+## Helper Text
+
+```text
+text-xs text-text-muted
+```
+
+## Error Text
+
+```text
+text-xs text-error
+```
+
+## Form Group
+
+```text
+space-y-2
+```
+
+## Form Section
+
+```text
+space-y-4
+```
+
+---
+
+# 12. States
+
+## Hover
+
+Default hover:
+
+```text
+hover:bg-white/5 hover:text-text-primary
+```
+
+Border hover:
+
+```text
+hover:border-border-strong
+```
+
+Primary hover:
+
+```text
+hover:bg-primary-hover
+```
+
+AI hover:
+
+```text
+hover:bg-ai/20
+```
+
+## Focus
+
+Default focus:
+
+```text
+focus:outline-none focus:ring-2 focus:ring-ai/30
+```
+
+Input focus:
+
+```text
+focus:border-ai focus:ring-2 focus:ring-ai/30
+```
+
+Primary focus:
+
+```text
+focus:ring-primary/30
+```
+
+## Disabled
+
+```text
+opacity-50 pointer-events-none cursor-not-allowed
+```
+
+## Loading
+
+```text
+animate-pulse
+```
+
+Spinner:
+
+```text
+h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent
+```
+
+---
+
+# 13. Icons
+
+Recommended icon libraries:
+
+```text
+Lucide
+Heroicons
+Phosphor Icons
+```
+
+Icon style:
+
+```text
+Outline
+Rounded
+Simple
+1.5px or 2px stroke
+```
+
+Icon color:
+
+| Usage   | Class                 |
+| ------- | --------------------- |
+| Default | `text-text-secondary` |
+| Muted   | `text-text-muted`     |
+| Active  | `text-primary`        |
+| AI      | `text-ai`             |
+| Success | `text-success`        |
+| Warning | `text-warning`        |
+| Error   | `text-error`          |
+
+---
+
+# 14. Status Rules
+
+Status should not rely on color only.
+
+Good:
+
+```text
+Yellow badge + "Possibly stale"
+Green badge + "Connected"
+Red badge + "Failed"
+Purple badge + "AI generated"
+```
+
+Avoid:
+
+```text
+Only colored dot without label
+```
+
+---
+
+# 15. Accessibility
+
+Minimum contrast:
+
+```text
+Normal text: 4.5:1
+Large text: 3:1
+UI component boundaries: 3:1
+```
+
+Rules:
+
+```text
+All buttons, inputs, links must have focus state.
+Do not use muted text for critical information.
+Do not rely on color only for status.
+Long AI answers should use leading-6 or leading-7.
+Clickable areas should be at least 40px tall.
+```
+
+---
+
+# 16. Class Recipes Summary
+
+## App
+
+```text
+min-h-screen bg-app text-text-secondary antialiased
+```
+
+## Card
+
+```text
+rounded-2xl border border-border bg-surface p-5 shadow-soft
+```
+
+## Elevated Card
+
+```text
+rounded-2xl border border-border-strong bg-elevated p-5 shadow-elevated
+```
+
+## Primary Button
+
+```text
+inline-flex items-center justify-center rounded-lg border border-primary/40 bg-primary px-4 py-2 text-sm font-semibold text-app shadow-primary transition hover:bg-primary-hover active:bg-primary-active
+```
+
+## Secondary Button
+
+```text
+inline-flex items-center justify-center rounded-lg border border-border bg-elevated px-4 py-2 text-sm font-medium text-text-primary transition hover:border-border-strong hover:bg-subtle
+```
+
+## Input
+
+```text
+w-full rounded-xl border border-border bg-app px-3 py-2 text-sm text-text-primary placeholder:text-text-disabled outline-none transition focus:border-ai focus:ring-2 focus:ring-ai/30
+```
+
+## Badge Base
+
+```text
+inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium
+```
+
+## Citation Chip
+
+```text
+inline-flex items-center rounded-full border border-primary/30 bg-primary-soft px-2.5 py-1 text-xs font-medium text-primary transition hover:bg-primary/20
+```
+
+## Sidebar Item
+
+```text
+flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-text-secondary transition hover:bg-white/5 hover:text-text-primary
+```
+
+## Sidebar Active Item
+
+```text
+flex items-center gap-2 rounded-lg border border-primary/30 bg-primary-soft px-3 py-2 text-sm font-medium text-primary
+```
+
+---
+
+# 17. Final Rule
+
+Sunset Fire Dark Mode should feel like:
+
+```text
+A warm, focused AI command center.
+```
+
+Not:
+
+```text
+A red/orange theme.
+```
+
+Use orange as a signal.
+Use purple for intelligence.
+Use green for healthy knowledge.
+Use dark warm neutral for the foundation.
+
+```
+```

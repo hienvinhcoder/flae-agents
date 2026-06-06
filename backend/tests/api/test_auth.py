@@ -14,7 +14,7 @@ app.dependency_overrides[get_current_user_uid] = override_get_current_user_uid
 
 @pytest.fixture
 def mock_auth_service():
-    with patch("app.api.endpoints.auth.auth_service.sync_firebase_user") as mock_sync:
+    with patch("app.api.v1.endpoints.auth.auth_service.sync_firebase_user") as mock_sync:
         mock_user = MagicMock()
         mock_user.id = "mock_firestore_id_123"
         mock_user.firebase_uid = "mock_firebase_uid_123"
@@ -27,7 +27,7 @@ def mock_auth_service():
 
 def test_sync_user_success(mock_auth_service):
     response = client.post(
-        "/auth/sync-user",
+        "/api/v1/auth/sync-user",
         json={
             "email": "test@example.com",
             "full_name": "Test User",
@@ -37,34 +37,34 @@ def test_sync_user_success(mock_auth_service):
     )
     assert response.status_code == 200
     data = response.json()
-    assert data["email"] == "test@example.com"
-    assert data["firebase_uid"] == "mock_firebase_uid_123"
-    assert data["id"] == "mock_firestore_id_123"
+    assert data["data"]["email"] == "test@example.com"
+    assert data["data"]["firebase_uid"] == "mock_firebase_uid_123"
+    assert data["data"]["id"] == "mock_firestore_id_123"
 
 def test_sync_user_invalid_provider(mock_auth_service):
     response = client.post(
-        "/auth/sync-user",
+        "/api/v1/auth/sync-user",
         json={
             "email": "test@example.com",
             "full_name": "Test User",
             "login_provider": "invalid_provider"
         }
     )
-    assert response.status_code == 422 # Pydantic validation error
+    assert response.status_code == 400 # Custom exception handler returns 400 for validation errors
 
 def test_sync_user_missing_token():
     # Remove the override for this specific test
     app.dependency_overrides.pop(get_current_user_uid, None)
     
     response = client.post(
-        "/auth/sync-user",
+        "/api/v1/auth/sync-user",
         json={
             "email": "test@example.com",
             "full_name": "Test User",
             "login_provider": "google"
         }
     )
-    assert response.status_code == 403 # Missing credentials (HTTPBearer)
+    assert response.status_code == 401 # Missing credentials (HTTPBearer) returns 401
     
     # Restore the override for other tests
     app.dependency_overrides[get_current_user_uid] = override_get_current_user_uid

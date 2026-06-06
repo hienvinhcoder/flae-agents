@@ -100,7 +100,6 @@ export class AdminLayoutComponent implements OnInit {
     else if (this.currentPath.includes('agents')) this.pageTitle = 'My Agent Team';
     else if (this.currentPath.includes('knowledge')) this.pageTitle = 'Knowledge Base';
     else if (this.currentPath.includes('reports')) this.pageTitle = 'Analyst Reports';
-    else if (this.currentPath.includes('voice')) this.pageTitle = 'Voice Calls';
     else if (this.currentPath.includes('settings')) this.pageTitle = 'Settings';
     else this.pageTitle = 'Dashboard';
   }

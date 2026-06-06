@@ -20,16 +20,4 @@ class WorkspaceManualCreateRequest(ResponseSchemaBase):
     website: Optional[str] = None
 
 
-class OAuthUrlRequest(ResponseSchemaBase):
-    platform: PlatformEnum
-    shop_domain: Optional[str] = None  # required for Haravan
 
-
-class OAuthUrlResponse(ResponseSchemaBase):
-    auth_url: str
-
-
-class OAuthCallbackRequest(ResponseSchemaBase):
-    platform: PlatformEnum
-    code: str
-    shop_domain: Optional[str] = None

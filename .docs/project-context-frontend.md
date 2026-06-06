@@ -1,9 +1,9 @@
 # Project Context - Frontend (Index)
 
-> **Last Updated**: 2026-05-26
+> **Last Updated**: 2026-06-05
 
 ## 1. Overview
-Hệ thống frontend của FLAE Agents được thiết kế hoàn toàn bằng kiến trúc **Angular Signals** kết hợp với **REST API (Backend FastAPI)** và **WebSockets**. Mục tiêu là xây dựng một nền tảng Reactive, tối ưu caching và realtime, đồng thời đảm bảo sự phân chia rạch ròi giữa các lớp hiển thị và logic nghiệp vụ.
+Hệ thống frontend của FLAE Agents được thiết kế hoàn toàn bằng kiến trúc **Angular Signals** kết hợp với **REST API (Backend FastAPI)** và **WebSockets**. Mục tiêu là xây dựng giao diện cho nền tảng **Company Memory AI** giúp doanh nghiệp kết nối các nguồn dữ liệu (Notion, Slack, Google Drive, GitHub) và thực hiện hỏi đáp thông minh (Ask AI), phát hiện tài liệu lỗi thời (Stale Docs), và theo dõi báo cáo thay đổi (Briefing).
 
 **Các quy tắc vàng**:
 1. Tuân thủ tuyệt đối kiến trúc **Dumb/Smart component**.
@@ -24,13 +24,12 @@ Thư mục gốc của source code frontend: `frontend/src/app/`
 - `core/`: Chứa các nền tảng hệ thống như Guards, Layout, Models, Store (State), và Services (Firebase, API).
 - `features/`: Chứa các tính năng được tải động (Lazy-load routes) và các Smart Components thuộc về tính năng đó:
   - `auth/`: Đăng nhập, đồng bộ user.
-  - `dashboard/`: Trang điều khiển chính sau khi đăng nhập.
-  - `workspace-onboarding/` hoặc `onboarding/`: Luồng thiết lập thông tin workspace ban đầu (chọn platform Haravan/KiotViet, kết nối API...).
+  - `dashboard/`: Trang điều khiển chính sau khi đăng nhập (gồm các trang con: Briefing, Ask AI, Sources, Stale Docs, Agents, Settings).
 - `shared/`: Nơi chứa tài nguyên UI có thể tái sử dụng trên toàn app.
   - `ui/`: Chứa các UI/Dumb Components chung (Buttons, Cards, Inputs, Dialogs...). Các Component này được thiết kế theo Standalone Component pattern, dùng `input()` và `output()`, không gọi API hay chứa logic nghiệp vụ, và có thể import trực tiếp vào bất kỳ Feature nào.
   - `pipes/`: Chứa các custom pipes dùng chung.
 - `app.config.ts`: Cài đặt môi trường ứng dụng và các providers chính.
-- `app.routes.ts`: Quản lý định tuyến toàn cục với Lazy Loading.
+- `app.routes.ts`: Quản lý định tuyến toàn cục với Lazy Loading (đã lược bỏ luồng onboarding cũ).
 
 ## 4. Lệnh chạy (Dev Commands)
 ```bash

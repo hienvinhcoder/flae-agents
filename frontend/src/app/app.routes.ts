@@ -13,11 +13,6 @@ export const routes: Routes = [
     canActivate: [requireNoAuthGuard]
   },
   {
-    path: 'onboarding',
-    canActivate: [authGuard],
-    loadChildren: () => import('./features/onboarding/onboarding.routes').then(m => m.routes)
-  },
-  {
     path: 'dashboard',
     canActivate: [authGuard],
     loadChildren: () => import('./features/dashboard/dashboard.routes').then(m => m.dashboardRoutes)
