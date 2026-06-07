@@ -1,5 +1,7 @@
 import { Component, Input, Output, EventEmitter, inject, Signal } from '@angular/core';
 import { LucideAngularModule } from 'lucide-angular';
+import { TranslateModule } from '@ngx-translate/core';
+import { LanguageService } from '../../../services/language.service';
 import { AuthStore } from '../../../stores/auth.store';
 import { WorkspaceStore } from '../../../stores/workspace.store';
 import { Workspace } from '../../../models/workspace.model';
@@ -9,7 +11,8 @@ import { User } from '../../../models/auth.model';
   selector: 'app-topbar',
   standalone: true,
   imports: [
-    LucideAngularModule
+    LucideAngularModule,
+    TranslateModule
   ],
   template: `
     <header class="h-16 sticky top-0 z-30 bg-white/70 backdrop-blur-xl border-b border-outline-variant/15 px-6 flex items-center justify-between shadow-[0_2px_15px_rgba(0,0,0,0.015)]">
@@ -31,7 +34,7 @@ import { User } from '../../../models/auth.model';
       <div class="flex items-center gap-4">
     
         <!-- AI Notification / Quick Action -->
-        <button class="relative p-2 text-primary hover:text-primary bg-primary/5 hover:bg-primary/8 border border-primary/10 transition-all cursor-pointer rounded-xl group shadow-sm">
+        <button [title]="'TOPBAR.AI_ACTION' | translate" class="relative p-2 text-primary hover:text-primary bg-primary/5 hover:bg-primary/8 border border-primary/10 transition-all cursor-pointer rounded-xl group shadow-sm">
           <lucide-icon name="sparkles" class="w-4.5 h-4.5 group-hover:scale-105 transition-transform duration-200"></lucide-icon>
           <!-- Notification Dot -->
           <span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-status-active animate-ping"></span>
@@ -46,7 +49,7 @@ import { User } from '../../../models/auth.model';
                 {{ (currentWorkspace()?.name || 'W').charAt(0).toUpperCase() }}
               </div>
               <span class="font-semibold text-sm text-text-heading truncate max-w-[150px]">
-                {{ currentWorkspace()?.name || 'Select Workspace' }}
+                {{ currentWorkspace()?.name || ('TOPBAR.SELECT_WORKSPACE' | translate) }}
               </span>
               <lucide-icon name="chevron-down" class="w-3.5 h-3.5 text-text-body/50 group-hover:rotate-180 transition-transform duration-200"></lucide-icon>
             </button>
@@ -77,6 +80,45 @@ import { User } from '../../../models/auth.model';
             </div>
           </div>
         }
+
+        <!-- Language Selector -->
+        <div class="relative group">
+          <button [title]="'COMMON.LANGUAGE' | translate" class="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-outline-variant/35 rounded-xl hover:bg-primary/5 hover:border-primary/20 transition-all duration-200 cursor-pointer shadow-soft">
+            <lucide-icon name="languages" class="w-4 h-4 text-text-body/70"></lucide-icon>
+            <span class="font-semibold text-xs text-text-heading uppercase">
+              {{ languageService.currentLang() }}
+            </span>
+            <lucide-icon name="chevron-down" class="w-3 h-3 text-text-body/50 group-hover:rotate-180 transition-transform duration-200"></lucide-icon>
+          </button>
+          
+          <!-- Language Dropdown -->
+          <div class="absolute right-0 top-full mt-2 w-36 bg-white/95 backdrop-blur-xl rounded-2xl shadow-glass border border-outline-variant/30 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-250 transform origin-top-right scale-95 group-hover:scale-100 z-50">
+            <div class="p-1.5 space-y-0.5">
+              <button
+                (click)="languageService.setLanguage('vi')"
+                class="w-full text-left px-2.5 py-1.5 text-xs text-text-body hover:bg-primary/5 hover:text-primary rounded-lg transition-all duration-150 cursor-pointer flex items-center justify-between"
+                [class.bg-primary/5]="languageService.currentLang() === 'vi'"
+                [class.text-primary]="languageService.currentLang() === 'vi'"
+                [class.font-semibold]="languageService.currentLang() === 'vi'">
+                <span>Tiếng Việt</span>
+                @if (languageService.currentLang() === 'vi') {
+                  <lucide-icon name="check" class="w-3.5 h-3.5 text-primary"></lucide-icon>
+                }
+              </button>
+              <button
+                (click)="languageService.setLanguage('en')"
+                class="w-full text-left px-2.5 py-1.5 text-xs text-text-body hover:bg-primary/5 hover:text-primary rounded-lg transition-all duration-150 cursor-pointer flex items-center justify-between"
+                [class.bg-primary/5]="languageService.currentLang() === 'en'"
+                [class.text-primary]="languageService.currentLang() === 'en'"
+                [class.font-semibold]="languageService.currentLang() === 'en'">
+                <span>English</span>
+                @if (languageService.currentLang() === 'en') {
+                  <lucide-icon name="check" class="w-3.5 h-3.5 text-primary"></lucide-icon>
+                }
+              </button>
+            </div>
+          </div>
+        </div>
     
         <div class="w-px h-6 bg-outline-variant/20 hidden sm:block"></div>
     
@@ -108,6 +150,7 @@ import { User } from '../../../models/auth.model';
 export class TopbarComponent {
   authStore = inject(AuthStore);
   workspaceStore = inject(WorkspaceStore);
+  languageService = inject(LanguageService);
 
   @Input() isMobile: boolean = false;
   @Input() pageTitle: string = 'Dashboard';

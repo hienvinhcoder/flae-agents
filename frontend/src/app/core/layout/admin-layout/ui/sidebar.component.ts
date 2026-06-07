@@ -1,11 +1,13 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { LucideAngularModule } from 'lucide-angular';
+import { TranslateModule } from '@ngx-translate/core';
 
 export interface NavItem {
   name: string;
   path: string;
   icon: string;
+  translationKey: string;
 }
 
 @Component({
@@ -13,7 +15,8 @@ export interface NavItem {
   standalone: true,
   imports: [
     RouterModule,
-    LucideAngularModule
+    LucideAngularModule,
+    TranslateModule
   ],
   template: `
     <aside
@@ -57,13 +60,13 @@ export interface NavItem {
             routerLinkActive="bg-primary/8 text-primary font-semibold border-l-3 border-primary shadow-sm"
             [routerLinkActiveOptions]="{exact: false}"
             class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-text-body/80 hover:bg-primary/5 hover:text-primary transition-all duration-200 cursor-pointer group relative font-medium"
-            [title]="collapsed && !isMobile ? item.name : ''"
+            [title]="collapsed && !isMobile ? (item.translationKey | translate) : ''"
             (click)="onNavItemClick()">
             <lucide-icon [name]="item.icon" class="w-5 h-5 flex-shrink-0 transition-colors duration-200 group-hover:text-primary" [class.text-primary]="item.path === currentPath"></lucide-icon>
             <span class="truncate whitespace-nowrap transition-opacity duration-300 text-sm"
               [class.opacity-0]="collapsed && !isMobile"
               [class.hidden]="collapsed && !isMobile">
-              {{ item.name }}
+              {{ item.translationKey | translate }}
             </span>
           </a>
         }
@@ -77,7 +80,7 @@ export interface NavItem {
         @if (!collapsed) {
           <div class="flex flex-col overflow-hidden">
             <span class="text-xs font-semibold text-text-heading">FLAE Engine v1.0</span>
-            <span class="text-[10px] text-text-body/50">Đang hoạt động ổn định</span>
+            <span class="text-[10px] text-text-body/50">{{ 'SIDEBAR.ENGINE_STATUS' | translate }}</span>
           </div>
         }
       </div>
@@ -113,12 +116,12 @@ export class SidebarComponent {
   @Output() collapsedChange = new EventEmitter<boolean>();
 
   readonly navItems: NavItem[] = [
-    { name: 'Morning Briefing', path: '/dashboard/briefing', icon: 'sun' },
-    { name: 'Omnichannel Inbox', path: '/dashboard/inbox', icon: 'message-square' },
-    { name: 'My Agent Team', path: '/dashboard/agents', icon: 'bot' },
-    { name: 'Knowledge Base', path: '/dashboard/knowledge', icon: 'book-open' },
-    { name: 'Analyst Reports', path: '/dashboard/reports', icon: 'bar-chart-2' },
-    { name: 'Settings', path: '/dashboard/settings', icon: 'settings' }
+    { name: 'Morning Briefing', path: '/dashboard/briefing', icon: 'sun', translationKey: 'NAV.BRIEFING' },
+    { name: 'Omnichannel Inbox', path: '/dashboard/inbox', icon: 'message-square', translationKey: 'NAV.INBOX' },
+    { name: 'My Agent Team', path: '/dashboard/agents', icon: 'bot', translationKey: 'NAV.AGENTS' },
+    { name: 'Knowledge Base', path: '/dashboard/knowledge', icon: 'book-open', translationKey: 'NAV.KNOWLEDGE' },
+    { name: 'Analyst Reports', path: '/dashboard/reports', icon: 'bar-chart-2', translationKey: 'NAV.REPORTS' },
+    { name: 'Settings', path: '/dashboard/settings', icon: 'settings', translationKey: 'NAV.SETTINGS' }
   ];
 
   toggleCollapse() {

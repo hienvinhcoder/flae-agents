@@ -1,0 +1,52 @@
+{
+  "COMMON": {
+    "CANCEL": "Hủy bỏ",
+    "SAVE": "Lưu",
+    "SUBMIT": "Gửi",
+    "LANGUAGE": "Ngôn ngữ",
+    "ENGLISH": "Tiếng Anh (EN)",
+    "VIETNAMESE": "Tiếng Việt (VI)",
+    "SUCCESS": "Thành công",
+    "ERROR": "Lỗi",
+    "LOADING": "Đang tải...",
+    "CONFIRM": "Xác nhận"
+  },
+  "NAV": {
+    "BRIEFING": "Báo cáo sáng",
+    "INBOX": "Hộp thư đa kênh",
+    "AGENTS": "Đội trợ lý AI",
+    "KNOWLEDGE": "Cơ sở tri thức",
+    "REPORTS": "Báo cáo phân tích",
+    "SETTINGS": "Cấu hình"
+  },
+  "TOPBAR": {
+    "SELECT_WORKSPACE": "Chọn không gian",
+    "AI_ACTION": "Hành động nhanh AI",
+    "NOTIFICATION": "Thông báo"
+  },
+  "SIDEBAR": {
+    "ENGINE_STATUS": "Đang hoạt động ổn định"
+  },
+  "AUTH": {
+    "WELCOME": "Chào mừng trở lại",
+    "SIGN_IN": "Đăng nhập",
+    "SIGN_UP": "Đăng ký",
+    "CREATE_ACCOUNT": "Tạo tài khoản mới",
+    "CREATE_ACCOUNT_SUB": "Bắt đầu hành trình với FLAE Agent ngay hôm nay.",
+    "EMAIL": "Địa chỉ Email",
+    "PASSWORD": "Mật khẩu",
+    "FULL_NAME": "Họ và tên",
+    "CONFIRM_PASSWORD": "Xác nhận mật khẩu",
+    "HAVE_ACCOUNT": "Đã có tài khoản?",
+    "NO_ACCOUNT": "Chưa có tài khoản?",
+    "SIGN_UP_NOW": "Đăng ký ngay",
+    "SIGN_IN_NOW": "Đăng nhập ngay",
+    "OR_CONTINUE": "Hoặc tiếp tục với",
+    "CREATING_ACCOUNT": "Đang tạo tài khoản..."
+  },
+  "VALIDATION": {
+    "NAME_INVALID": "Tên không hợp lệ (tối thiểu 2 ký tự)",
+    "EMAIL_INVALID": "Email không hợp lệ",
+    "PASSWORD_INVALID": "Mật khẩu tối thiểu 6 ký tự"
+  }
+}

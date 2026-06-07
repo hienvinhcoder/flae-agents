@@ -4,6 +4,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { initializeApp, provideFirebaseApp } from '@angular/fire/app';
 import { getAuth, provideAuth } from '@angular/fire/auth';
 import { importProvidersFrom } from '@angular/core';
+import { TranslateModule } from '@ngx-translate/core';
 import { 
   LucideAngularModule,
   Sun,
@@ -39,7 +40,8 @@ import {
   Wrench,
   CheckCircle,
   ListChecks,
-  Inbox
+  Inbox,
+  Languages
 } from 'lucide-angular';
 
 const lucideIcons = {
@@ -76,12 +78,14 @@ const lucideIcons = {
   Wrench,
   CheckCircle,
   ListChecks,
-  Inbox
+  Inbox,
+  Languages
 };
 
 import { routes } from './app.routes';
 import { environment } from '../environments/environment';
 import { AuthInitializerService } from './core/services/auth-initializer.service';
+import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -92,7 +96,14 @@ export const appConfig: ApplicationConfig = {
     provideFirebaseApp(() => initializeApp(environment.firebase)),
     provideAuth(() => getAuth()),
     provideAppInitializer(() => inject(AuthInitializerService).initialize()),
-    importProvidersFrom(LucideAngularModule.pick(lucideIcons))
+    importProvidersFrom(
+      LucideAngularModule.pick(lucideIcons),
+      TranslateModule.forRoot()
+    ),
+    provideTranslateHttpLoader({
+      prefix: './assets/i18n/',
+      suffix: '.json'
+    })
   ]
 };
 

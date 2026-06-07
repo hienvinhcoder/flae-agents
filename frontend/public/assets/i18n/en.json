@@ -1,0 +1,52 @@
+{
+  "COMMON": {
+    "CANCEL": "Cancel",
+    "SAVE": "Save",
+    "SUBMIT": "Submit",
+    "LANGUAGE": "Language",
+    "ENGLISH": "English (EN)",
+    "VIETNAMESE": "Vietnamese (VI)",
+    "SUCCESS": "Success",
+    "ERROR": "Error",
+    "LOADING": "Loading...",
+    "CONFIRM": "Confirm"
+  },
+  "NAV": {
+    "BRIEFING": "Morning Briefing",
+    "INBOX": "Omnichannel Inbox",
+    "AGENTS": "My Agent Team",
+    "KNOWLEDGE": "Knowledge Base",
+    "REPORTS": "Analyst Reports",
+    "SETTINGS": "Settings"
+  },
+  "TOPBAR": {
+    "SELECT_WORKSPACE": "Select Workspace",
+    "AI_ACTION": "AI Quick Action",
+    "NOTIFICATION": "Notifications"
+  },
+  "SIDEBAR": {
+    "ENGINE_STATUS": "Running smoothly"
+  },
+  "AUTH": {
+    "WELCOME": "Welcome back",
+    "SIGN_IN": "Sign In",
+    "SIGN_UP": "Sign Up",
+    "CREATE_ACCOUNT": "Create a New Account",
+    "CREATE_ACCOUNT_SUB": "Start your journey with FLAE Agent today.",
+    "EMAIL": "Email Address",
+    "PASSWORD": "Password",
+    "FULL_NAME": "Full Name",
+    "CONFIRM_PASSWORD": "Confirm Password",
+    "HAVE_ACCOUNT": "Already have an account?",
+    "NO_ACCOUNT": "Don't have an account?",
+    "SIGN_UP_NOW": "Sign up now",
+    "SIGN_IN_NOW": "Sign in now",
+    "OR_CONTINUE": "Or continue with",
+    "CREATING_ACCOUNT": "Creating account..."
+  },
+  "VALIDATION": {
+    "NAME_INVALID": "Name invalid (minimum 2 characters)",
+    "EMAIL_INVALID": "Email invalid",
+    "PASSWORD_INVALID": "Password must be at least 6 characters"
+  }
+}
