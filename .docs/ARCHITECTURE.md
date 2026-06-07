@@ -8,6 +8,7 @@
 - **Frontend:** Angular 20+ (Standalone Components, Signals), Tailwind CSS 4, Karma/Jasmine.
   - *Design System:* "Green Growth" — Primary `#00C27A`, Accent `#B9FF3B`, Dark Green `#062E24`.
   - *Fonts:* Inter (body) + Plus Jakarta Sans (heading).
+  - *Localization:* Hỗ trợ đa ngôn ngữ (Tiếng Anh `en` & Tiếng Việt `vi`) sử dụng `@ngx-translate`.
 - **Backend:** FastAPI (async), SQLAlchemy, Alembic, pgvector, `temporalio` (Temporal Python SDK).
   - *Cache & Realtime:* Redis (Cache, Pub/Sub).
   - *Background Tasks & Orchestration:* Temporal Server & Worker.

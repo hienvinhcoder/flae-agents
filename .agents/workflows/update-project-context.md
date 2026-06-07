@@ -25,6 +25,7 @@ Agent cần thực hiện nghiêm ngặt các bước sau mà không cần hỏi
 - Cập nhật thông tin chi tiết vào các file context con tương ứng hoặc tạo mới. Đảm bảo cập nhật đủ: Luồng hoạt động, cấu trúc DB liên quan, API contracts, WebSockets, State/Signals, và bất kỳ quy tắc đặc thù mới nào.
 - Nếu tạo file con mới, PHẢI cập nhật file Index tương ứng (`project-context-backend.md` hoặc `project-context-frontend.md`) để chèn liên kết đến file mới.
 - Cập nhật [.docs/ARCHITECTURE.md](file:///.docs/ARCHITECTURE.md) nếu sự thay đổi ảnh hưởng đến kiến trúc tổng thể, mô hình dữ liệu lớn hoặc bổ sung thêm công nghệ/stack mới (ví dụ: tích hợp Temporal, RAG database mới).
+- **QUY TẮC LIÊN KẾT (LINKS):** Tuyệt đối KHÔNG sử dụng đường dẫn tuyệt đối của máy cá nhân (ví dụ: `file:///Users/username/...`) khi tạo liên kết tới các file code hay tài liệu khác. BẮT BUỘC sử dụng đường dẫn tương đối (relative path) từ vị trí của file tài liệu hiện tại (ví dụ: `../../frontend/src/...` hoặc `backend/temporal-integration.md`) để đảm bảo các liên kết hoạt động tốt trên mọi môi trường của các developer khác nhau và trên GitHub/Gitlab.
 
 ## Bước 4: Tóm tắt & Báo cáo
 - Cung cấp báo cáo ngắn gọn cho người dùng bao gồm:

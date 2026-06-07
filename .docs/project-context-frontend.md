@@ -15,6 +15,7 @@ Hệ thống frontend của FLAE Agents được thiết kế hoàn toàn bằng
 - **Styling**: Tailwind CSS v4 (`@tailwindcss/postcss`).
 - **Language**: TypeScript ~5.9 (Strict Mode).
 - **State**: Angular Signals.
+- **Localization**: `@ngx-translate/core` & `@ngx-translate/http-loader` (Quản lý đa ngôn ngữ Việt - Anh).
 - **Firebase**: `@angular/fire` v20 + `firebase` v11 (Chỉ dùng cho Authentication & Storage).
 - **Realtime**: RxJS WebSocketSubject hoặc thư viện WebSocket tương đương.
 - **Test**: Karma + Jasmine (Target Coverage > 75%).
@@ -47,3 +48,4 @@ npm test        # Chạy Karma/Jasmine Unit Test
 - 📖 [Giao tiếp API & Cấu trúc Firebase](frontend/api-communication.md)
 - 📖 [Luồng Xác thực (Authentication Flow)](frontend/auth-flow.md)
 - 📖 [Điều hướng (Routing & Navigation)](frontend/routing-navigation.md)
+- 📖 [Đa ngôn ngữ & Địa phương hóa (Multi-language)](frontend/multi-language.md)

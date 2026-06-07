@@ -78,3 +78,4 @@ Mời xem các tài liệu chi tiết sau đây để hiểu sâu hơn về ki�
 - 📖 [Auth & Security](backend/auth-security.md)
 - 📖 [Error Handling](backend/error-handling.md)
 - 📖 [API Endpoints](backend/api-endpoints.md)
+- 📖 [Tích hợp Temporal (Durable Execution Orchestration)](backend/temporal-integration.md)
