@@ -35,7 +35,7 @@ export class AuthInitializerService {
         // Chỉ lấy lần emit đầu tiên (trạng thái ban đầu khi app load)
         // Subscription liên tục để watch state thay đổi sẽ được setup riêng
         switchMap(firebaseUser => {
-          console.log('[AuthInitializer] authState emitted:', firebaseUser ? firebaseUser.email : 'null');
+          console.log('[AuthInitializer] authState emitted:', firebaseUser ? 'user exists' : 'null');
           if (!firebaseUser) {
             // Không có session → reset store và đánh dấu ready
             this.authStore.reset();
