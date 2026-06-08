@@ -15,6 +15,7 @@ from app.schemas.sche_workspace import (
     InvitationAcceptRequest
 )
 from app.services.workspace_srv import WorkspaceService
+from app.services.workspace_member_srv import WorkspaceMemberService
 from app.models.workspace import WorkspaceRole
 
 router = APIRouter()
@@ -68,7 +69,7 @@ async def get_workspace_members(
     """
     Lấy danh sách thành viên trong Workspace.
     """
-    members = await WorkspaceService.get_workspace_members_with_profiles(db, workspace_id)
+    members = await WorkspaceMemberService.get_workspace_members_with_profiles(db, workspace_id)
     data = [WorkspaceMemberResponse(**m) for m in members]
     return DataResponse[list[WorkspaceMemberResponse]].success_response(data=data)
 
@@ -136,11 +137,11 @@ async def update_member_role(
     """
     Cập nhật vai trò hoặc trạng thái thành viên (chỉ dành cho owner, admin).
     """
-    member = await WorkspaceService.update_member_role(
+    member = await WorkspaceMemberService.update_member_role(
         db, workspace_id, user_uid, request.role, request.status, current_user.firebase_uid
     )
     # Lấy thêm thông tin User Profile
-    user_res = await WorkspaceService.get_workspace_members_with_profiles(db, workspace_id)
+    user_res = await WorkspaceMemberService.get_workspace_members_with_profiles(db, workspace_id)
     # Tìm profile cụ thể
     member_profile = next((m for m in user_res if m["user_uid"] == user_uid), None)
     
@@ -167,7 +168,7 @@ async def remove_member(
     """
     Xóa thành viên ra khỏi Workspace.
     """
-    success = await WorkspaceService.remove_member(db, workspace_id, user_uid, current_user.firebase_uid)
+    success = await WorkspaceMemberService.remove_member(db, workspace_id, user_uid, current_user.firebase_uid)
     return DataResponse[bool].success_response(data=success)
 
 

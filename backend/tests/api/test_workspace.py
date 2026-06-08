@@ -45,6 +45,11 @@ def mock_workspace_service_all():
     with patch("app.api.v1.endpoints.workspace.WorkspaceService") as mock_srv:
         yield mock_srv
 
+@pytest.fixture
+def mock_workspace_member_service_all():
+    with patch("app.api.v1.endpoints.workspace.WorkspaceMemberService") as mock_srv:
+        yield mock_srv
+
 def test_create_manual_workspace_success(mock_workspace_service):
     response = client.post(
         "/api/v1/workspaces/manual",
@@ -95,14 +100,14 @@ def test_invite_member(mock_workspace_service_all):
     assert data["data"]["email"] == "new@example.com"
     assert data["data"]["role"] == "member"
 
-def test_update_member_role(mock_workspace_service_all):
+def test_update_member_role(mock_workspace_service_all, mock_workspace_member_service_all):
     mock_mem = MagicMock()
     mock_mem.workspace_id = "11111111-2222-3333-4444-555555555555"
     mock_mem.user_uid = "target_uid"
     mock_mem.role = "admin"
     mock_mem.status = "active"
-    mock_workspace_service_all.update_member_role = AsyncMock(return_value=mock_mem)
-    mock_workspace_service_all.get_workspace_members_with_profiles = AsyncMock(return_value=[
+    mock_workspace_member_service_all.update_member_role = AsyncMock(return_value=mock_mem)
+    mock_workspace_member_service_all.get_workspace_members_with_profiles = AsyncMock(return_value=[
         {"user_uid": "target_uid", "email": "target@example.com", "full_name": "Target Name", "avatar_url": None}
     ])
     
@@ -154,5 +159,31 @@ def test_get_pending_invitations(mock_workspace_service_all):
     data = response.json()
     assert len(data["data"]) == 1
     assert data["data"][0]["email"] == "pending@example.com"
+
+
+@pytest.mark.asyncio
+async def test_invite_member_rejects_owner_role():
+    from app.services.workspace_srv import WorkspaceService
+    from app.schemas.sche_workspace import WorkspaceInvitationRequest
+    from app.models.workspace import WorkspaceRole
+    from fastapi import HTTPException
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    mock_db = AsyncMock(spec=AsyncSession)
+    workspace_id = uuid.uuid4()
+    request = WorkspaceInvitationRequest(email="test@example.com", role=WorkspaceRole.owner)
+
+
+    with pytest.raises(HTTPException) as exc_info:
+        await WorkspaceService.invite_member(
+            db=mock_db,
+            workspace_id=workspace_id,
+            request=request,
+            invited_by_uid="mock_admin_uid"
+        )
+
+    assert exc_info.value.status_code == 400
+    assert "Cannot invite a member with the owner role" in exc_info.value.detail
+
 
 
