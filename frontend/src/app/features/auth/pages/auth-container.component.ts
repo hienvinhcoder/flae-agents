@@ -113,7 +113,7 @@ export class AuthContainerComponent implements OnInit, OnDestroy {
      */
     effect(() => {
       if (this.authStore.isAuthenticated()) {
-        const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/onboarding';
+        const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
         this.router.navigateByUrl(returnUrl);
       }
     });

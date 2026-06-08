@@ -9,7 +9,8 @@
     "SUCCESS": "Success",
     "ERROR": "Error",
     "LOADING": "Loading...",
-    "CONFIRM": "Confirm"
+    "CONFIRM": "Confirm",
+    "CREATE": "Create"
   },
   "NAV": {
     "BRIEFING": "Morning Briefing",
@@ -17,7 +18,10 @@
     "AGENTS": "My Agent Team",
     "KNOWLEDGE": "Knowledge Base",
     "REPORTS": "Analyst Reports",
-    "SETTINGS": "Settings"
+    "SETTINGS": "Settings",
+    "GROUP_MAIN": "Main",
+    "GROUP_KNOWLEDGE": "Knowledge",
+    "GROUP_ADMIN": "Admin"
   },
   "TOPBAR": {
     "SELECT_WORKSPACE": "Select Workspace",
@@ -48,5 +52,27 @@
     "NAME_INVALID": "Name invalid (minimum 2 characters)",
     "EMAIL_INVALID": "Email invalid",
     "PASSWORD_INVALID": "Password must be at least 6 characters"
+  },
+  "WORKSPACE": {
+    "SELECT": "Select Workspace",
+    "LABEL": "Workspace",
+    "NO_WORKSPACES": "No workspaces available",
+    "CREATE_NEW": "Create New Workspace",
+    "NAME_PLACEHOLDER": "Workspace name..."
+  },
+  "HTTP_ERROR": {
+    "CONNECTION_FAILED_TITLE": "Connection Error",
+    "CONNECTION_FAILED_MESSAGE": "Unable to connect to the server. Please check your network connection or server status.",
+    "SERVER_ERROR_TITLE": "Server Error",
+    "SERVER_ERROR_MESSAGE": "The server encountered an error. Please try again later.",
+    "UNAUTHORIZED_TITLE": "Session Expired",
+    "UNAUTHORIZED_MESSAGE": "Your session has expired. Please sign in again."
+  },
+  "CONNECTION_MODAL": {
+    "TITLE": "Server Connection Lost",
+    "MESSAGE": "Unable to connect to the system server. Please check your internet connection or server status.",
+    "RETRY_BTN": "Retry Connection",
+    "CHECKING": "Checking connection...",
+    "FAILED_TOAST": "Server connection is still unavailable. Please try again in a few moments."
   }
 }

@@ -8,7 +8,11 @@ import {
   CreateManualWorkspacePayload, 
   GetOauthUrlPayload, 
   GetOauthUrlResponse, 
-  HandleOauthCallbackPayload 
+  HandleOauthCallbackPayload,
+  WorkspaceMember,
+  WorkspaceInvitation,
+  WorkspaceRole,
+  WorkspaceMemberStatus
 } from '../../models/workspace.model';
 import { AuthService } from '../auth.service';
 
@@ -19,6 +23,7 @@ export class WorkspaceApiService {
   private http = inject(HttpClient);
   private authService = inject(AuthService);
   private apiUrl = `${environment.apiUrl}/workspaces`;
+  private userApiUrl = `${environment.apiUrl}/users`;
 
   private getHeaders(): Observable<HttpHeaders> {
     const user = this.authService.getCurrentFirebaseUser();
@@ -32,12 +37,99 @@ export class WorkspaceApiService {
     );
   }
 
+  private getHeadersWithWorkspace(workspaceId: string): Observable<HttpHeaders> {
+    return this.getHeaders().pipe(
+      map(headers => headers.set('X-Workspace-ID', workspaceId))
+    );
+  }
+
+  getWorkspaces(): Observable<Workspace[]> {
+    return this.getHeaders().pipe(
+      switchMap(headers => 
+        this.http.get<ApiResponse<Workspace[]>>(`${this.apiUrl}`, { headers })
+      ),
+      map(res => res.data as Workspace[])
+    );
+  }
+
   createManualWorkspace(payload: CreateManualWorkspacePayload): Observable<Workspace> {
     return this.getHeaders().pipe(
       switchMap(headers => 
         this.http.post<ApiResponse<Workspace>>(`${this.apiUrl}/manual`, payload, { headers })
       ),
       map(res => res.data as Workspace)
+    );
+  }
+
+  updateWorkspace(workspaceId: string, payload: { name: string }): Observable<Workspace> {
+    return this.getHeadersWithWorkspace(workspaceId).pipe(
+      switchMap(headers => 
+        this.http.put<ApiResponse<Workspace>>(`${this.apiUrl}/${workspaceId}`, payload, { headers })
+      ),
+      map(res => res.data as Workspace)
+    );
+  }
+
+  getWorkspaceMembers(workspaceId: string): Observable<WorkspaceMember[]> {
+    return this.getHeadersWithWorkspace(workspaceId).pipe(
+      switchMap(headers => 
+        this.http.get<ApiResponse<WorkspaceMember[]>>(`${this.apiUrl}/${workspaceId}/members`, { headers })
+      ),
+      map(res => res.data as WorkspaceMember[])
+    );
+  }
+
+  getPendingInvitations(workspaceId: string): Observable<WorkspaceInvitation[]> {
+    return this.getHeadersWithWorkspace(workspaceId).pipe(
+      switchMap(headers => 
+        this.http.get<ApiResponse<WorkspaceInvitation[]>>(`${this.apiUrl}/${workspaceId}/invitations`, { headers })
+      ),
+      map(res => res.data as WorkspaceInvitation[])
+    );
+  }
+
+  inviteMember(workspaceId: string, payload: { email: string; role: WorkspaceRole }): Observable<WorkspaceInvitation> {
+    return this.getHeadersWithWorkspace(workspaceId).pipe(
+      switchMap(headers => 
+        this.http.post<ApiResponse<WorkspaceInvitation>>(`${this.apiUrl}/${workspaceId}/invitations`, payload, { headers })
+      ),
+      map(res => res.data as WorkspaceInvitation)
+    );
+  }
+
+  acceptInvitation(payload: { token: string }): Observable<Workspace> {
+    return this.getHeaders().pipe(
+      switchMap(headers => 
+        this.http.post<ApiResponse<Workspace>>(`${this.apiUrl}/invitations/accept`, payload, { headers })
+      ),
+      map(res => res.data as Workspace)
+    );
+  }
+
+  updateMemberRole(workspaceId: string, userUid: string, payload: { role: WorkspaceRole; status: WorkspaceMemberStatus }): Observable<WorkspaceMember> {
+    return this.getHeadersWithWorkspace(workspaceId).pipe(
+      switchMap(headers => 
+        this.http.put<ApiResponse<WorkspaceMember>>(`${this.apiUrl}/${workspaceId}/members/${userUid}`, payload, { headers })
+      ),
+      map(res => res.data as WorkspaceMember)
+    );
+  }
+
+  removeMember(workspaceId: string, userUid: string): Observable<boolean> {
+    return this.getHeadersWithWorkspace(workspaceId).pipe(
+      switchMap(headers => 
+        this.http.delete<ApiResponse<boolean>>(`${this.apiUrl}/${workspaceId}/members/${userUid}`, { headers })
+      ),
+      map(res => !!res.data)
+    );
+  }
+
+  updateCurrentWorkspace(workspaceId: string): Observable<any> {
+    return this.getHeaders().pipe(
+      switchMap(headers => 
+        this.http.put<ApiResponse<any>>(`${this.userApiUrl}/current-workspace`, { workspace_id: workspaceId }, { headers })
+      ),
+      map(res => res.data)
     );
   }
 

@@ -6,7 +6,9 @@ from app.core.logger import get_logger, setup_logging
 
 # Import workflows và activities
 from app.temporal.workflows.greeting import GreetingWorkflow
+from app.temporal.workflows.invitation import WorkspaceInvitationWorkflow
 from app.temporal.activities.greet import greet
+from app.temporal.activities.invitation import send_invitation_email
 
 logger = get_logger(__name__)
 
@@ -27,8 +29,8 @@ async def run_worker():
         worker = Worker(
             client,
             task_queue="flae-default-queue",
-            workflows=[GreetingWorkflow],
-            activities=[greet],
+            workflows=[GreetingWorkflow, WorkspaceInvitationWorkflow],
+            activities=[greet, send_invitation_email],
             activity_executor=activity_executor,
         )
         logger.info("Temporal Worker started. Listening on task queue: flae-default-queue")

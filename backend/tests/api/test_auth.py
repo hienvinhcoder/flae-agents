@@ -22,6 +22,7 @@ def mock_auth_service():
         mock_user.full_name = "Test User"
         mock_user.avatar_url = "https://example.com/avatar.png"
         mock_user.is_active = True
+        mock_user.current_workspace_id = "mock_workspace_id_123"
         mock_sync.return_value = mock_user
         yield mock_sync
 

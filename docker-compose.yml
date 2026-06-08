@@ -12,6 +12,12 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d flae_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
       - app-network
 
@@ -32,6 +38,7 @@ services:
       - "8000:8000"
     environment:
       - POSTGRES_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/flae_db
+      - RAG_DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/rag_db
       - REDIS_URL=redis://redis:6379/0
       - TEMPORAL_HOST=temporal:7233
       - UV_LINK_MODE=copy
@@ -39,9 +46,12 @@ services:
       - ./backend:/app
       - /app/.venv # Tránh mount đè thư mục virtual environment của uv
     depends_on:
-      - postgres
-      - redis
-      - temporal
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      temporal:
+        condition: service_started
     networks:
       - app-network
 
@@ -58,7 +68,8 @@ services:
       - POSTGRES_SEEDS=postgres
       - LOG_LEVEL=error
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - app-network
 
@@ -80,6 +91,7 @@ services:
     command: uv run flae-worker
     environment:
       - POSTGRES_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/flae_db
+      - RAG_DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/rag_db
       - REDIS_URL=redis://redis:6379/0
       - TEMPORAL_HOST=temporal:7233
       - ENVIRONMENT=local
@@ -88,13 +100,14 @@ services:
       - ./backend:/app
       - /app/.venv # Tránh mount đè thư mục virtual environment của uv
     depends_on:
-      - postgres
-      - redis
-      - temporal
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      temporal:
+        condition: service_started
     networks:
       - app-network
-
-
 
 networks:
   app-network:
@@ -103,3 +116,4 @@ networks:
 volumes:
   postgres_data:
   redis_data:
+  frontend_node_modules:

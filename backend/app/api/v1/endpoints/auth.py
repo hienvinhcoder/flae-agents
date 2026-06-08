@@ -26,7 +26,7 @@ async def sync_user(
     Sync user data từ Firebase Auth vào Database.
     Yêu cầu Firebase JWT token hợp lệ trong Authorization header.
     """
-    logger.info(f"Syncing user with firebase_uid={firebase_uid}, email={sync_data.email}")
+    logger.info(f"Syncing user with firebase_uid={firebase_uid}")
 
     user = await auth_service.sync_firebase_user(db, firebase_uid, sync_data)
 
@@ -41,5 +41,6 @@ async def sync_user(
             avatar_url=user.avatar_url,
             is_active=user.is_active,
             login_providers=user.login_providers,
+            current_workspace_id=user.current_workspace_id,
         )
     )

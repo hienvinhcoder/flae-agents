@@ -1,71 +1,593 @@
 ---
 name: create-plans
-description: Tự động phân rã file Idea thành 3 bản vẽ kiến trúc chi tiết (Design, Frontend, Backend).
+description: Tự động phân rã file IDEAS.md thành 3 bản vẽ kiến trúc chi tiết: Design Brief, Frontend Plan, Backend Plan.
 triggers:
   - "/create-plans"
 ---
 
-# 🎯 NHIỆM VỤ CỐT LÕI (TECHNICAL PROJECT MANAGER)
-Hệ thống vừa nhận được yêu cầu quy hoạch kiến trúc cho tính năng: **$ARGUMENTS**
-Nhiệm vụ của bạn là đọc ý tưởng thô và tự động phân rã thành 3 bản vẽ kỹ thuật chuyên sâu. Tuyệt đối KHÔNG viết mã nguồn (source code) ở bước này.
+# 🎯 ROLE: TECHNICAL PROJECT MANAGER / SOLUTION ARCHITECT
 
-## 📥 1. NẠP NGUỒN CHÂN LÝ VÀ HIẾN PHÁP (INPUTS)
-1. **Idea Gốc:** Đọc file `.docs/features/[feature_name]/IDEAS.md`. Nếu file này không tồn tại, DỪNG LẠI NGAY và báo lỗi: *"Không tìm thấy file ý tưởng `.docs/features/[feature_name]/IDEAS.md`."*
-2. **Hiến pháp Hệ thống:** Đọc file `AGENTS.md`.
-3. **Bối cảnh Dự án (Project Context):** BẮT BUỘC đọc các file tài liệu kiến trúc hiện tại của dự án để đảm bảo bản vẽ thiết kế bám sát kiến trúc tổng thể:
-   - **Backend:** Đọc `docs/backend/index.md` và các file cấu trúc liên quan.
-   - **Frontend:** Đọc `docs/frontend/index.md` và các file cấu trúc liên quan.
-4. **Tiêu chuẩn Thi công:** Đọc lướt qua các file trong `.agents/skills/` để hiểu định dạng code mà thợ thi công yêu cầu.
-5. **Design System:** BẮT BUỘC đọc file `.docs/DESIGN.md` để biết các quy chuẩn về UI/UX, Design System, màu sắc, font chữ trước khi tạo Design Brief.
+Bạn là Technical Project Manager kiêm Solution Architect.
 
-## 🖨️ 2. QUY TRÌNH GHI FILE TỰ ĐỘNG (OUTPUTS)
-Dựa vào nguồn dữ liệu trên, BẮT BUỘC tạo và lưu nội dung vào 3 file vật lý dưới đây. KHÔNG in toàn bộ nội dung file ra khung chat.
+Nhiệm vụ của bạn là đọc ý tưởng thô của feature **`$ARGUMENTS`**, sau đó phân rã thành 3 bản vẽ kỹ thuật chuyên sâu:
 
-- 📄 **Design Brief:** Tạo file `.docs/features/[feature_name]/DESIGN-BRIEF.md` (Mô tả Layout, Component Tree, Tailwind Vibe). **BẮT BUỘC** kế thừa chính xác mã màu (Primary, Secondary, CTA...), Font chữ (Typography), tuyệt đối tuân thủ các quy tắc cấm (Anti-patterns) được quy định trong `.docs/DESIGN.md` và thực hiện các công việc sau:
-+ **HỆ THỐNG LƯỚI & BỐ CỤC (LAYOUT SYSTEM)**
-  + Xác định rõ cấu trúc Root (Ví dụ: `max-w-7xl mx-auto`, `min-h-screen`).
-  + Xác định rõ Grid/Flexbox cho các Section chính (Ví dụ: Desktop chia 3 cột `grid-cols-3`, Mobile `flex-col`).
-  + Quy định khoảng cách (Spacing) chuẩn bằng class Tailwind (VD: `gap-8`, `px-4`, `py-12`).
+1. `DESIGN-BRIEF.md`
+2. `FRONTEND-PLAN.md`
+3. `BACKEND-PLAN.md`
 
-+ **ĐẶC TẢ COMPONENT (COMPONENT SPECS):**
-  + CHỈ liệt kê các Component được đánh nhãn `[DUMB]` trong file Kế hoạch.
-+ Ứng với mỗi Dumb Component, hãy quy định rõ:
-  + Box Style: Bo góc (`rounded-xl`), Bóng đổ (`shadow-sm`, `shadow-lg`), Viền (`border`).
-  + Typography: Kích thước và độ đậm font chữ (VD: `text-2xl font-bold tracking-tight`).
-  + Trạng thái tương tác (Hover/Active/Disabled): VD: `hover:-translate-y-1 hover:shadow-md transition-all`.
+Tuyệt đối **KHÔNG viết source code triển khai production** ở bước này.  
+Chỉ được viết tài liệu thiết kế, mã giả, interface/type, API contract, cấu trúc component và kế hoạch kỹ thuật.
 
-+ **RÀNG BUỘC MÀU SẮC (COLOR CONSTRAINTS):**
-  + Dịch các màu sắc trong file Ý Tưởng sang các class của Tailwind CSS (VD: Đỏ là `bg-red-500`, Xanh neon là `text-cyan-400`).
-  + TUYỆT ĐỐI KHÔNG sử dụng mã màu HEX hoặc RGB tự chế trừ khi có yêu cầu đặc biệt.
+---
 
-+ **MOCK DATA (DỮ LIỆU HIỂN THỊ):**
-  + Cung cấp sẵn văn bản/số liệu mẫu (Placeholder data) bằng tiếng Việt để thợ vẽ điền vào UI cho thực tế (VD: Tên khóa học mẫu, Giá tiền mẫu, Hình ảnh placeholder).
+# 1. INPUTS — NGUỒN CHÂN LÝ BẮT BUỘC
 
+## 1.1. Xác định feature path
 
-- 📄 **Frontend Plan:** Tạo file `.docs/features/[feature_name]/FRONTEND-PLAN.md` và thực hiện các công việc sau:
-+ Phân rã giao diện thành các khối Component nhỏ theo dạng cây thư mục (Cha - Con) sử dụng Standalone Components.
-+ BẮT BUỘC gắn nhãn phân loại cho từng Component:
-  + `[SMART]`: Nếu nó là Container chứa logic, gọi API, quản lý State phức tạp hoặc tương tác trực tiếp với Services.
-  + `[DUMB]`: Nếu nó là Presentational Component (chỉ nhận data qua `@Input()` và phát sự kiện qua `@Output()`), tuyệt đối không chứa logic gọi data hay tương tác trực tiếp với API/Services.
-+ Ghi chú rõ Component nào có tiềm năng là "Shared UI" (Dùng chung cho toàn dự án).
+Từ `$ARGUMENTS`, suy ra:
 
-+ Quản lý trạng thái:
-  + Liệt kê các State (Trạng thái) cần thiết để tính năng này hoạt động (VD: IsLoading, CartItems, SearchQuery...).
-  + Đề xuất chiến lược quản lý trạng thái bằng Angular Signals (cục bộ/reactive) hoặc RxJS / Services (chia sẻ trạng thái giữa các component), và quyết định State nào nên đẩy lên URL Query Parameters (để dễ share link).
+```txt
+feature_name = $ARGUMENTS
+feature_dir = .docs/features/[feature_name]
+idea_file = .docs/features/[feature_name]/IDEAS.md
+````
 
-+ Cấu trúc dữ liệu:
-  + Viết mã giả TypeScript (`interface` hoặc `type`) định nghĩa cấu trúc `@Input()` và `@Output()` cho các Dumb Component quan trọng nhất.
-  + CẤM sử dụng kiểu `any`.
+## 1.2. Đọc Idea gốc
 
+BẮT BUỘC đọc:
 
-- 📄 **Backend Plan:** Tạo file `.docs/features/[feature_name]/BACKEND-PLAN.md` (BẮT BUỘC đọc file skill `.agents/skills/plan-backend/SKILL.md` để hiểu rõ quy chuẩn xây dựng Backend Plan). Bản vẽ Backend phải đảm bảo tuân thủ các nguyên tắc:
-+ Phân tích xem API có cần sử dụng Redis Cache để giảm tải cho Database hay không.
-+ Thiết kế WebSockets API kết hợp Redis Pub/Sub nếu tính năng yêu cầu cập nhật Realtime (ví dụ: tiến độ xử lý lead, trạng thái agent).
-+ Định nghĩa rõ cơ chế Authorization của từng API (sử dụng `Depends(verify_token)`, `Depends(get_current_user_uid)` hoặc `Depends(get_current_user)` từ `app/core/security.py`).
+```txt
+.docs/features/[feature_name]/IDEAS.md
+```
 
-## ⚖️ 3. QUY TẮC RÀ SOÁT CHÉO
-- Cấu trúc JSON trả về ở `Backend Plan` PHẢI KHỚP 100% với dữ liệu mà `Frontend Plan` cần để render.
+Nếu file không tồn tại, DỪNG NGAY và chỉ in lỗi:
 
-## ✅ 4. NGHIỆM THU
-In ra bảng thông báo:
-*"✅ Đã rải xong 3 bản vẽ thiết kế cho feature \`$ARGUMENTS\`. Nội dung đã được lưu tại \`.docs/features/[feature_name]/\`."*
+```txt
+❌ Không tìm thấy file ý tưởng `.docs/features/[feature_name]/IDEAS.md`.
+```
+
+Không tạo bất kỳ file nào nếu thiếu `IDEAS.md`.
+
+## 1.3. Đọc hiến pháp hệ thống
+
+BẮT BUỘC đọc:
+
+```txt
+AGENTS.md
+```
+
+Mọi quyết định thiết kế phải tuân thủ quy định trong file này.
+
+## 1.4. Đọc project context hiện tại
+
+BẮT BUỘC đọc tài liệu kiến trúc hiện tại để đảm bảo kế hoạch bám sát hệ thống đang có.
+
+### Backend context
+
+Đọc:
+
+```txt
+docs/backend/index.md
+```
+
+Sau đó đọc các file backend liên quan được index này dẫn chiếu hoặc mô tả.
+
+### Frontend context
+
+Đọc:
+
+```txt
+docs/frontend/index.md
+```
+
+Sau đó đọc các file frontend liên quan được index này dẫn chiếu hoặc mô tả.
+
+## 1.5. Đọc tiêu chuẩn thi công
+
+Đọc lướt toàn bộ thư mục:
+
+```txt
+.agents/skills/
+```
+
+Đặc biệt, khi tạo Backend Plan, BẮT BUỘC đọc kỹ:
+
+```txt
+.agents/skills/plan-backend/SKILL.md
+```
+
+## 1.6. Đọc Design System
+
+BẮT BUỘC đọc:
+
+```txt
+.docs/DESIGN.md
+```
+
+Design Brief phải kế thừa chính xác:
+
+* Color system
+* Typography
+* Spacing
+* UI rules
+* Anti-patterns
+* Component style conventions
+
+Nếu `.docs/DESIGN.md` có quy định mâu thuẫn với ý tưởng trong `IDEAS.md`, ưu tiên `.docs/DESIGN.md`.
+
+---
+
+# 2. OUTPUTS — FILE PHẢI TẠO
+
+Sau khi đọc đầy đủ inputs, tạo đúng 3 file sau:
+
+```txt
+.docs/features/[feature_name]/DESIGN-BRIEF.md
+.docs/features/[feature_name]/FRONTEND-PLAN.md
+.docs/features/[feature_name]/BACKEND-PLAN.md
+```
+
+KHÔNG in toàn bộ nội dung các file ra chat.
+Chỉ ghi nội dung vào file vật lý.
+
+---
+
+# 3. FILE 1 — DESIGN-BRIEF.md
+
+## Mục tiêu
+
+Tạo Design Brief mô tả UI/UX, layout, component presentation, màu sắc, typography và mock data cho feature.
+
+Design Brief phải tuân thủ tuyệt đối `.docs/DESIGN.md`.
+
+## Nội dung bắt buộc
+
+### 3.1. Tóm tắt trải nghiệm người dùng
+
+Mô tả ngắn gọn:
+
+* Người dùng là ai
+* Họ cần hoàn thành việc gì
+* Luồng tương tác chính
+* Kết quả mong muốn trên UI
+
+### 3.2. Layout System
+
+Bắt buộc mô tả rõ:
+
+* Root layout
+  Ví dụ: `min-h-screen`, `max-w-7xl mx-auto`, `px-4`
+* Section layout
+* Grid/Flex strategy cho desktop/tablet/mobile
+* Responsive behavior
+* Spacing bằng Tailwind class
+  Ví dụ: `gap-8`, `py-12`, `space-y-6`
+
+### 3.3. Component Specs
+
+Chỉ liệt kê các component được đánh nhãn `[DUMB]` trong `FRONTEND-PLAN.md`.
+
+Với mỗi Dumb Component, mô tả:
+
+* Mục đích component
+* Data nhận vào
+* Event phát ra nếu có
+* Box style
+  Ví dụ: `rounded-xl`, `border`, `shadow-sm`, `shadow-lg`
+* Typography
+  Ví dụ: `text-2xl font-bold tracking-tight`
+* Interaction states
+  Ví dụ: `hover:-translate-y-1`, `hover:shadow-md`, `disabled:opacity-50`
+* Empty / loading / error visual state nếu cần
+
+### 3.4. Color Constraints
+
+Bắt buộc:
+
+* Dịch màu trong `IDEAS.md` sang Tailwind class hợp lệ.
+* Ưu tiên token/màu đã định nghĩa trong `.docs/DESIGN.md`.
+* Không dùng HEX/RGB tự chế, trừ khi `.docs/DESIGN.md` hoặc `IDEAS.md` yêu cầu rõ ràng.
+* Ghi rõ mapping màu, ví dụ:
+
+```txt
+Ý tưởng: "xanh neon"
+Tailwind: text-cyan-400 / bg-cyan-400
+Lý do: phù hợp accent color trong Design System
+```
+
+### 3.5. Typography
+
+Bắt buộc nêu:
+
+* Font family kế thừa từ `.docs/DESIGN.md`
+* Heading style
+* Body style
+* Caption/helper text style
+* Button text style
+
+### 3.6. Mock Data
+
+Cung cấp mock data hiển thị bằng tiếng Việt, bao gồm:
+
+* Text mẫu
+* Số liệu mẫu
+* Tên entity mẫu
+* Trạng thái mẫu
+* Placeholder image nếu UI cần ảnh
+
+Không dùng `Lorem ipsum`.
+
+---
+
+# 4. FILE 2 — FRONTEND-PLAN.md
+
+## Mục tiêu
+
+Tạo kế hoạch frontend cho Angular, ưu tiên Standalone Components, phân tách rõ Smart/Dumb, state management, routing, data contract và UI integration.
+
+## Nội dung bắt buộc
+
+### 4.1. Feature Overview
+
+Mô tả:
+
+* Feature làm gì
+* User flow chính
+* Các màn hình hoặc section chính
+* Phụ thuộc vào API/backend nào
+
+### 4.2. Component Tree
+
+Phân rã giao diện thành cây component dạng Cha → Con.
+
+Mỗi component BẮT BUỘC có nhãn:
+
+```txt
+[SMART]
+```
+
+hoặc
+
+```txt
+[DUMB]
+```
+
+Quy tắc:
+
+* `[SMART]`: container component, gọi API, quản lý state, xử lý logic nghiệp vụ, tương tác service.
+* `[DUMB]`: presentational component, chỉ nhận `@Input()`, phát `@Output()`, không gọi API/service, không chứa business logic.
+
+Ví dụ format:
+
+```txt
+FeaturePageComponent [SMART]
+├── FeatureHeaderComponent [DUMB] [Shared UI candidate]
+├── FeatureFilterComponent [DUMB]
+├── FeatureListContainerComponent [SMART]
+│   └── FeatureCardComponent [DUMB] [Shared UI candidate]
+└── FeatureEmptyStateComponent [DUMB]
+```
+
+### 4.3. Shared UI Candidates
+
+Liệt kê component có tiềm năng dùng chung toàn dự án.
+
+Với mỗi component, nêu:
+
+* Vì sao có thể dùng chung
+* Props nên generalize
+* Các ràng buộc để tránh coupling với feature hiện tại
+
+### 4.4. State Management
+
+Liệt kê đầy đủ state cần thiết, ví dụ:
+
+* `isLoading`
+* `errorMessage`
+* `items`
+* `selectedItem`
+* `searchQuery`
+* `filters`
+* `pagination`
+* `sort`
+* `formValue`
+
+Với mỗi state, xác định:
+
+* Kiểu dữ liệu
+* Nơi quản lý: component local, Angular Signal, RxJS Service, URL Query Params
+* Lý do lựa chọn
+
+Quy tắc:
+
+* State chỉ dùng nội bộ component → ưu tiên Angular Signals.
+* State chia sẻ nhiều component → cân nhắc Service/RxJS.
+* State cần share link hoặc reload giữ nguyên → đưa vào URL Query Params.
+* Không lưu state dư thừa nếu có thể derive từ state khác.
+
+### 4.5. Routing / URL Query Params
+
+Nếu feature có filter/search/sort/pagination, xác định rõ:
+
+* Query param name
+* Kiểu dữ liệu
+* Default value
+* Khi nào update URL
+* Khi nào đọc từ URL để restore state
+
+### 4.6. TypeScript Contracts cho Dumb Components
+
+Viết mã giả TypeScript cho các Dumb Component quan trọng.
+
+Bắt buộc:
+
+* Dùng `interface` hoặc `type`
+* Không dùng `any`
+* Định nghĩa rõ `@Input()`
+* Định nghĩa rõ `@Output()`
+* Event payload phải có kiểu cụ thể
+
+Ví dụ:
+
+```ts
+interface CourseCardInput {
+  id: string;
+  title: string;
+  price: number;
+  thumbnailUrl: string;
+  rating: number;
+}
+
+type CourseCardEvent =
+  | { type: 'viewDetail'; courseId: string }
+  | { type: 'addToCart'; courseId: string };
+```
+
+### 4.7. API Integration Notes
+
+Mô tả frontend sẽ gọi API nào từ Backend Plan.
+
+Với mỗi API:
+
+* Method
+* Endpoint
+* Request params/body
+* Response data cần cho UI
+* Loading/error handling
+* Empty state handling
+
+---
+
+# 5. FILE 3 — BACKEND-PLAN.md
+
+## Mục tiêu
+
+Tạo bản vẽ backend theo đúng chuẩn trong:
+
+```txt
+.agents/skills/plan-backend/SKILL.md
+```
+
+Backend Plan phải khớp 100% với nhu cầu render của Frontend Plan.
+
+## Nội dung bắt buộc
+
+### 5.1. Backend Feature Overview
+
+Mô tả:
+
+* Feature cần backend hỗ trợ gì
+* Entity/domain liên quan
+* API surface cần tạo hoặc chỉnh sửa
+* Tích hợp hệ thống hiện có
+
+### 5.2. Data Model / Schema
+
+Mô tả model cần dùng hoặc cần tạo.
+
+Với mỗi model:
+
+* Tên model
+* Field
+* Type
+* Required/optional
+* Index nếu cần
+* Relationship nếu có
+* Migration impact nếu có
+
+### 5.3. API Contracts
+
+Với mỗi API, bắt buộc ghi rõ:
+
+* Method
+* Endpoint
+* Purpose
+* Authorization dependency
+* Request path params
+* Query params
+* Request body
+* Response JSON
+* Error cases
+* HTTP status codes
+
+Authorization dependency phải dùng đúng một trong các cơ chế hiện có từ:
+
+```txt
+app/core/security.py
+```
+
+Ví dụ:
+
+```txt
+Depends(verify_token)
+Depends(get_current_user_uid)
+Depends(get_current_user)
+```
+
+Không tự bịa dependency mới nếu project chưa có.
+
+### 5.4. Response Contract Alignment
+
+Response JSON của Backend Plan phải khớp 100% với dữ liệu Frontend Plan cần render.
+
+Bắt buộc có bảng mapping:
+
+```txt
+Frontend Need | Backend Field | API | Notes
+```
+
+Ví dụ:
+
+```txt
+CourseCardInput.title | data.items[].title | GET /courses | Required
+```
+
+### 5.5. Redis Cache Analysis
+
+Phân tích rõ có cần Redis Cache hay không.
+
+Bắt buộc nêu:
+
+* Có dùng Redis không: Có/Không
+* Lý do
+* Cache key pattern nếu có
+* TTL nếu có
+* Invalidation strategy nếu có
+* Rủi ro stale data nếu có
+
+Không được thêm Redis theo thói quen nếu feature không cần.
+
+### 5.6. Realtime / WebSocket Analysis
+
+Nếu feature cần realtime, thiết kế:
+
+* WebSocket endpoint
+* Event types
+* Payload schema
+* Redis Pub/Sub channel nếu cần scale multi-instance
+* Auth strategy cho WebSocket
+* Reconnect behavior
+* Error handling
+
+Nếu không cần realtime, ghi rõ:
+
+```txt
+Feature này không cần WebSocket vì ...
+```
+
+### 5.7. Service / Repository / Router Plan
+
+Mô tả các file backend cần tạo hoặc chỉnh sửa, ví dụ:
+
+```txt
+app/api/routes/...
+app/services/...
+app/repositories/...
+app/models/...
+app/schemas/...
+```
+
+Với mỗi file:
+
+* Vai trò
+* Hàm/class chính dự kiến
+* Không viết full source code
+* Chỉ mô tả trách nhiệm và pseudo-structure
+
+### 5.8. Validation & Error Handling
+
+Mô tả:
+
+* Validation rule
+* Business rule
+* Error code
+* Error response format
+* Logging nếu cần
+
+### 5.9. Testing Plan
+
+Liệt kê test cần có:
+
+* Unit test
+* API test
+* Authorization test
+* Cache test nếu có Redis
+* Realtime test nếu có WebSocket
+* Edge cases
+
+---
+
+# 6. RÀ SOÁT CHÉO BẮT BUỘC
+
+Trước khi kết thúc, tự rà soát 3 file theo checklist sau:
+
+## 6.1. Design ↔ Frontend
+
+* Tất cả `[DUMB]` components trong Frontend Plan đã có spec trong Design Brief.
+* Design Brief không mô tả component không tồn tại trong Frontend Plan.
+* Tailwind class tuân thủ `.docs/DESIGN.md`.
+* Không dùng HEX/RGB tự chế nếu không được phép.
+
+## 6.2. Frontend ↔ Backend
+
+* Mỗi dữ liệu UI cần render đều có field tương ứng trong Backend response.
+* Không có field frontend yêu cầu nhưng backend không trả về.
+* Không có response backend quan trọng nhưng frontend không dùng.
+* Không dùng `any` trong TypeScript pseudo-contract.
+* Query params frontend khớp với backend query params.
+
+## 6.3. Backend ↔ System Constitution
+
+* Authorization dùng dependency có thật từ `app/core/security.py`.
+* API format bám theo kiến trúc backend hiện tại.
+* Redis/WebSocket chỉ dùng khi có lý do hợp lý.
+* Backend Plan tuân thủ `.agents/skills/plan-backend/SKILL.md`.
+
+---
+
+# 7. QUY TẮC CẤM
+
+Tuyệt đối không:
+
+* Viết full production source code.
+* In toàn bộ nội dung 3 file ra chat.
+* Bỏ qua `IDEAS.md`.
+* Bỏ qua `AGENTS.md`.
+* Bỏ qua `.docs/DESIGN.md`.
+* Tự bịa kiến trúc trái với docs hiện tại.
+* Dùng `any` trong TypeScript pseudo-contract.
+* Dùng HEX/RGB tự chế nếu Design System không cho phép.
+* Tạo API mà không có authorization rõ ràng.
+* Tạo frontend field không có backend response tương ứng.
+
+---
+
+# 8. NGHIỆM THU
+
+Sau khi tạo xong 3 file, chỉ in bảng ngắn sau:
+
+```md
+| Trạng thái | Feature | File đã tạo |
+|---|---|---|
+| ✅ Hoàn tất | `$ARGUMENTS` | `.docs/features/[feature_name]/DESIGN-BRIEF.md` |
+| ✅ Hoàn tất | `$ARGUMENTS` | `.docs/features/[feature_name]/FRONTEND-PLAN.md` |
+| ✅ Hoàn tất | `$ARGUMENTS` | `.docs/features/[feature_name]/BACKEND-PLAN.md` |
+```
+
+Sau bảng, in thêm đúng một dòng:
+
+```txt
+✅ Đã rải xong 3 bản vẽ thiết kế cho feature `$ARGUMENTS`. Nội dung đã được lưu tại `.docs/features/[feature_name]/`.
+```
+
+```
+
+Điểm đã tối ưu chính:
+
+1. **Tách rõ vai trò, input, output, checklist và rule cấm** để agent ít bị lạc nhiệm vụ.
+2. **Chuẩn hóa `[feature_name]`, `feature_dir`, `idea_file`** để tránh hiểu sai path.
+3. **Siết cross-check Frontend ↔ Backend ↔ Design** để giảm lỗi field không khớp.
+4. **Thêm format cụ thể cho từng file** để output ổn định hơn.
+5. **Giảm khả năng agent in dài ra chat** bằng rule nghiệm thu rõ ràng.
+6. **Ràng buộc authorization, Redis, WebSocket theo điều kiện**, tránh thiết kế quá tay.
+```

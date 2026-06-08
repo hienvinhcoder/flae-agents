@@ -1,6 +1,9 @@
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from redis.asyncio import Redis
 from app.core.config import settings
+from app.core.logger import get_logger
+
+logger = get_logger(__name__)
 
 # SQLAlchemy engine setup
 engine = create_async_engine(settings.POSTGRES_URL, echo=False)
@@ -22,4 +25,11 @@ def setup_database():
     Since we are using async SQLAlchemy, the engine is already created globally.
     Redis connection is also managed lazily.
     """
-    pass
+    from app.db.rag_db import rag_db_manager
+    try:
+        rag_db_manager.initialize()
+    except Exception as e:
+        logger.warning(
+            f"⚠️ Không thể khởi tạo RAG database tại startup (có thể DB chưa sẵn sàng hoặc thiếu extension vector): {e}"
+        )
+

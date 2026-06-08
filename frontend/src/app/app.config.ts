@@ -1,6 +1,6 @@
 import { ApplicationConfig, provideZoneChangeDetection, provideBrowserGlobalErrorListeners, provideAppInitializer, inject } from '@angular/core';
 import { provideRouter } from '@angular/router';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { initializeApp, provideFirebaseApp } from '@angular/fire/app';
 import { getAuth, provideAuth } from '@angular/fire/auth';
 import { importProvidersFrom } from '@angular/core';
@@ -41,7 +41,12 @@ import {
   CheckCircle,
   ListChecks,
   Inbox,
-  Languages
+  Languages,
+  Sliders,
+  Users,
+  Plus,
+  UserPlus,
+  RefreshCw
 } from 'lucide-angular';
 
 const lucideIcons = {
@@ -79,23 +84,33 @@ const lucideIcons = {
   CheckCircle,
   ListChecks,
   Inbox,
-  Languages
+  Languages,
+  Sliders,
+  Users,
+  Plus,
+  UserPlus,
+  RefreshCw
 };
 
 import { routes } from './app.routes';
 import { environment } from '../environments/environment';
 import { AuthInitializerService } from './core/services/auth-initializer.service';
 import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
+import { httpErrorInterceptor } from './core/services/api/http-error.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),
-    provideHttpClient(),
+    provideHttpClient(withInterceptors([httpErrorInterceptor])),
     provideFirebaseApp(() => initializeApp(environment.firebase)),
     provideAuth(() => getAuth()),
-    provideAppInitializer(() => inject(AuthInitializerService).initialize()),
+    provideAppInitializer(async () => {
+      console.log('[AppConfig] App Initializer starting...');
+      await inject(AuthInitializerService).initialize();
+      console.log('[AppConfig] App Initializer finished.');
+    }),
     importProvidersFrom(
       LucideAngularModule.pick(lucideIcons),
       TranslateModule.forRoot()

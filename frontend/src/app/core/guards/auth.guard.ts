@@ -42,7 +42,7 @@ export const requireNoAuthGuard: CanActivateFn = (route, state) => {
         return true;
       }
       // Chuyển hướng nếu đã đăng nhập rồi (tránh vào lại trang login)
-      return router.createUrlTree(['/onboarding']);
+      return router.createUrlTree(['/dashboard']);
     })
   );
 };

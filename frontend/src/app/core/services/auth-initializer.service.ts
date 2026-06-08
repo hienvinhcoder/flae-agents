@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Auth, authState, getIdToken } from '@angular/fire/auth';
+import { Auth, authState } from '@angular/fire/auth';
 import { firstValueFrom, switchMap, of, catchError } from 'rxjs';
 import { AuthStore } from '../stores/auth.store';
 import { AuthApiService } from './api/auth-api.service';
@@ -29,11 +29,13 @@ export class AuthInitializerService {
    * Firebase Auth hoàn tất check session trước khi render routes.
    */
   initialize(): Promise<void> {
+    console.log('[AuthInitializer] initialize() called');
     return firstValueFrom(
       authState(this.auth).pipe(
         // Chỉ lấy lần emit đầu tiên (trạng thái ban đầu khi app load)
         // Subscription liên tục để watch state thay đổi sẽ được setup riêng
         switchMap(firebaseUser => {
+          console.log('[AuthInitializer] authState emitted:', firebaseUser ? 'user exists' : 'null');
           if (!firebaseUser) {
             // Không có session → reset store và đánh dấu ready
             this.authStore.reset();
@@ -44,7 +46,7 @@ export class AuthInitializerService {
           // Có session → lấy token và sync với backend
           return new Promise<void>(async (resolve) => {
             try {
-              const token = await getIdToken(firebaseUser, false);
+              const token = await firebaseUser.getIdToken(false);
 
               // Xác định login provider từ providerData
               const providerData = firebaseUser.providerData[0];
@@ -93,6 +95,7 @@ export class AuthInitializerService {
         })
       )
     ).then(() => {
+      console.log('[AuthInitializer] initialize() promise resolved successfully');
       // Sau khi khởi tạo xong, lắng nghe thay đổi Auth State liên tục
       // để xử lý tự động logout khi token hết hạn / bị thu hồi
       this._watchAuthStateChanges();
@@ -117,7 +120,7 @@ export class AuthInitializerService {
       // Firebase phát hiện user đăng nhập mới sau khi app đã load
       // (ví dụ: user vừa signIn từ AuthContainerComponent)
       try {
-        const token = await getIdToken(firebaseUser, false);
+        const token = await firebaseUser.getIdToken(false);
         const providerData = firebaseUser.providerData[0];
         const loginProvider: 'google' | 'email_password' =
           providerData?.providerId === 'google.com' ? 'google' : 'email_password';

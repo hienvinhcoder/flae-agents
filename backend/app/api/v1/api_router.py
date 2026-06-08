@@ -6,3 +6,8 @@ router = APIRouter()
 router.include_router(user.router, prefix="/users", tags=["users"])
 router.include_router(auth.router, prefix="/auth", tags=["auth"])
 router.include_router(workspace.router, prefix="/workspaces", tags=["workspaces"])
+
+@router.get("/health", tags=["health"])
+def health_check():
+    return {"status": "ok"}
+
