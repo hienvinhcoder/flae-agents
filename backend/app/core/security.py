@@ -84,27 +84,30 @@ from app.db.database import redis_client
 from app.models.workspace import WorkspaceRole, WorkspaceMember, WorkspaceMemberStatus
 
 async def get_current_workspace_id(
+    workspace_id: uuid.UUID = None,
     x_workspace_id: str = Header(None, alias="X-Workspace-ID"),
     user_uid: str = Depends(get_current_user_uid),
     db: AsyncSession = Depends(get_db)
 ) -> uuid.UUID:
     """
-    Extract and validate current workspace ID from headers.
+    Extract and validate current workspace ID from path or headers.
     Checks Redis cache first, then DB, verifies user is an active member.
     """
-    if not x_workspace_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Header X-Workspace-ID is missing"
-        )
-    
-    try:
-        workspace_uuid = uuid.UUID(x_workspace_id)
-    except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid workspace ID format"
-        )
+    target_workspace_id = workspace_id
+    if not target_workspace_id:
+        if not x_workspace_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Workspace ID is missing (neither workspace_id path param nor X-Workspace-ID header was provided)"
+            )
+        
+        try:
+            target_workspace_id = uuid.UUID(x_workspace_id)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid workspace ID format in header"
+            )
 
     cache_key = f"user:membership:{user_uid}"
     
@@ -115,9 +118,9 @@ async def get_current_workspace_id(
             membership = json.loads(cached_data)
             workspaces = membership.get("workspaces", [])
             for ws in workspaces:
-                if ws["workspace_id"] == str(workspace_uuid):
+                if ws["workspace_id"] == str(target_workspace_id):
                     if ws["status"] == WorkspaceMemberStatus.active.value:
-                        return workspace_uuid
+                        return target_workspace_id
                     else:
                         raise HTTPException(
                             status_code=status.HTTP_403_FORBIDDEN,
@@ -151,7 +154,7 @@ async def get_current_workspace_id(
             "status": m.status.value
         }
         workspaces_list.append(ws_info)
-        if m.workspace_id == workspace_uuid:
+        if m.workspace_id == target_workspace_id:
             user_has_access = True
             if m.status == WorkspaceMemberStatus.active:
                 is_active = True
@@ -178,7 +181,7 @@ async def get_current_workspace_id(
             detail="You do not have access to this workspace"
         )
         
-    return workspace_uuid
+    return target_workspace_id
 
 
 def require_roles(allowed_roles: list[WorkspaceRole]):
