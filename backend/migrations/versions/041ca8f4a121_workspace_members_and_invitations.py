@@ -90,7 +90,7 @@ def upgrade() -> None:
             NOW(), 
             NOW()
         FROM workspaces w,
-        LATERAL jsonb_array_elements_text(w.admins) AS admin_uid
+        LATERAL jsonb_object_keys(COALESCE(w.admins, '{}'::jsonb)) AS admin_uid
         WHERE admin_uid IN (SELECT firebase_uid FROM users)
         ON CONFLICT (workspace_id, user_uid) DO NOTHING;
         """
@@ -109,7 +109,7 @@ def upgrade() -> None:
             NOW(), 
             NOW()
         FROM workspaces w,
-        LATERAL jsonb_array_elements_text(w.members) AS member_uid
+        LATERAL jsonb_object_keys(COALESCE(w.members, '{}'::jsonb)) AS member_uid
         WHERE member_uid IN (SELECT firebase_uid FROM users)
         ON CONFLICT (workspace_id, user_uid) DO NOTHING;
         """
