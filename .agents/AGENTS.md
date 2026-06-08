@@ -31,9 +31,9 @@ Bạn là Antigravity - một senior fullstack Engineer và System Architect. Nh
   - **Phân tách Database:** Hệ thống sử dụng 3 database riêng biệt (hiện tại nằm chung trên một PostgreSQL cluster):
     1. `flae_db`: Database chính cho toàn bộ ứng dụng (metadata, user profiles, tenant configs...).
     2. `flae_agent_state_db`: Cơ sở dữ liệu chuyên dùng để lưu trữ trạng thái phiên làm việc (agent session state), checkpoint, lịch sử hội thoại... thông qua thư viện LangChain Persistent.
-    3. `flae_knowledge_db`: Cơ sở dữ liệu chuyên dùng để lưu trữ cơ sở tri thức (knowledge base) của agents.
+    3. `rag_db`: Cơ sở dữ liệu chuyên dùng để lưu trữ cơ sở tri thức (knowledge base) của agents.
   - **Thiết kế Database Nâng cao (Tối quan trọng):**
-    * **Partition Table (Tỉa phân vùng):** Chỉ áp dụng kỹ thuật phân vùng bảng cho `flae_knowledge_db` (đặc biệt là bảng lưu trữ dữ liệu lớn như vector chunks, embeddings) theo Tenant ID. Tuyệt đối không áp dụng tràn lan cho tất cả các bảng hoặc các database khác để tránh gây phức tạp hóa migration (Alembic), quản lý khóa ngoại và làm suy giảm hiệu năng truy vấn đối với các bảng nhỏ.
+    * **Partition Table (Tỉa phân vùng):** Chỉ áp dụng kỹ thuật phân vùng bảng cho `rag_db` (đặc biệt là bảng lưu trữ dữ liệu lớn như vector chunks, embeddings) theo Tenant ID. Tuyệt đối không áp dụng tràn lan cho tất cả các bảng hoặc các database khác để tránh gây phức tạp hóa migration (Alembic), quản lý khóa ngoại và làm suy giảm hiệu năng truy vấn đối với các bảng nhỏ.
     * **Row Level Security (RLS - Bảo mật cấp dòng):** Bắt buộc cấu hình RLS trên PostgreSQL để đảm bảo phân tách và cô lập dữ liệu tuyệt đối giữa các tenant/client ngay tại mức database.
   - **Tối ưu hóa & Migrations:** Tối ưu hóa query bằng SQLAlchemy, thiết lập Index cho các trường thường xuyên query. Bắt buộc sử dụng **Alembic** để quản lý version database. Không thay đổi model mà không sinh script migration tương ứng (ví dụ: `uv run alembic revision --autogenerate`).
 - **Xử lý lỗi:** Bắt lỗi tập trung (Global Exception Handler) và trả về response chuẩn mực, dễ hiểu cho Frontend.

@@ -12,6 +12,12 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d flae_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
       - app-network
 
@@ -40,9 +46,12 @@ services:
       - ./backend:/app
       - /app/.venv # Tránh mount đè thư mục virtual environment của uv
     depends_on:
-      - postgres
-      - redis
-      - temporal
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      temporal:
+        condition: service_started
     networks:
       - app-network
 
@@ -59,7 +68,8 @@ services:
       - POSTGRES_SEEDS=postgres
       - LOG_LEVEL=error
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - app-network
 
@@ -90,9 +100,12 @@ services:
       - ./backend:/app
       - /app/.venv # Tránh mount đè thư mục virtual environment của uv
     depends_on:
-      - postgres
-      - redis
-      - temporal
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      temporal:
+        condition: service_started
     networks:
       - app-network
 
