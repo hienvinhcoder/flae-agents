@@ -76,7 +76,15 @@ class DBManager:
             bind=self.async_engine, class_=AsyncSession, expire_on_commit=False
         )
 
+        self._initialized = False
+
+    def initialize(self):
+        """Khởi tạo database RAG (chạy DDL). Chỉ thực hiện một lần."""
+        if self._initialized:
+            return
         self._init_db()
+        self._initialized = True
+
 
     def get_conn(self):
         """Khởi tạo và trả về một connection đồng bộ dùng psycopg2."""
@@ -219,6 +227,7 @@ class DBManager:
         Tải dữ liệu từ một bảng cho một workspace cụ thể dưới dạng Pandas DataFrame.
         Áp dụng Row-Level Security (RLS) để cô lập dữ liệu.
         """
+        self.initialize()
         conn = self.get_conn()
         try:
             # Thiết lập session workspace context cho RLS trên connection này
@@ -268,6 +277,7 @@ class DBManager:
         if df.empty:
             return
 
+        self.initialize()
         conn = self.get_conn()
         cur = conn.cursor()
 
@@ -354,6 +364,7 @@ class DBManager:
         Context manager cung cấp AsyncSession SQLAlchemy, tự động thiết lập
         biến local session `app.current_workspace_id` cho RLS.
         """
+        self.initialize()
         async with self.async_session_factory() as session:
             try:
                 # Đảm bảo thiết lập RLS trong transaction hiện tại
@@ -412,6 +423,7 @@ class DBManager:
         Khởi tạo phân vùng RAG (chunks, entities, relationships) cho workspace_id
         một cách bất đồng bộ để tránh block event loop.
         """
+        self.initialize()
         import asyncio
         def sync_task():
             conn = self.get_conn()
