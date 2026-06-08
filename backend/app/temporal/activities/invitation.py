@@ -53,9 +53,6 @@ async def send_invitation_email(invitation_id: str) -> bool:
         Trân trọng,
         Đội ngũ FLAE Agents
         """
-        
-        logger.info(f"--- EMAIL SENT TO {invitation.email} ---")
-        logger.info(email_content)
-        logger.info("---------------------------------------")
+        logger.info(f"Email invitation sent successfully (invitation_id={invitation_id})")
         
         return True
