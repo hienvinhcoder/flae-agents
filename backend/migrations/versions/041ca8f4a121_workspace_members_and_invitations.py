@@ -42,7 +42,7 @@ def upgrade() -> None:
     op.create_table('workspace_members',
     sa.Column('workspace_id', sa.UUID(), nullable=False),
     sa.Column('user_uid', sa.String(), nullable=False),
-    sa.Column('role', sa.Enum('owner', 'admin', 'member', 'viewer', name='workspacerole'), nullable=False),
+    sa.Column('role', sa.Enum('owner', 'admin', 'member', 'viewer', name='workspacerole', create_type=False), nullable=False),
     sa.Column('status', sa.Enum('active', 'suspended', name='workspacememberstatus'), nullable=False),
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
@@ -82,7 +82,7 @@ def downgrade() -> None:
     op.create_index(op.f('ix_briefing_items_workspace_id'), 'briefing_items', ['workspace_id'], unique=False)
     op.create_table('integration_configs',
     sa.Column('workspace_id', sa.VARCHAR(), autoincrement=False, nullable=False),
-    sa.Column('platform', postgresql.ENUM('manual', 'haravan', 'kiotviet', name='platformenum'), autoincrement=False, nullable=False),
+    sa.Column('platform', postgresql.ENUM('manual', 'haravan', 'kiotviet', name='platformenum', create_type=False), autoincrement=False, nullable=False),
     sa.Column('access_token', sa.VARCHAR(), autoincrement=False, nullable=False),
     sa.Column('refresh_token', sa.VARCHAR(), autoincrement=False, nullable=True),
     sa.Column('expires_at', sa.VARCHAR(), autoincrement=False, nullable=True),
@@ -100,4 +100,9 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_workspace_invitations_token'), table_name='workspace_invitations')
     op.drop_index(op.f('ix_workspace_invitations_email'), table_name='workspace_invitations')
     op.drop_table('workspace_invitations')
+    
+    # Drop custom enum types
+    op.execute("DROP TYPE workspacerole")
+    op.execute("DROP TYPE invitationstatus")
+    op.execute("DROP TYPE workspacememberstatus")
     # ### end Alembic commands ###
