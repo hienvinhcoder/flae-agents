@@ -37,7 +37,7 @@ async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(secur
 
 from app.models.user import User
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, and_
 from sqlalchemy.exc import NoResultFound
 from app.db.database import get_db
 
@@ -191,28 +191,57 @@ def require_roles(allowed_roles: list[WorkspaceRole]):
     async def role_dependency(
         user_uid: str = Depends(get_current_user_uid),
         workspace_id: uuid.UUID = Depends(get_current_workspace_id),
+        db: AsyncSession = Depends(get_db),
     ):
         cache_key = f"user:membership:{user_uid}"
-        cached_data = await redis_client.get(cache_key)
+        cached_data = None
         
-        if not cached_data:
+        try:
+            cached_data = await redis_client.get(cache_key)
+        except Exception:
+            # Fallback will handle DB query if Redis is down
+            pass
+            
+        if cached_data:
+            try:
+                membership = json.loads(cached_data)
+                workspaces = membership.get("workspaces", [])
+                
+                for ws in workspaces:
+                    if ws["workspace_id"] == str(workspace_id):
+                        if ws["role"] in [role.value for role in allowed_roles]:
+                            return ws["role"]
+                        raise HTTPException(
+                            status_code=status.HTTP_403_FORBIDDEN,
+                            detail="You do not have permission to perform this action"
+                        )
+            except HTTPException:
+                raise
+            except Exception:
+                pass
+
+        # Fallback to Database when Redis cache is missing, corrupted, or Redis is offline
+        result = await db.execute(
+            select(WorkspaceMember).where(
+                and_(
+                    WorkspaceMember.user_uid == user_uid,
+                    WorkspaceMember.workspace_id == workspace_id,
+                    WorkspaceMember.status == WorkspaceMemberStatus.active
+                )
+            )
+        )
+        member = result.scalar_one_or_none()
+        if member:
+            if member.role in allowed_roles:
+                return member.role
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Permission denied"
+                detail="You do not have permission to perform this action"
             )
             
-        membership = json.loads(cached_data)
-        workspaces = membership.get("workspaces", [])
-        
-        for ws in workspaces:
-            if ws["workspace_id"] == str(workspace_id):
-                if ws["role"] in [role.value for role in allowed_roles]:
-                    return ws["role"]
-                break
-                
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to perform this action"
+            detail="Permission denied"
         )
         
     return role_dependency
