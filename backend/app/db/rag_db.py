@@ -407,7 +407,30 @@ class DBManager:
                 })
             return chunks
 
+    async def create_workspace_partition(self, workspace_id: str):
+        """
+        Khởi tạo phân vùng RAG (chunks, entities, relationships) cho workspace_id
+        một cách bất đồng bộ để tránh block event loop.
+        """
+        import asyncio
+        def sync_task():
+            conn = self.get_conn()
+            conn.autocommit = True
+            cur = conn.cursor()
+            try:
+                self._ensure_partition(cur, workspace_id)
+            finally:
+                cur.close()
+                conn.close()
+        
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, sync_task)
+
     async def close(self):
         """Đóng tất cả các engine kết nối."""
         self.sync_engine.dispose()
         await self.async_engine.dispose()
+
+
+rag_db_manager = DBManager()
+

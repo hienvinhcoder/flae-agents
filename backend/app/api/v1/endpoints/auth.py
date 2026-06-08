@@ -41,5 +41,6 @@ async def sync_user(
             avatar_url=user.avatar_url,
             is_active=user.is_active,
             login_providers=user.login_providers,
+            current_workspace_id=user.current_workspace_id,
         )
     )

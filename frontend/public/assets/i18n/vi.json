@@ -9,7 +9,8 @@
     "SUCCESS": "Thành công",
     "ERROR": "Lỗi",
     "LOADING": "Đang tải...",
-    "CONFIRM": "Xác nhận"
+    "CONFIRM": "Xác nhận",
+    "CREATE": "Tạo"
   },
   "NAV": {
     "BRIEFING": "Báo cáo sáng",
@@ -17,7 +18,10 @@
     "AGENTS": "Đội trợ lý AI",
     "KNOWLEDGE": "Cơ sở tri thức",
     "REPORTS": "Báo cáo phân tích",
-    "SETTINGS": "Cấu hình"
+    "SETTINGS": "Cấu hình",
+    "GROUP_MAIN": "Main",
+    "GROUP_KNOWLEDGE": "Knowledge",
+    "GROUP_ADMIN": "Admin"
   },
   "TOPBAR": {
     "SELECT_WORKSPACE": "Chọn không gian",
@@ -48,5 +52,27 @@
     "NAME_INVALID": "Tên không hợp lệ (tối thiểu 2 ký tự)",
     "EMAIL_INVALID": "Email không hợp lệ",
     "PASSWORD_INVALID": "Mật khẩu tối thiểu 6 ký tự"
+  },
+  "WORKSPACE": {
+    "SELECT": "Chọn không gian làm việc",
+    "LABEL": "Không gian làm việc",
+    "NO_WORKSPACES": "Không có không gian làm việc nào",
+    "CREATE_NEW": "Tạo Không Gian Mới",
+    "NAME_PLACEHOLDER": "Tên không gian làm việc..."
+  },
+  "HTTP_ERROR": {
+    "CONNECTION_FAILED_TITLE": "Lỗi kết nối",
+    "CONNECTION_FAILED_MESSAGE": "Không thể kết nối đến máy chủ. Vui lòng kiểm tra lại kết nối mạng hoặc trạng thái server.",
+    "SERVER_ERROR_TITLE": "Lỗi máy chủ",
+    "SERVER_ERROR_MESSAGE": "Máy chủ gặp sự cố trong quá trình xử lý. Vui lòng thử lại sau.",
+    "UNAUTHORIZED_TITLE": "Hết phiên làm việc",
+    "UNAUTHORIZED_MESSAGE": "Phiên đăng nhập của bạn đã hết hạn. Vui lòng đăng nhập lại."
+  },
+  "CONNECTION_MODAL": {
+    "TITLE": "Mất kết nối máy chủ",
+    "MESSAGE": "Không thể kết nối đến máy chủ của hệ thống. Vui lòng kiểm tra lại kết nối internet hoặc trạng thái server.",
+    "RETRY_BTN": "Thử lại kết nối",
+    "CHECKING": "Đang kiểm tra kết nối...",
+    "FAILED_TOAST": "Kết nối tới server vẫn thất bại. Vui lòng thử lại sau ít phút."
   }
 }

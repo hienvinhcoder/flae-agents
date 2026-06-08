@@ -1,11 +1,13 @@
 from fastapi import APIRouter, Depends, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.database import get_db
-from app.core.security import verify_token
+from app.core.security import verify_token, get_current_user
 from app.core.logger import get_logger
 from app.schemas.sche_base import DataResponse
-from app.schemas.sche_user import UserCreateRequest, UserItemResponse
+from app.schemas.sche_user import UserCreateRequest, UserItemResponse, UserCurrentWorkspaceUpdateRequest
 from app.services.srv_user import UserService
+from app.services.workspace_srv import WorkspaceService
 
 logger = get_logger(__name__)
 router = APIRouter()
@@ -79,3 +81,32 @@ async def delete_user(
         message="User deleted successfully",
         data={"user_id": user_id, "deleted": True},
     )
+
+
+@router.put("/current-workspace", response_model=DataResponse[UserItemResponse])
+async def update_current_workspace(
+    request: UserCurrentWorkspaceUpdateRequest,
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    API thay đổi Workspace hoạt động hiện tại.
+    """
+    # Cập nhật current_workspace_id thông qua Service (bao gồm kiểm tra quyền truy cập)
+    updated_user = await WorkspaceService.update_current_workspace(
+        db, current_user.firebase_uid, request.workspace_id
+    )
+    
+    return DataResponse[UserItemResponse].success_response(
+        data=UserItemResponse(
+            id=str(updated_user.id) if updated_user.id else "",
+            firebase_uid=updated_user.firebase_uid,
+            email=updated_user.email,
+            full_name=updated_user.full_name,
+            is_active=updated_user.is_active,
+            login_providers=updated_user.login_providers,
+            avatar_url=updated_user.avatar_url,
+            current_workspace_id=updated_user.current_workspace_id
+        )
+    )
+

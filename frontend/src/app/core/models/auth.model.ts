@@ -18,6 +18,7 @@ export interface User {
   avatar_url?: string | null;
   is_active: boolean;
   login_providers?: LoginProvider[];
+  current_workspace_id?: string | null;
 }
 
 export interface SyncUserPayload {

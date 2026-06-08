@@ -7,7 +7,6 @@ import {
   GoogleAuthProvider,
   signOut,
   User as FirebaseUser,
-  getIdToken,
   UserCredential
 } from '@angular/fire/auth';
 import { from, Observable } from 'rxjs';
@@ -36,7 +35,7 @@ export class AuthService {
   }
 
   getFirebaseToken(user: FirebaseUser): Observable<string> {
-    return from(getIdToken(user, true));
+    return from(user.getIdToken(true));
   }
   
   getCurrentFirebaseUser(): FirebaseUser | null {

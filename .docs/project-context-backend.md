@@ -1,9 +1,9 @@
 # Project Context - Backend
 
-> **Last Updated**: 2026-06-05
+> **Last Updated**: 2026-06-08
 
 ## 1. Overview
-Hệ thống backend xử lý API mutations và business logic phức tạp cho ứng dụng FLAE (Company Memory AI), tích hợp PostgreSQL (cho metadata và dữ liệu RAG), Redis (cho cache và realtime Pub/Sub), Firebase (xác thực), và Temporal (cho việc quản lý và thực thi các long-running workflows).
+Hệ thống backend xử lý API mutations và business logic phức tạp cho ứng dụng FLAE (Company Memory AI), tích hợp PostgreSQL (cho metadata và dữ liệu RAG), Redis (cho cache và realtime Pub/Sub), Firebase (xác thực), và Temporal (cho việc quản lý và thực thi các long-running workflows). Hệ thống áp dụng mô hình Logical Multi-tenancy phân tách dữ liệu theo Workspace và phân quyền RBAC dựa trên các bảng `workspaces`, `workspace_members`, và `workspace_invitations`.
 
 ## 2. Stack
 - Python ≥ 3.11

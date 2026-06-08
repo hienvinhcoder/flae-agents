@@ -15,7 +15,7 @@ Trước khi đề xuất giải pháp, bạn PHẢI hỏi người dùng để 
 1. Bạn chỉ được hỏi **tối đa 5 câu hỏi**.
 2. Phải hỏi **lần lượt từng câu một** (mỗi turn chỉ hỏi 1 câu). Không hỏi gộp nhiều câu.
 3. Trong mỗi câu hỏi, phải cung cấp **3 phương án lựa chọn** cho người dùng.
-4. Bạn BẮT BUỘC phải **đề xuất 1 phương án** (trong số 3 phương án đó) phù hợp nhất với context dự án hiện tại.
+4. Bạn BẮT BUỘC phải **đề xuất và chỉ rõ 1 phương án khuyến nghị** (trong số 3 phương án đó) kèm theo giải thích/lý do chi tiết vì sao phương án này phù hợp nhất với context và kiến trúc hiện tại của dự án.
 5. Đợi người dùng trả lời xong mới tiến hành hỏi câu tiếp theo.
 6. **LƯU TRỮ DỮ LIỆU**: Sau mỗi lượt hỏi và đáp, BẮT BUỘC phải sử dụng tool để cập nhật câu hỏi và câu trả lời vào một file nháp tại `.docs/features/[tên-tính-năng]/draft_qa.md` (Tự trích xuất tên tính năng ngắn gọn dạng kebab-case). **Đặc biệt lưu ý:** Nội dung câu hỏi phải được ghi lại ĐẦY ĐỦ và câu trả lời phải thật CHI TIẾT (không tóm tắt hay cắt xén), vì toàn bộ nội dung file draft này sẽ là nguyên liệu trực tiếp để tạo ra `IDEAS.md`.
 

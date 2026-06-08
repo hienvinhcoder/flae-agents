@@ -46,6 +46,7 @@ import { Component, input, output } from '@angular/core';
 export class ButtonComponent {
   variant = input<'primary' | 'secondary' | 'ai' | 'destructive'>('primary');
   size = input<'sm' | 'md' | 'lg'>('md');
+  rounded = input<'md' | 'xl' | 'full'>('md');
   type = input<'button' | 'submit' | 'reset'>('button');
   disabled = input<boolean>(false);
   loading = input<boolean>(false);
@@ -54,14 +55,22 @@ export class ButtonComponent {
 
   buttonClass(): string {
     const base =
-      'inline-flex items-center justify-center rounded-md font-medium transition duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-app disabled:opacity-50 disabled:cursor-not-allowed w-full';
+      'inline-flex items-center justify-center font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-app disabled:opacity-50 disabled:cursor-not-allowed w-full active:scale-[0.97] cursor-pointer';
+
+    // Rounding classes
+    let roundedClass = 'rounded-md';
+    if (this.rounded() === 'xl') {
+      roundedClass = 'rounded-xl';
+    } else if (this.rounded() === 'full') {
+      roundedClass = 'rounded-full';
+    }
 
     // Size classes
-    let sizeClass = 'px-4 py-2 text-sm';
+    let sizeClass = 'px-4 py-2.5 text-sm';
     if (this.size() === 'sm') {
       sizeClass = 'px-3 py-1.5 text-xs';
     } else if (this.size() === 'lg') {
-      sizeClass = 'px-5 py-2.5 text-base';
+      sizeClass = 'px-5 py-3 text-base';
     }
 
     // Variant classes
@@ -69,7 +78,7 @@ export class ButtonComponent {
     switch (this.variant()) {
       case 'primary':
         variantClass =
-          'bg-primary text-app font-semibold shadow-primary hover:bg-primary-hover active:bg-primary-active focus:ring-primary/50';
+          'bg-primary text-app shadow-[0_4px_12px_rgba(251,146,60,0.15)] hover:bg-primary-hover hover:shadow-[0_4px_20px_rgba(251,146,60,0.3)] focus:ring-primary/50';
         break;
       case 'secondary':
         variantClass =
@@ -77,7 +86,7 @@ export class ButtonComponent {
         break;
       case 'ai':
         variantClass =
-          'border border-ai-border bg-ai-soft text-purple-100 hover:bg-ai-soft/80 hover:border-ai focus:ring-ai/50';
+          'border border-ai-border bg-ai-soft text-purple-100 hover:bg-ai-soft/80 hover:border-ai hover:shadow-[0_0_15px_rgba(168,85,247,0.25)] focus:ring-ai/50';
         break;
       case 'destructive':
         variantClass =
@@ -85,7 +94,7 @@ export class ButtonComponent {
         break;
     }
 
-    return `${base} ${sizeClass} ${variantClass}`;
+    return `${base} ${roundedClass} ${sizeClass} ${variantClass}`;
   }
 
   onClick(event: MouseEvent) {

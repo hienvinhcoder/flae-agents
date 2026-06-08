@@ -1,0 +1,10 @@
+<div class="space-y-6">
+  <app-workspace-form
+    [workspace]="isCreateMode() ? null : currentWorkspace()"
+    [isCreateMode]="isCreateMode()"
+    [showCancel]="!!currentWorkspace()"
+    [isSubmitting]="isSaving()"
+    (save)="onSaveWorkspace($event)"
+    (cancel)="onCancel()"
+  ></app-workspace-form>
+</div>

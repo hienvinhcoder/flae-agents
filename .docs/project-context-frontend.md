@@ -1,9 +1,9 @@
 # Project Context - Frontend (Index)
 
-> **Last Updated**: 2026-06-05
+> **Last Updated**: 2026-06-08
 
 ## 1. Overview
-Hệ thống frontend của FLAE Agents được thiết kế hoàn toàn bằng kiến trúc **Angular Signals** kết hợp với **REST API (Backend FastAPI)** và **WebSockets**. Mục tiêu là xây dựng giao diện cho nền tảng **Company Memory AI** giúp doanh nghiệp kết nối các nguồn dữ liệu (Notion, Slack, Google Drive, GitHub) và thực hiện hỏi đáp thông minh (Ask AI), phát hiện tài liệu lỗi thời (Stale Docs), và theo dõi báo cáo thay đổi (Briefing).
+Hệ thống frontend của FLAE Agents được thiết kế hoàn toàn bằng kiến trúc **Angular Signals** kết hợp với **REST API (Backend FastAPI)** và **WebSockets**. Mục tiêu là xây dựng giao diện cho nền tảng **Company Memory AI** giúp doanh nghiệp kết nối các nguồn dữ liệu (Notion, Slack, Google Drive, GitHub) và thực hiện hỏi đáp thông minh (Ask AI), phát hiện tài liệu lỗi thời (Stale Docs), và theo dõi báo cáo thay đổi (Briefing). Hệ thống hỗ trợ chuyển đổi Workspace động và quản lý thành viên thông qua `WorkspaceStore` và `WorkspaceApiService`.
 
 **Các quy tắc vàng**:
 1. Tuân thủ tuyệt đối kiến trúc **Dumb/Smart component**.

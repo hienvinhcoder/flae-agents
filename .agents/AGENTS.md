@@ -24,6 +24,7 @@ Bạn là Antigravity - một senior fullstack Engineer và System Architect. Nh
 **3. Backend (FastAPI, Pydantic, SQLAlchemy, uv)**
 - **Quản lý Package:** Bắt buộc sử dụng `uv` thay cho `pip` để quản lý dependencies và môi trường ảo (virtual environment) nhằm đảm bảo tốc độ và tính đồng nhất.
 - **Bất đồng bộ (Async):** Sử dụng `async/await` cho tất cả các thao tác I/O (truy vấn database qua `asyncpg`, gọi API ngoài, query Redis).
+- **Kiến trúc 3-Layer (Phân tách logic):** Tuyệt đối tuân thủ kiến trúc 3 lớp: `Endpoint -> Service -> Model`. Tầng API Endpoint (`app/api/`) chỉ chịu trách nhiệm nhận request, gọi Service để xử lý business logic, và trả về response. Mọi thao tác trực tiếp với Database (như gọi `db.execute`, `db.commit`, truy vấn SQLAlchemy, hoặc viết các câu lệnh raw SQL) **BẮT BUỘC** phải được đặt ở tầng Service (`app/services/`). API Endpoint tuyệt đối không được tự ý thực thi các logic truy vấn database trực tiếp để đảm bảo code dễ dàng debug, mở rộng và bảo trì.
 - **Validation & Models:** Sử dụng triệt để Pydantic để validate input/output của API. Sử dụng `SQLAlchemy` (với async sessions) để tạo các models giao tiếp với cơ sở dữ liệu PostgreSQL.
 - **Kiến trúc API & Realtime:** Có thể tạo API GET, nhưng **phải phân tích nghiệp vụ để quyết định có nên sử dụng Redis Cache hay không** nhằm giảm tải cho Database. Các dữ liệu cần Realtime (ví dụ: tin nhắn mới, cập nhật trạng thái Agent) phải được push qua **Redis Pub/Sub** và đẩy về Frontend thông qua **WebSockets API**.
 - **Database (PostgreSQL):**
@@ -45,3 +46,11 @@ Bạn là Antigravity - một senior fullstack Engineer và System Architect. Nh
 - **Bảo mật API Key & Secret:** Tuyệt đối không hardcode các API Key (Google, OpenAI, Firebase Admin, Redis, Database URI...) trong mã nguồn. Bắt buộc quản lý bằng biến môi trường (Environment Variables). Đặc biệt **KHÔNG** phơi bày các khóa bí mật của Backend lên cho Frontend.
 - **Chống rò rỉ dữ liệu (Data Leakage):** Mọi API response (đọc qua `DataResponse[T]`) phải được rà soát chặt chẽ bằng Pydantic schema. Tuyệt đối không trả về thông tin nhạy cảm (như mật khẩu băm, token hệ thống, cấu hình nội bộ) hoặc stack trace lỗi hệ thống (nhờ xử lý qua Global Exception Handler).
 - **Logical Multi-tenancy:** FLAE Agent là một nền tảng SaaS phục vụ nhiều doanh nghiệp SMB (multi-tenant). Để đảm bảo dữ liệu (đặc biệt là trí nhớ AI và thông tin khách hàng) của doanh nghiệp này không bị rò rỉ sang doanh nghiệp khác trong khi vẫn sử dụng chung một hạ tầng (chung Server, chung Database), chúng ta áp dụng mô hình Logical Multi-tenancy kết hợp chặt chẽ với cơ chế Row Level Security (RLS) và Partition Table tại các database thành phần.
+
+## Review guidelines
+
+- Ưu tiên tìm bug correctness, security, performance.
+- Flag missing tests cho logic quan trọng là P1.
+- Kiểm tra route mới có auth middleware không.
+- Không comment nitpick về style nếu không ảnh hưởng maintainability.
+- Không log PII, token, password, email khách hàng.

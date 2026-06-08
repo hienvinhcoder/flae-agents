@@ -1,0 +1,88 @@
+<div class="max-w-[1150px] mx-auto text-text-secondary antialiased">
+  <!-- Header -->
+  <div class="mb-8">
+    <h2 class="text-3xl font-bold text-text-primary tracking-tight">Cấu Hình Hệ Thống</h2>
+    <p class="text-sm text-text-muted mt-1">Quản lý không gian làm việc, cấu hình thông tin và phân quyền thành viên.</p>
+  </div>
+
+  <!-- Layout 2 cột -->
+  <div class="flex flex-col gap-6 md:grid md:grid-cols-4 md:gap-8">
+    <!-- Sidebar Tabs Navigation -->
+    <aside class="col-span-1">
+      <!-- Desktop Nav -->
+      <nav class="hidden md:flex flex-col gap-1.5 p-3 rounded-2xl border border-border bg-surface shadow-soft">
+        <button
+          type="button"
+          (click)="setTab('general')"
+          class="flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-sm transition text-left cursor-pointer border min-h-[40px]"
+          [class.bg-primary-soft]="activeTab() === 'general'"
+          [class.text-primary]="activeTab() === 'general'"
+          [class.border-primary/30]="activeTab() === 'general'"
+          [class.text-text-secondary]="activeTab() !== 'general'"
+          [class.border-transparent]="activeTab() !== 'general'"
+          [class.hover:text-text-primary]="activeTab() !== 'general'"
+          [class.hover:bg-white/5]="activeTab() !== 'general'"
+        >
+          <lucide-icon name="sliders" class="w-4.5 h-4.5"></lucide-icon>
+          <span>Thông tin chung</span>
+        </button>
+
+        <button
+          type="button"
+          (click)="setTab('members')"
+          class="flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-sm transition text-left cursor-pointer border min-h-[40px]"
+          [class.bg-primary-soft]="activeTab() === 'members'"
+          [class.text-primary]="activeTab() === 'members'"
+          [class.border-primary/30]="activeTab() === 'members'"
+          [class.text-text-secondary]="activeTab() !== 'members'"
+          [class.border-transparent]="activeTab() !== 'members'"
+          [class.hover:text-text-primary]="activeTab() !== 'members'"
+          [class.hover:bg-white/5]="activeTab() !== 'members'"
+        >
+          <lucide-icon name="users" class="w-4.5 h-4.5"></lucide-icon>
+          <span>Thành viên & Quyền</span>
+        </button>
+      </nav>
+
+      <!-- Mobile Nav (Horizontal scroll) -->
+      <nav class="flex md:hidden border-b border-border overflow-x-auto gap-2 scrollbar-none pb-1">
+        <button
+          type="button"
+          (click)="setTab('general')"
+          class="flex items-center gap-2 px-4 py-2.5 font-semibold text-sm transition whitespace-nowrap cursor-pointer border-b-2 min-h-[40px]"
+          [class.text-primary]="activeTab() === 'general'"
+          [class.border-primary]="activeTab() === 'general'"
+          [class.text-text-muted]="activeTab() !== 'general'"
+          [class.border-transparent]="activeTab() !== 'general'"
+        >
+          <lucide-icon name="sliders" class="w-4.5 h-4.5"></lucide-icon>
+          <span>Thông tin chung</span>
+        </button>
+
+        <button
+          type="button"
+          (click)="setTab('members')"
+          class="flex items-center gap-2 px-4 py-2.5 font-semibold text-sm transition whitespace-nowrap cursor-pointer border-b-2 min-h-[40px]"
+          [class.text-primary]="activeTab() === 'members'"
+          [class.border-primary]="activeTab() === 'members'"
+          [class.text-text-muted]="activeTab() !== 'members'"
+          [class.border-transparent]="activeTab() !== 'members'"
+        >
+          <lucide-icon name="users" class="w-4.5 h-4.5"></lucide-icon>
+          <span>Thành viên</span>
+        </button>
+      </nav>
+    </aside>
+
+    <!-- Content Area -->
+    <main class="col-span-3">
+      @if (activeTab() === 'general') {
+        <app-workspace-general [isCreateMode]="isCreateMode()"></app-workspace-general>
+      }
+
+      @if (activeTab() === 'members') {
+        <app-workspace-members></app-workspace-members>
+      }
+    </main>
+  </div>
+</div>

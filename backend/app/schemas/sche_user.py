@@ -20,6 +20,7 @@ class UserItemResponse(ResponseSchemaBase):
     is_active: bool
     login_providers: list[LoginProvider] = []
     avatar_url: Optional[str] = None
+    current_workspace_id: Optional[str] = None
 
     model_config = {"from_attributes": True}
 
@@ -35,3 +36,8 @@ class UserUpdateRequest(ResponseSchemaBase):
     """Schema for updating user info."""
     full_name: Optional[str] = None
     avatar_url: Optional[str] = None
+
+
+class UserCurrentWorkspaceUpdateRequest(ResponseSchemaBase):
+    workspace_id: str
+
