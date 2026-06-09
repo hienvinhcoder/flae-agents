@@ -74,5 +74,33 @@
     "RETRY_BTN": "Thử lại kết nối",
     "CHECKING": "Đang kiểm tra kết nối...",
     "FAILED_TOAST": "Kết nối tới server vẫn thất bại. Vui lòng thử lại sau ít phút."
+  },
+  "KNOWLEDGE": {
+    "TITLE": "Cơ Sở Tri Thức",
+    "UPLOAD_FILE": "Tải lên tài liệu",
+    "ADD_TEXT": "Nhập nội dung",
+    "EMPTY_STATE_TITLE": "Chưa có tài liệu nào",
+    "EMPTY_STATE_DESC": "Tải lên tài liệu PDF, Markdown hoặc nhập nội dung trực tiếp để xây dựng cơ sở tri thức cho AI",
+    "STATUS_PENDING": "Chờ xử lý",
+    "STATUS_PROCESSING": "Đang xử lý",
+    "STATUS_COMPLETED": "Hoàn thành",
+    "STATUS_FAILED": "Thất bại",
+    "TABLE_TITLE": "Tiêu đề",
+    "TABLE_TYPE": "Loại",
+    "TABLE_STATUS": "Trạng thái",
+    "TABLE_CHUNKS": "Chunks",
+    "TABLE_UPLOADED_BY": "Người tải",
+    "TABLE_DATE": "Ngày tạo",
+    "DELETE_CONFIRM": "Bạn có chắc chắn muốn xóa tài liệu này? Dữ liệu đã được xử lý trong cơ sở tri thức cũng sẽ bị xóa.",
+    "RETRY_CONFIRM": "Thử xử lý lại tài liệu này?",
+    "UPLOAD_DRAG_TEXT": "Kéo thả tệp vào đây hoặc nhấn để chọn",
+    "UPLOAD_SUPPORTED": "Hỗ trợ: PDF, Markdown (.md), Text (.txt)",
+    "UPLOAD_MAX_SIZE": "Kích thước tối đa: 50MB",
+    "DETAIL_METRICS": "Thống kê xử lý",
+    "DETAIL_CHUNKS_COUNT": "Số khối văn bản",
+    "DETAIL_ENTITIES_COUNT": "Số thực thể",
+    "DETAIL_RELATIONS_COUNT": "Số mối quan hệ",
+    "DETAIL_PROCESSING_TIME": "Thời gian xử lý",
+    "DETAIL_TOKEN_USAGE": "Token đã sử dụng"
   }
 }

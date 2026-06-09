@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, inject, Signal } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject, Signal, signal, effect } from '@angular/core';
 import { LucideAngularModule } from 'lucide-angular';
 import { TranslateModule } from '@ngx-translate/core';
 import { LanguageService } from '../../../services/language.service';
@@ -86,12 +86,11 @@ import { User } from '../../../models/auth.model';
             <span class="text-xs font-semibold text-text-primary group-hover:text-primary transition-colors">{{ currentUser()?.full_name || 'User' }}</span>
             <span class="text-[10px] text-text-muted">{{ currentUser()?.email }}</span>
           </div>
-          <div class="w-9 h-9 rounded-full bg-primary-soft border border-border-strong flex items-center justify-center text-primary font-bold overflow-hidden shadow-sm group-hover:border-primary/45 transition-all">
-            @if (currentUser()?.avatar_url) {
-              <img [src]="currentUser()?.avatar_url" alt="Avatar" class="w-full h-full object-cover">
-            }
-            @if (!currentUser()?.avatar_url) {
-              <span class="font-heading text-sm">{{ (currentUser()?.full_name || 'U').charAt(0).toUpperCase() }}</span>
+          <div class="w-9 h-9 rounded-full bg-primary-soft border border-border-strong flex items-center justify-center text-primary font-bold overflow-hidden shadow-sm group-hover:border-primary/45 transition-all relative">
+            @if (currentUser()?.avatar_url && !avatarLoadError()) {
+              <img [src]="currentUser()?.avatar_url" alt="Avatar" class="w-full h-full object-cover" (error)="onAvatarError()">
+            } @else {
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-primary bg-primary-soft w-full h-full p-1.5"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             }
           </div>
         </div>
@@ -114,9 +113,22 @@ export class TopbarComponent {
   @Output() menuToggle = new EventEmitter<void>();
 
   currentUser: Signal<User | null> = this.authStore.currentUser;
+  avatarLoadError = signal(false);
+
+  constructor() {
+    // Reset flag error avatar khi thay đổi user
+    effect(() => {
+      this.currentUser();
+      this.avatarLoadError.set(false);
+    });
+  }
 
   toggleMenu() {
     this.menuToggle.emit();
+  }
+
+  onAvatarError() {
+    this.avatarLoadError.set(true);
   }
 }
 

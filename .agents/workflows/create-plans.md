@@ -67,20 +67,20 @@ BẮT BUỘC đọc tài liệu kiến trúc hiện tại để đảm bảo k�
 Đọc:
 
 ```txt
-docs/backend/index.md
+.docs/project-context-backend.md
 ```
 
-Sau đó đọc các file backend liên quan được index này dẫn chiếu hoặc mô tả.
+Sau đó đọc các file backend liên quan trong thư mục `.docs/backend/` được dẫn chiếu hoặc mô tả.
 
 ### Frontend context
 
 Đọc:
 
 ```txt
-docs/frontend/index.md
+.docs/project-context-frontend.md
 ```
 
-Sau đó đọc các file frontend liên quan được index này dẫn chiếu hoặc mô tả.
+Sau đó đọc các file frontend liên quan trong thư mục `.docs/frontend/` được dẫn chiếu hoặc mô tả.
 
 ## 1.5. Đọc tiêu chuẩn thi công
 
@@ -103,6 +103,16 @@ BẮT BUỘC đọc:
 ```txt
 .docs/DESIGN.md
 ```
+
+## 1.7. Đọc tiêu chuẩn lập kế hoạch thực thi (Implementation Plan)
+
+BẮT BUỘC đọc kỹ file:
+
+```txt
+.agents/skills/writing-plans/SKILL.md
+```
+
+Quy hoạch kế hoạch Frontend và Backend phải tuân thủ nghiêm ngặt kỹ năng lập kế hoạch thực thi chi tiết, có phân rã bite-sized tasks, hướng kiểm thử TDD, không dùng placeholder và có phần bàn giao thực thi cụ thể.
 
 Design Brief phải kế thừa chính xác:
 
@@ -356,6 +366,68 @@ Với mỗi API:
 * Loading/error handling
 * Empty state handling
 
+### 4.8. Implementation Plan (Kế hoạch thực thi chi tiết)
+
+Bắt buộc chia nhỏ luồng phát triển frontend thành các nhiệm vụ cực kỳ chi tiết (bite-sized tasks) để một lập trình viên/agent có thể thi công trong vòng 2-5 phút cho mỗi bước, bám sát kỹ thuật TDD (Test-Driven Development) và Quy tắc cấm Placeholder của `.agents/skills/writing-plans/SKILL.md`.
+
+#### 4.8.1. Plan Document Header
+Bắt đầu phần kế hoạch thực thi với header chuẩn sau:
+```markdown
+# [Feature Name] Frontend Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** [Một câu mô tả mục tiêu của frontend plan]
+**Architecture:** [2-3 câu mô tả hướng tiếp cận kiến trúc frontend]
+**Tech Stack:** Angular, Tailwind CSS, TypeScript
+```
+
+#### 4.8.2. Cấu trúc Task và TDD Steps
+Mỗi task phải được thiết kế chi tiết với cấu trúc như sau:
+```markdown
+### Task N: [Tên Component/Service/State cần phát triển]
+
+**Files:**
+- Create: `frontend/src/app/...` (đường dẫn tuyệt đối từ root hoặc tương đối rõ ràng)
+- Modify: `frontend/src/app/...` (chỉ rõ khoảng dòng nếu chỉnh sửa file có sẵn)
+- Test: `frontend/src/app/...spec.ts` (đường dẫn file test tương ứng)
+
+- [ ] **Step 1: Write the failing test**
+  Viết test case kiểm thử lỗi cho chức năng cần phát triển (mã nguồn Angular test chi tiết bằng Spectator/Jest/Jasmine, không được dùng comment placeholder).
+  ```typescript
+  // Code test đầy đủ ở đây
+  ```
+
+- [ ] **Step 2: Run test to verify it fails**
+  Chạy lệnh test và đảm bảo nó thất bại đúng như mong muốn.
+  Run: `ng test --include=path/to/file.spec.ts` hoặc lệnh test tương ứng
+  Expected: Thất bại với lỗi cụ thể (ví dụ: `Component not found` hoặc assertion fail)
+
+- [ ] **Step 3: Write minimal implementation**
+  Viết mã nguồn tối thiểu để test case này có thể pass (mã nguồn TypeScript/HTML hoàn chỉnh, không được dùng TODO/TBD).
+  ```typescript
+  // Code component/service/template đầy đủ ở đây
+  ```
+
+- [ ] **Step 4: Run test to verify it passes**
+  Chạy lại lệnh test và đảm bảo nó đã vượt qua thành công.
+  Run: `ng test --include=path/to/file.spec.ts`
+  Expected: PASS
+
+- [ ] **Step 5: Commit**
+  Thực hiện commit git với thông điệp chuẩn hóa.
+  Command: `git add <các file tương ứng> && git commit -m "feat(frontend): <mô tả ngắn gọn>"`
+```
+
+#### 4.8.3. Handoff Choice (Bàn giao thực thi)
+Đặt phần sau vào cuối `FRONTEND-PLAN.md` để người dùng lựa chọn cách chạy:
+```markdown
+## Execution Handoff
+Sau khi duyệt qua kế hoạch, hãy lựa chọn một trong hai phương thức sau để bắt đầu:
+1. **Subagent-Driven (Khuyến nghị)**: Tôi sẽ tự động kích hoạt các subagents riêng biệt cho từng task và rà soát sau mỗi bước.
+2. **Inline Execution**: Thực thi tuần tự các tác vụ ngay trong session này.
+```
+
 ---
 
 # 5. FILE 3 — BACKEND-PLAN.md
@@ -515,6 +587,68 @@ Liệt kê test cần có:
 * Realtime test nếu có WebSocket
 * Edge cases
 
+### 5.10. Implementation Plan (Kế hoạch thực thi chi tiết)
+
+Bắt buộc chia nhỏ luồng phát triển backend thành các nhiệm vụ cực kỳ chi tiết (bite-sized tasks) để thi công trong vòng 2-5 phút mỗi bước, bám sát kỹ thuật TDD (Test-Driven Development) và Quy tắc cấm Placeholder của `.agents/skills/writing-plans/SKILL.md`.
+
+#### 5.10.1. Plan Document Header
+Bắt đầu phần kế hoạch thực thi với header chuẩn sau:
+```markdown
+# [Feature Name] Backend Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** [Một câu mô tả mục tiêu của backend plan]
+**Architecture:** [2-3 câu mô tả hướng tiếp cận kiến trúc backend (Endpoint -> Service -> Model)]
+**Tech Stack:** FastAPI, SQLAlchemy, Alembic, Pydantic, PostgreSQL
+```
+
+#### 5.10.2. Cấu trúc Task và TDD Steps
+Mỗi task backend phải được thiết kế chi tiết với cấu trúc như sau:
+```markdown
+### Task N: [Tên Model/Service/Router/Migration cần phát triển]
+
+**Files:**
+- Create: `backend/app/...` (đường dẫn tuyệt đối từ root hoặc tương đối rõ ràng)
+- Modify: `backend/app/...` (chỉ rõ khoảng dòng nếu chỉnh sửa file có sẵn)
+- Test: `backend/tests/...` (đường dẫn file test tương ứng)
+
+- [ ] **Step 1: Write the failing test**
+  Viết test case kiểm thử lỗi cho chức năng cần phát triển (mã nguồn pytest chi tiết, không được dùng comment placeholder).
+  ```python
+  # Code test đầy đủ ở đây
+  ```
+
+- [ ] **Step 2: Run test to verify it fails**
+  Chạy lệnh test và đảm bảo nó thất bại đúng như mong muốn.
+  Run: `pytest backend/tests/path/to/test.py::test_function -v`
+  Expected: Thất bại với lỗi cụ thể (ví dụ: `ModuleNotFoundError` hoặc assertion fail)
+
+- [ ] **Step 3: Write minimal implementation**
+  Viết mã nguồn tối thiểu (model, service, router, hoặc alembic migration) để test case này có thể pass (mã nguồn Python hoàn chỉnh, không được dùng TODO/TBD).
+  ```python
+  # Code backend đầy đủ ở đây
+  ```
+
+- [ ] **Step 4: Run test to verify it passes**
+  Chạy lại lệnh test và đảm bảo nó đã vượt qua thành công.
+  Run: `pytest backend/tests/path/to/test.py::test_function -v`
+  Expected: PASS
+
+- [ ] **Step 5: Commit**
+  Thực hiện commit git với thông điệp chuẩn hóa.
+  Command: `git add <các file tương ứng> && git commit -m "feat(backend): <mô tả ngắn gọn>"`
+```
+
+#### 5.10.3. Handoff Choice (Bàn giao thực thi)
+Đặt phần sau vào cuối `BACKEND-PLAN.md` để người dùng lựa chọn cách chạy:
+```markdown
+## Execution Handoff
+Sau khi duyệt qua kế hoạch, hãy lựa chọn một trong hai phương thức sau để bắt đầu:
+1. **Subagent-Driven (Khuyến nghị)**: Tôi sẽ tự động kích hoạt các subagents riêng biệt cho từng task và rà soát sau mỗi bước.
+2. **Inline Execution**: Thực thi tuần tự các tác vụ ngay trong session này.
+```
+
 ---
 
 # 6. RÀ SOÁT CHÉO BẮT BUỘC
@@ -543,6 +677,13 @@ Trước khi kết thúc, tự rà soát 3 file theo checklist sau:
 * Redis/WebSocket chỉ dùng khi có lý do hợp lý.
 * Backend Plan tuân thủ `.agents/skills/plan-backend/SKILL.md`.
 
+## 6.4. Implementation Plan ↔ writing-plans/SKILL.md
+
+* Tất cả các file cần tạo/chỉnh sửa/test đều có đường dẫn chính xác và đầy đủ.
+* Toàn bộ mã nguồn kiểm thử (test code) và mã triển khai (implementation code) trong các task đều được viết đầy đủ, rõ ràng và có thể chạy được (không có TBD, TODO hoặc placeholder).
+* Lệnh chạy kiểm thử được ghi chi tiết cho từng task, khớp với môi trường của dự án Angular frontend và FastAPI backend.
+* Có đầy đủ các bước kiểm thử TDD (Step 1-5) và phần bàn giao thực thi (Execution Handoff) ở cuối file.
+
 ---
 
 # 7. QUY TẮC CẤM
@@ -559,6 +700,8 @@ Tuyệt đối không:
 * Dùng HEX/RGB tự chế nếu Design System không cho phép.
 * Tạo API mà không có authorization rõ ràng.
 * Tạo frontend field không có backend response tương ứng.
+* Bỏ qua việc lập kế hoạch thực thi chi tiết (TDD bite-sized tasks).
+* Sử dụng placeholders (TBD, TODO, "tự điền code", v.v.) trong các khối mã của kế hoạch thực thi.
 
 ---
 

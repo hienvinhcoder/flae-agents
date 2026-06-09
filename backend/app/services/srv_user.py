@@ -47,4 +47,14 @@ class UserService:
         await db.commit()
         await db.refresh(new_user)
 
+        # Tự động tạo workspace mặc định cho user mới
+        try:
+            from app.services.workspace_srv import WorkspaceService
+            await WorkspaceService.create_default_workspace(db, firebase_uid)
+            await db.refresh(new_user)
+        except Exception as e:
+            from app.core.logger import get_logger
+            logger = get_logger(__name__)
+            logger.error(f"Failed to create default workspace for new user {firebase_uid}: {e}")
+
         return new_user

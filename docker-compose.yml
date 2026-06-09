@@ -41,6 +41,9 @@ services:
       - RAG_DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/rag_db
       - REDIS_URL=redis://redis:6379/0
       - TEMPORAL_HOST=temporal:7233
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - GCS_BUCKET_NAME=${GCS_BUCKET_NAME:-flae-knowledge-base}
+      - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS:-}
       - UV_LINK_MODE=copy
     volumes:
       - ./backend:/app
@@ -94,6 +97,9 @@ services:
       - RAG_DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/rag_db
       - REDIS_URL=redis://redis:6379/0
       - TEMPORAL_HOST=temporal:7233
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - GCS_BUCKET_NAME=${GCS_BUCKET_NAME:-flae-knowledge-base}
+      - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS:-}
       - ENVIRONMENT=local
       - UV_LINK_MODE=copy
     volumes:

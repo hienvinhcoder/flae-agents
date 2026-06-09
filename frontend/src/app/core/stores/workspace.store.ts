@@ -31,6 +31,10 @@ export const workspaceStore = () => {
     },
     
     setCurrentWorkspaceId: (id: string | null) => {
+      // Đảm bảo lọc bỏ các giá trị không hợp lệ
+      if (id === 'none' || id === 'null' || id === '') {
+        id = null;
+      }
       currentWorkspaceId.set(id);
       if (id) {
         localStorage.setItem('current_workspace_id', id);
@@ -41,8 +45,10 @@ export const workspaceStore = () => {
     
     loadCurrentWorkspaceIdFromStorage: () => {
       const id = localStorage.getItem('current_workspace_id');
-      if (id) {
+      if (id && id !== 'none' && id !== 'null') {
         currentWorkspaceId.set(id);
+      } else {
+        currentWorkspaceId.set(null);
       }
     }
   };

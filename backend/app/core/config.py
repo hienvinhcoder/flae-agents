@@ -24,14 +24,26 @@ class Settings(BaseSettings):
     # Firebase / GCP configuration
     GOOGLE_APPLICATION_CREDENTIALS: str = os.getenv('GOOGLE_APPLICATION_CREDENTIALS', '')
     
-    # OAuth Configurations
-    HARAVAN_CLIENT_ID: str = os.getenv('HARAVAN_CLIENT_ID', '')
-    HARAVAN_CLIENT_SECRET: str = os.getenv('HARAVAN_CLIENT_SECRET', '')
-    KIOTVIET_CLIENT_ID: str = os.getenv('KIOTVIET_CLIENT_ID', '')
-    KIOTVIET_CLIENT_SECRET: str = os.getenv('KIOTVIET_CLIENT_SECRET', '')
-    
     # Security
     ENCRYPTION_KEY: str = os.getenv('ENCRYPTION_KEY', '') # 32 bytes base64 encoded for Fernet
+
+    # Google Cloud Storage
+    GCS_BUCKET_NAME: str = os.getenv('GCS_BUCKET_NAME', 'flae-knowledge-base')
+
+    # RAG Ingestion (Gemini)
+    GEMINI_API_KEY: str = os.getenv('GEMINI_API_KEY', '')
+    GEMINI_EMBEDDING_MODEL: str = os.getenv('GEMINI_EMBEDDING_MODEL', 'text-embedding-004')
+    GEMINI_LLM_MODEL: str = os.getenv('GEMINI_LLM_MODEL', 'gemini-2.0-flash')
+    EMBEDDING_DIMENSIONS: int = int(os.getenv('EMBEDDING_DIMENSIONS', '768'))
+
+    # File upload limits
+    MAX_UPLOAD_SIZE_MB: int = int(os.getenv('MAX_UPLOAD_SIZE_MB', '50'))
+    ALLOWED_MIME_TYPES: list[str] = [
+        'application/pdf',
+        'text/markdown',
+        'text/plain',
+        'text/x-markdown',
+    ]
 
     model_config = SettingsConfigDict(
         env_file=os.path.join(BASE_DIR, '.env'),

@@ -1,0 +1,170 @@
+"""
+Temporal Activities cho Knowledge Base Ingestion Pipeline.
+Mỗi activity là một bước riêng biệt trong pipeline TGS-RAG.
+"""
+import uuid
+from typing import Optional, Any
+
+from temporalio import activity
+
+from app.core.config import settings
+from app.core.logger import get_logger
+from app.db.database import AsyncSessionLocal
+from app.services.knowalge_base.ingestion_service import IngestionService
+from app.services.knowalge_base.parser_service import ParserService
+
+logger = get_logger(__name__)
+
+
+# ── Dataclass-like dicts (Temporal serialize qua JSON) ───────────
+
+
+@activity.defn
+async def update_document_status(params: dict) -> None:
+    """Cập nhật status document trong flae_db."""
+    doc_id = uuid.UUID(params["document_id"])
+    status = params["status"]
+    error_message = params.get("error_message")
+    metrics = params.get("metrics", {})
+
+    async with AsyncSessionLocal() as db:
+        from app.services.knowledge_base_srv import KnowledgeBaseService
+        await KnowledgeBaseService.update_document_status_db(
+            db=db,
+            doc_id=doc_id,
+            status=status,
+            error_message=error_message,
+            metrics=metrics,
+        )
+
+
+
+@activity.defn
+async def prepare_document_content(params: dict) -> str:
+    """
+    Chuẩn bị nội dung text từ document:
+    - File upload: download từ GCS + convert PDF nếu cần
+    - Manual input: trả về content_text trực tiếp
+    """
+    doc_type = params["document_type"]
+    gcs_path = params.get("gcs_path")
+    content_text = params.get("content_text")
+    file_name = params.get("file_name", "document")
+
+    if doc_type == "manual_input":
+        if not content_text:
+            raise ValueError("Manual input document has no content_text")
+        return content_text
+
+    if not gcs_path:
+        raise ValueError("File-based document has no gcs_path")
+
+    # Download from GCS
+    from app.services.gcs_storage_srv import GCSStorageService
+
+    file_content = GCSStorageService.download_file_sync(gcs_path)
+
+    if doc_type == "pdf":
+        text = ParserService.convert_pdf_to_markdown(file_content, file_name)
+    else:
+        # markdown hoặc text: decode trực tiếp
+        text = file_content.decode("utf-8", errors="replace")
+
+    if not text or not text.strip():
+        raise ValueError(f"Document '{file_name}' trích xuất ra văn bản rỗng")
+
+    logger.info(
+        f"Content prepared: {file_name}, type={doc_type}, "
+        f"{len(text)} chars"
+    )
+    return text
+
+
+@activity.defn
+async def chunk_document_activity(params: dict) -> list[dict]:
+    """Chia text thành chunks."""
+    from app.services.knowalge_base.chunking_service import ChunkingService
+
+    raw_text = params["raw_text"]
+    doc_hash = params["doc_hash"]
+    strategy = params.get("strategy", "semantic")
+    chunk_size = params.get("chunk_size", 1200)
+    chunk_overlap = params.get("chunk_overlap", 100)
+
+    chunks = ChunkingService.chunk_document(
+        text=raw_text,
+        file_hash=doc_hash,
+        strategy=strategy,
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+    )
+
+    logger.info(f"Chunking complete: {len(chunks)} chunks")
+    return chunks
+
+
+@activity.defn
+async def generate_embeddings_activity(params: dict) -> list[dict]:
+    """Tạo embeddings cho batch chunks."""
+    chunks = params["chunks"]
+    embedded_chunks, tokens = IngestionService.generate_chunk_embeddings(chunks)
+    valid_count = sum(1 for c in embedded_chunks if c.get("embedding"))
+    logger.info(
+        f"Embeddings generated: {valid_count}/{len(chunks)} chunks, "
+        f"{tokens} tokens"
+    )
+    return embedded_chunks
+
+
+@activity.defn
+async def extract_entities_activity(params: dict) -> dict:
+    """Trích xuất entities & relations từ batch chunks."""
+    chunks = params["chunks"]
+    entities, relations, tokens = IngestionService.extract_entities_from_chunks(chunks)
+    logger.info(
+        f"Extraction complete: {len(entities)} entities, "
+        f"{len(relations)} relations, {tokens} tokens"
+    )
+    return {
+        "entities": entities,
+        "relations": relations,
+        "tokens_used": tokens,
+    }
+
+
+@activity.defn
+async def fuse_and_save_activity(params: dict) -> dict:
+    """
+    Fusion & lưu chunks/entities/relations vào rag_db.
+    Adapt từ demo-app fusion.py cho multi-tenant.
+    """
+    workspace_id = params["workspace_id"]
+    chunks = params["chunks"]
+    entities = params.get("entities", [])
+    relations = params.get("relations", [])
+    source_doc_name = params["source_doc_name"]
+
+    res = IngestionService.fuse_and_save(
+        workspace_id=workspace_id,
+        chunks=chunks,
+        entities=entities,
+        relations=relations,
+        source_doc_name=source_doc_name,
+    )
+    return res
+
+
+@activity.defn
+async def finalize_ingestion(params: dict) -> None:
+    """Cập nhật metrics cuối cùng và đánh dấu completed."""
+    doc_id = uuid.UUID(params["document_id"])
+    metrics = params.get("metrics", {})
+
+    async with AsyncSessionLocal() as db:
+        from app.services.knowledge_base_srv import KnowledgeBaseService
+        await KnowledgeBaseService.finalize_document_ingestion_db(
+            db=db,
+            doc_id=doc_id,
+            metrics=metrics,
+        )
+
