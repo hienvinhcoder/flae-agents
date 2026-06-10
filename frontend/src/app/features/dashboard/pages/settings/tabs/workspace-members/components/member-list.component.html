@@ -25,11 +25,11 @@
             <!-- Avatar & Name & Email -->
             <td class="px-6 py-4 whitespace-nowrap">
               <div class="flex items-center gap-3">
-                <div class="h-9 w-9 rounded-full bg-border border border-border-strong flex items-center justify-center overflow-hidden shrink-0 text-primary font-bold text-sm">
-                  @if (member.avatar_url) {
-                    <img [src]="member.avatar_url" alt="Avatar" class="h-full w-full object-cover" />
+                <div class="h-9 w-9 rounded-full bg-border border border-border-strong flex items-center justify-center overflow-hidden shrink-0 text-primary font-bold text-sm relative">
+                  @if (member.avatar_url && !avatarErrors()[member.user_uid]) {
+                    <img [src]="member.avatar_url" alt="Avatar" class="h-full w-full object-cover" (error)="onAvatarError(member.user_uid)" />
                   } @else {
-                    {{ member.full_name.charAt(0).toUpperCase() }}
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-primary bg-primary-soft w-full h-full p-1.5"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                   }
                 </div>
                 <div class="flex flex-col min-w-0">

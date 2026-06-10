@@ -1,0 +1,156 @@
+"""
+Service chia nhỏ văn bản (Chunking) cho Knowledge Base.
+Tách từ ingestion_service.py để đảm bảo giới hạn kích thước file.
+"""
+import re
+from typing import Dict, List
+
+from app.core.logger import get_logger
+from app.services.knowalge_base.parser_service import ParserService
+from app.utils.token import get_token_count
+
+logger = get_logger(__name__)
+
+
+class ChunkingService:
+    @staticmethod
+    def chunk_text_fixed(
+        text: str,
+        file_hash: str,
+        chunk_size: int = 1200,
+        chunk_overlap: int = 100,
+    ) -> List[Dict]:
+        """Chia khối theo kích thước token cố định."""
+        if not text:
+            return []
+
+        import tiktoken
+        encoding = tiktoken.get_encoding("cl100k_base")
+        tokens = encoding.encode(text)
+        chunks = []
+        step = max(1, chunk_size - chunk_overlap)
+
+        for i in range(0, len(tokens), step):
+            chunk_tokens = tokens[i : i + chunk_size]
+            chunk_text = encoding.decode(chunk_tokens, errors="replace").strip("\ufffd").strip()
+            if not chunk_text:
+                continue
+
+            chunks.append({
+                "chunk_id": f"{file_hash}_{len(chunks)}",
+                "text": chunk_text,
+                "token_count": len(chunk_tokens),
+            })
+
+        logger.info(f"Fixed chunking: {len(chunks)} chunks created")
+        return chunks
+
+    @staticmethod
+    def chunk_text_semantic(
+        text: str,
+        file_hash: str,
+        target_size: int = 1000,
+        overlap_target: int = 150,
+        pre_context_limit: int = 50,
+        hard_limit: int = 500,
+    ) -> List[Dict]:
+        """Chia khối theo ngữ nghĩa (heading-aware)."""
+        if not text:
+            return []
+
+        separators_regex = r"(\n##+\s.*)"
+        blocks = re.split(separators_regex, text)
+        structured_blocks: list[str] = []
+        i = 0
+        while i < len(blocks):
+            block = blocks[i].strip()
+            if not block:
+                i += 1
+            elif re.match(separators_regex, block) and i + 1 < len(blocks):
+                structured_blocks.append(f"{block}\n\n{blocks[i + 1].strip()}")
+                i += 2
+            else:
+                structured_blocks.append(block)
+                i += 1
+
+        if not structured_blocks:
+            return [{"chunk_id": f"{file_hash}_0", "text": text, "token_count": get_token_count(text)}] if text.strip() else []
+
+        base_chunks: list[list[str]] = []
+        current_base: list[str] = []
+        current_tokens = 0
+
+        for block in structured_blocks:
+            block_tokens = get_token_count(block)
+            if block_tokens > target_size:
+                if current_base:
+                    base_chunks.append(current_base)
+                base_chunks.append([block])
+                current_base = []
+                current_tokens = 0
+            elif current_tokens + block_tokens > target_size and current_base:
+                base_chunks.append(current_base)
+                current_base = [block]
+                current_tokens = block_tokens
+            else:
+                current_base.append(block)
+                current_tokens += block_tokens
+
+        if current_base:
+            base_chunks.append(current_base)
+
+        final_chunks = []
+        for idx, current_blocks in enumerate(base_chunks):
+            final_blocks = list(current_blocks)
+
+            if idx > 0:
+                prev_blocks = base_chunks[idx - 1]
+                last_unit = prev_blocks[-1]
+                last_unit_tokens = get_token_count(last_unit)
+                overlap_prepend: list[str] = []
+
+                if last_unit_tokens <= hard_limit:
+                    if last_unit_tokens > overlap_target:
+                        overlap_prepend.append(last_unit)
+                        if len(prev_blocks) > 1:
+                            pre_ctx = prev_blocks[-2]
+                            if get_token_count(pre_ctx) <= pre_context_limit:
+                                overlap_prepend.insert(0, pre_ctx)
+                    else:
+                        current_overlap = 0
+                        for prev_block in reversed(prev_blocks):
+                            pb_tokens = get_token_count(prev_block)
+                            if current_overlap + pb_tokens > overlap_target:
+                                break
+                            overlap_prepend.insert(0, prev_block)
+                            current_overlap += pb_tokens
+
+                final_blocks = overlap_prepend + final_blocks
+
+            final_text = "\n\n".join(final_blocks)
+            final_chunks.append({
+                "chunk_id": f"{file_hash}_{len(final_chunks)}",
+                "text": final_text,
+                "token_count": get_token_count(final_text),
+            })
+
+        logger.info(f"Semantic chunking: {len(final_chunks)} chunks created")
+        return final_chunks
+
+    @staticmethod
+    def chunk_document(
+        text: str,
+        file_hash: str,
+        strategy: str = "semantic",
+        chunk_size: int = 1200,
+        chunk_overlap: int = 100,
+    ) -> List[Dict]:
+        """Dispatcher: chọn chiến lược chunking."""
+        cleaned = ParserService.preprocess_text(text)
+        if strategy == "semantic":
+            return ChunkingService.chunk_text_semantic(
+                cleaned, file_hash, target_size=chunk_size, overlap_target=chunk_overlap
+            )
+        return ChunkingService.chunk_text_fixed(
+            cleaned, file_hash, chunk_size=chunk_size, chunk_overlap=chunk_overlap
+        )

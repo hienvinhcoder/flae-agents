@@ -14,8 +14,8 @@ Khi nhận lệnh `/integrate-api [tên-tính-năng]`, bạn đóng vai trò là
 BẮT BUỘC thực hiện tuần tự các bước sau một cách im lặng:
 
 ## 1. NẠP NGỮ CẢNH
-1. **Frontend Architecture:** Đọc `ARCHITECTURE.md` và `docs/frontend/index.md` để nắm rõ quy chuẩn dự án (Angular, Signals, Standalone Components).
-2. **Backend Architecture:** Đọc `docs/backend/index.md` để nắm chuẩn Response từ API.
+1. **Frontend Architecture:** Đọc `.docs/ARCHITECTURE.md` và `.docs/project-context-frontend.md` để nắm rõ quy chuẩn dự án (Angular, Signals, Standalone Components).
+2. **Backend Architecture:** Đọc `.docs/project-context-backend.md` để nắm chuẩn Response từ API.
 3. **Plan:** Đọc `FRONTEND-PLAN.md` và `BACKEND-PLAN.md` của tính năng để biết cần map trường dữ liệu nào.
 
 ## 2. QUY TẮC TÍCH HỢP (ANGULAR)

@@ -46,7 +46,25 @@ import {
   Users,
   Plus,
   UserPlus,
-  RefreshCw
+  RefreshCw,
+  PencilLine,
+  Upload,
+  Search,
+  FileText,
+  Trash2,
+  CheckCircle2,
+  FileCode,
+  FolderOpen,
+  Blocks,
+  Tag,
+  GitBranch,
+  Timer,
+  CircleAlert,
+  UploadCloud,
+  CloudUpload,
+  File,
+  Loader2,
+  CircleHelp
 } from 'lucide-angular';
 
 const lucideIcons = {
@@ -89,7 +107,25 @@ const lucideIcons = {
   Users,
   Plus,
   UserPlus,
-  RefreshCw
+  RefreshCw,
+  PencilLine,
+  Upload,
+  Search,
+  FileText,
+  Trash2,
+  CheckCircle2,
+  FileCode,
+  FolderOpen,
+  Blocks,
+  Tag,
+  GitBranch,
+  Timer,
+  CircleAlert,
+  UploadCloud,
+  CloudUpload,
+  File,
+  Loader2,
+  CircleHelp
 };
 
 import { routes } from './app.routes';

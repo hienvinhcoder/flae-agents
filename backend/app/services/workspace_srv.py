@@ -26,20 +26,21 @@ from app.schemas.sche_workspace import (
 
 logger = get_logger(__name__)
 
+def _get_cipher():
+    key = settings.ENCRYPTION_KEY
+    if not key:
+        key = Fernet.generate_key().decode("utf-8")
+    return Fernet(key.encode("utf-8"))
+
+
+def _encrypt_token(token: str | None) -> str | None:
+    if not token:
+        return token
+    cipher = _get_cipher()
+    return cipher.encrypt(token.encode("utf-8")).decode("utf-8")
+
+
 class WorkspaceService:
-    @staticmethod
-    def _get_cipher():
-        key = settings.ENCRYPTION_KEY
-        if not key:
-            key = Fernet.generate_key().decode("utf-8")
-        return Fernet(key.encode("utf-8"))
-        
-    @staticmethod
-    def _encrypt_token(token: str | None) -> str | None:
-        if not token:
-            return token
-        cipher = WorkspaceService._get_cipher()
-        return cipher.encrypt(token.encode("utf-8")).decode("utf-8")
 
     @staticmethod
     async def update_current_workspace(db: AsyncSession, user_uid: str, workspace_id: str) -> User:
@@ -119,6 +120,52 @@ class WorkspaceService:
         return workspace
 
     @staticmethod
+    async def create_default_workspace(db: AsyncSession, user_uid: str) -> Workspace:
+        """Tạo workspace mặc định cho user."""
+        result = await db.execute(select(User).where(User.firebase_uid == user_uid))
+        user = result.scalar_one_or_none()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+
+        # 1. Tạo mới Workspace
+        new_ws = Workspace(
+            name=f"{user.full_name or 'User'}'s Workspace",
+            owner_uid=user_uid
+        )
+        db.add(new_ws)
+        await db.flush()  # flush để lấy id
+        
+        # 2. Tạo WorkspaceMember (owner)
+        member = WorkspaceMember(
+            workspace_id=new_ws.id,
+            user_uid=user_uid,
+            role=WorkspaceRole.owner,
+            status=WorkspaceMemberStatus.active
+        )
+        db.add(member)
+        
+        # 3. Cập nhật current_workspace_id của user
+        user.current_workspace_id = str(new_ws.id)
+        await db.commit()
+        await db.refresh(user)
+        await db.refresh(new_ws)
+        
+        # Xóa cache Redis membership
+        await redis_client.delete(f"user:membership:{user_uid}")
+        
+        # 4. Kích hoạt tạo phân vùng RAG
+        try:
+            await rag_db_manager.create_workspace_partition(str(new_ws.id))
+            logger.info(f"RAG partitions initialized for default workspace {new_ws.id}")
+        except Exception as ex:
+            logger.error(f"Failed to create RAG partition for default workspace {new_ws.id}: {ex}")
+            
+        return new_ws
+
+    @staticmethod
     async def get_user_workspaces(db: AsyncSession, user_uid: str) -> list[Workspace]:
         """Lấy danh sách Workspace mà user là thành viên active."""
         result = await db.execute(
@@ -131,7 +178,14 @@ class WorkspaceService:
                 )
             )
         )
-        return list(result.scalars().all())
+        workspaces = list(result.scalars().all())
+        if not workspaces:
+            # Tự động tạo default workspace cho user nếu danh sách trống
+            logger.info(f"User {user_uid} has no workspaces. Automatically creating one.")
+            new_ws = await WorkspaceService.create_default_workspace(db, user_uid)
+            workspaces = [new_ws]
+        return workspaces
+
 
 
 

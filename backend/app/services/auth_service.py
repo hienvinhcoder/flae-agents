@@ -2,8 +2,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.exc import NoResultFound
 from app.models.user import User
-from app.models.workspace import Workspace, WorkspaceMember, WorkspaceRole, WorkspaceMemberStatus
-from app.db.rag_db import rag_db_manager
 from app.schemas.auth import UserSyncRequest
 from app.core.logger import get_logger
 
@@ -62,35 +60,9 @@ class AuthService:
         if not user.current_workspace_id:
             logger.info(f"User {firebase_uid} has no current workspace. Creating a default one.")
             try:
-                # 1. Tạo mới Workspace
-                new_ws = Workspace(
-                    name=f"{user.full_name}'s Workspace",
-                    owner_uid=user.firebase_uid
-                )
-                db.add(new_ws)
-                await db.flush()  # flush để lấy new_ws.id
-                
-                # 2. Tạo WorkspaceMember (owner)
-                member = WorkspaceMember(
-                    workspace_id=new_ws.id,
-                    user_uid=user.firebase_uid,
-                    role=WorkspaceRole.owner,
-                    status=WorkspaceMemberStatus.active
-                )
-                db.add(member)
-                
-                # 3. Cập nhật current_workspace_id của user
-                user.current_workspace_id = str(new_ws.id)
-                await db.commit()
+                from app.services.workspace_srv import WorkspaceService
+                await WorkspaceService.create_default_workspace(db, firebase_uid)
                 await db.refresh(user)
-                logger.info(f"Default workspace {new_ws.id} created for user {firebase_uid}")
-                
-                # 4. Kích hoạt tạo phân vùng RAG trong flae_knowledge_db
-                try:
-                    await rag_db_manager.create_workspace_partition(str(new_ws.id))
-                    logger.info(f"RAG partitions initialized for workspace {new_ws.id}")
-                except Exception as ex:
-                    logger.error(f"Failed to create RAG partition for workspace {new_ws.id}: {ex}")
             except Exception as e:
                 logger.error(f"Failed to create default workspace for user {firebase_uid}: {e}")
                 await db.rollback()

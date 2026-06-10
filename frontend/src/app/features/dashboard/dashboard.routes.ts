@@ -25,7 +25,7 @@ export const dashboardRoutes: Routes = [
       },
       {
         path: 'knowledge',
-        loadComponent: () => import('./pages/placeholder.component').then(m => m.PlaceholderComponent)
+        loadChildren: () => import('./pages/knowledge/knowledge.routes').then(m => m.KNOWLEDGE_ROUTES)
       },
       {
         path: 'reports',

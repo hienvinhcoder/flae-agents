@@ -1,0 +1,154 @@
+<div class="w-full overflow-hidden rounded-2xl border border-border bg-surface shadow-soft">
+  <div class="overflow-x-auto">
+    <table class="w-full text-left border-collapse">
+      <!-- Table Header -->
+      <thead>
+        <tr class="bg-subtle text-text-muted text-[11px] uppercase tracking-wider select-none border-b border-border">
+          <th class="px-5 py-4 font-semibold">{{ 'KNOWLEDGE.TABLE_TITLE' | translate }}</th>
+          <th class="px-5 py-4 font-semibold">{{ 'KNOWLEDGE.TABLE_TYPE' | translate }}</th>
+          <th class="px-5 py-4 font-semibold">{{ 'KNOWLEDGE.TABLE_STATUS' | translate }}</th>
+          <th class="px-5 py-4 font-semibold text-center">{{ 'KNOWLEDGE.TABLE_CHUNKS' | translate }}</th>
+          <th class="px-5 py-4 font-semibold">{{ 'KNOWLEDGE.TABLE_UPLOADED_BY' | translate }}</th>
+          <th class="px-5 py-4 font-semibold">{{ 'KNOWLEDGE.TABLE_DATE' | translate }}</th>
+          <th class="px-5 py-4 font-semibold text-right"></th>
+        </tr>
+      </thead>
+
+      <!-- Table Body -->
+      <tbody class="divide-y divide-border">
+        @if (loading() && documents().length === 0) {
+          <!-- Skeleton Loading States -->
+          @for (item of [1, 2, 3]; track item) {
+            <tr class="animate-pulse">
+              <td class="px-5 py-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-lg bg-border"></div>
+                  <div class="space-y-2">
+                    <div class="h-4 bg-border rounded w-48"></div>
+                    <div class="h-3 bg-border rounded w-24"></div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-5 py-4"><div class="h-4 bg-border rounded w-12"></div></td>
+              <td class="px-5 py-4"><div class="h-6 bg-border rounded-full w-24"></div></td>
+              <td class="px-5 py-4"><div class="h-4 bg-border rounded w-8 mx-auto"></div></td>
+              <td class="px-5 py-4"><div class="h-4 bg-border rounded w-20"></div></td>
+              <td class="px-5 py-4"><div class="h-4 bg-border rounded w-24"></div></td>
+              <td class="px-5 py-4"><div class="h-8 bg-border rounded w-8 ml-auto"></div></td>
+            </tr>
+          }
+        } @else if (documents().length === 0) {
+          <!-- Empty State Inside Table -->
+          <tr>
+            <td colspan="7" class="px-5 py-16 text-center">
+              <div class="flex flex-col items-center justify-center">
+                <div class="w-16 h-16 rounded-2xl bg-border/40 flex items-center justify-center text-text-disabled mb-4">
+                  <lucide-icon name="folder-open" class="w-8 h-8"></lucide-icon>
+                </div>
+                <h3 class="text-text-primary text-base font-semibold">{{ 'KNOWLEDGE.EMPTY_STATE_TITLE' | translate }}</h3>
+                <p class="text-text-muted text-xs max-w-sm mt-1 mx-auto leading-relaxed">
+                  {{ 'KNOWLEDGE.EMPTY_STATE_DESC' | translate }}
+                </p>
+              </div>
+            </td>
+          </tr>
+        } @else {
+          <!-- Document Rows -->
+          @for (doc of documents(); track doc.id) {
+            <tr 
+              class="text-text-secondary hover:bg-white/[0.02] active:bg-white/[0.04] transition-colors duration-150 cursor-pointer border-t border-border group"
+              (click)="onViewDetail(doc)"
+            >
+              <!-- Title & Meta -->
+              <td class="px-5 py-4">
+                <div class="flex items-center gap-3">
+                  <div 
+                    class="w-8.5 h-8.5 rounded-lg flex items-center justify-center shrink-0"
+                    [class]="getDocumentIconClass(doc.document_type)"
+                  >
+                    <lucide-icon [name]="getDocumentIcon(doc.document_type)" class="w-4.5 h-4.5"></lucide-icon>
+                  </div>
+                  <div class="flex flex-col overflow-hidden max-w-[280px] md:max-w-[360px]">
+                    <span class="text-text-primary font-semibold text-sm truncate group-hover:text-primary transition-colors duration-150">
+                      {{ doc.title }}
+                    </span>
+                    <span class="text-text-disabled text-xs truncate mt-0.5 font-mono">
+                      @if (doc.file_name) {
+                        {{ doc.file_name }} ({{ formatBytes(doc.file_size) }})
+                      } @else {
+                        {{ 'KNOWLEDGE.ADD_TEXT' | translate }}
+                      }
+                    </span>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Format Type -->
+              <td class="px-5 py-4">
+                <span class="text-xs font-mono uppercase text-text-muted px-2 py-0.5 rounded border border-border bg-subtle">
+                  {{ doc.document_type }}
+                </span>
+              </td>
+
+              <!-- Status Badge -->
+              <td class="px-5 py-4">
+                <app-status-badge [status]="doc.status"></app-status-badge>
+              </td>
+
+              <!-- Chunk Count -->
+              <td class="px-5 py-4 text-center">
+                <span class="font-mono text-xs" [class.text-text-disabled]="doc.status !== 'completed'">
+                  {{ doc.chunk_count ?? '-' }}
+                </span>
+              </td>
+
+              <!-- Uploaded By -->
+              <td class="px-5 py-4 text-sm text-text-muted truncate max-w-[120px]">
+                {{ doc.uploaded_by || 'System' }}
+              </td>
+
+              <!-- Created Date -->
+              <td class="px-5 py-4 text-xs text-text-muted font-mono">
+                {{ doc.created_at | date:'dd/MM/yyyy HH:mm' }}
+              </td>
+
+              <!-- Actions -->
+              <td class="px-5 py-4 text-right">
+                <div class="flex items-center justify-end gap-1" (click)="$event.stopPropagation()">
+                  <!-- Retry button for Failed state -->
+                  @if (doc.status === 'failed') {
+                    <button 
+                      (click)="onRetry($event, doc.id)"
+                      class="p-2 rounded-lg text-text-secondary hover:text-primary hover:bg-white/5 transition duration-150"
+                      title="Retry processing"
+                    >
+                      <lucide-icon name="refresh-cw" class="w-4 h-4"></lucide-icon>
+                    </button>
+                  }
+                  
+                  <!-- Trash button for deleting -->
+                  <button 
+                    (click)="onDelete($event, doc.id)"
+                    class="p-2 rounded-lg text-text-disabled hover:text-error hover:bg-error/10 transition duration-150"
+                    title="Delete document"
+                  >
+                    <lucide-icon name="trash-2" class="w-4 h-4"></lucide-icon>
+                  </button>
+                  
+                  <!-- View detail arrow -->
+                  <button 
+                    (click)="onViewDetail(doc)"
+                    class="p-2 rounded-lg text-text-disabled hover:text-text-primary hover:bg-white/5 transition duration-150"
+                    title="View details"
+                  >
+                    <lucide-icon name="chevron-right" class="w-4 h-4"></lucide-icon>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

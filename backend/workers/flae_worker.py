@@ -7,8 +7,18 @@ from app.core.logger import get_logger, setup_logging
 # Import workflows và activities
 from app.temporal.workflows.greeting import GreetingWorkflow
 from app.temporal.workflows.invitation import WorkspaceInvitationWorkflow
+from app.temporal.workflows.ingestion import DocumentIngestionWorkflow
 from app.temporal.activities.greet import greet
 from app.temporal.activities.invitation import send_invitation_email
+from app.temporal.activities.ingestion import (
+    update_document_status,
+    prepare_document_content,
+    chunk_document_activity,
+    generate_embeddings_activity,
+    extract_entities_activity,
+    fuse_and_save_activity,
+    finalize_ingestion,
+)
 
 logger = get_logger(__name__)
 
@@ -29,8 +39,22 @@ async def run_worker():
         worker = Worker(
             client,
             task_queue="flae-default-queue",
-            workflows=[GreetingWorkflow, WorkspaceInvitationWorkflow],
-            activities=[greet, send_invitation_email],
+            workflows=[
+                GreetingWorkflow,
+                WorkspaceInvitationWorkflow,
+                DocumentIngestionWorkflow,
+            ],
+            activities=[
+                greet,
+                send_invitation_email,
+                update_document_status,
+                prepare_document_content,
+                chunk_document_activity,
+                generate_embeddings_activity,
+                extract_entities_activity,
+                fuse_and_save_activity,
+                finalize_ingestion,
+            ],
             activity_executor=activity_executor,
         )
         logger.info("Temporal Worker started. Listening on task queue: flae-default-queue")
@@ -46,3 +70,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

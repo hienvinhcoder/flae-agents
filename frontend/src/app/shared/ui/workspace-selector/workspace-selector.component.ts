@@ -14,21 +14,18 @@ import { TranslateModule } from '@ngx-translate/core';
         <button
           type="button"
           (click)="toggleDropdown(); $event.stopPropagation()"
-          class="inline-flex items-center gap-3 rounded-xl border border-border bg-elevated shadow-soft transition hover:border-border-strong hover:bg-subtle cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20 active:scale-95 text-left w-full px-3 py-2.5"
+          class="group inline-flex items-center gap-3 rounded-xl border border-border bg-elevated shadow-soft transition hover:border-border-strong hover:bg-subtle cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20 active:scale-95 text-left w-full px-3 py-2.5"
           [title]="currentWorkspace()?.name || ('WORKSPACE.SELECT' | translate)"
         >
-          <div class="w-8 h-8 rounded-lg bg-primary-soft flex items-center justify-center text-primary font-bold text-sm shrink-0">
+          <div class="w-8 h-8 rounded-lg bg-primary-soft flex items-center justify-center text-primary font-bold text-sm shrink-0 transition-transform duration-300 group-hover:scale-105">
             {{ (currentWorkspace()?.name || 'W').charAt(0).toUpperCase() }}
           </div>
-          <div class="flex-1 min-w-0 pr-1.5">
-            <p class="text-sm font-medium text-text-primary truncate">
+          <div class="flex-1 min-w-0 pr-1.5 flex items-center">
+            <p class="text-sm font-semibold text-text-primary truncate group-hover:text-primary transition-colors duration-200">
               {{ currentWorkspace()?.name || ('WORKSPACE.SELECT' | translate) }}
             </p>
-            <p class="text-xs text-text-muted truncate">
-              {{ 'WORKSPACE.LABEL' | translate }}
-            </p>
           </div>
-          <lucide-icon name="chevron-down" class="w-4 h-4 text-text-muted transition-transform duration-200 shrink-0" [class.rotate-180]="isOpen()"></lucide-icon>
+          <lucide-icon name="chevron-down" class="w-4 h-4 text-text-muted transition-transform duration-200 shrink-0 group-hover:text-text-primary" [class.rotate-180]="isOpen()"></lucide-icon>
         </button>
       } @else {
         <!-- Embedded Mode (Dùng ở Sidebar trượt) -->
@@ -37,15 +34,13 @@ import { TranslateModule } from '@ngx-translate/core';
           <button
             type="button"
             (click)="toggleDropdown(); $event.stopPropagation()"
-            class="rounded-xl border border-border/60 bg-elevated/40 p-2.5 shadow-soft flex flex-col gap-2 w-full text-left transition-all duration-300 hover:border-border/80 hover:bg-elevated/60 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20"
+            class="group rounded-xl border border-border/60 bg-elevated/40 p-2.5 shadow-soft flex flex-col gap-2.5 w-full text-left transition-all duration-300 hover:border-border/80 hover:bg-elevated/60 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20"
           >
             <!-- Row 1: Logo & Close Button -->
-            <div class="flex items-center justify-between h-8 px-1 w-full">
-              <div class="flex items-center gap-2.5 overflow-hidden">
-                <div class="w-7 h-7 rounded-lg bg-gradient-to-tr from-primary to-primary-hover flex items-center justify-center text-app font-bold text-sm shadow-[0_2px_6px_rgba(251,146,60,0.25)] shrink-0 transition-transform duration-300 hover:scale-105">
-                  F
-                </div>
-                <span class="font-heading font-bold text-text-primary text-sm whitespace-nowrap tracking-tight bg-gradient-to-r from-text-primary to-primary bg-clip-text text-transparent">FLAE Agent</span>
+            <div class="flex items-center justify-between h-10 px-1 w-full">
+              <div class="flex items-center gap-3 overflow-hidden">
+                <img src="/assets/images/logo.png" alt="FLAE" class="w-10 h-10 object-contain rounded-xl transition-all duration-300 hover:scale-105 hover:rotate-3 shadow-md">
+                <span class="font-heading font-black text-text-primary text-xl whitespace-nowrap tracking-wider bg-gradient-to-r from-text-primary via-primary to-ai bg-clip-text text-transparent transition-all duration-300 hover:brightness-110">FLΛE</span>
               </div>
               @if (isMobile()) {
                 <button type="button" (click)="closeSidebar($event)" class="text-text-muted hover:text-primary transition-colors cursor-pointer p-1 rounded-lg hover:bg-white/5">
@@ -58,16 +53,16 @@ import { TranslateModule } from '@ngx-translate/core';
             <div class="h-[1px] bg-border/40 mx-1 w-full"></div>
 
             <!-- Row 2: Workspace Select Area (Flat layout) -->
-            <div class="flex items-center gap-2 px-1 w-full">
+            <div class="flex items-center gap-2.5 px-1 w-full">
+              <div class="w-6 h-6 rounded-md bg-primary-soft border border-primary/20 flex items-center justify-center text-primary font-bold text-xs shrink-0 group-hover:bg-primary-soft/60 group-hover:border-primary/45 transition-all duration-300">
+                {{ (currentWorkspace()?.name || 'W').charAt(0).toUpperCase() }}
+              </div>
               <div class="flex-1 min-w-0">
-                <p class="text-sm font-medium text-text-primary truncate">
+                <p class="text-sm font-semibold text-text-primary truncate group-hover:text-primary transition-colors duration-200">
                   {{ currentWorkspace()?.name || ('WORKSPACE.SELECT' | translate) }}
                 </p>
-                <p class="text-xs text-text-muted truncate">
-                  {{ 'WORKSPACE.LABEL' | translate }}
-                </p>
               </div>
-              <lucide-icon name="chevron-down" class="w-4 h-4 text-text-muted transition-transform duration-200 shrink-0" [class.rotate-180]="isOpen()"></lucide-icon>
+              <lucide-icon name="chevron-down" class="w-4 h-4 text-text-muted transition-transform duration-200 shrink-0 group-hover:text-text-primary" [class.rotate-180]="isOpen()"></lucide-icon>
             </div>
           </button>
         } @else {
@@ -75,19 +70,17 @@ import { TranslateModule } from '@ngx-translate/core';
           <button
             type="button"
             (click)="toggleDropdown(); $event.stopPropagation()"
-            class="w-11 mx-auto py-2 px-1 rounded-xl border border-border/60 bg-elevated/40 shadow-soft flex flex-col items-center gap-2 transition-all duration-300 hover:border-border/80 hover:bg-elevated/60 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20"
+            class="w-12 mx-auto py-2.5 px-1.5 rounded-xl border border-border/60 bg-elevated/40 shadow-soft flex flex-col items-center gap-2.5 transition-all duration-300 hover:border-border/80 hover:bg-elevated/60 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20"
             [title]="currentWorkspace()?.name || ('WORKSPACE.SELECT' | translate)"
           >
-            <!-- Logo F -->
-            <div class="w-7 h-7 rounded-lg bg-gradient-to-tr from-primary to-primary-hover flex items-center justify-center text-app font-bold text-sm shadow-[0_2px_6px_rgba(251,146,60,0.25)] shrink-0 transition-transform duration-300 hover:scale-105">
-              F
-            </div>
+            <!-- Logo Icon -->
+            <img src="/assets/images/logo.png" alt="FLAE" class="w-8 h-8 object-contain rounded-lg transition-all duration-300 hover:scale-110">
 
             <!-- Divider -->
-            <div class="w-6 h-[1px] bg-border/40"></div>
+            <div class="w-8 h-[1px] bg-border/40"></div>
 
             <!-- Workspace Icon (Initial letter) -->
-            <div class="w-7 h-7 rounded-lg bg-primary-soft flex items-center justify-center text-primary font-bold text-xs shrink-0 transition-all duration-300">
+            <div class="w-8 h-8 rounded-lg bg-primary-soft flex items-center justify-center text-primary font-extrabold text-sm shrink-0 transition-all duration-300 hover:bg-primary-soft/30">
               {{ (currentWorkspace()?.name || 'W').charAt(0).toUpperCase() }}
             </div>
           </button>

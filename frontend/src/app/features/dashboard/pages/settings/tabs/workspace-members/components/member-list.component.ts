@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { Component, input, output, signal } from '@angular/core';
 import { WorkspaceMember, WorkspaceRole, WorkspaceMemberStatus } from '../../../../../../../core/models/workspace.model';
 import { LucideAngularModule } from 'lucide-angular';
 import { BadgeComponent } from '../../../../../../../shared/ui/badge.component';
@@ -24,6 +24,12 @@ export class MemberListComponent {
   roleChanged = output<{ userUid: string; newRole: WorkspaceRole }>();
   statusChanged = output<{ userUid: string; newStatus: WorkspaceMemberStatus }>();
   memberRemoved = output<string>();
+
+  avatarErrors = signal<Record<string, boolean>>({});
+
+  onAvatarError(userUid: string) {
+    this.avatarErrors.update(errors => ({ ...errors, [userUid]: true }));
+  }
 
   // Helper check xem user hiện tại có quyền chỉnh sửa thành viên target hay không
   canManage(targetMember: WorkspaceMember): boolean {

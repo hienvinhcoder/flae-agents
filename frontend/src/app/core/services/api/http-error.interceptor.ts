@@ -1,6 +1,6 @@
 import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { catchError, throwError } from 'rxjs';
+import { catchError, throwError, EMPTY } from 'rxjs';
 import { ToastService } from '../toast.service';
 import { ConnectionModalService } from '../connection-modal.service';
 import { TranslateService } from '@ngx-translate/core';
@@ -9,6 +9,13 @@ export const httpErrorInterceptor: HttpInterceptorFn = (req, next) => {
   const toastService = inject(ToastService);
   const connectionModalService = inject(ConnectionModalService);
   const translateService = inject(TranslateService);
+
+  // Nếu đã xác định server down và request không phải check /health,
+  // trả về EMPTY ngay lập tức để kết thúc request im lặng.
+  // Điều này triệt tiêu hoàn toàn việc ném lỗi ra ngoài làm nghẽn console và làm nặng máy (Change Detection).
+  if (connectionModalService.isServerDown() && !req.url.endsWith('/health')) {
+    return EMPTY;
+  }
 
   // BỎ QUA KIỂM TRA LỖI cho request ping kiểm tra trạng thái /health
   // Nếu không, chính request check connection này cũng kích hoạt interceptor gây lỗi vòng lặp
@@ -29,8 +36,10 @@ export const httpErrorInterceptor: HttpInterceptorFn = (req, next) => {
     catchError((error: HttpErrorResponse) => {
       // Trường hợp 1: Không thể kết nối tới Server (status = 0, ví dụ Connection Refused, CORS error do server tắt, hoặc mất internet)
       if (error.status === 0) {
-        // Thay vì hiển thị Toast, chúng ta hiển thị Modal chặn toàn cục để yêu cầu thử lại kết nối
-        connectionModalService.show();
+        // Chỉ gọi show nếu trước đó chưa xác định server down để tránh trigger cập nhật signal liên tục
+        if (!connectionModalService.isServerDown()) {
+          connectionModalService.show();
+        }
       } 
       // Trường hợp 2: Lỗi phía Server (status >= 500, ví dụ 500 Internal Server Error, 502 Bad Gateway, 504 Gateway Timeout)
       else if (error.status >= 500) {
