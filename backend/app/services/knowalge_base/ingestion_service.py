@@ -413,7 +413,7 @@ class IngestionService:
                     model_name=model_name,
                     api_key=api_key,
                     entity_types=entity_types,
-                    glean_max=1,
+                    glean_max=0,
                     language="auto"
                 )
                 return {"res": res, "tokens": tokens}

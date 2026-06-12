@@ -9,3 +9,5 @@ Vào tháng 5 năm 2025, Tập đoàn Công nghệ TechVibe đã ký kết thỏ
 
 ## Phần 3: Công nghệ của VibeAI trên hạ tầng Cloud
 Sản phẩm VibeAI của TechVibe được phát triển dựa trên các mô hình ngôn ngữ lớn (LLM) tiên tiến nhất và chạy trên hạ tầng điện toán đám mây Amazon Web Services (AWS). Hệ thống VibeAI áp dụng kiến trúc Microservices để đảm bảo khả năng mở rộng quy mô lớn khi phục vụ hàng triệu người dùng cùng lúc. Đối tác ngân hàng VietBank đánh giá rất cao độ bảo mật và tính ổn định của giải pháp này khi vận hành thử nghiệm trên môi trường cloud của AWS.
+
+
