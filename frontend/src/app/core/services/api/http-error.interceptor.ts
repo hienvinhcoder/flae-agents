@@ -4,11 +4,17 @@ import { catchError, throwError, EMPTY } from 'rxjs';
 import { ToastService } from '../toast.service';
 import { ConnectionModalService } from '../connection-modal.service';
 import { TranslateService } from '@ngx-translate/core';
+import { Router } from '@angular/router';
+import { AuthStore } from '../../stores/auth.store';
+import { AuthService } from '../auth.service';
 
 export const httpErrorInterceptor: HttpInterceptorFn = (req, next) => {
   const toastService = inject(ToastService);
   const connectionModalService = inject(ConnectionModalService);
   const translateService = inject(TranslateService);
+  const router = inject(Router);
+  const authStore = inject(AuthStore);
+  const authService = inject(AuthService);
 
   // Nếu đã xác định server down và request không phải check /health,
   // trả về EMPTY ngay lập tức để kết thúc request im lặng.
@@ -49,11 +55,16 @@ export const httpErrorInterceptor: HttpInterceptorFn = (req, next) => {
       }
       // Trường hợp 3: Lỗi Authentication (status = 401, token hết hạn hoặc không hợp lệ)
       else if (error.status === 401) {
-        // Chỉ hiện toast khi không phải là route login/auth-sync
+        // Chỉ hiện toast và redirect khi không phải là route login/auth-sync
         if (!req.url.includes('/auth/sync')) {
+          authStore.reset();
+          authService.logout().subscribe();
+
           const title = getTranslation('HTTP_ERROR.UNAUTHORIZED_TITLE', 'Hết phiên làm việc');
           const message = getTranslation('HTTP_ERROR.UNAUTHORIZED_MESSAGE', 'Phiên đăng nhập của bạn đã hết hạn. Vui lòng đăng nhập lại.');
           toastService.warning(message, title);
+
+          router.navigate(['/auth/login'], { queryParams: { returnUrl: router.url } });
         }
       }
 
@@ -62,3 +73,4 @@ export const httpErrorInterceptor: HttpInterceptorFn = (req, next) => {
     })
   );
 };
+

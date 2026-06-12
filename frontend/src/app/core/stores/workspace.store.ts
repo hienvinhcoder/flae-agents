@@ -50,6 +50,13 @@ export const workspaceStore = () => {
       } else {
         currentWorkspaceId.set(null);
       }
+    },
+    
+    reset: () => {
+      workspaces.set([]);
+      currentWorkspaceId.set(null);
+      isSyncing.set(false);
+      localStorage.removeItem('current_workspace_id');
     }
   };
 };
@@ -85,5 +92,9 @@ export class WorkspaceStore {
   
   loadCurrentWorkspaceIdFromStorage() {
     this.store.loadCurrentWorkspaceIdFromStorage();
+  }
+
+  reset() {
+    this.store.reset();
   }
 }

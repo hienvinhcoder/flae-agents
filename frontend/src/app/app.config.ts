@@ -1,5 +1,5 @@
-import { ApplicationConfig, provideZoneChangeDetection, provideBrowserGlobalErrorListeners, provideAppInitializer, inject } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { ApplicationConfig, provideZoneChangeDetection, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { provideRouter, withPreloading, PreloadAllModules } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { initializeApp, provideFirebaseApp } from '@angular/fire/app';
 import { getAuth, provideAuth } from '@angular/fire/auth';
@@ -7,130 +7,30 @@ import { importProvidersFrom } from '@angular/core';
 import { TranslateModule } from '@ngx-translate/core';
 import { 
   LucideAngularModule,
-  Sun,
-  MessageSquare,
-  Bot,
-  BookOpen,
-  BarChart2,
-  PhoneCall,
-  Settings,
-  ChevronRight,
-  ChevronLeft,
+  // Root-level icons: Toast, ConnectionModal, general UI
   X,
-  Menu,
-  Sparkles,
-  ChevronDown,
-  Check,
-  Clock,
-  TrendingUp,
-  MessageCircle,
-  CircleCheck,
   AlertTriangle,
-  Phone,
+  CircleCheck,
   Bell,
-  ExternalLink,
-  ArrowRight,
-  PlusCircle,
-  Cpu,
-  TrendingDown,
-  Database,
-  ChevronUp,
-  Send,
-  Eye,
-  Wrench,
-  CheckCircle,
-  ListChecks,
-  Inbox,
-  Languages,
-  Sliders,
-  Users,
-  Plus,
-  UserPlus,
   RefreshCw,
-  PencilLine,
-  Upload,
-  Search,
-  FileText,
-  Trash2,
-  CheckCircle2,
-  FileCode,
-  FolderOpen,
-  Blocks,
-  Tag,
-  GitBranch,
-  Timer,
-  CircleAlert,
-  UploadCloud,
-  CloudUpload,
-  File,
-  Loader2,
-  CircleHelp
+  LoaderCircle,
 } from 'lucide-angular';
 
-const lucideIcons = {
-  Sun,
-  MessageSquare,
-  Bot,
-  BookOpen,
-  BarChart2,
-  PhoneCall,
-  Settings,
-  ChevronRight,
-  ChevronLeft,
+/**
+ * Icons dùng ở root level (Toast, ConnectionModal).
+ * Các icons khác được import tại component/feature tương ứng.
+ */
+const rootIcons = {
   X,
-  Menu,
-  Sparkles,
-  ChevronDown,
-  Check,
-  Clock,
-  TrendingUp,
-  MessageCircle,
-  CircleCheck,
   AlertTriangle,
-  Phone,
+  CircleCheck,
   Bell,
-  ExternalLink,
-  ArrowRight,
-  PlusCircle,
-  Cpu,
-  TrendingDown,
-  Database,
-  ChevronUp,
-  Send,
-  Eye,
-  Wrench,
-  CheckCircle,
-  ListChecks,
-  Inbox,
-  Languages,
-  Sliders,
-  Users,
-  Plus,
-  UserPlus,
   RefreshCw,
-  PencilLine,
-  Upload,
-  Search,
-  FileText,
-  Trash2,
-  CheckCircle2,
-  FileCode,
-  FolderOpen,
-  Blocks,
-  Tag,
-  GitBranch,
-  Timer,
-  CircleAlert,
-  UploadCloud,
-  CloudUpload,
-  File,
-  Loader2,
-  CircleHelp
+  LoaderCircle,
 };
 
 import { routes } from './app.routes';
 import { environment } from '../environments/environment';
-import { AuthInitializerService } from './core/services/auth-initializer.service';
 import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
 import { httpErrorInterceptor } from './core/services/api/http-error.interceptor';
 
@@ -138,17 +38,14 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideZoneChangeDetection({ eventCoalescing: true }),
-    provideRouter(routes),
+    provideRouter(routes, withPreloading(PreloadAllModules)),
     provideHttpClient(withInterceptors([httpErrorInterceptor])),
     provideFirebaseApp(() => initializeApp(environment.firebase)),
     provideAuth(() => getAuth()),
-    provideAppInitializer(async () => {
-      console.log('[AppConfig] App Initializer starting...');
-      await inject(AuthInitializerService).initialize();
-      console.log('[AppConfig] App Initializer finished.');
-    }),
+    // AuthInitializerService giờ được gọi non-blocking từ AppComponent
+    // thay vì blocking qua provideAppInitializer
     importProvidersFrom(
-      LucideAngularModule.pick(lucideIcons),
+      LucideAngularModule.pick(rootIcons),
       TranslateModule.forRoot()
     ),
     provideTranslateHttpLoader({
@@ -157,4 +54,3 @@ export const appConfig: ApplicationConfig = {
     })
   ]
 };
-

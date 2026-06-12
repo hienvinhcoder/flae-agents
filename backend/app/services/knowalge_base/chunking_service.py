@@ -3,8 +3,9 @@ Service chia nhỏ văn bản (Chunking) cho Knowledge Base.
 Tách từ ingestion_service.py để đảm bảo giới hạn kích thước file.
 """
 import re
-from typing import Dict, List
+from typing import Dict, List, Optional
 
+from app.core.config import settings
 from app.core.logger import get_logger
 from app.services.knowalge_base.parser_service import ParserService
 from app.utils.token import get_token_count
@@ -17,12 +18,17 @@ class ChunkingService:
     def chunk_text_fixed(
         text: str,
         file_hash: str,
-        chunk_size: int = 1200,
-        chunk_overlap: int = 100,
+        chunk_size: Optional[int] = None,
+        chunk_overlap: Optional[int] = None,
     ) -> List[Dict]:
         """Chia khối theo kích thước token cố định."""
         if not text:
             return []
+
+        if chunk_size is None:
+            chunk_size = settings.RAG_FIXED_SIZE
+        if chunk_overlap is None:
+            chunk_overlap = settings.RAG_FIXED_OVERLAP
 
         import tiktoken
         encoding = tiktoken.get_encoding("cl100k_base")
@@ -49,14 +55,23 @@ class ChunkingService:
     def chunk_text_semantic(
         text: str,
         file_hash: str,
-        target_size: int = 1000,
-        overlap_target: int = 150,
-        pre_context_limit: int = 50,
-        hard_limit: int = 500,
+        target_size: Optional[int] = None,
+        overlap_target: Optional[int] = None,
+        pre_context_limit: Optional[int] = None,
+        hard_limit: Optional[int] = None,
     ) -> List[Dict]:
         """Chia khối theo ngữ nghĩa (heading-aware)."""
         if not text:
             return []
+
+        if target_size is None:
+            target_size = settings.RAG_SEMANTIC_TARGET
+        if overlap_target is None:
+            overlap_target = settings.RAG_SEMANTIC_OVERLAP
+        if pre_context_limit is None:
+            pre_context_limit = settings.RAG_SEMANTIC_PRE_CONTEXT_LIMIT
+        if hard_limit is None:
+            hard_limit = settings.RAG_SEMANTIC_HARD_LIMIT
 
         separators_regex = r"(\n##+\s.*)"
         blocks = re.split(separators_regex, text)
@@ -141,11 +156,14 @@ class ChunkingService:
     def chunk_document(
         text: str,
         file_hash: str,
-        strategy: str = "semantic",
-        chunk_size: int = 1200,
-        chunk_overlap: int = 100,
+        strategy: Optional[str] = None,
+        chunk_size: Optional[int] = None,
+        chunk_overlap: Optional[int] = None,
     ) -> List[Dict]:
         """Dispatcher: chọn chiến lược chunking."""
+        if strategy is None:
+            strategy = settings.RAG_CHUNKING_STRATEGY
+
         cleaned = ParserService.preprocess_text(text)
         if strategy == "semantic":
             return ChunkingService.chunk_text_semantic(

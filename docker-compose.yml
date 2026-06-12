@@ -20,6 +20,10 @@ services:
       retries: 5
     networks:
       - app-network
+    logging:
+      driver: "none"
+    command: ["postgres", "-c", "log_min_messages=panic", "-c", "log_min_error_statement=panic", "-c", "log_statement=none"]
+
 
   redis:
     image: redis:7-alpine
@@ -43,8 +47,12 @@ services:
       - TEMPORAL_HOST=temporal:7233
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
       - GCS_BUCKET_NAME=${GCS_BUCKET_NAME:-flae-knowledge-base}
-      - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS:-}
+      - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS:-/app/firebaseadmin.json}
       - UV_LINK_MODE=copy
+      - LANGCHAIN_TRACING_V2=${LANGCHAIN_TRACING_V2:-}
+      - LANGCHAIN_ENDPOINT=${LANGCHAIN_ENDPOINT:-}
+      - LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY:-}
+      - LANGCHAIN_PROJECT=${LANGCHAIN_PROJECT:-}
     volumes:
       - ./backend:/app
       - /app/.venv # Tránh mount đè thư mục virtual environment của uv
@@ -75,6 +83,10 @@ services:
         condition: service_healthy
     networks:
       - app-network
+    logging:
+      driver: "none"
+    entrypoint: ["/bin/sh", "-c", "/etc/temporal/entrypoint.sh autosetup > /dev/null 2>&1"]
+
 
   temporal-ui:
     image: temporalio/ui:2.24.0
@@ -86,6 +98,10 @@ services:
       - temporal
     networks:
       - app-network
+    logging:
+      driver: "none"
+    entrypoint: ["/bin/sh", "-c", "./start-ui-server.sh > /dev/null 2>&1"]
+
 
   flae-worker:
     build:
@@ -99,9 +115,13 @@ services:
       - TEMPORAL_HOST=temporal:7233
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
       - GCS_BUCKET_NAME=${GCS_BUCKET_NAME:-flae-knowledge-base}
-      - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS:-}
+      - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS:-/app/firebaseadmin.json}
       - ENVIRONMENT=local
       - UV_LINK_MODE=copy
+      - LANGCHAIN_TRACING_V2=${LANGCHAIN_TRACING_V2:-}
+      - LANGCHAIN_ENDPOINT=${LANGCHAIN_ENDPOINT:-}
+      - LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY:-}
+      - LANGCHAIN_PROJECT=${LANGCHAIN_PROJECT:-}
     volumes:
       - ./backend:/app
       - /app/.venv # Tránh mount đè thư mục virtual environment của uv

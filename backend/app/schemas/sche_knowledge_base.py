@@ -3,6 +3,7 @@ from typing import Optional
 from datetime import datetime
 from pydantic import BaseModel, Field
 
+from app.core.config import settings
 from app.models.knowledge_base import DocumentStatus, DocumentType
 
 
@@ -18,9 +19,9 @@ class ManualDocumentCreate(BaseModel):
 
 class IngestionConfigOverride(BaseModel):
     """Override cấu hình ingestion cho từng document (optional)."""
-    chunking_strategy: str = "semantic"
-    chunk_size: int = 1200
-    chunk_overlap: int = 100
+    chunking_strategy: str = Field(default_factory=lambda: settings.RAG_CHUNKING_STRATEGY)
+    chunk_size: int = Field(default_factory=lambda: settings.RAG_FIXED_SIZE)
+    chunk_overlap: int = Field(default_factory=lambda: settings.RAG_FIXED_OVERLAP)
     enable_entity_extraction: bool = True
 
 
@@ -74,3 +75,33 @@ class IngestionStatusResponse(BaseModel):
     entity_count: Optional[int] = None
     relation_count: Optional[int] = None
     processing_time_seconds: Optional[float] = None
+
+
+# ── Knowledge Graph Schemas ──────────────────────────────────────────
+
+
+class GraphNode(BaseModel):
+    """Schema biểu diễn một thực thể (Node) trên đồ thị."""
+    id: str
+    name: str
+    type: str
+    description: Optional[str] = None
+    frequency: int = 1
+    degree: int = 0
+
+
+class GraphEdge(BaseModel):
+    """Schema biểu diễn một quan hệ (Edge/Link) trên đồ thị."""
+    id: str
+    source: str
+    target: str
+    label: Optional[str] = None
+    description: Optional[str] = None
+    weight: int = 1
+
+
+class KnowledgeGraphResponse(BaseModel):
+    """Response chứa cấu trúc Graph đầy đủ."""
+    nodes: list[GraphNode]
+    edges: list[GraphEdge]
+

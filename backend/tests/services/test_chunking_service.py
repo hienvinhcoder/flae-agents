@@ -39,3 +39,18 @@ def test_chunk_document_semantic():
     assert len(chunks) > 0
     assert all(c["chunk_id"].startswith(file_hash) for c in chunks)
     assert any("Section" in c["text"] for c in chunks)
+
+
+def test_chunk_document_defaults():
+    text = "Line 1\nLine 2\nLine 3\n" * 50
+    file_hash = "defaults123"
+    # Chạy dispatcher không truyền tham số tùy chọn để sử dụng settings
+    chunks = ChunkingService.chunk_document(
+        text=text,
+        file_hash=file_hash,
+    )
+    
+    assert len(chunks) > 0
+    assert all(c["chunk_id"].startswith(file_hash) for c in chunks)
+    assert all("text" in c for c in chunks)
+    assert all("token_count" in c for c in chunks)

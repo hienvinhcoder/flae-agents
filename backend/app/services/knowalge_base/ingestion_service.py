@@ -12,7 +12,7 @@ from collections import Counter
 from app.core.config import settings
 from app.core.logger import get_logger
 from app.services.knowalge_base.parser_service import ParserService
-from app.services.knowalge_base.prompts import TUPLE_DELIMITER, COMPLETION_DELIMITER, ENTITY_EXTRACTION_SYSTEM, ENTITY_EXTRACTION_USER
+from app.agents.shared.prompts import TUPLE_DELIMITER, COMPLETION_DELIMITER
 
 logger = get_logger(__name__)
 
@@ -101,7 +101,7 @@ class IngestionService:
         chunks: List[Dict],
         entities: List[Dict],
         relations: List[Dict],
-        source_doc_name: str,
+        source_doc_id: str,
     ) -> Dict[str, int]:
         """
         Fusion & lưu chunks/entities/relations vào RAG database.
@@ -112,9 +112,9 @@ class IngestionService:
 
         rag_db_manager.initialize()
 
-        # Gán source_document_name cho chunks
+        # Gán source_document_id cho chunks
         for chunk in chunks:
-            chunk["source_document_name"] = source_doc_name
+            chunk["source_document_id"] = source_doc_id
 
         # Lưu chunks
         chunks_df = pd.DataFrame(chunks)
@@ -286,6 +286,15 @@ class IngestionService:
 
                     batch_embs = [emb.values for emb in response.embeddings]
                     all_embeddings.extend(batch_embs)
+
+                    # Gọi API count_tokens để lấy số lượng token thực tế và cộng dồn vào total_tokens
+                    try:
+                        token_count_resp = client.models.count_tokens(model=model_name, contents=batch)
+                        if token_count_resp.total_tokens is not None:
+                            total_tokens += token_count_resp.total_tokens
+                    except Exception as token_err:
+                        logger.warning(f"Không thể đếm số lượng token: {token_err}")
+
                     time.sleep(0.1)
                     break
                 except Exception as e:
@@ -315,14 +324,13 @@ class IngestionService:
         return chunks, tokens
 
     @staticmethod
-    def extract_entities_from_chunks(
+    async def extract_entities_from_chunks(
         chunks: List[Dict],
         entity_types: list[str] | None = None,
     ) -> Tuple[List[Dict], List[Dict], int]:
-        """Trích xuất entities & relations từ chunks qua Gemini LLM."""
-        from google import genai
-        from google.genai import types
-        import time
+        """Trích xuất entities & relations từ chunks qua LangGraph agent."""
+        import asyncio
+        from app.agents.extractor.graph import run_extraction_agent
 
         api_key = settings.GEMINI_API_KEY
         model_name = settings.GEMINI_LLM_MODEL
@@ -334,49 +342,40 @@ class IngestionService:
         if entity_types is None:
             entity_types = ["person", "organization", "location", "event", "product", "concept", "equipment", "category", "other"]
 
-        client = genai.Client(api_key=api_key)
+        semaphore = asyncio.Semaphore(4)
         total_tokens = 0
         all_entities: list[dict] = []
         all_relations: list[dict] = []
-        max_retries = 3
 
-        for chunk in chunks:
-            system_prompt = ENTITY_EXTRACTION_SYSTEM.format(
-                entity_types=", ".join(entity_types),
-                delim=TUPLE_DELIMITER,
-                completion=COMPLETION_DELIMITER,
-                input_text=chunk["text"],
-            )
-            user_prompt = ENTITY_EXTRACTION_USER.format(delim=TUPLE_DELIMITER, completion=COMPLETION_DELIMITER)
+        async def process_chunk(chunk: dict) -> dict:
+            nonlocal total_tokens
+            async with semaphore:
+                res, tokens = await run_extraction_agent(
+                    chunk=chunk,
+                    model_name=model_name,
+                    api_key=api_key,
+                    entity_types=entity_types,
+                    glean_max=1,
+                    language="auto"
+                )
+                return {"res": res, "tokens": tokens}
 
-            for attempt in range(max_retries + 1):
-                try:
-                    response = client.models.generate_content(
-                        model=model_name,
-                        contents=user_prompt,
-                        config=types.GenerateContentConfig(system_instruction=system_prompt, temperature=0.1),
-                    )
-                    if hasattr(response, "usage_metadata") and response.usage_metadata and response.usage_metadata.total_token_count is not None:
-                        total_tokens += response.usage_metadata.total_token_count
+        tasks = [process_chunk(chunk) for chunk in chunks]
+        results = await asyncio.gather(*tasks)
 
-                    if not response.text:
-                        raise ValueError("Gemini API response did not return any text.")
-
-                    ents, rels = _parse_extraction_output(response.text, chunk["chunk_id"])
-                    all_entities.extend(ents)
-                    all_relations.extend(rels)
-                    time.sleep(0.2)
-                    break
-                except Exception as e:
-                    if attempt < max_retries:
-                        logger.warning(f"Extraction attempt {attempt + 1} failed for chunk {chunk['chunk_id']}: {e}")
-                        time.sleep(2)
-                    else:
-                        logger.error(f"Extraction failed for chunk {chunk['chunk_id']}: {e}")
+        for result in results:
+            res = result["res"]
+            tokens = result["tokens"]
+            total_tokens += tokens
+            all_entities.extend(res.get("entities", []))
+            all_relations.extend(res.get("relations", []))
 
         # Merge duplicates
         merged_entities = _merge_entities(all_entities)
         merged_relations = _merge_relations(all_relations)
 
-        logger.info(f"Extraction complete: {len(merged_entities)} entities, {len(merged_relations)} relations, {total_tokens} tokens")
+        logger.info(
+            f"Extraction complete via LangGraph: {len(merged_entities)} entities, "
+            f"{len(merged_relations)} relations, {total_tokens} tokens"
+        )
         return merged_entities, merged_relations, total_tokens

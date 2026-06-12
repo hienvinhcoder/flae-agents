@@ -22,8 +22,10 @@ from app.schemas.sche_knowledge_base import (
     DocumentDetail,
     ManualDocumentCreate,
     IngestionStatusResponse,
+    KnowledgeGraphResponse,
 )
 from app.services.knowledge_base_srv import KnowledgeBaseService
+from app.services.knowledge_graph_srv import KnowledgeGraphService
 from app.core.logger import get_logger
 
 logger = get_logger(__name__)
@@ -102,6 +104,24 @@ async def list_documents(
 ):
     docs = await KnowledgeBaseService.list_documents(db, workspace_id)
     return DataResponse[list[DocumentListItem]].success_response(data=docs)
+
+
+@router.get(
+    "/graph",
+    response_model=DataResponse[KnowledgeGraphResponse],
+    summary="Lấy đồ thị tri thức (Knowledge Graph) của workspace",
+)
+async def get_knowledge_graph(
+    workspace_id: uuid.UUID = Depends(get_current_workspace_id),
+):
+    try:
+        graph_data = await KnowledgeGraphService.get_graph(workspace_id)
+        return DataResponse[KnowledgeGraphResponse].success_response(data=graph_data)
+    except Exception as e:
+        logger.error(f"Error fetching knowledge graph: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Không thể lấy đồ thị tri thức: {str(e)}"
+        )
 
 
 @router.get(
@@ -187,3 +207,5 @@ async def get_ingestion_status(
     return DataResponse[IngestionStatusResponse].success_response(
         data=status
     )
+
+

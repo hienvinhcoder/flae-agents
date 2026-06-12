@@ -12,7 +12,9 @@ from app.helpers.exception_handler import (
     validation_exception_handler,
     fastapi_error_handler,
     sqlalchemy_not_found_handler,
+    starlette_http_exception_handler,
 )
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from sqlalchemy.exc import NoResultFound
 from app.db.database import setup_database
 
@@ -51,6 +53,7 @@ def get_application() -> FastAPI:
     application.add_exception_handler(CustomException, http_exception_handler)
     application.add_exception_handler(RequestValidationError, validation_exception_handler)
     application.add_exception_handler(NoResultFound, sqlalchemy_not_found_handler)
+    application.add_exception_handler(StarletteHTTPException, starlette_http_exception_handler)
     application.add_exception_handler(Exception, fastapi_error_handler)
 
     return application

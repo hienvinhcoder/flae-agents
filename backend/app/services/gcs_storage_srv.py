@@ -6,6 +6,7 @@ import uuid
 from typing import Optional
 
 from google.cloud import storage
+from google.api_core import exceptions as google_exceptions
 
 from app.core.config import settings
 from app.core.logger import get_logger
@@ -52,9 +53,37 @@ class GCSStorageService:
         gcs_path = GCSStorageService.build_gcs_path(workspace_id, document_id, file_name)
 
         def _sync_upload():
-            bucket = _get_bucket()
+            client = _get_client()
+            bucket = client.bucket(settings.GCS_BUCKET_NAME)
             blob = bucket.blob(gcs_path)
-            blob.upload_from_string(file_content, content_type=content_type)
+            try:
+                blob.upload_from_string(file_content, content_type=content_type)
+            except google_exceptions.NotFound:
+                # Bucket does not exist, try to create it
+                logger.info(f"Bucket {settings.GCS_BUCKET_NAME} not found. Attempting to create it...")
+                try:
+                    client.create_bucket(bucket)
+                    # Retry upload
+                    blob.upload_from_string(file_content, content_type=content_type)
+                except google_exceptions.Forbidden as e:
+                    logger.error(f"Permission denied when creating GCS bucket {settings.GCS_BUCKET_NAME}: {e}")
+                    raise ValueError(
+                        f"Không tìm thấy bucket lưu trữ '{settings.GCS_BUCKET_NAME}' và không có quyền tự tạo mới. "
+                        "Vui lòng liên hệ quản trị viên để cấu hình GCS."
+                    ) from e
+                except Exception as create_exc:
+                    logger.error(f"Failed to auto-create GCS bucket {settings.GCS_BUCKET_NAME}: {create_exc}")
+                    raise ValueError(
+                        f"Không tìm thấy bucket lưu trữ '{settings.GCS_BUCKET_NAME}' và không thể tự động tạo mới: {str(create_exc)}. "
+                        "Vui lòng kiểm tra lại cấu hình GCS."
+                    ) from create_exc
+            except google_exceptions.GoogleAPICallError as e:
+                logger.error(f"Google API error during GCS upload: {e}")
+                raise ValueError(f"Lỗi dịch vụ lưu trữ đám mây Google Cloud: {e.message}") from e
+            except Exception as e:
+                logger.error(f"GCS upload error: {e}")
+                raise ValueError(f"Lỗi tải file lên GCS: {str(e)}") from e
+
             logger.info(
                 f"Uploaded file to GCS: gs://{settings.GCS_BUCKET_NAME}/{gcs_path}"
             )

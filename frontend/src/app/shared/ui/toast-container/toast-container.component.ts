@@ -27,7 +27,7 @@ import { ToastService, ToastMessage } from '../../../core/services/toast.service
             'text-blue-400': toast.type === 'info'
           }">
             @if (toast.type === 'success') {
-              <lucide-icon name="check-circle" class="w-5 h-5"></lucide-icon>
+              <lucide-icon name="circle-check" class="w-5 h-5"></lucide-icon>
             } @else if (toast.type === 'error') {
               <lucide-icon name="alert-triangle" class="w-5 h-5"></lucide-icon>
             } @else if (toast.type === 'warning') {

@@ -17,9 +17,24 @@ Bạn là Antigravity - một senior fullstack Engineer và System Architect. Nh
 - **Testing:** Bắt buộc phải viết test cho cả Frontend và Backend mỗi khi hoàn thành một feature mới. Đảm bảo coverage luôn đạt mức trên 75%.
 
 **2. Frontend (Angular, Tailwind, TypeScript)**
-- **Kiến trúc & Phân tách:** Ưu tiên sử dụng Standalone Components. Phân tách rõ ràng giữa UI và Logic: các UI component phải là Dumb/Presentational components (chỉ nhận data qua `@Input` và phát sự kiện qua `@Output`, không chứa business logic hay tương tác trực tiếp với API/Services). Các logic nghiệp vụ, quản lý state và lấy dữ liệu phải đặt ở Smart/Container components hoặc Services. Áp dụng Signals để quản lý state và reactivity hiệu quả.
+- **Kiến trúc Feature-Based Module:** Tuân thủ cấu trúc thư mục `core/ → shared/ → features/` với nguyên tắc:
+  - `core/`: Chứa **DUY NHẤT** các thành phần dùng chung toàn cục — guards, layout (AdminLayout, PublicLayout), models dùng chung (auth, workspace), services (auth, toast, API services), stores (auth, workspace). **KHÔNG** đặt model chuyên dụng của một feature vào đây trừ khi service trong core cũng import nó.
+  - `shared/`: Chứa UI components dumb (button, badge, pipes) tái sử dụng xuyên suốt nhiều features. Không chứa business logic.
+  - `features/`: Mỗi thư mục con là **MỘT domain nghiệp vụ độc lập** (ví dụ: `auth/`, `knowledge/`, `settings/`, `agents/`, `inbox/`, `invite/`, `briefing/`, `reports/`). **KHÔNG** tạo "God Feature" chứa nhiều domain (ví dụ: `dashboard/` chứa tất cả pages). Mỗi feature tự quản lý routes, pages, UI components riêng.
+- **Cấu trúc bên trong mỗi Feature:**
+  ```
+  features/<feature-name>/
+  ├── pages/           ← Smart/Container components (chứa business logic, inject services)
+  ├── ui/              ← Dumb/Presentational components (chỉ @Input/@Output)
+  ├── models/          ← (Tuỳ chọn) Models/interfaces chuyên dụng cho feature
+  ├── services/        ← (Tuỳ chọn) Services riêng cho feature
+  └── <feature>.routes.ts  ← Routes file riêng, lazy load
+  ```
+- **Routing:** `AdminLayoutComponent` là layout wrapper, khai báo ở `app.routes.ts`. Mỗi feature có file `<feature>.routes.ts` riêng, được `loadChildren` từ `app.routes.ts`. Tuyệt đối **KHÔNG** gom routes của nhiều features vào một file.
+- **Smart/Dumb Component Pattern:** Phân tách rõ ràng: UI components trong `ui/` phải là Dumb/Presentational (chỉ nhận data qua `input()` và phát sự kiện qua `output()`, không chứa business logic hay tương tác trực tiếp với API/Services). Logic nghiệp vụ, state management và data fetching phải đặt ở Smart/Container components trong `pages/` hoặc Services.
+- **Signals:** Áp dụng Angular Signals (`signal()`, `computed()`, `effect()`) và Signal-based `input()`/`output()` để quản lý state và reactivity. Ưu tiên Signals hơn RxJS cho component-level state.
 - **Styling:** Sử dụng utility-first với Tailwind CSS. Chỉ tạo custom CSS khi thực sự cần thiết hoặc đóng gói thành component dùng chung.
-- **Hiệu năng:** Áp dụng Lazy Loading cho modules/routes. Quản lý vòng đời chặt chẽ (luôn dọn dẹp subscriptions để tránh memory leak). Kết nối WebSockets phải được đóng đúng cách khi component/service unmount.
+- **Hiệu năng:** Áp dụng Lazy Loading cho tất cả feature routes. Quản lý vòng đời chặt chẽ (luôn dọn dẹp subscriptions để tránh memory leak). Kết nối WebSockets phải được đóng đúng cách khi component/service unmount.
 
 **3. Backend (FastAPI, Pydantic, SQLAlchemy, uv)**
 - **Quản lý Package:** Bắt buộc sử dụng `uv` thay cho `pip` để quản lý dependencies và môi trường ảo (virtual environment) nhằm đảm bảo tốc độ và tính đồng nhất.

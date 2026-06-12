@@ -47,10 +47,10 @@ class DBManager:
     - Cơ chế cô lập dữ liệu Row-Level Security (RLS) theo workspace_id.
     - Cơ chế phân vùng bảng (Partition Table) theo workspace_id.
     """
-    def __init__(self, db_url: Optional[str] = None, embedding_dimensions: int = 768, schema: str = "public"):
+    def __init__(self, db_url: Optional[str] = None, embedding_dimensions: Optional[int] = None, schema: str = "public"):
         # Sử dụng URL truyền vào hoặc mặc định lấy từ settings
         self.async_db_url = db_url or settings.RAG_DATABASE_URL
-        self.embedding_dimensions = embedding_dimensions
+        self.embedding_dimensions = embedding_dimensions or settings.EMBEDDING_DIMENSIONS
         self.schema = schema.lower().replace("-", "_")
 
         # Phân tích URL để kết nối thông qua psycopg2 (đồng bộ)
@@ -120,7 +120,7 @@ class DBManager:
                     text TEXT,
                     token_count INT,
                     embedding vector({self.embedding_dimensions}),
-                    source_document_name TEXT,
+                    source_document_id TEXT,
                     entity_ids JSONB,
                     relation_ids JSONB,
                     PRIMARY KEY (workspace_id, chunk_id)
@@ -330,7 +330,51 @@ class DBManager:
             
             # Khóa chính của bảng partition là (workspace_id, pk_col)
             # Cần chỉ định đầy đủ trong ON CONFLICT
-            update_sets = [f"{col} = EXCLUDED.{col}" for col in columns if col not in [pk_col, "workspace_id"]]
+            if table_name == "entities":
+                update_sets = []
+                for col in columns:
+                    if col in [pk_col, "workspace_id"]:
+                        continue
+                    if col == "description":
+                        update_sets.append(
+                            f"description = CASE WHEN length(COALESCE(EXCLUDED.description, '')) > length(COALESCE({table_name}.description, '')) THEN EXCLUDED.description ELSE COALESCE({table_name}.description, EXCLUDED.description) END"
+                        )
+                    elif col == "source_chunk_ids":
+                        update_sets.append(
+                            f"source_chunk_ids = (SELECT COALESCE(jsonb_agg(DISTINCT elem), '[]'::jsonb) FROM (SELECT jsonb_array_elements(COALESCE({table_name}.source_chunk_ids, '[]'::jsonb)) AS elem UNION SELECT jsonb_array_elements(COALESCE(EXCLUDED.source_chunk_ids, '[]'::jsonb)) AS elem) sub)"
+                        )
+                    elif col == "frequency":
+                        update_sets.append(
+                            f"frequency = COALESCE({table_name}.frequency, 0) + COALESCE(EXCLUDED.frequency, 0)"
+                        )
+                    else:
+                        update_sets.append(f"{col} = EXCLUDED.{col}")
+            elif table_name == "relationships":
+                update_sets = []
+                for col in columns:
+                    if col in [pk_col, "workspace_id"]:
+                        continue
+                    if col == "description":
+                        update_sets.append(
+                            f"description = CASE WHEN COALESCE({table_name}.description, '') = '' THEN EXCLUDED.description WHEN COALESCE(EXCLUDED.description, '') = '' THEN {table_name}.description WHEN {table_name}.description LIKE '%%' || EXCLUDED.description || '%%' THEN {table_name}.description ELSE {table_name}.description || ' | ' || EXCLUDED.description END"
+                        )
+                    elif col == "keywords":
+                        update_sets.append(
+                            f"keywords = CASE WHEN COALESCE({table_name}.keywords, '') = '' THEN EXCLUDED.keywords WHEN COALESCE(EXCLUDED.keywords, '') = '' THEN {table_name}.keywords WHEN {table_name}.keywords LIKE '%%' || EXCLUDED.keywords || '%%' THEN {table_name}.keywords ELSE {table_name}.keywords || ', ' || EXCLUDED.keywords END"
+                        )
+                    elif col == "source_chunk_ids":
+                        update_sets.append(
+                            f"source_chunk_ids = (SELECT COALESCE(jsonb_agg(DISTINCT elem), '[]'::jsonb) FROM (SELECT jsonb_array_elements(COALESCE({table_name}.source_chunk_ids, '[]'::jsonb)) AS elem UNION SELECT jsonb_array_elements(COALESCE(EXCLUDED.source_chunk_ids, '[]'::jsonb)) AS elem) sub)"
+                        )
+                    elif col == "frequency":
+                        update_sets.append(
+                            f"frequency = COALESCE({table_name}.frequency, 0) + COALESCE(EXCLUDED.frequency, 0)"
+                        )
+                    else:
+                        update_sets.append(f"{col} = EXCLUDED.{col}")
+            else:
+                update_sets = [f"{col} = EXCLUDED.{col}" for col in columns if col not in [pk_col, "workspace_id"]]
+            
             update_str = ", ".join(update_sets)
 
             if update_str:
@@ -369,7 +413,7 @@ class DBManager:
             try:
                 # Đảm bảo thiết lập RLS trong transaction hiện tại
                 await session.execute(
-                    text("SET LOCAL app.current_workspace_id = :workspace_id"),
+                    text("SELECT set_config('app.current_workspace_id', :workspace_id, true)"),
                     {"workspace_id": workspace_id}
                 )
                 yield session
@@ -392,7 +436,7 @@ class DBManager:
                     chunk_id, 
                     text, 
                     token_count, 
-                    source_document_name,
+                    source_document_id,
                     entity_ids,
                     relation_ids,
                     1 - (embedding <=> :embedding::vector) as similarity
@@ -411,7 +455,7 @@ class DBManager:
                     "chunk_id": row.chunk_id,
                     "text": row.text,
                     "token_count": row.token_count,
-                    "source_document_name": row.source_document_name,
+                    "source_document_id": row.source_document_id,
                     "entity_ids": row.entity_ids,
                     "relation_ids": row.relation_ids,
                     "similarity": float(row.similarity) if row.similarity is not None else 0.0

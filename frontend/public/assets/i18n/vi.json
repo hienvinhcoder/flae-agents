@@ -10,7 +10,9 @@
     "ERROR": "Lỗi",
     "LOADING": "Đang tải...",
     "CONFIRM": "Xác nhận",
-    "CREATE": "Tạo"
+    "CREATE": "Tạo",
+    "LOGOUT": "Đăng xuất",
+    "PROFILE": "Hồ sơ cá nhân"
   },
   "NAV": {
     "BRIEFING": "Báo cáo sáng",

@@ -3,7 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, from, switchMap, map } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { ApiResponse } from '../../models/auth.model';
-import { KnowledgeDocument, ManualDocumentPayload } from '../../models/knowledge-base.model';
+import { KnowledgeDocument, ManualDocumentPayload, KnowledgeGraphData } from '../../models/knowledge-base.model';
 import { AuthService } from '../auth.service';
 
 @Injectable({
@@ -118,6 +118,15 @@ export class KnowledgeBaseApiService {
         this.http.get<ApiResponse<any>>(`${this.apiUrl}/${docId}/status`, { headers })
       ),
       map(res => res.data)
+    );
+  }
+
+  getKnowledgeGraph(workspaceId: string): Observable<KnowledgeGraphData> {
+    return this.getHeadersWithWorkspace(workspaceId).pipe(
+      switchMap(headers =>
+        this.http.get<ApiResponse<KnowledgeGraphData>>(`${this.apiUrl}/graph`, { headers })
+      ),
+      map(res => res.data || { nodes: [], edges: [] })
     );
   }
 }

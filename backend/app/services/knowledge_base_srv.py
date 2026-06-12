@@ -89,30 +89,116 @@ async def _start_ingestion_workflow(doc: KnowledgeDocument) -> str:
 async def _cleanup_rag_data(workspace_id: str, document_id: str) -> None:
     """Xóa chunks/entities/relationships liên quan đến document trong rag_db."""
     from app.db.rag_db import rag_db_manager
+    from psycopg2.extras import execute_values
+    import json
 
-    doc_hash = hashlib.md5(document_id.encode()).hexdigest()
-
+    conn = None
     try:
         rag_db_manager.initialize()
         conn = rag_db_manager.get_conn()
-        conn.autocommit = True
+        conn.autocommit = False  # Sử dụng transaction để đảm bảo toàn vẹn dữ liệu
         cur = conn.cursor()
         schema = rag_db_manager.schema
 
-        # Xóa chunks có source_document_name chứa document_id hash
+        # 1. Lấy tất cả các chunk_id thuộc về document bị xóa trong workspace này
+        cur.execute(
+            f"SELECT chunk_id FROM {schema}.chunks "
+            f"WHERE workspace_id = %s AND source_document_id = %s",
+            (workspace_id, document_id),
+        )
+        deleted_chunk_ids = [row[0] for row in cur.fetchall()]
+        
+        # Nếu tài liệu này chưa được tạo bất kỳ chunk nào, dừng xử lý dọn dẹp
+        if not deleted_chunk_ids:
+            cur.close()
+            conn.close()
+            logger.info(f"Không tìm thấy chunks nào cho document {document_id} trong workspace {workspace_id}")
+            return
+
+        deleted_chunk_ids_set = set(deleted_chunk_ids)
+
+        # Định nghĩa helper function xử lý xóa/cập nhật hàng loạt (giống demo app nhưng tối ưu cho multi-tenancy)
+        def process_table_cleanup(table_name, id_col):
+            # Sử dụng toán tử JSONB "?|" để tìm các dòng có chứa ít nhất một chunk_id sắp bị xóa trong mảng source_chunk_ids.
+            # Điều này giúp lọc nhanh chỉ những bản ghi thực sự bị ảnh hưởng bởi file đang xóa mà không cần quét toàn bộ bảng.
+            cur.execute(
+                f"SELECT {id_col}, source_chunk_ids FROM {schema}.{table_name} "
+                f"WHERE workspace_id = %s AND source_chunk_ids ?| %s",
+                (workspace_id, deleted_chunk_ids),
+            )
+            candidates = cur.fetchall()
+
+            if not candidates:
+                return
+
+            to_update = []  # Lưu các bản ghi cần cập nhật: [(id, new_json_str, new_freq, workspace_id), ...]
+            to_delete = []  # Lưu các bản ghi cần xóa hoàn toàn: [id, ...]
+
+            for row_id, source_chunk_ids_raw in candidates:
+                # Phân tích dữ liệu JSON source_chunk_ids từ DB
+                if isinstance(source_chunk_ids_raw, str):
+                    source_chunk_ids = json.loads(source_chunk_ids_raw)
+                elif isinstance(source_chunk_ids_raw, list):
+                    source_chunk_ids = source_chunk_ids_raw
+                else:
+                    source_chunk_ids = []
+
+                # Lọc bỏ các chunk_id thuộc tài liệu bị xóa
+                remaining_chunks = [cid for cid in source_chunk_ids if cid not in deleted_chunk_ids_set]
+
+                if not remaining_chunks:
+                    # Nếu không còn chunk nào khác liên kết -> Thực thể/Quan hệ này mồ côi -> Đưa vào hàng chờ XÓA
+                    to_delete.append(row_id)
+                else:
+                    # Nếu vẫn còn chunk thuộc tài liệu khác -> Đưa vào hàng chờ CẬP NHẬT (loại bỏ tham chiếu chunk cũ và tính lại frequency)
+                    to_update.append((row_id, json.dumps(remaining_chunks), len(remaining_chunks), workspace_id))
+
+            # Thực thi cập nhật hàng loạt bằng execute_values để đạt hiệu năng Enterprise cao nhất (chỉ chạy 1 câu SQL)
+            if to_update:
+                update_sql = f"""
+                    UPDATE {schema}.{table_name} AS t
+                    SET source_chunk_ids = v.new_ids::jsonb,
+                        frequency = v.new_freq::int
+                    FROM (VALUES %s) AS v(id, new_ids, new_freq, w_id)
+                    WHERE t.workspace_id = v.w_id AND t.{id_col} = v.id
+                """
+                execute_values(cur, update_sql, to_update)
+
+            # Thực thi xóa hàng loạt bằng ANY(%s) để chỉ chạy 1 câu SQL duy nhất
+            if to_delete:
+                cur.execute(
+                    f"DELETE FROM {schema}.{table_name} "
+                    f"WHERE workspace_id = %s AND {id_col} = ANY(%s)",
+                    (workspace_id, to_delete),
+                )
+
+        # 2. Dọn dẹp bảng Entities liên quan
+        process_table_cleanup('entities', 'entity_id')
+
+        # 3. Dọn dẹp bảng Relationships liên quan
+        process_table_cleanup('relationships', 'relation_id')
+
+        # 4. Xóa vật lý toàn bộ các Chunks thuộc về tài liệu này
         cur.execute(
             f"DELETE FROM {schema}.chunks "
-            f"WHERE workspace_id = %s AND source_document_name = %s",
-            (workspace_id, doc_hash),
+            f"WHERE workspace_id = %s AND source_document_id = %s",
+            (workspace_id, document_id),
         )
 
+        conn.commit()  # Xác nhận lưu tất cả thay đổi nếu không có lỗi xảy ra
         cur.close()
         conn.close()
         logger.info(
-            f"Cleaned up RAG data for document {document_id} "
-            f"in workspace {workspace_id}"
+            f"Đã dọn dẹp triệt để RAG data (chunks, entities, relationships) cho document {document_id} "
+            f"trong workspace {workspace_id} (sử dụng Batch Operations)"
         )
     except Exception as e:
+        if conn:
+            try:
+                conn.rollback()  # Rollback toàn bộ nếu có bất kỳ lỗi nào xảy ra trong transaction
+                conn.close()
+            except Exception:
+                pass
         logger.warning(f"Failed to cleanup RAG data: {e}")
 
 

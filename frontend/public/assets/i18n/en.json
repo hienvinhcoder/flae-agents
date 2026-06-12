@@ -10,7 +10,9 @@
     "ERROR": "Error",
     "LOADING": "Loading...",
     "CONFIRM": "Confirm",
-    "CREATE": "Create"
+    "CREATE": "Create",
+    "LOGOUT": "Log out",
+    "PROFILE": "My Profile"
   },
   "NAV": {
     "BRIEFING": "Morning Briefing",

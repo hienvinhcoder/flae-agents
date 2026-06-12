@@ -25,3 +25,27 @@ export interface ManualDocumentPayload {
   description?: string;
   content_text: string;
 }
+
+export interface GraphNode {
+  id: string;
+  name: string;
+  type: string;
+  description?: string;
+  frequency: number;
+  degree: number;
+}
+
+export interface GraphEdge {
+  id: string;
+  source: string;
+  target: string;
+  label?: string;
+  description?: string;
+  weight: number;
+}
+
+export interface KnowledgeGraphData {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+}
+
