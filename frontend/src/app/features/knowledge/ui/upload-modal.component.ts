@@ -1,4 +1,4 @@
-import { Component, computed, input, output, signal } from '@angular/core';
+import { Component, computed, input, output, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LucideAngularModule } from 'lucide-angular';
@@ -36,6 +36,14 @@ export class UploadModalComponent {
   description = signal<string>('');
   dragOver = signal<boolean>(false);
   errorMessage = signal<string | null>(null);
+
+  constructor() {
+    effect(() => {
+      if (!this.show()) {
+        this.resetForm();
+      }
+    });
+  }
 
   allowedExtensions = ['.pdf', '.md', '.txt'];
   maxFileSize = 50 * 1024 * 1024; // 50MB

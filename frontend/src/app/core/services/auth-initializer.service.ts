@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Auth, authState } from '@angular/fire/auth';
+import { Router } from '@angular/router';
 import { firstValueFrom, switchMap, of, catchError } from 'rxjs';
 import { AuthStore } from '../stores/auth.store';
 import { AuthApiService } from './api/auth-api.service';
@@ -23,6 +24,7 @@ export class AuthInitializerService {
   private auth = inject(Auth);
   private authStore = inject(AuthStore);
   private authApiService = inject(AuthApiService);
+  private router = inject(Router);
 
   /**
    * Được gọi bởi APP_INITIALIZER. Trả về Promise để Angular chờ
@@ -140,6 +142,14 @@ export class AuthInitializerService {
         ).subscribe(dbUser => {
           if (dbUser) {
             this.authStore.setCurrentUser(dbUser);
+
+            // Navigate đến dashboard ngay sau khi sync thành công.
+            // Không phụ thuộc vào effect() trong AuthContainerComponent
+            // vì effect có thể không re-trigger từ async subscribe callback.
+            const currentUrl = this.router.url;
+            if (currentUrl.startsWith('/auth')) {
+              this.router.navigateByUrl('/dashboard');
+            }
           }
         });
       } catch (err) {

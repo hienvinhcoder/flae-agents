@@ -1,4 +1,4 @@
-import { Component, computed, input, output, signal } from '@angular/core';
+import { Component, computed, input, output, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LucideAngularModule } from 'lucide-angular';
@@ -37,6 +37,14 @@ export class TextInputModalComponent {
   contentText = signal<string>('');
   activeTab = signal<'edit' | 'preview'>('edit');
   errorMessage = signal<string | null>(null);
+
+  constructor() {
+    effect(() => {
+      if (!this.show()) {
+        this.resetForm();
+      }
+    });
+  }
 
   renderedPreview = computed(() => {
     const text = this.contentText().trim();

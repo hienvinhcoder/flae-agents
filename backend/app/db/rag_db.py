@@ -269,7 +269,7 @@ class DBManager:
         finally:
             conn.close()
 
-    def save_df(self, df: pd.DataFrame, table_name: str, pk_col: str, workspace_id: str):
+    def save_df(self, df: pd.DataFrame, table_name: str, pk_col: str, workspace_id: str, overwrite: bool = False):
         """
         Lưu DataFrame vào cơ sở dữ liệu.
         Đảm bảo partition tồn tại, thiết lập RLS session context và thực hiện UPSERT.
@@ -330,7 +330,7 @@ class DBManager:
             
             # Khóa chính của bảng partition là (workspace_id, pk_col)
             # Cần chỉ định đầy đủ trong ON CONFLICT
-            if table_name == "entities":
+            if not overwrite and table_name == "entities":
                 update_sets = []
                 for col in columns:
                     if col in [pk_col, "workspace_id"]:
@@ -349,7 +349,7 @@ class DBManager:
                         )
                     else:
                         update_sets.append(f"{col} = EXCLUDED.{col}")
-            elif table_name == "relationships":
+            elif not overwrite and table_name == "relationships":
                 update_sets = []
                 for col in columns:
                     if col in [pk_col, "workspace_id"]:

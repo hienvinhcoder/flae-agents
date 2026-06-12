@@ -224,15 +224,19 @@ export class KnowledgeGraphComponent implements OnInit, OnDestroy {
 
   private getNodeColor(type: string): string {
     const typeLower = type?.toLowerCase() || '';
-    if (typeLower.includes('person') || typeLower.includes('người')) return '#f97316'; // Orange
+    if (typeLower.includes('person') || typeLower.includes('người')) return '#c084fc'; // Purple (Person)
     if (typeLower.includes('org') || typeLower.includes('chức') || typeLower.includes('company'))
-      return '#3b82f6'; // Blue
+      return '#60a5fa'; // Info Blue (Organization)
     if (typeLower.includes('loc') || typeLower.includes('điểm') || typeLower.includes('city'))
-      return '#10b981'; // Green
-    if (typeLower.includes('concept') || typeLower.includes('khái niệm') || typeLower.includes('tech'))
-      return '#8b5cf6'; // Purple
-    if (typeLower.includes('event') || typeLower.includes('sự kiện')) return '#ec4899'; // Pink
-    return '#6b7280'; // Gray (mặc định)
+      return '#4ade80'; // Graph Green (Location)
+    if (typeLower.includes('event') || typeLower.includes('sự kiện')) return '#fbbf24'; // Warning Yellow (Event)
+    if (typeLower.includes('product') || typeLower.includes('sản phẩm') || typeLower.includes('project') || typeLower.includes('dự án'))
+      return '#fb923c'; // Primary Orange (Product/Project)
+    if (typeLower.includes('concept') || typeLower.includes('khái niệm') || typeLower.includes('tech') || typeLower.includes('category'))
+      return '#c084fc'; // Purple (Concept/Category)
+    if (typeLower.includes('equipment') || typeLower.includes('thiết bị') || typeLower.includes('system') || typeLower.includes('hệ thống'))
+      return '#4ade80'; // Graph Green (Equipment/System)
+    return '#ddb991'; // Warm Muted Neutral (Other)
   }
 
   private startAnimation() {
@@ -391,17 +395,39 @@ export class KnowledgeGraphComponent implements OnInit, OnDestroy {
         this.ctx.lineTo(targetNode.x, targetNode.y);
 
         // Styling cho cạnh
+        const labelLower = edge.label?.toLowerCase() || '';
+        const isAiInferred = labelLower.includes('ai') || labelLower.includes('infer') || labelLower.includes('predict');
+
         if (isSelected) {
-          this.ctx.strokeStyle = '#6366f1'; // Indigo phát sáng
+          this.ctx.strokeStyle = '#fb923c'; // Primary Orange Active
           this.ctx.lineWidth = 3;
         } else if (isRelatedToSelectedNode) {
-          this.ctx.strokeStyle = 'rgba(99, 102, 241, 0.5)';
+          this.ctx.strokeStyle = 'rgba(251, 146, 60, 0.5)'; // Primary Orange Soft
           this.ctx.lineWidth = 2;
         } else {
-          this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+          if (labelLower.includes('error') || labelLower.includes('fail')) {
+            this.ctx.strokeStyle = 'rgba(248, 113, 113, 0.4)'; // Error Red
+          } else if (labelLower.includes('warn') || labelLower.includes('stale') || labelLower.includes('risk')) {
+            this.ctx.strokeStyle = 'rgba(251, 191, 36, 0.4)'; // Warning Yellow
+          } else if (labelLower.includes('verify') || labelLower.includes('confirm') || labelLower.includes('ok')) {
+            this.ctx.strokeStyle = 'rgba(74, 222, 128, 0.4)'; // Graph Green (Verified)
+          } else if (isAiInferred) {
+            this.ctx.strokeStyle = 'rgba(192, 132, 252, 0.4)'; // AI Purple
+          } else {
+            this.ctx.strokeStyle = 'rgba(221, 185, 145, 0.3)'; // Default Muted
+          }
           this.ctx.lineWidth = 1;
         }
+
+        // Vẽ đường đứt nét cho AI-inferred edge
+        if (isAiInferred && !isSelected && !isRelatedToSelectedNode) {
+          this.ctx.setLineDash([4, 4]);
+        } else {
+          this.ctx.setLineDash([]);
+        }
+
         this.ctx.stroke();
+        this.ctx.setLineDash([]); // Reset line dash
 
         // Vẽ nhãn quan hệ nếu zoom đủ lớn (> 0.7) hoặc được select
         if (this.transform.k > 0.7 || isSelected) {
@@ -417,15 +443,15 @@ export class KnowledgeGraphComponent implements OnInit, OnDestroy {
           this.ctx.rotate(textAngle);
 
           this.ctx.font = '9px monospace';
-          this.ctx.fillStyle = isSelected ? '#a5b4fc' : 'rgba(255, 255, 255, 0.4)';
+          this.ctx.fillStyle = isSelected ? '#fb923c' : 'rgba(221, 185, 145, 0.6)';
           this.ctx.textAlign = 'center';
           this.ctx.textBaseline = 'bottom';
-          // Vẽ nền mờ sau text để dễ nhìn
+          // Vẽ nền mờ sau text để dễ nhìn (dùng màu nền bg-surface #1F1711)
           const textWidth = this.ctx.measureText(edge.label || '').width;
-          this.ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+          this.ctx.fillStyle = 'rgba(31, 23, 17, 0.85)';
           this.ctx.fillRect(-textWidth / 2 - 4, -12, textWidth + 8, 14);
 
-          this.ctx.fillStyle = isSelected ? '#a5b4fc' : 'rgba(255, 255, 255, 0.4)';
+          this.ctx.fillStyle = isSelected ? '#fb923c' : 'rgba(221, 185, 145, 0.6)';
           this.ctx.fillText(edge.label || 'RELATES_TO', 0, 0);
           this.ctx.restore();
         }
@@ -438,8 +464,8 @@ export class KnowledgeGraphComponent implements OnInit, OnDestroy {
 
             this.ctx.beginPath();
             this.ctx.arc(px, py, 2.5, 0, 2 * Math.PI);
-            this.ctx.fillStyle = isSelected || isRelatedToSelectedNode ? '#818cf8' : '#38bdf8'; // Indigo/Cyan
-            this.ctx.shadowColor = '#38bdf8';
+            this.ctx.fillStyle = isSelected || isRelatedToSelectedNode ? '#fb923c' : '#c084fc'; // Primary Orange / AI Purple
+            this.ctx.shadowColor = isSelected || isRelatedToSelectedNode ? '#fb923c' : '#c084fc';
             this.ctx.shadowBlur = 4;
             this.ctx.fill();
             this.ctx.shadowBlur = 0; // reset shadow
@@ -501,10 +527,10 @@ export class KnowledgeGraphComponent implements OnInit, OnDestroy {
         ? 'bold 11px sans-serif'
         : '10px sans-serif';
       this.ctx.fillStyle = isSelected
-        ? '#ffffff'
+        ? '#fff7ed' // text-primary
         : isNeighborOfSelected
-        ? 'rgba(255, 255, 255, 0.9)'
-        : 'rgba(255, 255, 255, 0.65)';
+        ? 'rgba(252, 215, 170, 0.95)' // text-secondary
+        : 'rgba(221, 185, 145, 0.75)'; // text-muted
       this.ctx.textAlign = 'center';
       this.ctx.textBaseline = 'top';
 
@@ -519,7 +545,7 @@ export class KnowledgeGraphComponent implements OnInit, OnDestroy {
       // Vẽ badge loại thực thể nhỏ phía trên node khi zoom gần
       if (this.transform.k > 1.2 || isSelected) {
         this.ctx.font = '8px sans-serif';
-        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+        this.ctx.fillStyle = 'rgba(221, 185, 145, 0.55)'; // text-muted
         this.ctx.fillText(`[${node.type}]`, node.x, node.y - node.radius - 12);
       }
     });

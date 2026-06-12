@@ -24,6 +24,10 @@ class RAGSettings:
     SEMANTIC_PRE_CONTEXT_LIMIT: int = 50
     SEMANTIC_HARD_LIMIT: int = 500
 
+    # Summarization Configs
+    SUMMARIZATION_THRESHOLD: int = 3
+    SUMMARIZATION_LENGTH: int = 300
+
     # Graph Retrieval Configs
     RETRIEVAL_TOP_P: int = 3
     RETRIEVAL_BFS_DEPTH: int = 3
@@ -83,6 +87,8 @@ class Settings(BaseSettings):
     RAG_SEMANTIC_OVERLAP: int = rag_settings.SEMANTIC_OVERLAP
     RAG_SEMANTIC_PRE_CONTEXT_LIMIT: int = rag_settings.SEMANTIC_PRE_CONTEXT_LIMIT
     RAG_SEMANTIC_HARD_LIMIT: int = rag_settings.SEMANTIC_HARD_LIMIT
+    RAG_SUMMARIZATION_THRESHOLD: int = int(os.getenv('RAG_SUMMARIZATION_THRESHOLD', str(rag_settings.SUMMARIZATION_THRESHOLD)))
+    RAG_SUMMARIZATION_LENGTH: int = int(os.getenv('RAG_SUMMARIZATION_LENGTH', str(rag_settings.SUMMARIZATION_LENGTH)))
 
     # Graph Retrieval Configs
     RAG_RETRIEVAL_TOP_P: int = rag_settings.RETRIEVAL_TOP_P

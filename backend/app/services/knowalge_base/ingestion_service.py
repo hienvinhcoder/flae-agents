@@ -6,6 +6,7 @@ Tất cả các hàm trong module này là sync (sử dụng trong Temporal acti
 """
 import re
 import hashlib
+import numpy as np
 from typing import Dict, List, Tuple
 from collections import Counter
 
@@ -105,21 +106,31 @@ class IngestionService:
     ) -> Dict[str, int]:
         """
         Fusion & lưu chunks/entities/relations vào RAG database.
+        Áp dụng Incremental Knowledge Fusion & LLM Summarization ở Python level.
         """
         import pandas as pd
         from app.db.rag_db import rag_db_manager
+        from app.services.knowalge_base.fusion_service import run_incremental_fusion
         from typing import Any, cast
+        from sqlalchemy import text
 
         rag_db_manager.initialize()
 
-        # Gán source_document_id cho chunks
+        # 1. Chạy Incremental Fusion để gộp & tóm tắt mô tả qua LLM
+        final_entities, final_relations, summarization_tokens, touched_entity_ids = run_incremental_fusion(
+            workspace_id=workspace_id,
+            new_entities=entities,
+            new_relations=relations,
+            db_manager=rag_db_manager
+        )
+
+        # 2. Gán source_document_id cho chunks
         for chunk in chunks:
             chunk["source_document_id"] = source_doc_id
 
         # Lưu chunks
         chunks_df = pd.DataFrame(chunks)
         if "embedding" in chunks_df.columns:
-            # Filter chunks có embedding
             valid_chunks = chunks_df[
                 chunks_df["embedding"].apply(lambda x: x is not None)
             ]
@@ -128,7 +139,6 @@ class IngestionService:
 
         chunk_count = 0
         if not valid_chunks.empty:
-            # Gán entity_ids và relation_ids vào chunks
             valid_chunks = valid_chunks.copy()
             valid_chunks["entity_ids"] = [[] for _ in range(len(valid_chunks))]
             valid_chunks["relation_ids"] = [[] for _ in range(len(valid_chunks))]
@@ -138,7 +148,7 @@ class IngestionService:
                 for idx, cid in enumerate(valid_chunks["chunk_id"])
             }
 
-            for ent in entities:
+            for ent in final_entities:
                 src_chunks = ent.get("source_chunk_ids", [])
                 if isinstance(src_chunks, list):
                     for cid in src_chunks:
@@ -148,7 +158,7 @@ class IngestionService:
                                 ent["entity_id"]
                             )
 
-            for rel in relations:
+            for rel in final_relations:
                 src_chunks = rel.get("source_chunk_ids", [])
                 if isinstance(src_chunks, list):
                     for cid in src_chunks:
@@ -160,61 +170,46 @@ class IngestionService:
 
             rag_db_manager.save_df(
                 valid_chunks, "chunks", pk_col="chunk_id",
-                workspace_id=workspace_id,
+                workspace_id=workspace_id, overwrite=True
             )
             chunk_count = len(valid_chunks)
 
-        # Lưu entities (tạo embeddings nếu cần)
+        # 3. Tạo vector embeddings gia tăng cho entities có embedding = None
         entity_count = 0
-        if entities:
-            entities_df = pd.DataFrame(entities)
-            # Tạo entity embeddings
-            texts = [
-                f"{e['entity_name']}\n{e['description']}" for e in entities
-            ]
-            embs, _ = IngestionService.generate_embeddings(texts, "entities")
-            entities_df["embedding"] = cast(Any, embs)
-            entities_df["degree"] = 0
+        if final_entities:
+            final_entities_df = pd.DataFrame(final_entities)
+            
+            # Chỉ tạo embeddings cho các entities mới hoặc đổi mô tả (embedding là None)
+            mask = final_entities_df["embedding"].isna() | final_entities_df["embedding"].apply(lambda x: x is None or (isinstance(x, (list, np.ndarray)) and len(x) == 0))
+            entities_to_embed = final_entities_df[mask]
+            
+            if not entities_to_embed.empty:
+                logger.info(f"Generating embeddings for {len(entities_to_embed)} new/updated entities...")
+                texts = [
+                    f"{e['entity_name']}\n{e['description']}" 
+                    for e in entities_to_embed.to_dict("records")
+                ]
+                embs, _ = IngestionService.generate_embeddings(texts, "entities")
+                
+                # Cập nhật embeddings
+                temp_embs = dict(zip(entities_to_embed["entity_id"], embs))
+                embs_list = []
+                for _, row in final_entities_df.iterrows():
+                    embs_list.append(temp_embs.get(row["entity_id"], row["embedding"]))
+                final_entities_df["embedding"] = pd.Series(embs_list, dtype=object)
 
             rag_db_manager.save_df(
-                entities_df, "entities", pk_col="entity_id",
-                workspace_id=workspace_id,
+                final_entities_df, "entities", pk_col="entity_id",
+                workspace_id=workspace_id, overwrite=True
             )
-            entity_count = len(entities_df)
+            entity_count = len(final_entities_df)
 
-        # Lưu relations (tạo embeddings nếu cần)
+        # 4. Tạo vector embeddings gia tăng cho relationships có embedding = None
         relation_count = 0
-        if relations:
-            rels_df = pd.DataFrame(relations)
-            rels_df.rename(
-                columns={"source": "source_name", "target": "target_name"},
-                inplace=True,
-            )
-
-            # Map entity IDs
-            name_to_id = {}
-            if entities:
-                name_to_id = {
-                    e["entity_name"]: e["entity_id"] for e in entities
-                }
-            rels_df["source_id"] = rels_df["source_name"].map(
-                lambda n: name_to_id.get(n, f"ent-{hashlib.md5(n.encode()).hexdigest()}")
-            )
-            rels_df["target_id"] = rels_df["target_name"].map(
-                lambda n: name_to_id.get(n, f"ent-{hashlib.md5(n.encode()).hexdigest()}")
-            )
-            rels_df["degree"] = 0
-
-            # Tạo relation embeddings
-            texts = [
-                f"{r.get('keywords', '')}\t{r.get('source_name', '')}\n"
-                f"{r.get('target_name', '')}\n{r.get('description', '')}"
-                for r in rels_df.to_dict("records")
-            ]
-            embs, _ = IngestionService.generate_embeddings(texts, "relationships")
-            rels_df["embedding"] = cast(Any, embs)
-
-            # Ensure correct columns
+        if final_relations:
+            rels_df = pd.DataFrame(final_relations)
+            
+            # Đảm bảo các cột đúng định dạng
             rel_cols = [
                 "relation_id", "source_id", "source_name",
                 "target_id", "target_name", "keywords",
@@ -224,12 +219,75 @@ class IngestionService:
             for col in rel_cols:
                 if col not in rels_df.columns:
                     rels_df[col] = None
+            rels_df = rels_df[rel_cols]
+
+            # Chỉ tạo embeddings cho các relationships mới/đổi mô tả
+            mask = rels_df["embedding"].isna() | rels_df["embedding"].apply(lambda x: x is None or (isinstance(x, (list, np.ndarray)) and len(x) == 0))
+            rels_to_embed = rels_df[mask]
+            
+            if not rels_to_embed.empty:
+                logger.info(f"Generating embeddings for {len(rels_to_embed)} new/updated relationships...")
+                texts = [
+                    f"{r.get('keywords', '')}\t{r.get('source_name', '')}\n"
+                    f"{r.get('target_name', '')}\n{r.get('description', '')}"
+                    for r in rels_to_embed.to_dict("records")
+                ]
+                embs, _ = IngestionService.generate_embeddings(texts, "relationships")
+                
+                temp_embs = dict(zip(rels_to_embed["relation_id"], embs))
+                embs_list = []
+                for _, row in rels_df.iterrows():
+                    embs_list.append(temp_embs.get(row["relation_id"], row["embedding"]))
+                rels_df["embedding"] = pd.Series(embs_list, dtype=object)
 
             rag_db_manager.save_df(
-                rels_df[rel_cols], "relationships", pk_col="relation_id",
-                workspace_id=workspace_id,
+                rels_df, "relationships", pk_col="relation_id",
+                workspace_id=workspace_id, overwrite=True
             )
             relation_count = len(rels_df)
+
+        # 5. Cập nhật Degree cho Entities và Relationships bị ảnh hưởng trong DB bằng SQL
+        if touched_entity_ids:
+            logger.info(f"Cập nhật degree cho {len(touched_entity_ids)} thực thể qua SQL...")
+            ids_tuple = tuple(touched_entity_ids)
+            ids_sql_str = str(ids_tuple) if len(ids_tuple) > 1 else f"('{list(touched_entity_ids)[0]}')"
+            
+            sql_degree = f"""
+                UPDATE {rag_db_manager.schema}.entities 
+                SET degree = (
+                    SELECT COUNT(*) 
+                    FROM {rag_db_manager.schema}.relationships 
+                    WHERE (source_id = {rag_db_manager.schema}.entities.entity_id 
+                       OR target_id = {rag_db_manager.schema}.entities.entity_id)
+                      AND workspace_id = :workspace_id
+                )
+                WHERE entity_id IN {ids_sql_str} AND workspace_id = :workspace_id
+            """
+            
+            sql_rel_degree = f"""
+                UPDATE {rag_db_manager.schema}.relationships r
+                SET degree = (
+                    COALESCE((SELECT degree FROM {rag_db_manager.schema}.entities WHERE entity_id = r.source_id AND workspace_id = :workspace_id), 0) + 
+                    COALESCE((SELECT degree FROM {rag_db_manager.schema}.entities WHERE entity_id = r.target_id AND workspace_id = :workspace_id), 0)
+                )
+                WHERE (r.source_id IN {ids_sql_str} OR r.target_id IN {ids_sql_str}) AND r.workspace_id = :workspace_id
+            """
+            
+            try:
+                conn = rag_db_manager.get_conn()
+                cur = conn.cursor()
+                cur.execute("SET app.current_workspace_id = %s;", (workspace_id,))
+                
+                # Thực thi update degree entities
+                cur.execute(sql_degree.replace(":workspace_id", f"'{workspace_id}'"))
+                # Thực thi update degree relationships
+                cur.execute(sql_rel_degree.replace(":workspace_id", f"'{workspace_id}'"))
+                
+                conn.commit()
+                cur.close()
+                conn.close()
+            except Exception as e:
+                logger.error(f"⚠️ Cập nhật degree thất bại: {e}")
 
         return {
             "chunk_count": chunk_count,

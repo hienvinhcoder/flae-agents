@@ -63,7 +63,7 @@ def test_fuse_and_save_success():
     with patch("app.db.rag_db.rag_db_manager") as mock_db_manager:
         with patch("app.services.knowalge_base.ingestion_service.IngestionService.generate_embeddings") as mock_gen_embeddings:
             mock_gen_embeddings.side_effect = [
-                ([[0.2] * 768], 0), # entity embeddings
+                ([[0.2] * 768, [0.2] * 768], 0), # entity embeddings (cho cả Apple và iPhone placeholder)
                 ([[0.3] * 768], 0), # relation embeddings
             ]
             
@@ -76,7 +76,7 @@ def test_fuse_and_save_success():
             )
             
             assert res["chunk_count"] == 1
-            assert res["entity_count"] == 1
+            assert res["entity_count"] == 2
             assert res["relation_count"] == 1
             
             mock_db_manager.initialize.assert_called_once()
@@ -162,5 +162,102 @@ def test_save_df_sql_parsing_real_execute_values():
     assert mock_cur.execute.called or mock_cur.executemany.called
 
 
+def test_save_df_sql_generation_with_overwrite():
+    import pandas as pd
+    from app.db.rag_db import DBManager
+    
+    # Tạo mock connection và cursor
+    mock_conn = MagicMock()
+    mock_cur = MagicMock()
+    mock_conn.cursor.return_value = mock_cur
+    
+    # Khởi tạo DBManager và patch get_conn
+    db_manager = DBManager(db_url="postgresql+asyncpg://user:pass@host:5432/db", schema="public")
+    db_manager.get_conn = MagicMock(return_value=mock_conn)
+    db_manager.initialize = MagicMock()
+    db_manager._ensure_partition = MagicMock()
+    
+    # Mock execute_values
+    with patch("psycopg2.extras.execute_values") as mock_execute_values:
+        # 1. Test cho bảng entities với overwrite=True
+        entities_df = pd.DataFrame([
+            {"entity_id": "ent_1", "entity_name": "Apple", "description": "Tech company", "source_chunk_ids": ["chunk_1"], "frequency": 1}
+        ])
+        
+        db_manager.save_df(entities_df, "entities", pk_col="entity_id", workspace_id="test_ws", overwrite=True)
+        
+        # Lấy câu lệnh SQL đã gọi
+        args, kwargs = mock_execute_values.call_args
+        sql_query = args[1]
+        
+        # Verify SQL query chứa các biểu thức ghi đè trực tiếp (EXCLUDED.col)
+        assert "ON CONFLICT (workspace_id, entity_id) DO UPDATE" in sql_query
+        assert "description = EXCLUDED.description" in sql_query
+        assert "source_chunk_ids = EXCLUDED.source_chunk_ids" in sql_query
+        assert "frequency = EXCLUDED.frequency" in sql_query
 
 
+def test_fuse_and_save_with_summarization():
+    from app.services.knowalge_base.ingestion_service import IngestionService
+    from unittest.mock import patch
+    import pandas as pd
+    import numpy as np
+
+    workspace_id = "test-workspace-id"
+    chunks = [
+        {"chunk_id": "chunk_1", "text": "This is chunk 1", "embedding": [0.1] * 768},
+    ]
+    entities = [
+        {"entity_id": "ent_1", "entity_name": "Apple", "description": "Tech company 1", "source_chunk_ids": ["chunk_1"]},
+    ]
+    relations = [
+        {"relation_id": "rel_1", "source": "Apple", "target": "iPhone", "keywords": "creates", "description": "creates phone 1", "source_chunk_ids": ["chunk_1"]},
+    ]
+    source_doc_id = "test-doc-id"
+
+    with patch("app.db.rag_db.rag_db_manager") as mock_db_manager:
+        fused_entities = [
+            {"entity_id": "ent_1", "entity_name": "Apple", "entity_type": "organization", "description": "Tech company consolidated summary", "source_chunk_ids": ["chunk_1"], "frequency": 2, "embedding": None, "degree": 0}
+        ]
+        fused_relations = [
+            {"relation_id": "rel_1", "source_id": "ent_1", "source_name": "Apple", "target_id": "ent_2", "target_name": "iPhone", "keywords": "creates", "description": "creates phone consolidated summary", "source_chunk_ids": ["chunk_1"], "frequency": 2, "embedding": None, "degree": 0}
+        ]
+        
+        with patch("app.services.knowalge_base.fusion_service.run_incremental_fusion", return_value=(fused_entities, fused_relations, 50, {"ent_1"})) as mock_fusion:
+            with patch("app.services.knowalge_base.ingestion_service.IngestionService.generate_embeddings") as mock_gen_embeddings:
+                mock_gen_embeddings.side_effect = [
+                    ([[0.2] * 768], 0), # entity embeddings
+                    ([[0.3] * 768], 0), # relation embeddings
+                ]
+                
+                mock_conn = MagicMock()
+                mock_cur = MagicMock()
+                mock_conn.cursor.return_value = mock_cur
+                mock_db_manager.get_conn.return_value = mock_conn
+                
+                res = IngestionService.fuse_and_save(
+                    workspace_id=workspace_id,
+                    chunks=chunks,
+                    entities=entities,
+                    relations=relations,
+                    source_doc_id=source_doc_id,
+                )
+                
+                assert res["chunk_count"] == 1
+                assert res["entity_count"] == 1
+                assert res["relation_count"] == 1
+                
+                mock_fusion.assert_called_once_with(
+                    workspace_id=workspace_id,
+                    new_entities=entities,
+                    new_relations=relations,
+                    db_manager=mock_db_manager
+                )
+                
+                save_df_calls = mock_db_manager.save_df.call_args_list
+                assert len(save_df_calls) == 3
+                assert save_df_calls[0][1]["overwrite"] is True
+                assert save_df_calls[1][1]["overwrite"] is True
+                assert save_df_calls[2][1]["overwrite"] is True
+                
+                assert mock_cur.execute.call_count >= 3
