@@ -133,9 +133,6 @@ def run_incremental_fusion(
     # Tải entities cũ từ DB trùng involved_names
     existing_entities_df = pd.DataFrame()
     if involved_names:
-        safe_names = [n.replace("'", "''") for n in involved_names]
-        names_str = "', '".join(safe_names)
-        
         raw_existing_entities = db_manager.load_df("entities", workspace_id=workspace_id)
         if not raw_existing_entities.empty:
             existing_entities_df = raw_existing_entities[raw_existing_entities["entity_name"].str.strip().isin(involved_names)]
@@ -159,6 +156,10 @@ def run_incremental_fusion(
                     df["entity_type"] = "UNKNOWN"
                 if "description" not in df.columns:
                     df["description"] = ""
+                if "chunk_descriptions" not in df.columns:
+                    df["chunk_descriptions"] = pd.Series([{} for _ in range(len(df))], dtype=object)
+                else:
+                    df["chunk_descriptions"] = df["chunk_descriptions"].apply(lambda x: x if isinstance(x, dict) else {})
         
         combined_entities_df = pd.concat([existing_entities_df, new_entities_df], ignore_index=True)
         
@@ -180,12 +181,20 @@ def run_incremental_fusion(
             freq = int(group["frequency"].sum())
             chunks = list(set(sum(group["source_chunk_ids"].tolist(), [])))
             
-            all_descs = []
-            for x in group["description"]:
-                if isinstance(x, str):
-                    all_descs.append(x)
-                elif isinstance(x, list):
-                    all_descs.extend(x)
+            # Gộp chunk_descriptions
+            all_chunk_descs = {}
+            for idx, row in group.iterrows():
+                row_descs = row.get("chunk_descriptions")
+                if isinstance(row_descs, dict) and row_descs:
+                    all_chunk_descs.update(row_descs)
+                else:
+                    row_chunks = row.get("source_chunk_ids", [])
+                    row_desc = row.get("description", "")
+                    if isinstance(row_chunks, list) and isinstance(row_desc, str) and row_desc:
+                        for cid in row_chunks:
+                            all_chunk_descs[cid] = row_desc
+            
+            all_descs = list(set([d for d in all_chunk_descs.values() if d and d.strip()]))
             
             new_description, tokens = _merge_and_summarize_group(
                 group_descs=all_descs,
@@ -216,7 +225,8 @@ def run_incremental_fusion(
                 "source_chunk_ids": chunks,
                 "frequency": freq,
                 "embedding": final_embedding,
-                "degree": 0
+                "degree": 0,
+                "chunk_descriptions": all_chunk_descs
             })
             
     # ==========================================
@@ -265,6 +275,10 @@ def run_incremental_fusion(
                 for col in ["keywords", "description"]:
                     if col not in df.columns:
                         df[col] = ""
+                if "chunk_meta" not in df.columns:
+                    df["chunk_meta"] = pd.Series([{} for _ in range(len(df))], dtype=object)
+                else:
+                    df["chunk_meta"] = df["chunk_meta"].apply(lambda x: x if isinstance(x, dict) else {})
         
         combined_relations_df = pd.concat([existing_relations_df, new_relations_df], ignore_index=True)
         
@@ -284,21 +298,31 @@ def run_incremental_fusion(
             src_name = key_tuple[0]
             tgt_name = key_tuple[1]
             freq = int(group["frequency"].sum())
-            
-            all_kws = []
-            for k in group.get("keywords", []):
-                if k and isinstance(k, str):
-                    all_kws.extend(k.split(","))
-            keywords = ", ".join(sorted(list(set([k.strip() for k in all_kws if k.strip()]))))
-            
             chunks = list(set(sum(group["source_chunk_ids"].tolist(), [])))
             
-            all_descs = []
-            for x in group["description"]:
-                if isinstance(x, str):
-                    all_descs.append(x)
-                elif isinstance(x, list):
-                    all_descs.extend(x)
+            # Gộp chunk_meta
+            all_chunk_meta = {}
+            for idx, row in group.iterrows():
+                row_meta = row.get("chunk_meta")
+                if isinstance(row_meta, dict) and row_meta:
+                    all_chunk_meta.update(row_meta)
+                else:
+                    row_chunks = row.get("source_chunk_ids", [])
+                    row_desc = row.get("description", "")
+                    row_kws = row.get("keywords", "")
+                    if isinstance(row_chunks, list):
+                        for cid in row_chunks:
+                            all_chunk_meta[cid] = {
+                                "description": row_desc,
+                                "keywords": row_kws
+                            }
+            
+            all_descs = list(set([m["description"] for m in all_chunk_meta.values() if isinstance(m, dict) and m.get("description")]))
+            all_kws = []
+            for m in all_chunk_meta.values():
+                if isinstance(m, dict) and m.get("keywords"):
+                    all_kws.extend(m["keywords"].split(","))
+            keywords = ", ".join(sorted(list(set([k.strip() for k in all_kws if k.strip()]))))
                     
             rel_name_str = f"({src_name}, {tgt_name})"
             new_description, tokens = _merge_and_summarize_group(
@@ -331,7 +355,8 @@ def run_incremental_fusion(
                 "source_chunk_ids": chunks,
                 "frequency": freq,
                 "embedding": final_embedding,
-                "degree": 0
+                "degree": 0,
+                "chunk_meta": all_chunk_meta
             })
             
     # ==========================================

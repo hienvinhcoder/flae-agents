@@ -105,3 +105,52 @@ class KnowledgeGraphResponse(BaseModel):
     nodes: list[GraphNode]
     edges: list[GraphEdge]
 
+
+# ── Knowledge Search Schemas ──────────────────────────────────────────
+
+
+
+class KnowledgeSearchRequest(BaseModel):
+    """Payload yêu cầu tìm kiếm trong Knowledge Base."""
+    query: str = Field(..., min_length=1, description="Câu truy vấn tìm kiếm")
+    top_k_chunks: int = Field(default=5, ge=1, le=50, description="Số lượng chunks tối đa trả về")
+    top_k_paths: int = Field(default=10, ge=1, le=50, description="Số lượng paths đồ thị tối đa trả về")
+
+
+class PathSegment(BaseModel):
+    """Một chặng trong đường dẫn đồ thị tri thức."""
+    source: str
+    target: str
+    keywords: str
+    description: str
+    source_desc: str
+    target_desc: str
+
+
+class ScoredPath(BaseModel):
+    """Thông tin đường dẫn đồ thị kèm điểm số xếp hạng."""
+    path_readable: str
+    segments: list[PathSegment]
+    score: float
+    reason: str
+    entity_ids: list[str]
+    endorsing_bridges: Optional[list[str]] = None
+
+
+class ScoredChunk(BaseModel):
+    """Thông tin chunk văn bản kèm điểm số xếp hạng."""
+    id: str
+    score: float
+    type: str = "chunk"
+    name: str
+    source_document: str
+    content: str
+    reason: Optional[str] = None
+
+
+class KnowledgeSearchResponse(BaseModel):
+    """Kết quả tìm kiếm hybrid (đồ thị + văn bản)."""
+    top_chunks: list[ScoredChunk]
+    top_paths: list[ScoredPath]
+    diagnostics: Optional[dict] = None
+

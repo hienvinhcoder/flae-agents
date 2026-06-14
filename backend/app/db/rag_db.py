@@ -138,6 +138,7 @@ class DBManager:
                     entity_type TEXT,
                     description TEXT,
                     source_chunk_ids JSONB,
+                    chunk_descriptions JSONB,
                     degree INT,
                     frequency INT,
                     embedding vector({self.embedding_dimensions}),
@@ -159,6 +160,7 @@ class DBManager:
                     keywords TEXT,
                     description TEXT,
                     source_chunk_ids JSONB,
+                    chunk_meta JSONB,
                     frequency INT,
                     degree INT,
                     embedding vector({self.embedding_dimensions}),
@@ -166,6 +168,10 @@ class DBManager:
                 ) PARTITION BY LIST (workspace_id);
                 """
             )
+
+            # Đảm bảo các cột mới tồn tại cho các DB cũ chưa drop
+            cur.execute(f"ALTER TABLE {self.schema}.entities ADD COLUMN IF NOT EXISTS chunk_descriptions JSONB;")
+            cur.execute(f"ALTER TABLE {self.schema}.relationships ADD COLUMN IF NOT EXISTS chunk_meta JSONB;")
 
             # 6. Kích hoạt Row Level Security (RLS) trên các bảng chính
             cur.execute(f"ALTER TABLE {self.schema}.chunks ENABLE ROW LEVEL SECURITY;")
@@ -240,7 +246,7 @@ class DBManager:
             df = pd.read_sql(query, conn)
 
             vector_cols = ["embedding"]
-            json_cols = ["source_chunk_ids", "entity_ids", "relation_ids"]
+            json_cols = ["source_chunk_ids", "entity_ids", "relation_ids", "chunk_descriptions", "chunk_meta"]
 
             def parse_vector(x: Any) -> Optional[np.ndarray]:
                 if isinstance(x, str):
@@ -249,12 +255,12 @@ class DBManager:
                     return np.array(x)
                 return None
 
-            def parse_json(x: Any) -> list:
-                if isinstance(x, list):
+            def parse_json(x: Any) -> Any:
+                if isinstance(x, (list, dict)):
                     return x
                 elif isinstance(x, str):
                     return json.loads(x)
-                return []
+                return None
 
             for col in df.columns:
                 if col in vector_cols:
@@ -304,16 +310,22 @@ class DBManager:
                 return x
 
             for col in df_to_save.columns:
-                first_valid_idx = df_to_save[col].first_valid_index()
-                sample = df_to_save[col].loc[first_valid_idx] if first_valid_idx is not None else None
-
-                if sample is None:
-                    continue
-
-                if isinstance(sample, np.ndarray):
-                    df_to_save[col] = pd.Series([to_list(x) for x in df_to_save[col]], dtype=object)
-                elif isinstance(sample, (list, dict)) and col in ["source_chunk_ids", "entity_ids", "relation_ids"]:
-                    df_to_save[col] = pd.Series([robust_json_dumps(x) for x in df_to_save[col]], dtype=object)
+                if col == "embedding":
+                    def to_vector_str(x):
+                        if x is None or (isinstance(x, float) and pd.isna(x)):
+                            return None
+                        if isinstance(x, np.ndarray):
+                            return json.dumps(x.tolist())
+                        if isinstance(x, list):
+                            return json.dumps(x)
+                        return str(x)
+                    df_to_save[col] = df_to_save[col].apply(to_vector_str)
+                elif col in ["source_chunk_ids", "entity_ids", "relation_ids", "chunk_descriptions", "chunk_meta"]:
+                    def to_json_str(x):
+                        if x is None or (isinstance(x, float) and pd.isna(x)):
+                            return None
+                        return robust_json_dumps(x)
+                    df_to_save[col] = df_to_save[col].apply(to_json_str)
 
             columns = list(df_to_save.columns)
 
@@ -343,6 +355,10 @@ class DBManager:
                         update_sets.append(
                             f"source_chunk_ids = (SELECT COALESCE(jsonb_agg(DISTINCT elem), '[]'::jsonb) FROM (SELECT jsonb_array_elements(COALESCE({table_name}.source_chunk_ids, '[]'::jsonb)) AS elem UNION SELECT jsonb_array_elements(COALESCE(EXCLUDED.source_chunk_ids, '[]'::jsonb)) AS elem) sub)"
                         )
+                    elif col == "chunk_descriptions":
+                        update_sets.append(
+                            f"chunk_descriptions = COALESCE({table_name}.chunk_descriptions, '{{}}'::jsonb) || COALESCE(EXCLUDED.chunk_descriptions, '{{}}'::jsonb)"
+                        )
                     elif col == "frequency":
                         update_sets.append(
                             f"frequency = COALESCE({table_name}.frequency, 0) + COALESCE(EXCLUDED.frequency, 0)"
@@ -365,6 +381,10 @@ class DBManager:
                     elif col == "source_chunk_ids":
                         update_sets.append(
                             f"source_chunk_ids = (SELECT COALESCE(jsonb_agg(DISTINCT elem), '[]'::jsonb) FROM (SELECT jsonb_array_elements(COALESCE({table_name}.source_chunk_ids, '[]'::jsonb)) AS elem UNION SELECT jsonb_array_elements(COALESCE(EXCLUDED.source_chunk_ids, '[]'::jsonb)) AS elem) sub)"
+                        )
+                    elif col == "chunk_meta":
+                        update_sets.append(
+                            f"chunk_meta = COALESCE({table_name}.chunk_meta, '{{}}'::jsonb) || COALESCE(EXCLUDED.chunk_meta, '{{}}'::jsonb)"
                         )
                     elif col == "frequency":
                         update_sets.append(

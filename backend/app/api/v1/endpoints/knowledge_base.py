@@ -23,9 +23,12 @@ from app.schemas.sche_knowledge_base import (
     ManualDocumentCreate,
     IngestionStatusResponse,
     KnowledgeGraphResponse,
+    KnowledgeSearchRequest,
+    KnowledgeSearchResponse,
 )
 from app.services.knowledge_base_srv import KnowledgeBaseService
 from app.services.knowledge_graph_srv import KnowledgeGraphService
+from app.services.knowalge_base.retriever_service import RetrieverService
 from app.core.logger import get_logger
 
 logger = get_logger(__name__)
@@ -207,5 +210,36 @@ async def get_ingestion_status(
     return DataResponse[IngestionStatusResponse].success_response(
         data=status
     )
+
+
+@router.post(
+    "/search",
+    response_model=DataResponse[KnowledgeSearchResponse],
+    summary="Tìm kiếm hybrid (vector + Graph RAG) trong Knowledge Base",
+)
+async def search_knowledge_base(
+    payload: KnowledgeSearchRequest,
+    workspace_id: uuid.UUID = Depends(get_current_workspace_id),
+):
+    try:
+        results, diagnostics = await RetrieverService.retrieve(
+            workspace_id=str(workspace_id),
+            query=payload.query,
+            top_k_chunks=payload.top_k_chunks,
+            top_k_paths=payload.top_k_paths,
+        )
+        return DataResponse[KnowledgeSearchResponse].success_response(
+            data=KnowledgeSearchResponse(
+                top_chunks=results["top_chunks"],
+                top_paths=results["top_paths"],
+                diagnostics=diagnostics,
+            )
+        )
+    except Exception as e:
+        logger.error(f"Lỗi khi tìm kiếm trong Knowledge Base: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Tìm kiếm thất bại: {str(e)}"
+        )
+
 
 

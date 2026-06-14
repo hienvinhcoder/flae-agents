@@ -38,6 +38,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    command: /bin/bash -c "uv run python -m scripts.prestart && uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload --reload-dir app --reload-dir ."
     ports:
       - "8000:8000"
     environment:
@@ -107,7 +108,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    command: uv run flae-worker
+    command: uv run watchfiles "uv run flae-worker" app workers
     environment:
       - POSTGRES_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/flae_db
       - RAG_DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/rag_db

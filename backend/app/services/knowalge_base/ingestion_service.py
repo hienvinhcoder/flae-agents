@@ -67,6 +67,10 @@ def _merge_entities(entities: List[Dict]) -> List[Dict]:
         main["entity_type"] = Counter([e["entity_type"] for e in group]).most_common(1)[0][0]
         main["source_chunk_ids"] = list({e["source_chunk_id"] for e in group})
         main["frequency"] = len(group)
+        main["chunk_descriptions"] = {
+            e["source_chunk_id"]: e["description"] 
+            for e in group if e.get("source_chunk_id")
+        }
         main.pop("source_chunk_id", None)
         merged.append(main)
 
@@ -86,6 +90,12 @@ def _merge_relations(relations: List[Dict]) -> List[Dict]:
         main["keywords"] = ", ".join({r["keywords"] for r in group})
         main["source_chunk_ids"] = list({r["source_chunk_id"] for r in group})
         main["frequency"] = len(group)
+        main["chunk_meta"] = {
+            r["source_chunk_id"]: {
+                "description": r["description"],
+                "keywords": r["keywords"]
+            } for r in group if r.get("source_chunk_id")
+        }
         main.pop("source_chunk_id", None)
         merged.append(main)
 

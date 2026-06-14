@@ -224,7 +224,7 @@ export class KnowledgeGraphComponent implements OnInit, OnDestroy {
 
   private getNodeColor(type: string): string {
     const typeLower = type?.toLowerCase() || '';
-    if (typeLower.includes('person') || typeLower.includes('người')) return '#c084fc'; // Purple (Person)
+    if (typeLower.includes('person') || typeLower.includes('người')) return '#fb7185'; // Rose (Person)
     if (typeLower.includes('org') || typeLower.includes('chức') || typeLower.includes('company'))
       return '#60a5fa'; // Info Blue (Organization)
     if (typeLower.includes('loc') || typeLower.includes('điểm') || typeLower.includes('city'))
