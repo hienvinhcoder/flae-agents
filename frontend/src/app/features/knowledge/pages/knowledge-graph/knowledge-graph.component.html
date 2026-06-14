@@ -225,7 +225,7 @@
               Mối quan hệ
             </span>
             <h3 class="text-lg font-bold text-text-primary leading-tight font-mono">
-              {{ edge.label || 'RELATES_TO' }}
+              {{ getLatestLabel(edge.label) }}
             </h3>
           </div>
 
@@ -247,7 +247,7 @@
           <div class="space-y-1.5">
             <h4 class="text-xs font-bold text-text-muted uppercase tracking-wide">Mô tả chi tiết</h4>
             <div class="bg-app/60 rounded-xl p-3 border border-border text-xs text-text-secondary leading-relaxed max-h-48 overflow-y-auto">
-              {{ edge.description || 'Không có mô tả chi tiết cho mối quan hệ này.' }}
+              {{ getLatestDescription(edge.description) }}
             </div>
           </div>
 

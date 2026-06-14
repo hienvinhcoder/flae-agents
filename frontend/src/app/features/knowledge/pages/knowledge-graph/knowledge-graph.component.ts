@@ -447,12 +447,13 @@ export class KnowledgeGraphComponent implements OnInit, OnDestroy {
           this.ctx.textAlign = 'center';
           this.ctx.textBaseline = 'bottom';
           // Vẽ nền mờ sau text để dễ nhìn (dùng màu nền bg-surface #1F1711)
-          const textWidth = this.ctx.measureText(edge.label || '').width;
+          const displayLabel = this.getLatestLabel(edge.label);
+          const textWidth = this.ctx.measureText(displayLabel).width;
           this.ctx.fillStyle = 'rgba(31, 23, 17, 0.85)';
           this.ctx.fillRect(-textWidth / 2 - 4, -12, textWidth + 8, 14);
 
           this.ctx.fillStyle = isSelected ? '#fb923c' : 'rgba(221, 185, 145, 0.6)';
-          this.ctx.fillText(edge.label || 'RELATES_TO', 0, 0);
+          this.ctx.fillText(displayLabel, 0, 0);
           this.ctx.restore();
         }
 
@@ -590,6 +591,18 @@ export class KnowledgeGraphComponent implements OnInit, OnDestroy {
         .toString(16)
         .slice(1)
     );
+  }
+
+  getLatestLabel(label: string | undefined): string {
+    if (!label) return 'RELATES_TO';
+    const parts = label.split(',');
+    return parts[parts.length - 1].trim();
+  }
+
+  getLatestDescription(description: string | undefined): string {
+    if (!description) return 'Không có mô tả chi tiết cho mối quan hệ này.';
+    const parts = description.split(' | ');
+    return parts[parts.length - 1].trim();
   }
 
   // Tương tác chuột trên Canvas
