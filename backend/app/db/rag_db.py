@@ -249,11 +249,11 @@ class DBManager:
             json_cols = ["source_chunk_ids", "entity_ids", "relation_ids", "chunk_descriptions", "chunk_meta"]
 
             def parse_vector(x: Any) -> Optional[np.ndarray]:
+                if x is None or (isinstance(x, float) and pd.isna(x)):
+                    return None
                 if isinstance(x, str):
                     return np.array(json.loads(x))
-                elif x is not None:
-                    return np.array(x)
-                return None
+                return np.array(x)
 
             def parse_json(x: Any) -> Any:
                 if isinstance(x, (list, dict)):

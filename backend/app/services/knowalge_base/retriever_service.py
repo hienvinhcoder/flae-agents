@@ -21,6 +21,7 @@ from app.services.knowalge_base.retriever_helpers import (
     get_item_details,
     get_path_details,
 )
+from app.services.knowalge_base.utils import parse_db_row
 
 logger = get_logger(__name__)
 
@@ -91,30 +92,7 @@ class RetrieverService:
             sql, {"emb": emb_list, "limit": limit, "workspace_id": workspace_id}
         )
 
-        rows = []
-        for r in result:
-            r_dict = r._asdict()
-            if "embedding" in r_dict and r_dict["embedding"] is not None:
-                if isinstance(r_dict["embedding"], str):
-                    try:
-                        r_dict["embedding"] = np.array(json.loads(r_dict["embedding"]))
-                    except Exception:
-                        pass
-                else:
-                    r_dict["embedding"] = np.array(r_dict["embedding"])
-
-            for col in ["source_chunk_ids", "entity_ids", "relation_ids"]:
-                if col in r_dict:
-                    val = r_dict[col]
-                    if isinstance(val, str):
-                        try:
-                            r_dict[col] = json.loads(val)
-                        except Exception:
-                            r_dict[col] = []
-                    elif val is None:
-                        r_dict[col] = []
-            rows.append(r_dict)
-
+        rows = [parse_db_row(r._asdict()) for r in result]
         return pd.DataFrame(rows)
 
     @staticmethod
@@ -261,22 +239,7 @@ class RetrieverService:
         """)
         entities_result = await session.execute(entities_sql, {"workspace_id": workspace_id})
 
-        entities_rows = []
-        for row in entities_result:
-            row_dict = row._asdict()
-            if "embedding" in row_dict and row_dict["embedding"] is not None:
-                if isinstance(row_dict["embedding"], str):
-                    row_dict["embedding"] = np.array(json.loads(row_dict["embedding"]))
-                else:
-                    row_dict["embedding"] = np.array(row_dict["embedding"])
-            if "source_chunk_ids" in row_dict:
-                val = row_dict["source_chunk_ids"]
-                if isinstance(val, str):
-                    row_dict["source_chunk_ids"] = json.loads(val)
-                elif val is None:
-                    row_dict["source_chunk_ids"] = []
-            entities_rows.append(row_dict)
-
+        entities_rows = [parse_db_row(row._asdict(), ["source_chunk_ids"]) for row in entities_result]
         entities_df = pd.DataFrame(entities_rows)
         local_entity_map: Dict[str, Any] = (
             {str(k): v for k, v in entities_df.set_index("entity_id").to_dict("index").items()}
@@ -290,22 +253,7 @@ class RetrieverService:
         """)
         rels_result = await session.execute(rels_sql, {"workspace_id": workspace_id})
 
-        rels_rows = []
-        for row in rels_result:
-            row_dict = row._asdict()
-            if "embedding" in row_dict and row_dict["embedding"] is not None:
-                if isinstance(row_dict["embedding"], str):
-                    row_dict["embedding"] = np.array(json.loads(row_dict["embedding"]))
-                else:
-                    row_dict["embedding"] = np.array(row_dict["embedding"])
-            if "source_chunk_ids" in row_dict:
-                val = row_dict["source_chunk_ids"]
-                if isinstance(val, str):
-                    row_dict["source_chunk_ids"] = json.loads(val)
-                elif val is None:
-                    row_dict["source_chunk_ids"] = []
-            rels_rows.append(row_dict)
-
+        rels_rows = [parse_db_row(row._asdict(), ["source_chunk_ids"]) for row in rels_result]
         rels_df = pd.DataFrame(rels_rows)
         local_edge_map: Dict[Tuple[str, str], Any] = {}
         if not rels_df.empty:
@@ -384,13 +332,10 @@ class RetrieverService:
                 initial_paths, query_embedding, seed_entity_ids, local_entity_map, local_edge_map
             )
 
-            # 7. Apply Text Confirmation Bonus cho paths
             entities_from_chunks = set()
             for cid in initial_chunk_ids:
-                if cid in local_chunk_map:
-                    ents = local_chunk_map[cid].get("entity_ids", [])
-                    if ents:
-                        entities_from_chunks.update(ents)
+                if cid in local_chunk_map and (ents := local_chunk_map[cid].get("entity_ids")):
+                    entities_from_chunks.update(ents)
 
             text_bonus = settings.RAG_SCORING_TEXT_CONFIRMATION_BONUS
             for p_info in scored_paths:
@@ -464,23 +409,7 @@ class RetrieverService:
                     WHERE chunk_id IN ({', '.join(quoted_extra)}) AND workspace_id = :workspace_id
                 """)
                 extra_result = await session.execute(sql_extra, {"workspace_id": workspace_id})
-                extra_rows = []
-                for row in extra_result:
-                    r_dict = row._asdict()
-                    if "embedding" in r_dict and r_dict["embedding"] is not None:
-                        if isinstance(r_dict["embedding"], str):
-                            r_dict["embedding"] = np.array(json.loads(r_dict["embedding"]))
-                        else:
-                            r_dict["embedding"] = np.array(r_dict["embedding"])
-                    for col in ["source_chunk_ids", "entity_ids", "relation_ids"]:
-                        if col in r_dict:
-                            val = r_dict[col]
-                            if isinstance(val, str):
-                                r_dict[col] = json.loads(val)
-                            elif val is None:
-                                r_dict[col] = []
-                    extra_rows.append(r_dict)
-
+                extra_rows = [parse_db_row(row._asdict()) for row in extra_result]
                 df_extra = pd.DataFrame(extra_rows)
                 if not df_extra.empty:
                     extra_map = df_extra.set_index("chunk_id").to_dict("index")
@@ -493,17 +422,12 @@ class RetrieverService:
 
             # 11. Hợp nhất và loại bỏ redundance trên paths
             merged_paths = {}
-            paths_for_merging = scored_paths + bridged_path_objects
-            for p_info in paths_for_merging:
+            for p_info in (scored_paths + bridged_path_objects):
                 canonical_key = get_canonical_path_key(p_info["path"])
-                if canonical_key not in merged_paths:
+                if canonical_key not in merged_paths or p_info["score"] > merged_paths[canonical_key]["score"]:
                     merged_paths[canonical_key] = p_info
-                else:
-                    if p_info["score"] > merged_paths[canonical_key]["score"]:
-                        merged_paths[canonical_key] = p_info
 
-            all_scored_paths = list(merged_paths.values())
-            filtered_scored_paths = filter_redundant_paths(all_scored_paths)
+            filtered_scored_paths = filter_redundant_paths(list(merged_paths.values()))
             final_ranked_paths = sorted(filtered_scored_paths, key=lambda x: x["score"], reverse=True)[
                 :top_k_paths
             ]

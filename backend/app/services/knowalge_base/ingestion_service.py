@@ -5,7 +5,6 @@ Pipeline: PDF→Markdown → Chunking → Embedding → Entity Extraction → Fu
 Tất cả các hàm trong module này là sync (sử dụng trong Temporal activities).
 """
 import re
-import hashlib
 import numpy as np
 from typing import Dict, List, Tuple
 from collections import Counter
@@ -14,6 +13,8 @@ from app.core.config import settings
 from app.core.logger import get_logger
 from app.services.knowalge_base.parser_service import ParserService
 from app.agents.shared.prompts import TUPLE_DELIMITER, COMPLETION_DELIMITER
+from app.utils import clean_entity_name
+from app.services.knowalge_base.utils import get_entity_id, get_relation_id, update_graph_degrees
 
 logger = get_logger(__name__)
 
@@ -33,20 +34,22 @@ def _parse_extraction_output(
     for line in lines:
         parts = line.split(TUPLE_DELIMITER)
         if parts[0].lower() == "entity" and len(parts) == 4:
-            entity_name = parts[1].strip()
+            entity_name = clean_entity_name(parts[1])
             entities.append({
-                "entity_id": f"ent-{hashlib.md5(entity_name.encode()).hexdigest()}",
+                "entity_id": get_entity_id(entity_name),
                 "entity_name": entity_name,
-                "entity_type": parts[2].strip(),
+                "entity_type": clean_entity_name(parts[2]),
                 "description": parts[3].strip(),
                 "source_chunk_id": chunk_id,
             })
         elif parts[0].lower() == "relation" and len(parts) == 5:
-            src, tgt = sorted((parts[1].strip(), parts[2].strip()))
+            src = clean_entity_name(parts[1])
+            tgt = clean_entity_name(parts[2])
+            source, target = sorted((src, tgt))
             relations.append({
-                "relation_id": f"rel-{hashlib.md5(f'{src}-{tgt}'.encode()).hexdigest()}",
-                "source": src,
-                "target": tgt,
+                "relation_id": get_relation_id(src, tgt),
+                "source": source,
+                "target": target,
                 "keywords": parts[3].strip(),
                 "description": parts[4].strip(),
                 "source_chunk_id": chunk_id,
@@ -59,11 +62,15 @@ def _merge_entities(entities: List[Dict]) -> List[Dict]:
     """Merge entities trùng tên, tính frequency."""
     grouped: dict[str, list[dict]] = {}
     for e in entities:
-        grouped.setdefault(e["entity_name"], []).append(e)
+        norm_name = clean_entity_name(e["entity_name"]).lower()
+        grouped.setdefault(norm_name, []).append(e)
 
     merged = []
-    for name, group in grouped.items():
+    for norm_name, group in grouped.items():
         main = max(group, key=lambda x: len(x["description"]))
+        main = main.copy()
+        main["entity_name"] = clean_entity_name(main["entity_name"])
+        main["entity_id"] = get_entity_id(norm_name)
         main["entity_type"] = Counter([e["entity_type"] for e in group]).most_common(1)[0][0]
         main["source_chunk_ids"] = list({e["source_chunk_id"] for e in group})
         main["frequency"] = len(group)
@@ -81,11 +88,18 @@ def _merge_relations(relations: List[Dict]) -> List[Dict]:
     """Merge relations trùng source-target, tính frequency."""
     grouped: dict[tuple, list[dict]] = {}
     for r in relations:
-        grouped.setdefault((r["source"], r["target"]), []).append(r)
+        src_norm = clean_entity_name(r["source"]).lower()
+        tgt_norm = clean_entity_name(r["target"]).lower()
+        key = tuple(sorted((src_norm, tgt_norm)))
+        grouped.setdefault(key, []).append(r)
 
     merged = []
     for key, group in grouped.items():
         main = max(group, key=lambda x: len(x["description"]))
+        main = main.copy()
+        main["source"] = clean_entity_name(main["source"])
+        main["target"] = clean_entity_name(main["target"])
+        main["relation_id"] = get_relation_id(key[0], key[1])
         main["description"] = " | ".join({r["description"] for r in group})
         main["keywords"] = ", ".join({r["keywords"] for r in group})
         main["source_chunk_ids"] = list({r["source_chunk_id"] for r in group})
@@ -190,7 +204,7 @@ class IngestionService:
             final_entities_df = pd.DataFrame(final_entities)
             
             # Chỉ tạo embeddings cho các entities mới hoặc đổi mô tả (embedding là None)
-            mask = final_entities_df["embedding"].isna() | final_entities_df["embedding"].apply(lambda x: x is None or (isinstance(x, (list, np.ndarray)) and len(x) == 0))
+            mask = final_entities_df["embedding"].isna() | final_entities_df["embedding"].apply(lambda x: x is None or (isinstance(x, list) and len(x) == 0) or (isinstance(x, np.ndarray) and x.size == 0))
             entities_to_embed = final_entities_df[mask]
             
             if not entities_to_embed.empty:
@@ -232,7 +246,7 @@ class IngestionService:
             rels_df = rels_df[rel_cols]
 
             # Chỉ tạo embeddings cho các relationships mới/đổi mô tả
-            mask = rels_df["embedding"].isna() | rels_df["embedding"].apply(lambda x: x is None or (isinstance(x, (list, np.ndarray)) and len(x) == 0))
+            mask = rels_df["embedding"].isna() | rels_df["embedding"].apply(lambda x: x is None or (isinstance(x, list) and len(x) == 0) or (isinstance(x, np.ndarray) and x.size == 0))
             rels_to_embed = rels_df[mask]
             
             if not rels_to_embed.empty:
@@ -258,46 +272,7 @@ class IngestionService:
 
         # 5. Cập nhật Degree cho Entities và Relationships bị ảnh hưởng trong DB bằng SQL
         if touched_entity_ids:
-            logger.info(f"Cập nhật degree cho {len(touched_entity_ids)} thực thể qua SQL...")
-            ids_tuple = tuple(touched_entity_ids)
-            ids_sql_str = str(ids_tuple) if len(ids_tuple) > 1 else f"('{list(touched_entity_ids)[0]}')"
-            
-            sql_degree = f"""
-                UPDATE {rag_db_manager.schema}.entities 
-                SET degree = (
-                    SELECT COUNT(*) 
-                    FROM {rag_db_manager.schema}.relationships 
-                    WHERE (source_id = {rag_db_manager.schema}.entities.entity_id 
-                       OR target_id = {rag_db_manager.schema}.entities.entity_id)
-                      AND workspace_id = :workspace_id
-                )
-                WHERE entity_id IN {ids_sql_str} AND workspace_id = :workspace_id
-            """
-            
-            sql_rel_degree = f"""
-                UPDATE {rag_db_manager.schema}.relationships r
-                SET degree = (
-                    COALESCE((SELECT degree FROM {rag_db_manager.schema}.entities WHERE entity_id = r.source_id AND workspace_id = :workspace_id), 0) + 
-                    COALESCE((SELECT degree FROM {rag_db_manager.schema}.entities WHERE entity_id = r.target_id AND workspace_id = :workspace_id), 0)
-                )
-                WHERE (r.source_id IN {ids_sql_str} OR r.target_id IN {ids_sql_str}) AND r.workspace_id = :workspace_id
-            """
-            
-            try:
-                conn = rag_db_manager.get_conn()
-                cur = conn.cursor()
-                cur.execute("SET app.current_workspace_id = %s;", (workspace_id,))
-                
-                # Thực thi update degree entities
-                cur.execute(sql_degree.replace(":workspace_id", f"'{workspace_id}'"))
-                # Thực thi update degree relationships
-                cur.execute(sql_rel_degree.replace(":workspace_id", f"'{workspace_id}'"))
-                
-                conn.commit()
-                cur.close()
-                conn.close()
-            except Exception as e:
-                logger.error(f"⚠️ Cập nhật degree thất bại: {e}")
+            update_graph_degrees(rag_db_manager, workspace_id, touched_entity_ids)
 
         return {
             "chunk_count": chunk_count,
@@ -371,7 +346,7 @@ class IngestionService:
                         time.sleep(retry_delay)
                     else:
                         logger.error(f"Embedding batch failed after retries: {e}")
-                        all_embeddings.extend([None] * len(batch))
+                        raise RuntimeError(f"Failed to generate embeddings after {max_retries} retries: {e}")
 
         final: list[list | None] = [None] * len(texts)
         for idx, emb in enumerate(all_embeddings):
@@ -423,7 +398,7 @@ class IngestionService:
                     model_name=model_name,
                     api_key=api_key,
                     entity_types=entity_types,
-                    glean_max=0,
+                    glean_max=settings.RAG_GLEAN_MAX,
                     language="auto"
                 )
                 return {"res": res, "tokens": tokens}

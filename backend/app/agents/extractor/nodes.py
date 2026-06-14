@@ -10,6 +10,7 @@ from app.agents.extractor.prompts import (
     TUPLE_DELIMITER,
     COMPLETION_DELIMITER,
 )
+from app.utils import clean_entity_name
 
 
 def _get_unique_id(text: str, prefix: str = "") -> str:
@@ -33,18 +34,21 @@ def _parse_llm_output(
         parts = line.split(TUPLE_DELIMITER)
 
         if parts[0].lower() == 'entity' and len(parts) == 4:
-            entity_name = parts[1].strip()
+            entity_name = clean_entity_name(parts[1])
             entities.append({
-                "entity_id": _get_unique_id(entity_name, prefix="ent-"),
+                "entity_id": _get_unique_id(entity_name.lower(), prefix="ent-"),
                 "entity_name": entity_name,
-                "entity_type": parts[2].strip(),
+                "entity_type": clean_entity_name(parts[2]),
                 "description": parts[3].strip(),
                 "source_chunk_id": chunk_id
             })
         elif parts[0].lower() == 'relation' and len(parts) == 5:
-            source, target = sorted((parts[1].strip(), parts[2].strip()))
+            src = clean_entity_name(parts[1])
+            tgt = clean_entity_name(parts[2])
+            source, target = sorted((src, tgt))
+            source_lower, target_lower = sorted((src.lower(), tgt.lower()))
             relations.append({
-                "relation_id": _get_unique_id(f"{source}-{target}", prefix="rel-"),
+                "relation_id": _get_unique_id(f"{source_lower}-{target_lower}", prefix="rel-"),
                 "source": source,
                 "target": target,
                 "keywords": parts[3].strip(),

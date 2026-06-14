@@ -1,4 +1,3 @@
-import hashlib
 import json
 from typing import List, Dict, Tuple, Set, Any, cast
 from collections import Counter
@@ -9,6 +8,8 @@ from sqlalchemy import text
 from app.core.config import settings
 from app.core.logger import get_logger
 from app.agents.shared.prompts import SUMMARIZE_ENTITY_DESCRIPTIONS
+from app.utils import clean_entity_name
+from app.services.knowalge_base.utils import get_entity_id, get_relation_id
 
 logger = get_logger(__name__)
 
@@ -91,6 +92,8 @@ def _merge_and_summarize_group(
         return " ".join(unique_descs), 0
 
 
+import re
+
 def run_incremental_fusion(
     workspace_id: str,
     new_entities: List[Dict],
@@ -123,20 +126,21 @@ def run_incremental_fusion(
     for e in new_entities:
         name = e.get("entity_name")
         if name:
-            involved_names.add(name.strip())
+            involved_names.add(clean_entity_name(name))
     for r in new_relations:
         src = r.get("source")
         tgt = r.get("target")
-        if src: involved_names.add(src.strip())
-        if tgt: involved_names.add(tgt.strip())
+        if src: involved_names.add(clean_entity_name(src))
+        if tgt: involved_names.add(clean_entity_name(tgt))
         
     # Tải entities cũ từ DB trùng involved_names
     existing_entities_df = pd.DataFrame()
     if involved_names:
         raw_existing_entities = db_manager.load_df("entities", workspace_id=workspace_id)
         if not raw_existing_entities.empty:
-            raw_existing_entities["entity_name"] = raw_existing_entities["entity_name"].fillna("").astype(str).str.strip()
-            existing_entities_df = raw_existing_entities[raw_existing_entities["entity_name"].isin(involved_names)]
+            raw_existing_entities["entity_name"] = raw_existing_entities["entity_name"].fillna("").astype(str).apply(clean_entity_name)
+            involved_names_lower = {n.lower() for n in involved_names}
+            existing_entities_df = raw_existing_entities[raw_existing_entities["entity_name"].str.lower().isin(involved_names_lower)]
             
     # Gộp cũ & mới
     combined_entities_df = pd.DataFrame()
@@ -165,16 +169,21 @@ def run_incremental_fusion(
         combined_entities_df = pd.concat([existing_entities_df, new_entities_df], ignore_index=True)
         
     if not combined_entities_df.empty:
-        grouped_entities = combined_entities_df.groupby("entity_name")
-        for name, group in grouped_entities:
+        # Group by lowercase clean name to merge entities case-insensitively
+        combined_entities_df["entity_name_lower"] = combined_entities_df["entity_name"].apply(lambda x: clean_entity_name(str(x)).lower())
+        grouped_entities = combined_entities_df.groupby("entity_name_lower")
+        for name_lower, group in grouped_entities:
             first_row = group.iloc[0]
             eid = first_row.get("entity_id")
             
             existing_record = group[group["entity_id"].astype(str).str.startswith("ent-")]
             if not existing_record.empty:
                 eid = existing_record.iloc[0]["entity_id"]
-            elif not str(eid).startswith("ent-"):
-                eid = f"ent-{hashlib.md5(str(name).encode()).hexdigest()}"
+                name = clean_entity_name(existing_record.iloc[0]["entity_name"])
+            else:
+                name = clean_entity_name(str(first_row.get("entity_name")))
+                if not str(eid).startswith("ent-"):
+                    eid = get_entity_id(str(name_lower))
                 
             touched_entity_ids.add(cast(str, eid))
             
@@ -199,7 +208,7 @@ def run_incremental_fusion(
             
             new_description, tokens = _merge_and_summarize_group(
                 group_descs=all_descs,
-                group_name=str(name),
+                group_name=name,
                 desc_type="entity",
                 threshold=threshold,
                 summary_length=summary_length
@@ -209,7 +218,7 @@ def run_incremental_fusion(
             old_embedding = None
             old_desc = None
             if not existing_entities_df.empty:
-                old_rec = existing_entities_df[existing_entities_df["entity_name"] == name]
+                old_rec = existing_entities_df[existing_entities_df["entity_name"].str.lower() == name_lower]
                 if not old_rec.empty:
                     old_embedding = old_rec.iloc[0].get("embedding")
                     old_desc = old_rec.iloc[0].get("description")
@@ -238,24 +247,25 @@ def run_incremental_fusion(
     
     if not new_relations_df.empty:
         new_relations_df.rename(columns={"source": "source_name", "target": "target_name"}, inplace=True)
-        new_relations_df["source_name"] = new_relations_df["source_name"].str.strip()
-        new_relations_df["target_name"] = new_relations_df["target_name"].str.strip()
+        new_relations_df["source_name"] = new_relations_df["source_name"].apply(lambda x: clean_entity_name(str(x)))
+        new_relations_df["target_name"] = new_relations_df["target_name"].apply(lambda x: clean_entity_name(str(x)))
         new_relations_df["key"] = new_relations_df.apply(
-            lambda row: tuple(sorted((str(row["source_name"]), str(row["target_name"])))), axis=1
+            lambda row: tuple(sorted((str(row["source_name"]).lower(), str(row["target_name"]).lower()))), axis=1
         )
         
     existing_relations_df = pd.DataFrame()
     if involved_names:
         raw_existing_relations = db_manager.load_df("relationships", workspace_id=workspace_id)
         if not raw_existing_relations.empty:
-            raw_existing_relations["source_name"] = raw_existing_relations["source_name"].fillna("").astype(str).str.strip()
-            raw_existing_relations["target_name"] = raw_existing_relations["target_name"].fillna("").astype(str).str.strip()
+            raw_existing_relations["source_name"] = raw_existing_relations["source_name"].fillna("").astype(str).apply(clean_entity_name)
+            raw_existing_relations["target_name"] = raw_existing_relations["target_name"].fillna("").astype(str).apply(clean_entity_name)
             raw_existing_relations["key"] = raw_existing_relations.apply(
-                lambda row: tuple(sorted((str(row["source_name"]), str(row["target_name"])))), axis=1
+                lambda row: tuple(sorted((str(row["source_name"]).lower(), str(row["target_name"]).lower()))), axis=1
             )
+            involved_names_lower = {n.lower() for n in involved_names}
             existing_relations_df = raw_existing_relations[
-                raw_existing_relations["source_name"].isin(involved_names) &
-                raw_existing_relations["target_name"].isin(involved_names)
+                raw_existing_relations["source_name"].str.lower().isin(involved_names_lower) &
+                raw_existing_relations["target_name"].str.lower().isin(involved_names_lower)
             ]
             if not new_relations_df.empty and not existing_relations_df.empty:
                 new_keys_set = set(new_relations_df["key"].unique())
@@ -295,11 +305,14 @@ def run_incremental_fusion(
             existing_record = group[group["relation_id"].astype(str).str.startswith("rel-")]
             if not existing_record.empty:
                 rid = existing_record.iloc[0]["relation_id"]
-            elif not str(rid).startswith("rel-"):
-                rid = f"rel-{hashlib.md5(f'{str(key_tuple[0])}-{str(key_tuple[1])}'.encode()).hexdigest()}"
+                src_name = clean_entity_name(existing_record.iloc[0]["source_name"])
+                tgt_name = clean_entity_name(existing_record.iloc[0]["target_name"])
+            else:
+                src_name = clean_entity_name(str(first_row.get("source_name")))
+                tgt_name = clean_entity_name(str(first_row.get("target_name")))
+                if not rid or not str(rid).startswith("rel-"):
+                    rid = get_relation_id(str(key_tuple[0]), str(key_tuple[1]))
                 
-            src_name = key_tuple[0]
-            tgt_name = key_tuple[1]
             freq = int(group["frequency"].sum())
             chunks = list(set(sum(group["source_chunk_ids"].tolist(), [])))
             
@@ -366,12 +379,12 @@ def run_incremental_fusion(
     # 3. Placeholders & ID mapping cho Relations
     # ==========================================
     if final_relations:
-        name_to_id = {e["entity_name"]: e["entity_id"] for e in final_entities}
+        name_to_id = {clean_entity_name(e["entity_name"]): e["entity_id"] for e in final_entities}
         
         needed_names = set()
         for r in final_relations:
-            needed_names.add(r["source_name"])
-            needed_names.add(r["target_name"])
+            needed_names.add(clean_entity_name(r["source_name"]))
+            needed_names.add(clean_entity_name(r["target_name"]))
             
         missing_names = [n for n in needed_names if n not in name_to_id]
         
@@ -386,7 +399,7 @@ def run_incremental_fusion(
                 cur.execute(f"SELECT entity_name, entity_id FROM {db_manager.schema}.entities WHERE entity_name IN ('{miss_str}')")
                 rows = cur.fetchall()
                 for row in rows:
-                    name_to_id[row[0]] = row[1]
+                    name_to_id[clean_entity_name(row[0])] = row[1]
                     touched_entity_ids.add(cast(str, row[1]))
                 cur.close()
                 conn.close()
@@ -397,12 +410,13 @@ def run_incremental_fusion(
         if real_missing:
             new_placeholders = []
             for name in real_missing:
-                eid = f"ent-{hashlib.md5(str(name).encode()).hexdigest()}"
-                name_to_id[name] = eid
+                name_clean = clean_entity_name(name)
+                eid = get_entity_id(name_clean)
+                name_to_id[name_clean] = eid
                 touched_entity_ids.add(eid)
                 new_placeholders.append({
                     "entity_id": eid,
-                    "entity_name": name,
+                    "entity_name": name_clean,
                     "entity_type": "UNKNOWN",
                     "description": "",
                     "source_chunk_ids": [],
@@ -413,7 +427,7 @@ def run_incremental_fusion(
             final_entities.extend(new_placeholders)
             
         for r in final_relations:
-            r["source_id"] = name_to_id.get(r["source_name"], f"ent-{hashlib.md5(str(r['source_name']).encode()).hexdigest()}")
-            r["target_id"] = name_to_id.get(r["target_name"], f"ent-{hashlib.md5(str(r['target_name']).encode()).hexdigest()}")
+            r["source_id"] = name_to_id.get(clean_entity_name(r["source_name"]), get_entity_id(r["source_name"]))
+            r["target_id"] = name_to_id.get(clean_entity_name(r["target_name"]), get_entity_id(r["target_name"]))
             
     return final_entities, final_relations, total_tokens, touched_entity_ids

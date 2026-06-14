@@ -47,6 +47,8 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - TEMPORAL_HOST=temporal:7233
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - GEMINI_LLM_MODEL=${GEMINI_LLM_MODEL:-}
+      - GEMINI_EMBEDDING_MODEL=${GEMINI_EMBEDDING_MODEL:-}
       - GCS_BUCKET_NAME=${GCS_BUCKET_NAME:-flae-knowledge-base}
       - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS:-/app/firebaseadmin.json}
       - UV_LINK_MODE=copy
@@ -115,6 +117,8 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - TEMPORAL_HOST=temporal:7233
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - GEMINI_LLM_MODEL=${GEMINI_LLM_MODEL:-}
+      - GEMINI_EMBEDDING_MODEL=${GEMINI_EMBEDDING_MODEL:-}
       - GCS_BUCKET_NAME=${GCS_BUCKET_NAME:-flae-knowledge-base}
       - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS:-/app/firebaseadmin.json}
       - ENVIRONMENT=local
