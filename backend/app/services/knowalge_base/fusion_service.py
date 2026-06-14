@@ -135,7 +135,8 @@ def run_incremental_fusion(
     if involved_names:
         raw_existing_entities = db_manager.load_df("entities", workspace_id=workspace_id)
         if not raw_existing_entities.empty:
-            existing_entities_df = raw_existing_entities[raw_existing_entities["entity_name"].str.strip().isin(involved_names)]
+            raw_existing_entities["entity_name"] = raw_existing_entities["entity_name"].fillna("").astype(str).str.strip()
+            existing_entities_df = raw_existing_entities[raw_existing_entities["entity_name"].isin(involved_names)]
             
     # Gộp cũ & mới
     combined_entities_df = pd.DataFrame()
@@ -247,12 +248,14 @@ def run_incremental_fusion(
     if involved_names:
         raw_existing_relations = db_manager.load_df("relationships", workspace_id=workspace_id)
         if not raw_existing_relations.empty:
+            raw_existing_relations["source_name"] = raw_existing_relations["source_name"].fillna("").astype(str).str.strip()
+            raw_existing_relations["target_name"] = raw_existing_relations["target_name"].fillna("").astype(str).str.strip()
             raw_existing_relations["key"] = raw_existing_relations.apply(
                 lambda row: tuple(sorted((str(row["source_name"]), str(row["target_name"])))), axis=1
             )
             existing_relations_df = raw_existing_relations[
-                raw_existing_relations["source_name"].str.strip().isin(involved_names) &
-                raw_existing_relations["target_name"].str.strip().isin(involved_names)
+                raw_existing_relations["source_name"].isin(involved_names) &
+                raw_existing_relations["target_name"].isin(involved_names)
             ]
             if not new_relations_df.empty and not existing_relations_df.empty:
                 new_keys_set = set(new_relations_df["key"].unique())

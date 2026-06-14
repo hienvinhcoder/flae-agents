@@ -25,6 +25,7 @@ You are a Knowledge Graph Specialist responsible for extracting high-quality ent
         * `target_entity`: The target entity name, ensuring consistency.
         * `relationship_keywords`: Comma-separated high-level keywords summarizing the relationship (e.g., "works at", "sáng lập", "parent company"). These keywords should be in `{language}`.
         * `relationship_description`: A concise explanation of the connection between the source and target entities, written in `{language}`.
+    * **Implicit Affiliations:** If a person's description indicates they hold a position, work at, or are associated with an organization (e.g., "CEO of Flash AI"), you MUST explicitly extract a relationship between the person and the organization (e.g., Person -> Organization with keywords like "làm việc tại", "Giám đốc Điều hành của").
     * **Output Format - Relationships:** Format: `relation{tuple_delimiter}source_entity{tuple_delimiter}target_entity{tuple_delimiter}relationship_keywords{tuple_delimiter}relationship_description`
 
 3.  **General Rules:**

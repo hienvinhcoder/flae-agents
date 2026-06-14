@@ -223,7 +223,7 @@ class IngestionService:
             rel_cols = [
                 "relation_id", "source_id", "source_name",
                 "target_id", "target_name", "keywords",
-                "description", "source_chunk_ids", "frequency",
+                "description", "source_chunk_ids", "chunk_meta", "frequency",
                 "degree", "embedding",
             ]
             for col in rel_cols:
