@@ -149,19 +149,29 @@ class WorkspaceService:
         
         # 3. Cập nhật current_workspace_id của user
         user.current_workspace_id = str(new_ws.id)
+        
+        # 4. Commit User + Workspace + Member TRƯỚC khi tạo RAG partition.
+        # Đảm bảo dữ liệu quan trọng (user, workspace) luôn được lưu,
+        # không bị rollback bởi lỗi RAG partition phụ trợ.
         await db.commit()
         await db.refresh(user)
         await db.refresh(new_ws)
         
         # Xóa cache Redis membership
-        await redis_client.delete(f"user:membership:{user_uid}")
+        try:
+            await redis_client.delete(f"user:membership:{user_uid}")
+        except Exception as ex:
+            logger.warning(f"Failed to invalidate Redis membership cache for {user_uid}: {ex}")
         
-        # 4. Kích hoạt tạo phân vùng RAG
+        # 5. Kích hoạt tạo phân vùng RAG (non-blocking)
+        # RAG partition sẽ được tạo lazy khi cần nếu thất bại ở đây
         try:
             await rag_db_manager.create_workspace_partition(str(new_ws.id))
             logger.info(f"RAG partitions initialized for default workspace {new_ws.id}")
         except Exception as ex:
             logger.error(f"Failed to create RAG partition for default workspace {new_ws.id}: {ex}")
+            # Không raise exception — workspace vẫn hoạt động bình thường,
+            # RAG partition sẽ được tạo khi user lần đầu sử dụng Knowledge Base
             
         return new_ws
 

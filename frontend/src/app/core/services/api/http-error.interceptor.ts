@@ -1,6 +1,6 @@
 import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { catchError, throwError, EMPTY } from 'rxjs';
+import { catchError, throwError, EMPTY, tap } from 'rxjs';
 import { ToastService } from '../toast.service';
 import { ConnectionModalService } from '../connection-modal.service';
 import { TranslateService } from '@ngx-translate/core';
@@ -16,10 +16,13 @@ export const httpErrorInterceptor: HttpInterceptorFn = (req, next) => {
   const authStore = inject(AuthStore);
   const authService = inject(AuthService);
 
-  // Nếu đã xác định server down và request không phải check /health,
+  // Danh sách URL được phép bypass khi server down (health check + auth sync)
+  const isBypassUrl = req.url.endsWith('/health') || req.url.includes('/auth/sync');
+
+  // Nếu đã xác định server down và request KHÔNG phải bypass URL,
   // trả về EMPTY ngay lập tức để kết thúc request im lặng.
   // Điều này triệt tiêu hoàn toàn việc ném lỗi ra ngoài làm nghẽn console và làm nặng máy (Change Detection).
-  if (connectionModalService.isServerDown() && !req.url.endsWith('/health')) {
+  if (connectionModalService.isServerDown() && !isBypassUrl) {
     return EMPTY;
   }
 
@@ -39,6 +42,13 @@ export const httpErrorInterceptor: HttpInterceptorFn = (req, next) => {
   };
 
   return next(req).pipe(
+    // Auto-recover: nếu request bypass (auth/sync) thành công khi server đang được đánh dấu down,
+    // tự động ẩn connection modal vì server đã phục hồi
+    tap(() => {
+      if (connectionModalService.isServerDown()) {
+        connectionModalService.hide();
+      }
+    }),
     catchError((error: HttpErrorResponse) => {
       // Trường hợp 1: Không thể kết nối tới Server (status = 0, ví dụ Connection Refused, CORS error do server tắt, hoặc mất internet)
       if (error.status === 0) {

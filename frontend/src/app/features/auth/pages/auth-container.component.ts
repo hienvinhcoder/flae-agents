@@ -163,10 +163,11 @@ export class AuthContainerComponent implements OnInit, OnDestroy {
     this.authStore.setLoading(true);
     this.authStore.clearError();
     
+    // signInWithPopup sẽ mở cửa sổ popup đăng nhập. Khi thành công, 
+    // AuthInitializerService._watchAuthStateChanges() sẽ nhận diện được session,
+    // tự động sync user với backend và chuyển hướng đến trang dashboard.
+    // Nếu có lỗi (ví dụ: người dùng đóng popup, popup blocked), sẽ chạy vào error handler.
     this.authService.signInWithGoogle().subscribe({
-      next: () => {
-        this.authStore.setLoading(false);
-      },
       error: (err) => this.handleAuthError(err)
     });
   }

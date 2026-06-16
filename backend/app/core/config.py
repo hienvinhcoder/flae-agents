@@ -1,4 +1,5 @@
 import os
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from dotenv import load_dotenv
 
@@ -46,6 +47,12 @@ class RAGSettings:
     SCORING_RELATION_DEGREE_WEIGHT: float = 0.01
     SCORING_TOP_REC_K: int = 4
 
+    ENTITY_TYPES: list[str] = [
+        "person", "organization", "location", "event", "product", "concept",
+        "equipment", "category", "project", "system", "document", "role",
+        "process", "metric", "other"
+    ]
+
 
 rag_settings = RAGSettings()
 
@@ -91,6 +98,7 @@ class Settings(BaseSettings):
     RAG_SUMMARIZATION_THRESHOLD: int = int(os.getenv('RAG_SUMMARIZATION_THRESHOLD', str(rag_settings.SUMMARIZATION_THRESHOLD)))
     RAG_SUMMARIZATION_LENGTH: int = int(os.getenv('RAG_SUMMARIZATION_LENGTH', str(rag_settings.SUMMARIZATION_LENGTH)))
     RAG_GLEAN_MAX: int = int(os.getenv('RAG_GLEAN_MAX', str(rag_settings.GLEAN_MAX)))
+    RAG_ENTITY_TYPES: list[str] = rag_settings.ENTITY_TYPES
 
     # Graph Retrieval Configs
     RAG_RETRIEVAL_TOP_P: int = rag_settings.RETRIEVAL_TOP_P

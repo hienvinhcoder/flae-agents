@@ -33,13 +33,14 @@ import { routes } from './app.routes';
 import { environment } from '../environments/environment';
 import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
 import { httpErrorInterceptor } from './core/services/api/http-error.interceptor';
+import { authInterceptor } from './core/services/api/auth.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes, withPreloading(PreloadAllModules)),
-    provideHttpClient(withInterceptors([httpErrorInterceptor])),
+    provideHttpClient(withInterceptors([authInterceptor, httpErrorInterceptor])),
     provideFirebaseApp(() => initializeApp(environment.firebase)),
     provideAuth(() => getAuth()),
     // AuthInitializerService giờ được gọi non-blocking từ AppComponent

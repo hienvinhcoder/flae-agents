@@ -32,10 +32,10 @@ class AuthService:
                 user.login_providers = user.login_providers + [sync_data.login_provider]
                 needs_save = True
 
-            if not user.full_name and sync_data.full_name:
+            if sync_data.full_name and user.full_name != sync_data.full_name:
                 user.full_name = sync_data.full_name
                 needs_save = True
-            if not user.avatar_url and sync_data.avatar_url:
+            if sync_data.avatar_url and user.avatar_url != sync_data.avatar_url:
                 user.avatar_url = sync_data.avatar_url
                 needs_save = True
 
@@ -52,6 +52,8 @@ class AuthService:
                 is_active=True,
             )
             db.add(user)
+            # Commit User TRƯỚC — đảm bảo user record tồn tại trong DB
+            # bất kể việc tạo workspace mặc định có thành công hay không.
             await db.commit()
             await db.refresh(user)
             action = "created"
@@ -62,10 +64,13 @@ class AuthService:
             try:
                 from app.services.workspace_srv import WorkspaceService
                 await WorkspaceService.create_default_workspace(db, firebase_uid)
+                # Refresh user sau khi workspace service đã commit current_workspace_id
                 await db.refresh(user)
             except Exception as e:
+                # User đã được commit ở trên → KHÔNG rollback user record.
+                # Workspace sẽ được tạo lại tự động ở lần sync tiếp theo
+                # hoặc khi AdminLayout gọi getWorkspaces().
                 logger.error(f"Failed to create default workspace for user {firebase_uid}: {e}")
-                await db.rollback()
 
         logger.info(f"User synced successfully: firebase_uid={firebase_uid}, action={action}")
         return user

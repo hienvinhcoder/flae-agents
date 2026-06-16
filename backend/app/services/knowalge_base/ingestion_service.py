@@ -383,7 +383,7 @@ class IngestionService:
             return [], [], 0
 
         if entity_types is None:
-            entity_types = ["person", "organization", "location", "event", "product", "concept", "equipment", "category", "other"]
+            entity_types = settings.RAG_ENTITY_TYPES
 
         semaphore = asyncio.Semaphore(4)
         total_tokens = 0

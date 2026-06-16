@@ -11,7 +11,12 @@ You are a Knowledge Graph Specialist responsible for extracting high-quality ent
 1.  **Entity Extraction & Output:**
     * **Identification:** Identify clearly defined and meaningful entities in the input text.
     * **Strict Definition:** Entities MUST be nouns or noun phrases representing specific persons, organizations, locations, events, products, equipment, categories, or distinct concepts.
-    * **Negative Constraint:** NEVER extract verbs, adjectives, prepositions, or actions (e.g., "works at", "sáng lập", "is", "active in") as entities. These must be represented as relationships instead.
+    * **Negative Constraints (VERY IMPORTANT):**
+        * **NEVER** extract verbs, adjectives, prepositions, or actions (e.g., "works at", "sáng lập", "is", "active in") as entities. These must be represented as relationships instead.
+        * **NO Quantitative Metrics or Values:** NEVER extract numerical quantities, percentages, time durations, or specific measurement values (e.g., "40%", "10 tỷ đồng", "40% thời gian phản hồi yêu cầu", "3 năm", "giảm 20%") as entities. Instead, integrate these metrics directly into the description of the related entities or the description of the relationships between them.
+        * **NO Generic or Unidentified Entities:** NEVER extract generic nouns or broad undefined roles (e.g., "dự án hợp tác", "đối tác", "khách hàng", "bên A", "bên B", "công ty thành viên") as entities unless they have a specific proper name (e.g., "Dự án Alpha", "Công ty TNHH ABC"). If a noun refers to a generic category or concept without a specific identity in the context, do not extract it.
+        * **NO Relationship Words as Entities:** NEVER extract words or phrases that directly describe a relationship, social connection, or role definition between other entities (e.g., "bạn cùng lớp", "đồng nghiệp", "vợ chồng", "đối tác kinh doanh") as entities. These connection concepts must be represented strictly as relationships (`relation`) connecting the actual participating entities (e.g., connect Person A with Person B via a relationship with keywords like "bạn cùng lớp").
+        * **NO Generic Job Titles/Occupations as Entities:** Do not extract generic roles or job occupations (e.g., "kỹ sư", "lead designer", "CEO", "trưởng phòng") as standalone entity nodes (e.g. of type "concept") unless it's critical to the domain context and cannot be represented otherwise. Instead, include the title/occupation in the person's description and establish a relationship between the person and the organization with appropriate keywords.
     * **Entity Details:** For each identified entity, extract:
         * `entity_name`: The name of the entity. Use Title Case for consistency. Keep proper nouns in their original language.
         * `entity_type`: Categorize the entity using one of the following types: `{entity_types}`. If none apply, classify as `other`.
@@ -43,9 +48,7 @@ Input Text:
 Output:
 entity{tuple_delimiter}Alice{tuple_delimiter}person{tuple_delimiter}Lead designer at Acme Corp since 2021.
 entity{tuple_delimiter}Acme Corp{tuple_delimiter}organization{tuple_delimiter}A company where Alice works.
-entity{tuple_delimiter}Lead Designer{tuple_delimiter}concept{tuple_delimiter}The professional role held by Alice at Acme Corp.
-relation{tuple_delimiter}Alice{tuple_delimiter}Acme Corp{tuple_delimiter}works at, employed by{tuple_delimiter}Alice is employed at Acme Corp.
-relation{tuple_delimiter}Alice{tuple_delimiter}Lead Designer{tuple_delimiter}has role{tuple_delimiter}Alice works in the role of Lead Designer.
+relation{tuple_delimiter}Alice{tuple_delimiter}Acme Corp{tuple_delimiter}works at, lead designer{tuple_delimiter}Alice is employed at Acme Corp as a lead designer.
 {completion_delimiter}
 
 Example 2 (Vietnamese Input, language="Vietnamese"):
@@ -54,9 +57,16 @@ Input Text:
 Output:
 entity{tuple_delimiter}Nguyễn Văn A{tuple_delimiter}person{tuple_delimiter}Kỹ sư làm việc tại VinFast từ năm 2020.
 entity{tuple_delimiter}VinFast{tuple_delimiter}organization{tuple_delimiter}Công ty nơi Nguyễn Văn A làm việc.
-entity{tuple_delimiter}Kỹ sư{tuple_delimiter}concept{tuple_delimiter}Vai trò nghề nghiệp của Nguyễn Văn A tại VinFast.
-relation{tuple_delimiter}Nguyễn Văn A{tuple_delimiter}VinFast{tuple_delimiter}làm việc tại, nhân viên{tuple_delimiter}Nguyễn Văn A làm việc tại công ty VinFast từ năm 2020.
-relation{tuple_delimiter}Nguyễn Văn A{tuple_delimiter}Kỹ sư{tuple_delimiter}có vai trò, nghề nghiệp{tuple_delimiter}Nguyễn Văn A đảm nhiệm vai trò kỹ sư.
+relation{tuple_delimiter}Nguyễn Văn A{tuple_delimiter}VinFast{tuple_delimiter}làm việc tại, kỹ sư{tuple_delimiter}Nguyễn Văn A làm việc tại công ty VinFast với vai trò kỹ sư từ năm 2020.
+{completion_delimiter}
+
+Example 3 (Vietnamese Input with relationships and metrics, language="Vietnamese"):
+Input Text:
+"Dự án hợp tác giữa bà Nguyễn Thu Trang và ông Nguyễn Minh Trí (hai người là bạn cùng lớp) kỳ vọng đạt được mức giảm thiểu 40% thời gian phản hồi yêu cầu từ khách hàng."
+Output:
+entity{tuple_delimiter}Nguyễn Thu Trang{tuple_delimiter}person{tuple_delimiter}Bà Nguyễn Thu Trang, người tham gia dự án hợp tác và là bạn cùng lớp với ông Nguyễn Minh Trí.
+entity{tuple_delimiter}Nguyễn Minh Trí{tuple_delimiter}person{tuple_delimiter}Ông Nguyễn Minh Trí, người tham gia dự án hợp tác và là bạn cùng lớp với bà Nguyễn Thu Trang.
+relation{tuple_delimiter}Nguyễn Thu Trang{tuple_delimiter}Nguyễn Minh Trí{tuple_delimiter}bạn cùng lớp, hợp tác dự án{tuple_delimiter}Bà Nguyễn Thu Trang và ông Nguyễn Minh Trí là bạn cùng lớp, đang hợp tác trong một dự án chung nhằm giảm thiểu 40% thời gian phản hồi yêu cầu của khách hàng.
 {completion_delimiter}
 
 ---Real Data to be Processed---

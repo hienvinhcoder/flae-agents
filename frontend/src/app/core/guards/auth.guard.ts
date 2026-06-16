@@ -6,8 +6,13 @@ import { AuthStore } from '../stores/auth.store';
 
 /**
  * Bảo vệ route yêu cầu đăng nhập.
+ *
  * Chờ Firebase Auth sẵn sàng (isAuthReady) trước khi kiểm tra trạng thái,
  * tránh redirect nhầm khi SDK đang khởi tạo.
+ *
+ * Lưu ý: Khi user mới login Google bằng signInWithRedirect, AuthInitializer
+ * đã đợi syncUser hoàn tất mới set isAuthReady=true. Nên khi guard chạy,
+ * `authStore.isAuthenticated()` đã phản ánh đúng trạng thái.
  */
 export const authGuard: CanActivateFn = (route, state) => {
   const authStore = inject(AuthStore);
