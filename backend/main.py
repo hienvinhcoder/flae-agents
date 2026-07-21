@@ -25,9 +25,23 @@ setup_logging()
 setup_database()
 
 
+from contextlib import asynccontextmanager
+from app.db.checkpoint import init_checkpoint_db, close_checkpoint_db
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Khởi tạo database checkpoint cho LangGraph
+    await init_checkpoint_db()
+    yield
+    # Shutdown: Đóng kết nối
+    await close_checkpoint_db()
+
+
 def get_application() -> FastAPI:
     application = FastAPI(
         title=settings.PROJECT_NAME,
+        lifespan=lifespan,
         docs_url="/docs",
         redoc_url="/redoc",
         openapi_url=f"{settings.API_V1_STR}/openapi.json",

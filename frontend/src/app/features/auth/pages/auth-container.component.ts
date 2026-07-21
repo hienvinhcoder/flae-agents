@@ -14,7 +14,7 @@ import { Subscription } from 'rxjs';
   template: `
     <div class="min-h-screen flex bg-app font-sans text-text-secondary antialiased">
       <!-- Left Side: Value Proposition (Hidden on mobile) -->
-      <div class="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-surface via-app to-elevated items-center justify-center p-12 overflow-hidden border-r border-border">
+      <div class="hidden lg:flex lg:w-1/2 relative bg-linear-to-br from-surface via-app to-elevated items-center justify-center p-12 overflow-hidden border-r border-border">
         <!-- Abstract background elements (Warm Sunset and AI glows) -->
         <div class="absolute -top-24 -left-24 w-96 h-96 bg-primary-soft rounded-full blur-3xl opacity-60"></div>
         <div class="absolute bottom-0 right-0 w-[500px] h-[500px] bg-ai-soft rounded-full blur-[120px] opacity-40"></div>
@@ -27,7 +27,7 @@ import { Subscription } from 'rxjs';
           
           <h1 class="text-5xl font-heading font-bold text-text-primary mb-6 leading-tight tracking-tight">
             Tương lai của <br/>
-            <span class="text-primary bg-gradient-to-r from-primary to-orange-400 bg-clip-text text-transparent">Quản trị Doanh nghiệp</span>
+            <span class="bg-linear-to-r from-primary to-orange-400 bg-clip-text text-transparent">Quản trị Doanh nghiệp</span>
           </h1>
           
           <p class="text-text-muted text-lg mb-10 leading-relaxed font-sans">

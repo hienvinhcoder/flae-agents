@@ -24,8 +24,8 @@ export interface NavItem {
   ],
   template: `
     <aside
-      class="h-screen bg-surface border-r border-border flex flex-col transition-all duration-300 ease-in-out relative shadow-soft select-none z-40"
-      [class.w-[260px]]="!collapsed"
+      class="h-screen bg-surface border-r border-border flex flex-col transition-all duration-300 ease-in-out relative select-none z-40"
+      [class.w-[232px]]="!collapsed"
       [class.w-[72px]]="collapsed"
       [class.absolute]="isMobile"
       [class.z-50]="isMobile"
@@ -49,11 +49,11 @@ export interface NavItem {
       </div>
     
       <!-- Navigation Links -->
-      <nav class="flex-1 overflow-y-auto px-3 space-y-4 py-2">
+      <nav class="flex-1 overflow-y-auto px-2.5 space-y-4 py-2">
         @for (group of menuGroups; track group.groupName) {
           <div class="space-y-1">
             @if (!collapsed) {
-              <div class="px-3 py-1.5 text-[11px] font-semibold text-text-muted uppercase tracking-wider select-none">
+              <div class="px-2.5 py-1.5 text-[10px] font-semibold text-text-muted uppercase tracking-[0.08em] select-none">
                 {{ group.translationKey | translate }}
               </div>
             }
@@ -61,17 +61,17 @@ export interface NavItem {
               <a
                 #rla="routerLinkActive"
                 [routerLink]="item.path"
-                routerLinkActive="border border-primary/30 bg-primary-soft text-primary font-semibold shadow-sm"
+                routerLinkActive="bg-primary/10 text-primary relative before:absolute before:left-0 before:top-2 before:h-4 before:w-0.5 before:rounded-full before:bg-primary"
                 [routerLinkActiveOptions]="{exact: false}"
                 [class.text-text-secondary]="!rla.isActive"
-                [class.hover:bg-white/5]="!rla.isActive"
+                [class.hover:bg-white/4]="!rla.isActive"
                 [class.hover:text-text-primary]="!rla.isActive"
-                class="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 cursor-pointer group relative font-medium min-h-[40px]"
+                class="flex h-8 items-center gap-2 px-2.5 rounded-md transition-all duration-200 cursor-pointer group relative font-medium"
                 [class.justify-center]="collapsed"
                 [title]="collapsed && !isMobile ? (item.translationKey | translate) : ''"
                 (click)="onNavItemClick()">
-                <lucide-icon [name]="item.icon" class="w-5 h-5 flex-shrink-0 transition-colors duration-200 group-hover:text-primary" [class.text-primary]="rla.isActive"></lucide-icon>
-                <span class="truncate whitespace-nowrap transition-opacity duration-300 text-sm"
+                <lucide-icon [name]="item.icon" class="w-4 h-4 shrink-0 transition-colors duration-200 group-hover:text-primary" [class.text-primary]="rla.isActive"></lucide-icon>
+                <span class="truncate whitespace-nowrap transition-opacity duration-300 text-[13px]"
                   [class.opacity-0]="collapsed && !isMobile"
                   [class.hidden]="collapsed && !isMobile">
                   {{ item.translationKey | translate }}
@@ -84,18 +84,20 @@ export interface NavItem {
     
       <!-- Footer sidebar -->
       <div class="px-3 py-3 border-t border-border shrink-0 flex items-center gap-3 bg-subtle/50" [class.justify-center]="collapsed">
-        <div class="w-7 h-7 rounded-full bg-primary-soft border border-primary/30 flex items-center justify-center text-primary font-bold text-xs shrink-0 shadow-sm">
+        <div class="w-7 h-7 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold text-xs shrink-0 select-none">
           AI
         </div>
         @if (!collapsed) {
           <div class="flex flex-col overflow-hidden">
             <span class="text-xs font-semibold text-text-secondary">FLAE Engine v1.0</span>
-            <span class="text-[11px] text-text-muted flex items-center gap-1.5 select-none">
+            <span class="text-[11px] text-text-muted flex items-center gap-1.5 select-none leading-4">
               <span class="w-1.5 h-1.5 rounded-full"
                 [class.bg-amber-500]="status() === 'Syncing'"
                 [class.bg-rose-500]="status() === 'Needs attention'"
                 [class.bg-emerald-500]="status() === 'Healthy'"></span>
-              {{ status() === 'Syncing' ? 'Đang đồng bộ...' : (status() === 'Needs attention' ? 'Cần chú ý' : 'Hoạt động tốt') }}
+              @if (status() === 'Syncing') { Đang đồng bộ... }
+              @else if (status() === 'Needs attention') { Cần chú ý }
+              @else { Online }
             </span>
           </div>
         }
@@ -104,7 +106,7 @@ export interface NavItem {
       <!-- Collapse Toggle (Desktop only, floating circular button on edge) -->
       @if (!isMobile) {
         <button (click)="toggleCollapse()"
-          class="absolute -right-2.5 top-16 w-5 h-5 rounded-full bg-surface border border-border flex items-center justify-center text-text-secondary hover:text-primary shadow-soft cursor-pointer hover:scale-105 active:scale-95 transition-all z-50">
+          class="absolute -right-2.5 top-16 w-5 h-5 rounded-full bg-surface border border-border flex items-center justify-center text-text-secondary hover:text-primary cursor-pointer hover:scale-105 active:scale-95 transition-all z-50">
           <lucide-icon [name]="collapsed ? 'chevron-right' : 'chevron-left'" class="w-3 h-3"></lucide-icon>
         </button>
       }
@@ -153,16 +155,19 @@ export class SidebarComponent {
       groupName: 'Main',
       translationKey: 'NAV.GROUP_MAIN',
       items: [
+        { name: 'AI Chat', path: '/dashboard/chat', icon: 'sparkles', translationKey: 'NAV.CHAT' },
         { name: 'Morning Briefing', path: '/dashboard/briefing', icon: 'sun', translationKey: 'NAV.BRIEFING' },
         { name: 'Omnichannel Inbox', path: '/dashboard/inbox', icon: 'message-square', translationKey: 'NAV.INBOX' },
         { name: 'My Agent Team', path: '/dashboard/agents', icon: 'bot', translationKey: 'NAV.AGENTS' }
       ]
     },
+
     {
       groupName: 'Knowledge',
       translationKey: 'NAV.GROUP_KNOWLEDGE',
       items: [
         { name: 'Knowledge Base', path: '/dashboard/knowledge', icon: 'book-open', translationKey: 'NAV.KNOWLEDGE' },
+        { name: 'Topics', path: '/dashboard/topics', icon: 'tags', translationKey: 'NAV.TOPICS' },
         { name: 'Analyst Reports', path: '/dashboard/reports', icon: 'bar-chart-2', translationKey: 'NAV.REPORTS' }
       ]
     },

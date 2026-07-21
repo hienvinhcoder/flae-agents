@@ -13,9 +13,9 @@ echo "=========================================================="
 echo "🚀 Đang khởi động hệ thống FLAE Agents..."
 echo "=========================================================="
 
-# 1. Khởi động Docker Compose ở chế độ chạy ngầm (-d)
+# 1. Khởi động Docker Compose
 echo "📦 Khởi động các dịch vụ Backend, DB, Redis và Temporal..."
-docker compose up -d
+docker compose up
 
 # 2. Kiểm tra và cài đặt dependencies cho Frontend
 echo "📦 Kiểm tra thư mục Frontend..."

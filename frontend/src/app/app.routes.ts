@@ -33,9 +33,17 @@ const KNOWLEDGE_ICONS = {
  */
 import {
   Sliders, Users, UserPlus, CircleX, Trash,
+  Tags, Sparkles, Archive, GitMerge, Info
 } from 'lucide-angular';
 
 const SETTINGS_ICONS = { Sliders, Users, UserPlus, X, CircleX, Trash };
+
+const TOPICS_ICONS = {
+  Tags, Tag, Sparkles, PencilLine, Check, X,
+  ChevronRight, ArrowLeft, Trash2, Archive,
+  RefreshCw, LoaderCircle, Database, FileText,
+  GitBranch, GitMerge, Info
+};
 
 /**
  * Icons cho Invite Accept page.
@@ -83,15 +91,27 @@ export const routes: Routes = [
         loadChildren: () => import('./features/inbox/inbox.routes').then(m => m.INBOX_ROUTES)
       },
       {
+        path: 'chat',
+        loadChildren: () => import('./features/chat/chat.routes').then(m => m.CHAT_ROUTES)
+      },
+      {
         path: 'agents',
         loadChildren: () => import('./features/agents/agents.routes').then(m => m.AGENTS_ROUTES)
       },
+
       {
         path: 'knowledge',
         providers: [
           importProvidersFrom(LucideAngularModule.pick(KNOWLEDGE_ICONS)),
         ],
         loadChildren: () => import('./features/knowledge/knowledge.routes').then(m => m.KNOWLEDGE_ROUTES)
+      },
+      {
+        path: 'topics',
+        providers: [
+          importProvidersFrom(LucideAngularModule.pick(TOPICS_ICONS)),
+        ],
+        loadChildren: () => import('./features/topics/topics.routes').then(m => m.TOPICS_ROUTES)
       },
       {
         path: 'reports',
@@ -107,3 +127,5 @@ export const routes: Routes = [
     ]
   }
 ];
+// Trigger rebuild for newly added chat feature routes
+

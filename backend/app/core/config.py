@@ -65,7 +65,8 @@ class Settings(BaseSettings):
 
     # Database
     POSTGRES_URL: str = os.getenv('POSTGRES_URL', 'postgresql+asyncpg://postgres:postgres@localhost:5432/flae_db')
-    RAG_DATABASE_URL: str = os.getenv('RAG_DATABASE_URL', 'postgresql+asyncpg://postgres:postgres@localhost:5432/rag_db')
+    RAG_DATABASE_URL: str = os.getenv('RAG_DATABASE_URL', 'postgresql+asyncpg://postgres:postgres@postgres:5432/rag_db')
+    AGENT_STATE_DATABASE_URL: str = os.getenv('AGENT_STATE_DATABASE_URL', 'postgresql://postgres:postgres@localhost:5432/flae_agent_state_db')
     REDIS_URL: str = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
 
     # Temporal
@@ -74,6 +75,7 @@ class Settings(BaseSettings):
 
     # Firebase / GCP configuration
     GOOGLE_APPLICATION_CREDENTIALS: str = os.getenv('GOOGLE_APPLICATION_CREDENTIALS', '')
+    FIREBASE_CLOCK_SKEW_SECONDS: int = int(os.getenv('FIREBASE_CLOCK_SKEW_SECONDS', '10'))
     
     # Security
     ENCRYPTION_KEY: str = os.getenv('ENCRYPTION_KEY', '') # 32 bytes base64 encoded for Fernet

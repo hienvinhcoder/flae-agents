@@ -18,6 +18,7 @@ with workflow.unsafe.imports_passed_through():
         extract_entities_activity,
         fuse_and_save_activity,
         finalize_ingestion,
+        trigger_topic_updates_activity,
     )
 
 
@@ -104,6 +105,7 @@ class DocumentIngestionWorkflow:
 
             # ── Step 4: Batch Processing ──
             num_batches = math.ceil(len(chunks) / batch_size)
+            affected_topics = []
 
             for batch_idx in range(0, len(chunks), batch_size):
                 batch = chunks[batch_idx : batch_idx + batch_size]
@@ -117,16 +119,17 @@ class DocumentIngestionWorkflow:
                     retry_policy=DEFAULT_RETRY,
                 )
 
-                # 4.2 Extract entities & relations
+                # 4.2 Extract entities & relations (Cung cấp thêm workspace_id)
                 extraction_result = await workflow.execute_activity(
                     extract_entities_activity,
-                    {"chunks": embedded_chunks},
+                    {"chunks": embedded_chunks, "workspace_id": workspace_id},
                     start_to_close_timeout=timedelta(minutes=10),
                     retry_policy=DEFAULT_RETRY,
                 )
 
                 entities = extraction_result.get("entities", [])
                 relations = extraction_result.get("relations", [])
+                embedded_chunks = extraction_result.get("chunks", embedded_chunks)
                 token_usage["extraction"] += extraction_result.get(
                     "tokens_used", 0
                 )
@@ -148,6 +151,11 @@ class DocumentIngestionWorkflow:
                 total_chunks += save_result.get("chunk_count", 0)
                 total_entities += save_result.get("entity_count", 0)
                 total_relations += save_result.get("relation_count", 0)
+                
+                # Tích lũy các topic bị ảnh hưởng
+                batch_affected_topics = save_result.get("affected_topic_ids", [])
+                if batch_affected_topics:
+                    affected_topics.extend(batch_affected_topics)
 
             # ── Step 5: Finalize ──
             processing_time = (workflow.now() - start_time).total_seconds()
@@ -166,6 +174,17 @@ class DocumentIngestionWorkflow:
                 },
                 start_to_close_timeout=timedelta(seconds=30),
             )
+
+            # Kích hoạt tóm tắt cho các topic bị ảnh hưởng bất đồng bộ
+            if affected_topics:
+                await workflow.execute_activity(
+                    trigger_topic_updates_activity,
+                    {
+                        "workspace_id": workspace_id,
+                        "affected_topic_ids": list(set(affected_topics))
+                    },
+                    start_to_close_timeout=timedelta(minutes=2),
+                )
 
             return {
                 "status": "completed",

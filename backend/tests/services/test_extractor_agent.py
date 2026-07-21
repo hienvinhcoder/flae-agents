@@ -11,7 +11,7 @@ def test_parse_llm_output():
         "relation<|#|>Google<|#|>Gemini<|#|>develops<|#|>Google develops Gemini LLM models\n"
         "<|COMPLETE|>"
     )
-    entities, relations = _parse_llm_output(raw_output, "chunk_99")
+    entities, relations, _, _ = _parse_llm_output(raw_output, "chunk_99")
     
     assert len(entities) == 1
     assert entities[0]["entity_name"] == "Google"

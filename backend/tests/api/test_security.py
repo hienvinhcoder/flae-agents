@@ -319,3 +319,50 @@ async def test_require_roles_cache_miss_db_not_member():
         assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
         assert "Permission denied" in exc_info.value.detail
         db.execute.assert_called_once()
+
+
+from app.core.security import verify_token
+from app.api.v1.endpoints.chat_stream import verify_token_stream
+from fastapi.security import HTTPAuthorizationCredentials
+
+@pytest.mark.asyncio
+async def test_verify_token_success():
+    mock_credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials="test_token_123")
+    mock_decoded = {"uid": "user_123", "email": "user@example.com"}
+    
+    with patch("app.core.security.auth.verify_id_token", return_value=mock_decoded) as mock_verify:
+        from app.core.config import settings
+        res = await verify_token(credentials=mock_credentials)
+        assert res == mock_decoded
+        mock_verify.assert_called_once_with("test_token_123", clock_skew_seconds=settings.FIREBASE_CLOCK_SKEW_SECONDS)
+
+@pytest.mark.asyncio
+async def test_verify_token_failure():
+    mock_credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials="invalid_token")
+    
+    with patch("app.core.security.auth.verify_id_token", side_effect=Exception("Invalid token")):
+        with pytest.raises(HTTPException) as exc_info:
+            await verify_token(credentials=mock_credentials)
+        assert exc_info.value.status_code == status.HTTP_401_UNAUTHORIZED
+
+@pytest.mark.asyncio
+async def test_verify_token_stream_header_success():
+    mock_credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials="test_token_123")
+    mock_decoded = {"uid": "user_123"}
+    
+    with patch("app.api.v1.endpoints.chat_stream.auth.verify_id_token", return_value=mock_decoded) as mock_verify:
+        from app.core.config import settings
+        res = await verify_token_stream(credentials=mock_credentials, token=None)
+        assert res == "user_123"
+        mock_verify.assert_called_once_with("test_token_123", clock_skew_seconds=settings.FIREBASE_CLOCK_SKEW_SECONDS)
+
+@pytest.mark.asyncio
+async def test_verify_token_stream_query_success():
+    mock_decoded = {"uid": "user_456"}
+    
+    with patch("app.api.v1.endpoints.chat_stream.auth.verify_id_token", return_value=mock_decoded) as mock_verify:
+        from app.core.config import settings
+        res = await verify_token_stream(credentials=None, token="query_token_456")
+        assert res == "user_456"
+        mock_verify.assert_called_once_with("query_token_456", clock_skew_seconds=settings.FIREBASE_CLOCK_SKEW_SECONDS)
+

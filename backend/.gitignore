@@ -17,3 +17,8 @@ firebaseadmin.json
 *-credentials.json
 *-service-account.json
 service-account*.json
+
+# Coverage & scratch test files
+.coverage
+scratch_test_api.py
+

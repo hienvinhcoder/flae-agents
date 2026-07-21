@@ -1,5 +1,6 @@
 import hashlib
 from typing import Tuple, List, Dict
+
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 
 from app.agents.extractor.state import ExtractionState
@@ -20,9 +21,11 @@ def _get_unique_id(text: str, prefix: str = "") -> str:
 def _parse_llm_output(
     raw_text: str,
     chunk_id: str
-) -> Tuple[List[Dict], List[Dict]]:
+) -> Tuple[List[Dict], List[Dict], List[Dict], List[Dict]]:
     entities = []
     relations = []
+    topic_assignments = []
+    topic_candidates = []
 
     # split by COMPLETION_DELIMITER to ignore any trailing text
     lines = [
@@ -33,7 +36,11 @@ def _parse_llm_output(
     for line in lines:
         parts = line.split(TUPLE_DELIMITER)
 
-        if parts[0].lower() == 'entity' and len(parts) == 4:
+        if len(parts) < 2:
+            continue
+
+        category = parts[0].lower()
+        if category == 'entity' and len(parts) == 4:
             entity_name = clean_entity_name(parts[1])
             entities.append({
                 "entity_id": _get_unique_id(entity_name.lower(), prefix="ent-"),
@@ -42,7 +49,7 @@ def _parse_llm_output(
                 "description": parts[3].strip(),
                 "source_chunk_id": chunk_id
             })
-        elif parts[0].lower() == 'relation' and len(parts) == 5:
+        elif category == 'relation' and len(parts) == 5:
             src = clean_entity_name(parts[1])
             tgt = clean_entity_name(parts[2])
             source, target = sorted((src, tgt))
@@ -55,12 +62,42 @@ def _parse_llm_output(
                 "description": parts[4].strip(),
                 "source_chunk_id": chunk_id
             })
-    return entities, relations
+        elif category == 'topic_assignment' and len(parts) == 4:
+            try:
+                confidence_str = parts[2].strip()
+                confidence = float(confidence_str) if confidence_str else 1.0
+            except ValueError:
+                confidence = 1.0
+            topic_assignments.append({
+                "topic_id": parts[1].strip(),
+                "confidence": confidence,
+                "reason": parts[3].strip()
+            })
+        elif category == 'topic_candidate' and len(parts) == 4:
+            try:
+                confidence_str = parts[2].strip()
+                confidence = float(confidence_str) if confidence_str else 1.0
+            except ValueError:
+                confidence = 1.0
+            topic_candidates.append({
+                "name": parts[1].strip(),
+                "confidence": confidence,
+                "reason": parts[3].strip()
+            })
+
+    return entities, relations, topic_assignments, topic_candidates
 
 
 def prepare_prompts_node(state: ExtractionState) -> dict:
+    cand_list = state.get("candidate_topics", [])
+    if cand_list:
+        cand_str = ", ".join([f"[id: {c['topic_id']}, name: {c['name']}]" for c in cand_list])
+    else:
+        cand_str = "None"
+
     shared_prompt_context = {
         "entity_types": ", ".join(state["entity_types"]),
+        "candidate_topics": cand_str,
         "tuple_delimiter": TUPLE_DELIMITER,
         "completion_delimiter": COMPLETION_DELIMITER,
         "language": state["language"],
@@ -94,12 +131,14 @@ async def extract_first_pass_node(state: ExtractionState) -> dict:
     if response.response_metadata and "token_usage" in response.response_metadata:
         tokens = response.response_metadata["token_usage"].get("total_tokens", 0)
         
-    ents, rels = _parse_llm_output(raw_text, state["chunk_id"])
+    ents, rels, topic_assigns, topic_cands = _parse_llm_output(raw_text, state["chunk_id"])
     
     return {
         "first_pass_result": raw_text,
         "entities": ents,
         "relations": rels,
+        "topic_assignments": topic_assigns,
+        "topic_candidates": topic_cands,
         "tokens_used": tokens,
         "messages": [
             HumanMessage(content=state["user_prompt"]),
@@ -125,14 +164,18 @@ async def extract_gleaning_node(state: ExtractionState) -> dict:
     if response.response_metadata and "token_usage" in response.response_metadata:
         tokens = response.response_metadata["token_usage"].get("total_tokens", 0)
         
-    gleaned_ents, gleaned_rels = _parse_llm_output(raw_text, state["chunk_id"])
+    gleaned_ents, gleaned_rels, gleaned_assigns, gleaned_cands = _parse_llm_output(raw_text, state["chunk_id"])
     
     all_ents = state["entities"] + gleaned_ents
     all_rels = state["relations"] + gleaned_rels
+    all_assigns = state.get("topic_assignments", []) + gleaned_assigns
+    all_cands = state.get("topic_candidates", []) + gleaned_cands
     
     return {
         "second_pass_result": raw_text,
         "entities": all_ents,
         "relations": all_rels,
+        "topic_assignments": all_assigns,
+        "topic_candidates": all_cands,
         "tokens_used": state["tokens_used"] + tokens
     }

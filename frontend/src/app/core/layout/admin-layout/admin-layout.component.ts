@@ -103,11 +103,13 @@ export class AdminLayoutComponent implements OnInit {
     if (this.currentPath.includes('briefing')) this.pageTitle = 'Morning Briefing';
     else if (this.currentPath.includes('inbox')) this.pageTitle = 'Omnichannel Inbox';
     else if (this.currentPath.includes('agents')) this.pageTitle = 'My Agent Team';
+    else if (this.currentPath.includes('chat')) this.pageTitle = 'AI Chat';
     else if (this.currentPath.includes('knowledge')) this.pageTitle = 'Knowledge Base';
     else if (this.currentPath.includes('reports')) this.pageTitle = 'Analyst Reports';
     else if (this.currentPath.includes('settings')) this.pageTitle = 'Settings';
     else this.pageTitle = 'Dashboard';
   }
+
 
   private loadWorkspaces() {
     this.workspaceStore.setIsSyncing(true);

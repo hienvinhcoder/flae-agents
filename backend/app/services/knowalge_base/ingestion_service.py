@@ -6,114 +6,19 @@ Tất cả các hàm trong module này là sync (sử dụng trong Temporal acti
 """
 import re
 import numpy as np
-from typing import Dict, List, Tuple
-from collections import Counter
+from typing import Dict, List, Tuple, Any
 
 from app.core.config import settings
 from app.core.logger import get_logger
 from app.services.knowalge_base.parser_service import ParserService
-from app.agents.shared.prompts import TUPLE_DELIMITER, COMPLETION_DELIMITER
-from app.utils import clean_entity_name
-from app.services.knowalge_base.utils import get_entity_id, get_relation_id, update_graph_degrees
+from app.services.knowalge_base.utils import update_graph_degrees
+from app.services.knowalge_base.ingestion_helpers import (
+    parse_extraction_output,
+    merge_entities,
+    merge_relations,
+)
 
 logger = get_logger(__name__)
-
-
-# ── Private helper functions (Module-level) ───────────────────────
-
-
-def _parse_extraction_output(
-    raw_text: str, chunk_id: str
-) -> Tuple[List[Dict], List[Dict]]:
-    """Parse LLM output thành entities và relations."""
-    entities: list[dict] = []
-    relations: list[dict] = []
-
-    lines = [line.strip() for line in raw_text.split(COMPLETION_DELIMITER)[0].split("\n") if line.strip()]
-
-    for line in lines:
-        parts = line.split(TUPLE_DELIMITER)
-        if parts[0].lower() == "entity" and len(parts) == 4:
-            entity_name = clean_entity_name(parts[1])
-            entities.append({
-                "entity_id": get_entity_id(entity_name),
-                "entity_name": entity_name,
-                "entity_type": clean_entity_name(parts[2]),
-                "description": parts[3].strip(),
-                "source_chunk_id": chunk_id,
-            })
-        elif parts[0].lower() == "relation" and len(parts) == 5:
-            src = clean_entity_name(parts[1])
-            tgt = clean_entity_name(parts[2])
-            source, target = sorted((src, tgt))
-            relations.append({
-                "relation_id": get_relation_id(src, tgt),
-                "source": source,
-                "target": target,
-                "keywords": parts[3].strip(),
-                "description": parts[4].strip(),
-                "source_chunk_id": chunk_id,
-            })
-
-    return entities, relations
-
-
-def _merge_entities(entities: List[Dict]) -> List[Dict]:
-    """Merge entities trùng tên, tính frequency."""
-    grouped: dict[str, list[dict]] = {}
-    for e in entities:
-        norm_name = clean_entity_name(e["entity_name"]).lower()
-        grouped.setdefault(norm_name, []).append(e)
-
-    merged = []
-    for norm_name, group in grouped.items():
-        main = max(group, key=lambda x: len(x["description"]))
-        main = main.copy()
-        main["entity_name"] = clean_entity_name(main["entity_name"])
-        main["entity_id"] = get_entity_id(norm_name)
-        main["entity_type"] = Counter([e["entity_type"] for e in group]).most_common(1)[0][0]
-        main["source_chunk_ids"] = list({e["source_chunk_id"] for e in group})
-        main["frequency"] = len(group)
-        main["chunk_descriptions"] = {
-            e["source_chunk_id"]: e["description"] 
-            for e in group if e.get("source_chunk_id")
-        }
-        main.pop("source_chunk_id", None)
-        merged.append(main)
-
-    return merged
-
-
-def _merge_relations(relations: List[Dict]) -> List[Dict]:
-    """Merge relations trùng source-target, tính frequency."""
-    grouped: dict[tuple, list[dict]] = {}
-    for r in relations:
-        src_norm = clean_entity_name(r["source"]).lower()
-        tgt_norm = clean_entity_name(r["target"]).lower()
-        key = tuple(sorted((src_norm, tgt_norm)))
-        grouped.setdefault(key, []).append(r)
-
-    merged = []
-    for key, group in grouped.items():
-        main = max(group, key=lambda x: len(x["description"]))
-        main = main.copy()
-        main["source"] = clean_entity_name(main["source"])
-        main["target"] = clean_entity_name(main["target"])
-        main["relation_id"] = get_relation_id(key[0], key[1])
-        main["description"] = " | ".join({r["description"] for r in group})
-        main["keywords"] = ", ".join({r["keywords"] for r in group})
-        main["source_chunk_ids"] = list({r["source_chunk_id"] for r in group})
-        main["frequency"] = len(group)
-        main["chunk_meta"] = {
-            r["source_chunk_id"]: {
-                "description": r["description"],
-                "keywords": r["keywords"]
-            } for r in group if r.get("source_chunk_id")
-        }
-        main.pop("source_chunk_id", None)
-        merged.append(main)
-
-    return merged
 
 
 # ── Ingestion Service Class ────────────────────────────────────────
@@ -127,7 +32,7 @@ class IngestionService:
         entities: List[Dict],
         relations: List[Dict],
         source_doc_id: str,
-    ) -> Dict[str, int]:
+    ) -> Dict[str, Any]:
         """
         Fusion & lưu chunks/entities/relations vào RAG database.
         Áp dụng Incremental Knowledge Fusion & LLM Summarization ở Python level.
@@ -191,6 +96,11 @@ class IngestionService:
                             valid_chunks.iloc[idx]["relation_ids"].append(
                                 rel["relation_id"]
                             )
+
+            # Loại bỏ các cột tạm phục vụ Classify Topic trước khi lưu database
+            for col in ["topic_assignments", "topic_candidates"]:
+                if col in valid_chunks.columns:
+                    valid_chunks = valid_chunks.drop(columns=[col])
 
             rag_db_manager.save_df(
                 valid_chunks, "chunks", pk_col="chunk_id",
@@ -274,10 +184,31 @@ class IngestionService:
         if touched_entity_ids:
             update_graph_degrees(rag_db_manager, workspace_id, touched_entity_ids)
 
+        # 6. Gán và đề xuất Topics từ các chunks
+        affected_topics = []
+        from app.services.srv_topic import TopicService
+        for chunk in chunks:
+            cands = chunk.get("topic_candidates", [])
+            assigns = chunk.get("topic_assignments", [])
+            if cands or assigns:
+                try:
+                    topics = TopicService.resolve_topic_assignments(
+                        workspace_id=workspace_id,
+                        chunk_id=chunk["chunk_id"],
+                        chunk_embedding=chunk.get("embedding") or [],
+                        llm_assignments=assigns,
+                        llm_candidates=cands,
+                        doc_id=source_doc_id
+                    )
+                    affected_topics.extend(topics)
+                except Exception as ex:
+                    logger.error(f"Lỗi khi xử lý topic cho chunk {chunk.get('chunk_id')}: {ex}")
+
         return {
             "chunk_count": chunk_count,
             "entity_count": entity_count,
             "relation_count": relation_count,
+            "affected_topic_ids": list(set(affected_topics))
         }
 
     @staticmethod
@@ -369,11 +300,13 @@ class IngestionService:
     @staticmethod
     async def extract_entities_from_chunks(
         chunks: List[Dict],
+        workspace_id: str,
         entity_types: list[str] | None = None,
     ) -> Tuple[List[Dict], List[Dict], int]:
         """Trích xuất entities & relations từ chunks qua LangGraph agent."""
         import asyncio
         from app.agents.extractor.graph import run_extraction_agent
+        from app.services.srv_topic import TopicService
 
         api_key = settings.GEMINI_API_KEY
         model_name = settings.GEMINI_LLM_MODEL
@@ -393,14 +326,32 @@ class IngestionService:
         async def process_chunk(chunk: dict) -> dict:
             nonlocal total_tokens
             async with semaphore:
+                # Pre-filter topics cho chunk dựa trên vector similarity
+                candidates = []
+                try:
+                    candidates = await TopicService.pre_filter_topics(
+                        workspace_id=workspace_id,
+                        chunk_embedding=chunk.get("embedding") or [],
+                        text_content=chunk.get("text") or "",
+                        entity_names=[]
+                    )
+                except Exception as ex:
+                    logger.warning(f"Lỗi khi pre-filter topics cho chunk {chunk.get('chunk_id')}: {ex}")
+
                 res, tokens = await run_extraction_agent(
                     chunk=chunk,
                     model_name=model_name,
                     api_key=api_key,
                     entity_types=entity_types,
+                    candidate_topics=candidates,
                     glean_max=settings.RAG_GLEAN_MAX,
                     language="auto"
                 )
+
+                # Gắn kết quả topic assignments/candidates vào chunk để dùng ở bước fuse
+                chunk["topic_assignments"] = res.get("topic_assignments", [])
+                chunk["topic_candidates"] = res.get("topic_candidates", [])
+
                 return {"res": res, "tokens": tokens}
 
         tasks = [process_chunk(chunk) for chunk in chunks]
@@ -414,8 +365,8 @@ class IngestionService:
             all_relations.extend(res.get("relations", []))
 
         # Merge duplicates
-        merged_entities = _merge_entities(all_entities)
-        merged_relations = _merge_relations(all_relations)
+        merged_entities = merge_entities(all_entities)
+        merged_relations = merge_relations(all_relations)
 
         logger.info(
             f"Extraction complete via LangGraph: {len(merged_entities)} entities, "

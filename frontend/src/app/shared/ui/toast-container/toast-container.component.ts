@@ -8,7 +8,7 @@ import { ToastService, ToastMessage } from '../../../core/services/toast.service
   standalone: true,
   imports: [CommonModule, LucideAngularModule],
   template: `
-    <div class="fixed top-6 right-6 z-[9999] flex flex-col gap-3 max-w-sm w-full pointer-events-none px-4 sm:px-0">
+    <div class="fixed top-6 right-6 z-9999 flex flex-col gap-3 max-w-sm w-full pointer-events-none px-4 sm:px-0">
       @for (toast of toastService.toasts(); track toast.id) {
         <div 
           class="pointer-events-auto relative overflow-hidden rounded-xl border p-4 shadow-xl backdrop-blur-md transition-all duration-300 transform hover:scale-[1.02] flex items-start gap-3 bg-slate-900/95 border-slate-800 text-slate-100"
@@ -20,7 +20,7 @@ import { ToastService, ToastMessage } from '../../../core/services/toast.service
           }">
           
           <!-- Icon -->
-          <div class="flex-shrink-0 mt-0.5" [ngClass]="{
+          <div class="shrink-0 mt-0.5" [ngClass]="{
             'text-emerald-400': toast.type === 'success',
             'text-rose-400': toast.type === 'error',
             'text-amber-400': toast.type === 'warning',
@@ -38,7 +38,7 @@ import { ToastService, ToastMessage } from '../../../core/services/toast.service
           </div>
 
           <!-- Content -->
-          <div class="flex-grow flex flex-col gap-0.5">
+          <div class="grow flex flex-col gap-0.5">
             @if (toast.title) {
               <span class="text-sm font-semibold tracking-wide text-white">{{ toast.title }}</span>
             }
@@ -48,7 +48,7 @@ import { ToastService, ToastMessage } from '../../../core/services/toast.service
           <!-- Close Button -->
           <button 
             (click)="toastService.remove(toast.id)" 
-            class="flex-shrink-0 text-slate-400 hover:text-white rounded-lg p-0.5 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-700/50">
+            class="shrink-0 text-slate-400 hover:text-white rounded-lg p-0.5 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-700/50">
             <lucide-icon name="x" class="w-4 h-4"></lucide-icon>
           </button>
 

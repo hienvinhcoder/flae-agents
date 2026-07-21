@@ -28,7 +28,7 @@ async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(secur
     """
     token = credentials.credentials
     try:
-        decoded_token = auth.verify_id_token(token)
+        decoded_token = auth.verify_id_token(token, clock_skew_seconds=settings.FIREBASE_CLOCK_SKEW_SECONDS)
         return decoded_token
     except Exception as e:
         logger.error(f"Firebase token verification failed: {e}", exc_info=True)

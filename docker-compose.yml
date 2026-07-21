@@ -46,6 +46,7 @@ services:
       # Override các biến cần dùng hostname nội bộ Docker network
       - POSTGRES_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/flae_db
       - RAG_DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/rag_db
+      - AGENT_STATE_DATABASE_URL=postgresql://postgres:postgres@postgres:5432/flae_agent_state_db
       - REDIS_URL=redis://redis:6379/0
       - TEMPORAL_HOST=temporal:7233
       - GOOGLE_APPLICATION_CREDENTIALS=/app/firebaseadmin.json
@@ -104,13 +105,14 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    command: uv run watchfiles "uv run flae-worker" app workers
+    command: uv run watchfiles flae-worker app workers
     env_file:
       - .env
     environment:
       # Override các biến cần dùng hostname nội bộ Docker network
       - POSTGRES_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/flae_db
       - RAG_DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/rag_db
+      - AGENT_STATE_DATABASE_URL=postgresql://postgres:postgres@postgres:5432/flae_agent_state_db
       - REDIS_URL=redis://redis:6379/0
       - TEMPORAL_HOST=temporal:7233
       - GOOGLE_APPLICATION_CREDENTIALS=/app/firebaseadmin.json

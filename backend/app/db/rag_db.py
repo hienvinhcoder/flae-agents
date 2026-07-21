@@ -173,13 +173,31 @@ class DBManager:
             cur.execute(f"ALTER TABLE {self.schema}.entities ADD COLUMN IF NOT EXISTS chunk_descriptions JSONB;")
             cur.execute(f"ALTER TABLE {self.schema}.relationships ADD COLUMN IF NOT EXISTS chunk_meta JSONB;")
 
-            # 6. Kích hoạt Row Level Security (RLS) trên các bảng chính
-            cur.execute(f"ALTER TABLE {self.schema}.chunks ENABLE ROW LEVEL SECURITY;")
-            cur.execute(f"ALTER TABLE {self.schema}.entities ENABLE ROW LEVEL SECURITY;")
-            cur.execute(f"ALTER TABLE {self.schema}.relationships ENABLE ROW LEVEL SECURITY;")
+            # 5.5. Khởi tạo các bảng Topics mới nếu chưa tồn tại
+            from app.db.rag_ddl import (
+                CREATE_TOPICS_TABLE,
+                CREATE_TOPIC_MEMBERSHIPS_TABLE,
+                CREATE_TOPIC_ALIASES_TABLE,
+                CREATE_TOPIC_UPDATE_QUEUE_TABLE,
+                CREATE_TOPIC_FOREIGN_KEYS,
+                CREATE_RLS_POLICY_TEMPLATE
+            )
+            
+            cur.execute(CREATE_TOPICS_TABLE.format(schema=self.schema, dimensions=self.embedding_dimensions))
+            cur.execute(CREATE_TOPIC_MEMBERSHIPS_TABLE.format(schema=self.schema))
+            cur.execute(CREATE_TOPIC_ALIASES_TABLE.format(schema=self.schema))
+            cur.execute(CREATE_TOPIC_UPDATE_QUEUE_TABLE.format(schema=self.schema))
+            
+            for fk_sql in CREATE_TOPIC_FOREIGN_KEYS:
+                cur.execute(fk_sql.format(schema=self.schema))
+
+            # 6. Kích hoạt Row Level Security (RLS) trên tất cả các bảng
+            all_tables = ["chunks", "entities", "relationships", "topics", "topic_memberships", "topic_aliases", "topic_update_queue"]
+            for table_name in all_tables:
+                cur.execute(f"ALTER TABLE {self.schema}.{table_name} ENABLE ROW LEVEL SECURITY;")
 
             # 7. Tạo RLS policies (Kiểm tra sự tồn tại của policy trước khi tạo bằng PL/pgSQL)
-            for table_name in ["chunks", "entities", "relationships"]:
+            for table_name in all_tables:
                 policy_name = f"{table_name}_workspace_isolation_policy"
                 cur.execute(f"""
                     DO $$
@@ -197,7 +215,7 @@ class DBManager:
                     $$;
                 """)
 
-            logger.info(f"✅ Đã khởi tạo schema '{self.schema}' cho RAG database với RLS & Partitioning.")
+            logger.info(f"✅ Đã khởi tạo schema '{self.schema}' cho RAG database với RLS & Partitioning (bao gồm Topics).")
         except Exception as e:
             logger.error(f"❌ Lỗi khi khởi tạo database RAG: {e}")
             raise e
@@ -213,7 +231,7 @@ class DBManager:
         # Chuẩn hóa workspace_id để chỉ chứa ký tự chữ và số và dấu gạch dưới
         workspace_safe = "".join([c if c.isalnum() else "_" for c in workspace_id]).lower()
         
-        # Tạo bảng partition con cho chunks, entities, relationships
+        # Tạo bảng partition con cho chunks, entities, relationships, topics
         cur.execute(f"""
             CREATE TABLE IF NOT EXISTS {self.schema}.chunks_{workspace_safe} 
             PARTITION OF {self.schema}.chunks FOR VALUES IN ('{workspace_id}');
@@ -225,6 +243,22 @@ class DBManager:
         cur.execute(f"""
             CREATE TABLE IF NOT EXISTS {self.schema}.relationships_{workspace_safe} 
             PARTITION OF {self.schema}.relationships FOR VALUES IN ('{workspace_id}');
+        """)
+        cur.execute(f"""
+            CREATE TABLE IF NOT EXISTS {self.schema}.topics_{workspace_safe} 
+            PARTITION OF {self.schema}.topics FOR VALUES IN ('{workspace_id}');
+        """)
+        cur.execute(f"""
+            CREATE TABLE IF NOT EXISTS {self.schema}.topic_memberships_{workspace_safe} 
+            PARTITION OF {self.schema}.topic_memberships FOR VALUES IN ('{workspace_id}');
+        """)
+        cur.execute(f"""
+            CREATE TABLE IF NOT EXISTS {self.schema}.topic_aliases_{workspace_safe} 
+            PARTITION OF {self.schema}.topic_aliases FOR VALUES IN ('{workspace_id}');
+        """)
+        cur.execute(f"""
+            CREATE TABLE IF NOT EXISTS {self.schema}.topic_update_queue_{workspace_safe} 
+            PARTITION OF {self.schema}.topic_update_queue FOR VALUES IN ('{workspace_id}');
         """)
         return workspace_safe
 

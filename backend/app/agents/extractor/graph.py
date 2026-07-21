@@ -45,11 +45,12 @@ async def run_extraction_agent(
     model_name: str,
     api_key: str,
     entity_types: List[str],
+    candidate_topics: List[dict] | None = None,
     glean_max: int = 1,
     language: str = "auto"
 ) -> Tuple[Dict, int]:
     """
-    Chạy LangGraph agent trích xuất thực thể và quan hệ cho một chunk duy nhất.
+    Chạy LangGraph agent trích xuất thực thể, quan hệ và chủ đề cho một chunk duy nhất.
     """
     model = get_gemini_llm(
         model_name=model_name,
@@ -68,6 +69,7 @@ async def run_extraction_agent(
         "chunk_id": chunk["chunk_id"],
         "chunk_text": chunk["text"],
         "entity_types": entity_types,
+        "candidate_topics": candidate_topics or [],
         "language": resolved_language,
         "glean_max": glean_max,
         "model": model,
@@ -76,6 +78,8 @@ async def run_extraction_agent(
         "second_pass_result": "",
         "entities": [],
         "relations": [],
+        "topic_assignments": [],
+        "topic_candidates": [],
         "tokens_used": 0,
     }
     
@@ -84,5 +88,7 @@ async def run_extraction_agent(
     output = {
         "entities": result.get("entities", []),
         "relations": result.get("relations", []),
+        "topic_assignments": result.get("topic_assignments", []),
+        "topic_candidates": result.get("topic_candidates", []),
     }
     return output, result.get("tokens_used", 0)

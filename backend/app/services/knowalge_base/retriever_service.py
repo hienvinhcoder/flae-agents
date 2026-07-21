@@ -87,9 +87,9 @@ class RetrieverService:
             LIMIT :limit
         """)
 
-        emb_list = query_embedding.tolist()
+        emb_str = str(query_embedding.tolist()) if query_embedding is not None else None
         result = await session.execute(
-            sql, {"emb": emb_list, "limit": limit, "workspace_id": workspace_id}
+            sql, {"emb": emb_str, "limit": limit, "workspace_id": workspace_id}
         )
 
         rows = [parse_db_row(r._asdict()) for r in result]
@@ -106,7 +106,7 @@ class RetrieverService:
         schema = rag_db_manager.schema
         visited_memory = {}
         query_norm = np.linalg.norm(query_embedding) + 1e-10
-        current_beams = []
+        current_beams: List[Dict[str, Any]] = []
 
         for seed in seed_entity_ids:
             current_beams.append({"path": [seed], "score": 1.0})
@@ -178,7 +178,7 @@ class RetrieverService:
             candidates = []
             for beam in current_beams:
                 parent = beam["path"][-1]
-                path_so_far = beam["path"]
+                path_so_far: List[str] = beam["path"]
 
                 if parent not in neighbors_map:
                     continue

@@ -360,4 +360,20 @@ class WorkspaceService:
         )
         return list(result.scalars().all())
 
+    @staticmethod
+    async def is_active_member(db: AsyncSession, workspace_id: uuid.UUID, user_uid: str) -> bool:
+        """Kiểm tra xem user có phải là thành viên active của workspace không."""
+        from sqlalchemy import and_
+        result = await db.execute(
+            select(WorkspaceMember).where(
+                and_(
+                    WorkspaceMember.workspace_id == workspace_id,
+                    WorkspaceMember.user_uid == user_uid,
+                    WorkspaceMember.status == WorkspaceMemberStatus.active
+                )
+            )
+        )
+        return result.scalar_one_or_none() is not None
+
+
 

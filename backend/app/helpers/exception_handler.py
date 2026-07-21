@@ -5,9 +5,10 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.schemas.sche_base import ResponseSchemaBase
 from app.core.config import settings
+from typing import Any
 
 
-def _make_cors_response(request: Request, status_code: int, content: any) -> JSONResponse:
+def _make_cors_response(request: Request, status_code: int, content: Any) -> JSONResponse:
     origin = request.headers.get("origin")
     headers = {}
     if origin:
@@ -98,7 +99,8 @@ async def sqlalchemy_not_found_handler(request: Request, exc: Exception) -> JSON
     )
 
 
-async def starlette_http_exception_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
+async def starlette_http_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    assert isinstance(exc, StarletteHTTPException)
     return _make_cors_response(
         request,
         status_code=exc.status_code,

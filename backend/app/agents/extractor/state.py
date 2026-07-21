@@ -29,4 +29,7 @@ class ExtractionState(TypedDict):
     second_pass_result: str
     entities: List[dict]
     relations: List[dict]
+    candidate_topics: List[dict]
+    topic_assignments: List[dict]
+    topic_candidates: List[dict]
     tokens_used: int

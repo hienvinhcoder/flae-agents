@@ -125,7 +125,8 @@ async def generate_embeddings_activity(params: dict) -> list[dict]:
 async def extract_entities_activity(params: dict) -> dict:
     """Trích xuất entities & relations từ batch chunks."""
     chunks = params["chunks"]
-    entities, relations, tokens = await IngestionService.extract_entities_from_chunks(chunks)
+    workspace_id = params["workspace_id"]
+    entities, relations, tokens = await IngestionService.extract_entities_from_chunks(chunks, workspace_id)
     logger.info(
         f"Extraction complete: {len(entities)} entities, "
         f"{len(relations)} relations, {tokens} tokens"
@@ -133,6 +134,7 @@ async def extract_entities_activity(params: dict) -> dict:
     return {
         "entities": entities,
         "relations": relations,
+        "chunks": chunks,
         "tokens_used": tokens,
     }
 
@@ -172,4 +174,17 @@ async def finalize_ingestion(params: dict) -> None:
             doc_id=doc_id,
             metrics=metrics,
         )
+
+
+@activity.defn
+async def trigger_topic_updates_activity(params: dict) -> None:
+    """Kích hoạt TopicUpdateWorkflow cho các topic bị ảnh hưởng."""
+    workspace_id = params["workspace_id"]
+    affected_topic_ids = params.get("affected_topic_ids", [])
+    
+    if not affected_topic_ids:
+        return
+        
+    from app.services.srv_topic import TopicService
+    await TopicService.trigger_topic_updates_via_temporal(workspace_id, affected_topic_ids)
 

@@ -16,6 +16,7 @@ import {
   Plus,
   LogOut,
   User,
+  Tags,
 } from 'lucide-angular';
 
 /**
@@ -40,4 +41,5 @@ export const DASHBOARD_LAYOUT_ICONS = {
   Plus,
   LogOut,
   User,
+  Tags,
 };

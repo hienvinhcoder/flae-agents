@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 
 def test_parse_extraction_output():
-    from app.services.knowalge_base.ingestion_service import _parse_extraction_output
+    from app.services.knowalge_base.ingestion_helpers import parse_extraction_output
     
     # Chuỗi giả định kết quả trả về từ LLM
     raw_output = (
@@ -14,7 +14,7 @@ def test_parse_extraction_output():
         "<|COMPLETE|>"
     )
     
-    entities, relations = _parse_extraction_output(raw_output, "chunk_1")
+    entities, relations = parse_extraction_output(raw_output, "chunk_1")
     
     assert len(entities) == 1
     assert entities[0]["entity_name"] == "Apple"
@@ -38,7 +38,7 @@ async def test_extract_entities_from_chunks_no_api_key():
     with patch("app.services.knowalge_base.ingestion_service.settings") as mock_settings:
         mock_settings.GEMINI_API_KEY = None
         
-        entities, relations, tokens = await IngestionService.extract_entities_from_chunks([{"text": "Hello", "chunk_id": "1"}])
+        entities, relations, tokens = await IngestionService.extract_entities_from_chunks([{"text": "Hello", "chunk_id": "1"}], "test-workspace-id")
         assert entities == []
         assert relations == []
         assert tokens == 0
@@ -58,7 +58,7 @@ async def test_extract_entities_from_chunks_passes_glean_max():
         mock_run_agent.return_value = ({"entities": [], "relations": []}, 100)
         
         chunks = [{"chunk_id": "chunk_1", "text": "This is chunk 1"}]
-        await IngestionService.extract_entities_from_chunks(chunks)
+        await IngestionService.extract_entities_from_chunks(chunks, "test-workspace-id")
         
         # Verify run_extraction_agent was called with glean_max = 2
         mock_run_agent.assert_called_once()

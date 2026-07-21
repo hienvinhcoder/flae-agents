@@ -88,9 +88,9 @@ import { RouterLink } from '@angular/router';
       </form>
 
       <div class="mt-6 mb-6 relative flex items-center">
-        <div class="flex-grow border-t border-border"></div>
-        <span class="flex-shrink-0 mx-4 text-text-muted/60 text-sm">Hoặc tiếp tục với</span>
-        <div class="flex-grow border-t border-border"></div>
+        <div class="grow border-t border-border"></div>
+        <span class="shrink-0 mx-4 text-text-muted/60 text-sm">Hoặc tiếp tục với</span>
+        <div class="grow border-t border-border"></div>
       </div>
 
       <!-- Google Button (btn-secondary style custom) -->

@@ -51,7 +51,9 @@ Tài liệu này định nghĩa các quy tắc lập trình, kiến trúc hệ t
   * UI components trong thư mục `ui/` phải là **Dumb/Presentational Components** (chỉ tương tác qua Angular Signals `input()` và `output()`, không chứa logic nghiệp vụ và không inject API/Services).
   * Logic nghiệp vụ, quản lý state và gọi API phải nằm ở **Smart/Container Components** trong thư mục `pages/` hoặc các Services.
 * **Reactivity & State:** Áp dụng Angular Signals (`signal()`, `computed()`, `effect()`) và Signal-based `input()`/`output()` để quản lý state và tính phản ứng. Ưu tiên Signals hơn RxJS cho việc quản lý trạng thái ở cấp độ component.
-* **Styling:** Sử dụng các class tiện ích của Tailwind CSS. Chỉ viết CSS tùy chỉnh khi thực sự cần thiết hoặc đóng gói thành component dùng chung.
+* **Design System & Styling:** 
+  * Mọi thiết kế UI/UX và giao diện component phải tuân thủ nghiêm ngặt theo tài liệu hệ thống thiết kế được quy định tại [DESIGN.md](../../DESIGN.md).
+  * Sử dụng các class tiện ích của Tailwind CSS dựa trên Color Tokens và Class Recipes của [DESIGN.md](../../DESIGN.md). Chỉ viết CSS tùy chỉnh khi thực sự cần thiết hoặc đóng gói thành component dùng chung.
 * **Hiệu năng & Tài nguyên:** 
   * Áp dụng Lazy Loading cho tất cả các routes của feature.
   * Quản lý vòng đời chặt chẽ, luôn hủy đăng ký (unsubscribe) các RxJS subscription hoặc đóng kết nối WebSockets đúng cách khi component/service bị hủy (unmount) để tránh rò rỉ bộ nhớ (memory leak).

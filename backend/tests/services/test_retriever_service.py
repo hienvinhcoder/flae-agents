@@ -212,3 +212,41 @@ async def test_retrieve_pipeline_flow():
                                 assert chunk_0["type"] == "chunk"
                                 assert chunk_0["source_document"] == "apple_info.txt"
                                 assert "score" in chunk_0
+
+
+@pytest.mark.asyncio
+async def test_graph_pathfinding_beam_search():
+    workspace_id = "test-ws"
+    seed_entity_ids = {"ent-apple"}
+    query_embedding = np.array([0.5, 0.5, 0.0], dtype="float32")
+    
+    mock_session = AsyncMock()
+    
+    # Giả lập kết quả trả về của SQL query cho các neighbors của ent-apple
+    # Hàng kết quả có dạng: parent_id, neighbor_id, embedding, source_chunk_ids
+    mock_row_1 = MagicMock()
+    mock_row_1.__getitem__.side_effect = lambda idx: [
+        "ent-apple", 
+        "ent-iphone", 
+        "[0.4, 0.6, 0.0]", 
+        '["chunk-1"]'
+    ][idx]
+    
+    mock_session.execute = AsyncMock(return_value=[mock_row_1])
+    
+    with patch("app.services.knowalge_base.retriever_service.settings") as mock_settings:
+        mock_settings.RAG_RETRIEVAL_BFS_DEPTH = 1
+        mock_settings.RAG_RETRIEVAL_BEAM_WIDTH = 2
+        mock_settings.RAG_RETRIEVAL_MAX_NEIGHBORS = 5
+        
+        paths, visited_memory = await RetrieverService._graph_pathfinding_beam_search(
+            workspace_id, mock_session, seed_entity_ids, query_embedding
+        )
+        
+        assert len(paths) == 1
+        assert paths[0] == ["ent-apple", "ent-iphone"]
+        assert "ent-iphone" in visited_memory
+        assert visited_memory["ent-iphone"]["path"] == ["ent-apple", "ent-iphone"]
+        assert visited_memory["ent-iphone"]["source_chunk_ids"] == ["chunk-1"]
+        assert visited_memory["ent-iphone"]["score"] > 0.0
+

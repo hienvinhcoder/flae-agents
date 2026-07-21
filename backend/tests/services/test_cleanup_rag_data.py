@@ -6,7 +6,7 @@ import numpy as np
 
 from app.core.config import settings
 from app.db.rag_db import rag_db_manager
-from app.services.knowledge_base_srv import _cleanup_rag_data
+from app.services.knowalge_base.cleanup import cleanup_rag_data as _cleanup_rag_data
 
 @pytest.mark.asyncio
 async def test_cleanup_rag_data_recalculate():
@@ -129,5 +129,149 @@ async def test_cleanup_rag_data_recalculate():
     cur.execute(f"DELETE FROM {schema}.chunks WHERE workspace_id = %s", (workspace_id,))
     cur.execute(f"DELETE FROM {schema}.entities WHERE workspace_id = %s", (workspace_id,))
     cur.execute(f"DELETE FROM {schema}.relationships WHERE workspace_id = %s", (workspace_id,))
+    cur.close()
+    conn.close()
+
+
+@pytest.mark.asyncio
+async def test_cleanup_rag_data_with_topics():
+    workspace_id = str(uuid.uuid4())
+    doc_to_delete = str(uuid.uuid4())
+    doc_to_keep = str(uuid.uuid4())
+
+    chunk_delete_1 = "chunk_del_topic_1"
+    chunk_keep_1 = "chunk_keep_topic_1"
+
+    rag_db_manager.initialize()
+    conn = rag_db_manager.get_conn()
+    conn.autocommit = True
+    cur = conn.cursor()
+    schema = rag_db_manager.schema
+
+    # Tạo partition cho workspace (bây giờ sẽ tạo partition cho cả chunks, entities, relationships, topics, memberships...)
+    rag_db_manager._ensure_partition(cur, workspace_id)
+
+    # 1. Insert Chunks
+    cur.execute(
+        f"INSERT INTO {schema}.chunks (workspace_id, chunk_id, text, source_document_id, entity_ids, relation_ids) "
+        f"VALUES (%s, %s, %s, %s, %s::jsonb, %s::jsonb), (%s, %s, %s, %s, %s::jsonb, %s::jsonb)",
+        (workspace_id, chunk_delete_1, "Text delete", doc_to_delete, json.dumps(["ent_delete_1"]), json.dumps(["rel_delete_1"]),
+         workspace_id, chunk_keep_1, "Text keep", doc_to_keep, json.dumps([]), json.dumps([]))
+    )
+
+    # 1.1 Insert Entity và Relationship sẽ bị xóa hoàn toàn (chỉ thuộc về chunk_delete_1)
+    emb_dim = settings.EMBEDDING_DIMENSIONS or 768
+    initial_emb = [0.1] * emb_dim
+    cur.execute(
+        f"INSERT INTO {schema}.entities (workspace_id, entity_id, entity_name, entity_type, description, source_chunk_ids, chunk_descriptions, frequency, embedding) "
+        f"VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s::jsonb, %s, %s::vector)",
+        (workspace_id, "ent_delete_1", "Thực thể xóa", "organization", "Mô tả thực thể xóa", json.dumps([chunk_delete_1]), json.dumps({chunk_delete_1: "Mô tả thực thể xóa"}), 1, initial_emb)
+    )
+    
+    cur.execute(
+        f"INSERT INTO {schema}.relationships (workspace_id, relation_id, source_id, source_name, target_id, target_name, keywords, description, source_chunk_ids, chunk_meta, frequency, embedding) "
+        f"VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s::jsonb, %s, %s::vector)",
+        (workspace_id, "rel_delete_1", "ent_delete_1", "Thực thể xóa", "ent-target", "Target", "kws", "Mối quan hệ xóa", json.dumps([chunk_delete_1]), json.dumps({chunk_delete_1: {"description": "Mối quan hệ xóa", "keywords": "kws"}}), 1, initial_emb)
+    )
+
+    # 2. Insert Topics
+    topic_empty_id = "topic-empty-id"
+    topic_non_empty_id = "topic-non-empty-id"
+    cur.execute(
+        f"INSERT INTO {schema}.topics (workspace_id, topic_id, name, slug, type, status) "
+        f"VALUES (%s, %s, %s, %s, %s, %s), (%s, %s, %s, %s, %s, %s)",
+        (workspace_id, topic_empty_id, "Empty Topic", "empty-topic", "topic", "active",
+         workspace_id, topic_non_empty_id, "Non Empty Topic", "non-empty-topic", "topic", "active")
+    )
+
+    # 3. Insert Topic Memberships
+    m_empty_del = "m-empty-del"
+    m_non_empty_del = "m-non-empty-del"
+    m_non_empty_keep = "m-non-empty-keep"
+    m_doc_del = "m-doc-del"
+    m_ent_empty = "m-ent-empty"
+    m_rel_empty = "m-rel-empty"
+    m_ent_non_empty = "m-ent-non-empty"
+    
+    cur.execute(
+        f"INSERT INTO {schema}.topic_memberships (workspace_id, membership_id, topic_id, member_type, member_id, status) "
+        f"VALUES "
+        f"(%s, %s, %s, %s, %s, %s), "
+        f"(%s, %s, %s, %s, %s, %s), "
+        f"(%s, %s, %s, %s, %s, %s), "
+        f"(%s, %s, %s, %s, %s, %s), "
+        f"(%s, %s, %s, %s, %s, %s), "
+        f"(%s, %s, %s, %s, %s, %s), "
+        f"(%s, %s, %s, %s, %s, %s)",
+        (workspace_id, m_empty_del, topic_empty_id, "chunk", chunk_delete_1, "active",
+         workspace_id, m_non_empty_del, topic_non_empty_id, "chunk", chunk_delete_1, "active",
+         workspace_id, m_non_empty_keep, topic_non_empty_id, "chunk", chunk_keep_1, "active",
+         workspace_id, m_doc_del, topic_non_empty_id, "document", doc_to_delete, "active",
+         workspace_id, m_ent_empty, topic_empty_id, "entity", "ent_delete_1", "active",
+         workspace_id, m_rel_empty, topic_empty_id, "relationship", "rel_delete_1", "active",
+         workspace_id, m_ent_non_empty, topic_non_empty_id, "entity", "ent_delete_1", "active")
+    )
+
+    # Mock trigger workflow của TopicService
+    with patch("app.services.srv_topic.TopicService.trigger_topic_updates_via_temporal", new_callable=AsyncMock) as mock_trigger:
+        # Chạy dọn dẹp
+        await _cleanup_rag_data(workspace_id, doc_to_delete)
+
+        # Kiểm tra xem trigger có được gọi với topic_non_empty_id không
+        mock_trigger.assert_called_once_with(workspace_id, [topic_non_empty_id])
+
+    # 4. Kiểm tra các chunks trong DB
+    cur.execute(
+        f"SELECT chunk_id FROM {schema}.chunks WHERE workspace_id = %s",
+        (workspace_id,)
+    )
+    remaining_chunks = [row[0] for row in cur.fetchall()]
+    assert chunk_delete_1 not in remaining_chunks
+    assert chunk_keep_1 in remaining_chunks
+
+    # 4.1 Kiểm tra entities và relationships bị xóa
+    cur.execute(
+        f"SELECT entity_id FROM {schema}.entities WHERE workspace_id = %s",
+        (workspace_id,)
+    )
+    remaining_entities = [row[0] for row in cur.fetchall()]
+    assert "ent_delete_1" not in remaining_entities
+
+    cur.execute(
+        f"SELECT relation_id FROM {schema}.relationships WHERE workspace_id = %s",
+        (workspace_id,)
+    )
+    remaining_rels = [row[0] for row in cur.fetchall()]
+    assert "rel_delete_1" not in remaining_rels
+
+    # 5. Kiểm tra topic_memberships
+    cur.execute(
+        f"SELECT membership_id FROM {schema}.topic_memberships WHERE workspace_id = %s",
+        (workspace_id,)
+    )
+    remaining_m_ids = [row[0] for row in cur.fetchall()]
+    assert m_empty_del not in remaining_m_ids
+    assert m_non_empty_del not in remaining_m_ids
+    assert m_doc_del not in remaining_m_ids
+    assert m_ent_empty not in remaining_m_ids
+    assert m_rel_empty not in remaining_m_ids
+    assert m_ent_non_empty not in remaining_m_ids  # Thực thể bị xóa, nên membership của nó cũng phải bị xóa
+    assert m_non_empty_keep in remaining_m_ids
+
+    # 6. Kiểm tra topics
+    cur.execute(
+        f"SELECT topic_id FROM {schema}.topics WHERE workspace_id = %s",
+        (workspace_id,)
+    )
+    remaining_topics = [row[0] for row in cur.fetchall()]
+    assert topic_empty_id not in remaining_topics  # Topic trống phải bị xóa
+    assert topic_non_empty_id in remaining_topics   # Topic không trống vẫn còn
+
+    # Dọn dẹp sạch dữ liệu test
+    cur.execute(f"DELETE FROM {schema}.chunks WHERE workspace_id = %s", (workspace_id,))
+    cur.execute(f"DELETE FROM {schema}.entities WHERE workspace_id = %s", (workspace_id,))
+    cur.execute(f"DELETE FROM {schema}.relationships WHERE workspace_id = %s", (workspace_id,))
+    cur.execute(f"DELETE FROM {schema}.topics WHERE workspace_id = %s", (workspace_id,))
+    cur.execute(f"DELETE FROM {schema}.topic_memberships WHERE workspace_id = %s", (workspace_id,))
     cur.close()
     conn.close()

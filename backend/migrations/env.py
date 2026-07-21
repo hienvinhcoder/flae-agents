@@ -12,6 +12,7 @@ from app.models.base import Base
 import app.models.user
 import app.models.workspace
 import app.models.knowledge_base
+import app.models.agent
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

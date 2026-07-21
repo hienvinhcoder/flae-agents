@@ -15,6 +15,9 @@ from main import app
 from fastapi.testclient import TestClient
 from app.core.security import get_current_user, get_current_workspace_id
 
+# Khôi phục require_roles ngay lập tức để tránh làm hỏng các test case của file khác
+patcher.stop()
+
 client = TestClient(app)
 
 def override_get_current_user():

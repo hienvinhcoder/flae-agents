@@ -5,7 +5,7 @@ COMPLETION_DELIMITER = "<|COMPLETE|>"
 
 ENTITY_EXTRACTION_SYSTEM = """
 ---Role---
-You are a Knowledge Graph Specialist responsible for extracting high-quality entities and relationships from the input text.
+You are a Knowledge Graph and Topic Classification Specialist responsible for extracting high-quality entities, relationships, and assigning/suggesting topics from the input text.
 
 ---Instructions---
 1.  **Entity Extraction & Output:**
@@ -33,54 +33,57 @@ You are a Knowledge Graph Specialist responsible for extracting high-quality ent
     * **Implicit Affiliations:** If a person's description indicates they hold a position, work at, or are associated with an organization (e.g., "CEO of Flash AI"), you MUST explicitly extract a relationship between the person and the organization (e.g., Person -> Organization with keywords like "làm việc tại", "Giám đốc Điều hành của").
     * **Output Format - Relationships:** Format: `relation{tuple_delimiter}source_entity{tuple_delimiter}target_entity{tuple_delimiter}relationship_keywords{tuple_delimiter}relationship_description`
 
-3.  **General Rules:**
-    * Output all entities first, then all relationships.
+3.  **Topic Assignment & Candidate Extraction (VERY IMPORTANT):**
+    * **Objective:** Group the current content chunk into relevant high-level topics or suggest new ones.
+    * **Candidate Topics (Assignments):** Below is the list of existing candidate topics for this workspace: `{candidate_topics}`. For each topic in the list that is *highly relevant* to the input text, output an assignment.
+      * Format: `topic_assignment{tuple_delimiter}topic_id{tuple_delimiter}confidence{tuple_delimiter}reason`
+      * `confidence`: Float between 0.0 and 1.0 representing how strongly this chunk belongs to the topic.
+      * `reason`: Short explanation in `{language}` why the chunk belongs to this topic.
+    * **New Candidates:** If the input text discusses a distinct, important theme, feature, or domain that does *not* fit any topic in the list, suggest a new topic candidate. Keep topic names concise and avoid generic terms (e.g. "backend", "code", "API", "update").
+      * Format: `topic_candidate{tuple_delimiter}topic_name{tuple_delimiter}confidence{tuple_delimiter}reason`
+
+4.  **General Rules:**
+    * Output all entities first, then all relationships, then topic assignments, and finally new topic candidates.
     * All output descriptions must be in the third person, avoiding pronouns like 'I', 'you', 'this article'.
-    * The descriptions, relationship keywords, and explanations MUST be written in {language}. Retain proper nouns (e.g., person names, company names) in their original language.
+    * The descriptions, relationship keywords, explanations, and reasons MUST be written in {language}. Retain proper nouns (e.g., person names, company names) in their original language.
     * Signal the end of all extractions by outputting the literal string `{completion_delimiter}` on the final line.
 
 ---Examples---
-Here are examples of how to correctly extract entities and relationships across different languages:
+Here are examples of how to correctly extract entities, relationships, and handle topics:
 
-Example 1 (English Input, language="English"):
+Example 1 (English Input, language="English", Candidate_topics="[id: topic_billing, name: Billing System]"):
 Input Text:
-"Alice has been working at Acme Corp as a lead designer since 2021."
+"Alice has been working at Acme Corp as a lead designer since 2021. She is also setting up the Stripe webhook handler."
 Output:
 entity{tuple_delimiter}Alice{tuple_delimiter}person{tuple_delimiter}Lead designer at Acme Corp since 2021.
 entity{tuple_delimiter}Acme Corp{tuple_delimiter}organization{tuple_delimiter}A company where Alice works.
 relation{tuple_delimiter}Alice{tuple_delimiter}Acme Corp{tuple_delimiter}works at, lead designer{tuple_delimiter}Alice is employed at Acme Corp as a lead designer.
+topic_assignment{tuple_delimiter}topic_billing{tuple_delimiter}0.85{tuple_delimiter}Chunk discusses Stripe webhook setup which is part of Billing System.
 {completion_delimiter}
 
-Example 2 (Vietnamese Input, language="Vietnamese"):
+Example 2 (Vietnamese Input, language="Vietnamese", Candidate_topics="[id: topic_vinfast, name: VinFast Projects]"):
 Input Text:
-"Nguyễn Văn A làm việc tại công ty VinFast với vai trò kỹ sư từ năm 2020."
+"Nguyễn Văn A làm việc tại công ty VinFast với vai trò kỹ sư từ năm 2020. Anh ấy đang phát triển ứng dụng di động cho xe điện."
 Output:
 entity{tuple_delimiter}Nguyễn Văn A{tuple_delimiter}person{tuple_delimiter}Kỹ sư làm việc tại VinFast từ năm 2020.
 entity{tuple_delimiter}VinFast{tuple_delimiter}organization{tuple_delimiter}Công ty nơi Nguyễn Văn A làm việc.
 relation{tuple_delimiter}Nguyễn Văn A{tuple_delimiter}VinFast{tuple_delimiter}làm việc tại, kỹ sư{tuple_delimiter}Nguyễn Văn A làm việc tại công ty VinFast với vai trò kỹ sư từ năm 2020.
-{completion_delimiter}
-
-Example 3 (Vietnamese Input with relationships and metrics, language="Vietnamese"):
-Input Text:
-"Dự án hợp tác giữa bà Nguyễn Thu Trang và ông Nguyễn Minh Trí (hai người là bạn cùng lớp) kỳ vọng đạt được mức giảm thiểu 40% thời gian phản hồi yêu cầu từ khách hàng."
-Output:
-entity{tuple_delimiter}Nguyễn Thu Trang{tuple_delimiter}person{tuple_delimiter}Bà Nguyễn Thu Trang, người tham gia dự án hợp tác và là bạn cùng lớp với ông Nguyễn Minh Trí.
-entity{tuple_delimiter}Nguyễn Minh Trí{tuple_delimiter}person{tuple_delimiter}Ông Nguyễn Minh Trí, người tham gia dự án hợp tác và là bạn cùng lớp với bà Nguyễn Thu Trang.
-relation{tuple_delimiter}Nguyễn Thu Trang{tuple_delimiter}Nguyễn Minh Trí{tuple_delimiter}bạn cùng lớp, hợp tác dự án{tuple_delimiter}Bà Nguyễn Thu Trang và ông Nguyễn Minh Trí là bạn cùng lớp, đang hợp tác trong một dự án chung nhằm giảm thiểu 40% thời gian phản hồi yêu cầu của khách hàng.
+topic_assignment{tuple_delimiter}topic_vinfast{tuple_delimiter}0.90{tuple_delimiter}Đoạn văn thảo luận về nhân sự kỹ sư làm việc tại VinFast.
+topic_candidate{tuple_delimiter}Mobile App Electric Vehicle{tuple_delimiter}0.80{tuple_delimiter}Đề xuất chủ đề mới về phát triển ứng dụng di động cho xe điện.
 {completion_delimiter}
 
 ---Real Data to be Processed---
 <Input>
 Entity_types: [{entity_types}]
+Candidate_topics: [{candidate_topics}]
 Text:
 ```
 {input_text}
 ```
 """
 
-
 ENTITY_EXTRACTION_USER = """---Task---
-Extract entities and relationships from the input text provided in the system prompt.
+Extract entities, relationships, and assign or suggest topics from the input text provided in the system prompt.
 
 ---Instructions---
 1.  **Strict Adherence to Format:** Strictly adhere to all format requirements as specified in the system prompt.
@@ -92,7 +95,7 @@ Extract entities and relationships from the input text provided in the system pr
 """
 
 ENTITY_CONTINUE_EXTRACTION_USER = """---Task---
-Based on the last extraction task, identify and extract any **missed or incorrectly formatted** entities and relationships from the input text.
+Based on the last extraction task, identify and extract any **missed or incorrectly formatted** entities, relationships, or topic assignments/candidates from the input text.
 
 ---Instructions---
 1.  **Focus on Corrections/Additions:**
