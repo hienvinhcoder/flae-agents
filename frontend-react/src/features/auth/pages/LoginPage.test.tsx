@@ -95,4 +95,16 @@ describe('LoginPage', () => {
       'Unable to finish signing in. Please try again.',
     );
   });
+
+  it('offers an explicit session retry after bootstrap cleanup fails', async () => {
+    const user = userEvent.setup();
+    useAuthStore.getState().setSyncFailed('Unable to finish signing in. Please try again.');
+    const previousRevision = useAuthStore.getState().retryRevision;
+
+    renderPage();
+    await user.click(screen.getByRole('button', { name: 'Retry session' }));
+
+    expect(useAuthStore.getState().retryRevision).toBe(previousRevision + 1);
+    expect(useAuthStore.getState().status).toBe('initializing');
+  });
 });

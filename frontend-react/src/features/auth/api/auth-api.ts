@@ -1,6 +1,5 @@
 import { AppError } from '../../../core/api/errors';
 import { createApiClient } from '../../../core/api/client';
-import { logout as logoutFromFirebase } from '../../../core/auth/firebase';
 import { env } from '../../../core/config/env';
 import type { SyncUserPayload, User } from '../../../core/stores/auth-store';
 import { authUserSchema } from '../schemas/auth-user-schema';
@@ -10,12 +9,13 @@ export async function syncUser(
   expectedFirebaseUid: string,
   initialToken: string,
   refreshToken: () => Promise<string>,
+  signOutIfCurrentUser: (expectedFirebaseUid: string) => Promise<void>,
 ): Promise<User> {
   const client = createApiClient({
     baseUrl: env.VITE_API_URL,
     tokenProvider: (forceRefresh) =>
       forceRefresh ? refreshToken() : Promise.resolve(initialToken),
-    onUnauthorized: logoutFromFirebase,
+    onUnauthorized: () => signOutIfCurrentUser(expectedFirebaseUid),
   });
   const responseData = await client.request<unknown>({
     path: '/auth/sync-user',

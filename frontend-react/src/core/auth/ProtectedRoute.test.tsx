@@ -62,4 +62,12 @@ describe('ProtectedRoute', () => {
 
     expect(screen.getByRole('heading', { name: 'Agent detail' })).toBeInTheDocument();
   });
+
+  it('keeps a retained but unsynchronized Firebase session out of protected routes', () => {
+    useAuthStore.getState().setSyncFailed('Unable to finish signing in. Please try again.');
+    renderProtectedRoute();
+
+    expect(screen.queryByRole('heading', { name: 'Agent detail' })).not.toBeInTheDocument();
+    expect(screen.getByLabelText('login location')).toHaveTextContent('/auth/login');
+  });
 });

@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const firebaseMocks = vi.hoisted(() => ({
-  auth: { currentUser: null },
+  auth: { currentUser: null as { uid: string } | null },
   app: {},
   credential: { user: { uid: 'firebase-1' } },
   initializeApp: vi.fn(() => ({})),
   getApps: vi.fn(() => []),
-  getAuth: vi.fn(() => ({ currentUser: null })),
+  getAuth: vi.fn(() => firebaseMocks.auth),
   signInWithEmailAndPassword: vi.fn(),
   createUserWithEmailAndPassword: vi.fn(),
   updateProfile: vi.fn(),
@@ -43,6 +43,7 @@ vi.mock('firebase/auth', () => ({
 import {
   firebaseAuth,
   logout,
+  logoutIfCurrentUser,
   registerWithEmail,
   signInWithEmail,
   signInWithGoogle,
@@ -60,6 +61,7 @@ function deferred<T>() {
 describe('Firebase authentication adapter', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    firebaseMocks.auth.currentUser = null;
     firebaseMocks.signInWithEmailAndPassword.mockResolvedValue(firebaseMocks.credential);
     firebaseMocks.createUserWithEmailAndPassword.mockResolvedValue(firebaseMocks.credential);
     firebaseMocks.signInWithPopup.mockResolvedValue(firebaseMocks.credential);
@@ -153,6 +155,17 @@ describe('Firebase authentication adapter', () => {
   it('signs out the configured Firebase session', async () => {
     await logout();
 
+    expect(firebaseMocks.signOut).toHaveBeenCalledWith(firebaseAuth);
+  });
+
+  it('only signs out when the expected Firebase user is still current', async () => {
+    firebaseMocks.auth.currentUser = { uid: 'firebase-2' };
+
+    await logoutIfCurrentUser('firebase-1');
+    expect(firebaseMocks.signOut).not.toHaveBeenCalled();
+
+    await logoutIfCurrentUser('firebase-2');
+    expect(firebaseMocks.signOut).toHaveBeenCalledOnce();
     expect(firebaseMocks.signOut).toHaveBeenCalledWith(firebaseAuth);
   });
 });

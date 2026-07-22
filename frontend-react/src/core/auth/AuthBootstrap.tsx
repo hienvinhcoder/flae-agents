@@ -4,9 +4,9 @@ import { useEffect, type PropsWithChildren } from 'react';
 
 import { syncUser } from '../../features/auth/api/auth-api';
 import { useAuthStore, type LoginProvider, type SyncUserPayload } from '../stores/auth-store';
-import { firebaseAuth, logout as logoutFromFirebase } from './firebase';
+import { firebaseAuth, logoutIfCurrentUser } from './firebase';
 import { consumeRegistrationMetadata } from './registration-coordinator';
-import { clearClientSession } from './session-cleanup';
+import { clearClientSession, clearProtectedClientData } from './session-cleanup';
 
 const SYNC_ERROR_MESSAGE = 'Unable to finish signing in. Please try again.';
 
@@ -28,30 +28,44 @@ function syncPayloadFor(user: FirebaseUser, registrationFullName?: string): Sync
 
 export function AuthBootstrap({ children }: PropsWithChildren) {
   const queryClient = useQueryClient();
+  const retryRevision = useAuthStore((state) => state.retryRevision);
 
   useEffect(() => {
     let active = true;
     let unsubscribe: (() => void) | undefined;
     let operation = 0;
     let terminalError: string | null = null;
+    let terminalSync: { operation: number; uid: string } | null = null;
 
     const clearAnonymousSession = (error: string | null = terminalError) => {
       clearClientSession(queryClient, error);
     };
 
-    const terminateSync = async () => {
-      terminalError = SYNC_ERROR_MESSAGE;
-      try {
-        await logoutFromFirebase();
-      } catch {
-        // A second sign-out may already have run through the API client's 401 handler.
-      }
-      if (active) clearAnonymousSession();
+    const exposeRecoverableSyncFailure = () => {
+      useAuthStore.getState().setSyncFailed(SYNC_ERROR_MESSAGE);
+      clearProtectedClientData(queryClient);
     };
 
     const synchronize = async (firebaseUser: FirebaseUser) => {
       const currentOperation = ++operation;
+      let cleanupAttempted = false;
       useAuthStore.getState().setSyncing();
+
+      const cleanupCurrentSession = async (expectedFirebaseUid: string) => {
+        if (
+          !active ||
+          operation !== currentOperation ||
+          expectedFirebaseUid !== firebaseUser.uid ||
+          firebaseAuth.currentUser?.uid !== expectedFirebaseUid
+        ) {
+          return;
+        }
+
+        cleanupAttempted = true;
+        terminalError = SYNC_ERROR_MESSAGE;
+        terminalSync = { operation: currentOperation, uid: expectedFirebaseUid };
+        await logoutIfCurrentUser(expectedFirebaseUid);
+      };
 
       try {
         const registrationMetadata = await consumeRegistrationMetadata(firebaseUser.email);
@@ -61,19 +75,39 @@ export function AuthBootstrap({ children }: PropsWithChildren) {
           firebaseUser.uid,
           initialToken,
           () => firebaseUser.getIdToken(true),
+          cleanupCurrentSession,
         );
 
         if (active && operation === currentOperation) {
           if (firebaseAuth.currentUser?.uid === firebaseUser.uid) {
             terminalError = null;
+            terminalSync = null;
             useAuthStore.getState().setAuthenticated(user);
           } else {
             clearAnonymousSession();
           }
         }
       } catch {
-        if (active && operation === currentOperation) {
-          await terminateSync();
+        if (!active || operation !== currentOperation) return;
+
+        terminalError = SYNC_ERROR_MESSAGE;
+        terminalSync = { operation: currentOperation, uid: firebaseUser.uid };
+
+        if (!cleanupAttempted) {
+          try {
+            await cleanupCurrentSession(firebaseUser.uid);
+          } catch {
+            // A retained Firebase session is exposed as recoverable sync failure below.
+          }
+        }
+
+        if (!active || operation !== currentOperation) return;
+
+        const currentUser = firebaseAuth.currentUser;
+        if (!currentUser) {
+          clearAnonymousSession();
+        } else if (currentUser.uid === firebaseUser.uid) {
+          exposeRecoverableSyncFailure();
         }
       }
     };
@@ -111,12 +145,18 @@ export function AuthBootstrap({ children }: PropsWithChildren) {
         skipInitialUid = null;
 
         if (!firebaseUser) {
+          if (terminalSync?.operation === operation) {
+            clearAnonymousSession();
+            return;
+          }
+
           operation += 1;
           clearAnonymousSession();
           return;
         }
 
         terminalError = null;
+        terminalSync = null;
         void synchronize(firebaseUser);
       });
     };
@@ -130,7 +170,7 @@ export function AuthBootstrap({ children }: PropsWithChildren) {
       operation += 1;
       unsubscribe?.();
     };
-  }, [queryClient]);
+  }, [queryClient, retryRevision]);
 
   return children;
 }

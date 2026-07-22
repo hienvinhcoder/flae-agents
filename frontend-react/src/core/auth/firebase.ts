@@ -69,3 +69,8 @@ export async function signInWithGoogle() {
 export async function logout() {
   await signOut(firebaseAuth);
 }
+
+export async function logoutIfCurrentUser(expectedFirebaseUid: string) {
+  if (firebaseAuth.currentUser?.uid !== expectedFirebaseUid) return;
+  await logout();
+}

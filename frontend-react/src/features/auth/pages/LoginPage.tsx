@@ -29,6 +29,7 @@ export function LoginPage() {
   const setLoading = useAuthStore((state) => state.setLoading);
   const setError = useAuthStore((state) => state.setError);
   const clearError = useAuthStore((state) => state.clearError);
+  const retryBootstrap = useAuthStore((state) => state.retryBootstrap);
   const {
     register,
     handleSubmit,
@@ -105,7 +106,20 @@ export function LoginPage() {
             {errors.password ? <p className="mt-2 text-state-danger" id="login-password-error">{errors.password.message}</p> : null}
           </div>
 
-          {error ? <p className="rounded-ui-control bg-state-danger-soft p-3 text-state-danger" role="alert">{error}</p> : null}
+          {error ? (
+            <div className="rounded-ui-control bg-state-danger-soft p-3 text-state-danger" role="alert">
+              <p>{error}</p>
+              {status === 'sync_failed' ? (
+                <button
+                  className="mt-3 font-medium underline underline-offset-2"
+                  onClick={retryBootstrap}
+                  type="button"
+                >
+                  Retry session
+                </button>
+              ) : null}
+            </div>
+          ) : null}
 
           <button className="button-primary w-full" disabled={isLoading} type="submit">
             {isLoading ? 'Signing in…' : 'Sign in'}

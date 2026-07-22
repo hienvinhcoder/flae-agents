@@ -19,7 +19,7 @@ export function ProtectedRoute() {
     );
   }
 
-  if (status === 'anonymous') {
+  if (status === 'anonymous' || status === 'sync_failed') {
     const requestedUrl = `${location.pathname}${location.search}${location.hash}`;
     const search = new URLSearchParams({ returnUrl: requestedUrl });
     return <Navigate replace to={`/auth/login?${search.toString()}`} />;

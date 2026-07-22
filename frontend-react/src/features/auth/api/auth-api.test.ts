@@ -1,12 +1,18 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-const authMocks = vi.hoisted(() => ({ logout: vi.fn() }));
+const authMocks = vi.hoisted(() => ({
+  auth: { currentUser: null as { uid: string } | null },
+  logout: vi.fn(),
+}));
 
 vi.mock('../../../core/config/env', () => ({
   env: { VITE_API_URL: 'https://api.flae.test/api/v1' },
 }));
 
-vi.mock('../../../core/auth/firebase', () => ({ logout: authMocks.logout }));
+vi.mock('../../../core/auth/firebase', () => ({
+  firebaseAuth: authMocks.auth,
+  logout: authMocks.logout,
+}));
 
 import type { SyncUserPayload, User } from '../../../core/stores/auth-store';
 import { syncUser } from './auth-api';
@@ -29,8 +35,20 @@ const databaseUser: User = {
   current_workspace_id: null,
 };
 
+const backendUserItemResponse = {
+  code: '',
+  message: '',
+  ...databaseUser,
+};
+
+async function signOutIfCurrentUser(expectedFirebaseUid: string) {
+  if (authMocks.auth.currentUser?.uid !== expectedFirebaseUid) return;
+  await authMocks.logout();
+}
+
 describe('syncUser', () => {
   afterEach(() => {
+    authMocks.auth.currentUser = null;
     vi.unstubAllGlobals();
     vi.clearAllMocks();
   });
@@ -38,14 +56,14 @@ describe('syncUser', () => {
   it('posts the exact backend payload and unwraps the synchronized user', async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(
-        JSON.stringify({ code: 'SUCCESS', message: 'Synced', data: databaseUser }),
+        JSON.stringify({ code: '200', message: 'Success', data: backendUserItemResponse }),
         { status: 200, headers: { 'Content-Type': 'application/json' } },
       ),
     );
     vi.stubGlobal('fetch', fetchMock);
 
     await expect(
-      syncUser(payload, 'firebase-1', 'firebase-token', vi.fn()),
+      syncUser(payload, 'firebase-1', 'firebase-token', vi.fn(), signOutIfCurrentUser),
     ).resolves.toEqual(databaseUser);
 
     expect(fetchMock).toHaveBeenCalledOnce();
@@ -68,7 +86,13 @@ describe('syncUser', () => {
       ),
     );
 
-    const result = syncUser(payload, 'firebase-1', 'firebase-token', vi.fn());
+    const result = syncUser(
+      payload,
+      'firebase-1',
+      'firebase-token',
+      vi.fn(),
+      signOutIfCurrentUser,
+    );
 
     await expect(result).rejects.toMatchObject({
       kind: 'auth',
@@ -86,14 +110,24 @@ describe('syncUser', () => {
           JSON.stringify({
             code: 'SUCCESS',
             message: 'member@example.com',
-            data: { ...databaseUser, login_providers: ['github'], avatar_url: 42 },
+            data: {
+              ...backendUserItemResponse,
+              login_providers: ['github'],
+              avatar_url: 42,
+            },
           }),
           { status: 200, headers: { 'Content-Type': 'application/json' } },
         ),
       ),
     );
 
-    const result = syncUser(payload, 'firebase-1', 'firebase-token', vi.fn());
+    const result = syncUser(
+      payload,
+      'firebase-1',
+      'firebase-token',
+      vi.fn(),
+      signOutIfCurrentUser,
+    );
 
     await expect(result).rejects.toMatchObject({
       kind: 'server',
@@ -101,6 +135,33 @@ describe('syncUser', () => {
       retryable: false,
     });
     await expect(result).rejects.not.toThrow('member@example.com');
+  });
+
+  it.each([
+    ['code', 200],
+    ['message', null],
+  ])('rejects non-string nested response metadata field %s', async (field, value) => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            code: '200',
+            message: 'Success',
+            data: { ...backendUserItemResponse, [field]: value },
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        ),
+      ),
+    );
+
+    await expect(
+      syncUser(payload, 'firebase-1', 'firebase-token', vi.fn(), signOutIfCurrentUser),
+    ).rejects.toMatchObject({
+      kind: 'server',
+      message: 'The server returned invalid account data.',
+      retryable: false,
+    });
   });
 
   it('rejects a synchronized user whose Firebase UID does not match the active session', async () => {
@@ -111,7 +172,7 @@ describe('syncUser', () => {
           JSON.stringify({
             code: 'SUCCESS',
             message: 'Synced',
-            data: { ...databaseUser, firebase_uid: 'different-firebase-user' },
+            data: { ...backendUserItemResponse, firebase_uid: 'different-firebase-user' },
           }),
           { status: 200, headers: { 'Content-Type': 'application/json' } },
         ),
@@ -119,7 +180,7 @@ describe('syncUser', () => {
     );
 
     await expect(
-      syncUser(payload, 'firebase-1', 'firebase-token', vi.fn()),
+      syncUser(payload, 'firebase-1', 'firebase-token', vi.fn(), signOutIfCurrentUser),
     ).rejects.toMatchObject({
       kind: 'auth',
       message: 'Unable to verify the synchronized account.',
@@ -134,14 +195,42 @@ describe('syncUser', () => {
       .mockResolvedValueOnce(new Response(null, { status: 401 }));
     vi.stubGlobal('fetch', fetchMock);
     authMocks.logout.mockResolvedValue(undefined);
+    authMocks.auth.currentUser = { uid: 'firebase-1' };
 
     await expect(
-      syncUser(payload, 'firebase-1', 'firebase-token', vi.fn().mockResolvedValue('fresh-token')),
+      syncUser(
+        payload,
+        'firebase-1',
+        'firebase-token',
+        vi.fn().mockResolvedValue('fresh-token'),
+        signOutIfCurrentUser,
+      ),
     ).rejects.toMatchObject({
       kind: 'auth',
       message: 'Your session has expired. Please sign in again.',
     });
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(authMocks.logout).toHaveBeenCalledOnce();
+  });
+
+  it('does not sign out a newer Firebase user when an older sync receives a terminal 401', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(null, { status: 401 }))
+      .mockResolvedValueOnce(new Response(null, { status: 401 }));
+    vi.stubGlobal('fetch', fetchMock);
+    authMocks.auth.currentUser = { uid: 'firebase-2' };
+
+    await expect(
+      syncUser(
+        payload,
+        'firebase-1',
+        'firebase-token',
+        vi.fn().mockResolvedValue('fresh-token'),
+        signOutIfCurrentUser,
+      ),
+    ).rejects.toMatchObject({ kind: 'auth' });
+
+    expect(authMocks.logout).not.toHaveBeenCalled();
   });
 });
