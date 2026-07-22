@@ -41,6 +41,11 @@ function createRequestBody(body: RequestBody | undefined, headers: Headers): Bod
     return undefined;
   }
 
+  if (body instanceof FormData) {
+    headers.delete('Content-Type');
+    return body;
+  }
+
   if (isNativeBody(body)) {
     return body;
   }
@@ -58,6 +63,53 @@ function abortError(cause?: unknown) {
     retryable: false,
     cause,
   });
+}
+
+function isAbort(cause: unknown, signal?: AbortSignal) {
+  return signal?.aborted === true || (cause instanceof DOMException && cause.name === 'AbortError');
+}
+
+function lifecycleError(
+  cause: unknown,
+  phase: 'auth' | 'request' | 'network',
+  signal?: AbortSignal,
+) {
+  if (isAbort(cause, signal)) {
+    return abortError(cause);
+  }
+
+  if (phase === 'auth') {
+    return new AppError({
+      kind: 'auth',
+      message: 'Unable to authenticate the request. Please sign in again.',
+      retryable: false,
+      cause,
+    });
+  }
+
+  if (phase === 'request') {
+    return new AppError({
+      kind: 'validation',
+      message: 'The request could not be prepared. Check your input and try again.',
+      retryable: false,
+      cause,
+    });
+  }
+
+  return new AppError({
+    kind: 'network',
+    message: 'Unable to reach the server. Check your connection and try again.',
+    retryable: true,
+    cause,
+  });
+}
+
+async function discardResponseBody(response: Response) {
+  try {
+    await response.body?.cancel();
+  } catch {
+    // Disposal is best-effort and must never mask the primary request outcome.
+  }
 }
 
 function httpError(status: number) {
@@ -94,10 +146,9 @@ function isApiResponse(value: unknown): value is ApiResponse<unknown> {
 
   const response = value as Record<string, unknown>;
   return (
-    typeof response.success === 'boolean' &&
-    Object.hasOwn(response, 'data') &&
-    (response.message === undefined || typeof response.message === 'string') &&
-    (response.code === undefined || typeof response.code === 'string')
+    typeof response.code === 'string' &&
+    typeof response.message === 'string' &&
+    Object.hasOwn(response, 'data')
   );
 }
 
@@ -116,13 +167,12 @@ async function parseResponse<T>(response: Response): Promise<T> {
     });
   }
 
-  if (!isApiResponse(parsed) || !parsed.success) {
+  if (!isApiResponse(parsed)) {
     throw new AppError({
       kind: 'server',
       message: 'The server returned an invalid response.',
       status: response.status,
       retryable: false,
-      code: isApiResponse(parsed) ? parsed.code : undefined,
     });
   }
 
@@ -143,20 +193,42 @@ export function createApiClient({
         throw abortError();
       }
 
-      const headers = new Headers(options.headers);
-      if (!headers.has('Accept')) {
-        headers.set('Accept', 'application/json');
+      let headers: Headers;
+      try {
+        headers = new Headers(options.headers);
+        if (!headers.has('Accept')) {
+          headers.set('Accept', 'application/json');
+        }
+        if (options.workspaceId !== undefined) {
+          headers.set('X-Workspace-ID', options.workspaceId);
+        }
+      } catch (cause) {
+        throw lifecycleError(cause, 'request', options.signal);
       }
 
       if (authenticated) {
-        const token = forceRefresh ? await tokenProvider(true) : await tokenProvider();
-        if (token && !headers.has('Authorization')) {
-          headers.set('Authorization', `Bearer ${token}`);
+        let token: string | null;
+        try {
+          token = forceRefresh ? await tokenProvider(true) : await tokenProvider();
+        } catch (cause) {
+          throw lifecycleError(cause, 'auth', options.signal);
+        }
+
+        try {
+          headers.delete('Authorization');
+          if (token) {
+            headers.set('Authorization', `Bearer ${token}`);
+          }
+        } catch (cause) {
+          throw lifecycleError(cause, 'auth', options.signal);
         }
       }
 
-      if (options.workspaceId && !headers.has('X-Workspace-ID')) {
-        headers.set('X-Workspace-ID', options.workspaceId);
+      let body: BodyInit | undefined;
+      try {
+        body = createRequestBody(options.body, headers);
+      } catch (cause) {
+        throw lifecycleError(cause, 'request', options.signal);
       }
 
       let response: Response;
@@ -164,39 +236,40 @@ export function createApiClient({
         response = await fetchImpl(joinUrl(baseUrl, options.path), {
           method: options.method,
           headers,
-          body: createRequestBody(options.body, headers),
+          body,
           signal: options.signal,
         });
       } catch (cause) {
-        if (options.signal?.aborted || (cause instanceof DOMException && cause.name === 'AbortError')) {
-          throw abortError(cause);
-        }
-        if (cause instanceof AppError) {
-          throw cause;
-        }
-        throw new AppError({
-          kind: 'network',
-          message: 'Unable to reach the server. Check your connection and try again.',
-          retryable: true,
-          cause,
-        });
+        throw lifecycleError(cause, 'network', options.signal);
       }
 
       if (options.signal?.aborted) {
+        await discardResponseBody(response);
         throw abortError();
       }
 
       if (response.status === 401 && authenticated && !forceRefresh) {
+        await discardResponseBody(response);
         return execute(true);
       }
 
       if (response.status === 401 && authenticated) {
-        await onUnauthorized?.();
+        await discardResponseBody(response);
+        try {
+          await onUnauthorized?.();
+        } catch {
+          // Cleanup failures must not replace the terminal safe authentication error.
+        }
         throw httpError(401);
       }
 
       if (!response.ok) {
+        await discardResponseBody(response);
         throw httpError(response.status);
+      }
+
+      if (response.status === 204) {
+        return undefined as T;
       }
 
       return parseResponse<T>(response);

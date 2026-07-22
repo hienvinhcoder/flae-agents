@@ -50,6 +50,33 @@ describe('parseEnv', () => {
     );
   });
 
+  it('accepts secure HTTP and WebSocket protocols', async () => {
+    const { parseEnv } = await loadEnvironmentModule();
+
+    expect(
+      parseEnv({
+        ...validEnvironment,
+        VITE_API_URL: 'https://api.example.test/v1',
+        VITE_WS_URL: 'wss://api.example.test/v1',
+      }),
+    ).toMatchObject({
+      VITE_API_URL: 'https://api.example.test/v1',
+      VITE_WS_URL: 'wss://api.example.test/v1',
+    });
+  });
+
+  it.each([
+    ['VITE_API_URL', 'ftp://api.example.test/v1'],
+    ['VITE_API_URL', 'mailto:admin@example.test'],
+    ['VITE_WS_URL', 'https://api.example.test/v1'],
+    ['VITE_WS_URL', 'ftp://api.example.test/v1'],
+    ['VITE_WS_URL', 'mailto:admin@example.test'],
+  ] as const)('rejects an unsupported protocol for %s', async (key, value) => {
+    const { parseEnv } = await loadEnvironmentModule();
+
+    expect(() => parseEnv({ ...validEnvironment, [key]: value })).toThrow(new RegExp(key));
+  });
+
   it('returns an immutable environment and never leaks an invalid secret', async () => {
     const { parseEnv } = await loadEnvironmentModule();
     const parsed = parseEnv(validEnvironment);
