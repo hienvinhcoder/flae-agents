@@ -26,7 +26,7 @@ Keeping auth loading active through backend sync and clearing the Google success
 ## Workspaces, settings, membership, invitations, and OAuth
 
 - [ ] **WS-01 — renders workspace settings states.** `/dashboard/settings` defaults to General, `?mode=create` opens create mode, Members clears create mode, save/invite actions expose loading, and member/invitation lists render explicit empty states.
-- [ ] **WS-02 — restores and synchronizes workspace selection.** After workspace loading, selection precedence is valid local storage ID, user profile ID, then first workspace; zero workspaces clears selection; a changed selection is persisted locally and sent to the current-workspace API.
+- [ ] **WS-02 — restores and synchronizes workspace selection.** After workspace loading, selection precedence is valid local storage ID, user profile ID, then first workspace; zero workspaces clears selection. A changed selection updates the local signal and local storage before the current-workspace request; success then updates the auth profile, while failure is logged and retains the local selection.
 - [ ] **WS-03 — rejects an expired invite.** `/invite?token=<expired>` shows processing only while submitting, displays the backend/fallback expiration error, does not add/select a workspace, and returns to `/dashboard`. A missing token follows the invalid-token redirect without sending a request.
 - [ ] **WS-04 — accepts or declines an invite.** Acceptance adds and selects the returned workspace, renders success, then routes to Settings after 1.5 seconds; confirmed decline performs no API mutation and returns to the dashboard.
 - [ ] **WS-05 — enforces membership actions.** Only owner/admin users can invite and manage allowed member fields; successful role/status/remove/invite operations update local lists, while failures preserve data and surface the backend/fallback error.
@@ -60,7 +60,7 @@ Keeping auth loading active through backend sync and clearing the Google success
 
 - [ ] **AGENT-01 — renders agent list states.** `/dashboard/agents` shows loading, a dedicated empty card, or agent cards; fetch failure exits loading and toasts; a workspace change reloads the list.
 - [ ] **AGENT-02 — applies role-based management.** Owner/admin can create/edit/delete agents; member/viewer cannot see management actions; permission lookup failure defaults the list to `member`.
-- [ ] **AGENT-03 — creates a valid agent.** `/dashboard/agents/new` permits owner/admin only, requires name/system prompt/avatar/model/temperature, disables while saving, and returns to the list on success while retaining the form on error.
+- [ ] **AGENT-03 — creates a valid agent.** `/dashboard/agents/new` starts its owner/admin lookup without a permission-loading or form-disabled state, then redirects on denied/error. Submission requires name/system prompt/avatar/model/temperature, sets the only page `loading` state, disables/shows the submit spinner, and returns to the list on success while retaining the form on error.
 - [ ] **AGENT-04 — edits an existing agent.** `/dashboard/agents/:agentId/edit` loads and populates the form, applies model/temperature defaults, redirects on permission/fetch failure, and saves a partial agent update.
 - [ ] **AGENT-05 — renders agent chat states.** `/dashboard/agents/:agentId/chat` loads agent and sessions independently, opens the first session, renders no-session/no-message states, and exposes fetch/create/delete plus stream transport/parse errors without corrupting the active selection; message-level stream errors follow `CHAT-05` completion behavior.
 - [ ] **AGENT-06 — cancels an active stream.** Navigating away/unmounting while an agent response is streaming unsubscribes and closes the underlying `EventSource`; no later token/citation/error updates the page.
@@ -95,8 +95,10 @@ A dedicated search-empty message or visible handling for message-level `{ type: 
 - [ ] **API-02 — attaches workspace headers.** Workspace-scoped JSON requests carry the active/explicit `X-Workspace-ID`, with path and header referring to the same workspace.
 - [ ] **API-03 — handles connection loss and recovery.** Status `0` opens the connection modal, blocked requests remain quiet, health/auth sync can probe recovery, and a successful bypass request closes the modal.
 - [ ] **API-04 — handles server and auth errors.** `5xx` displays the translated server toast; non-sync `401` performs AUTH-06; local subscribers still receive errors where the interceptor rethrows.
-- [ ] **API-05 — types workspace selection.** The current-workspace update response is no longer `any` and local/profile state changes only after the typed success contract.
+- [ ] **API-05 — types workspace selection without changing ordering.** The current-workspace update response is no longer `any`. Angular parity writes the selection to the local signal and local storage before sending the request and retains it if the request fails. Automatic initialization updates the auth-profile `current_workspace_id` after success; sidebar selection does not update that profile locally.
 - [ ] **API-06 — preserves SSE transport constraints.** Native `EventSource` sends encoded message and Firebase token in the query and workspace in the path; it sends neither authorization nor workspace headers, and closes on done/error/unsubscribe.
+
+Waiting for current-workspace API success before applying local selection, or rolling local selection back on failure, would be React hardening rather than `API-05` Angular parity.
 
 ## Inventory verification
 
