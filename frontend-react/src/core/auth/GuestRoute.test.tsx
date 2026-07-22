@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it } from 'vitest';
 
@@ -15,17 +16,17 @@ const user: User = {
 
 function LocationProbe() {
   const location = useLocation();
-  return <output aria-label="current route">{location.pathname}</output>;
+  return <output aria-label="current route">{`${location.pathname}${location.search}`}</output>;
 }
 
-function renderGuestRoute() {
+function renderGuestRoute(initialEntry = '/auth/login') {
   return render(
-    <MemoryRouter initialEntries={['/auth/login']}>
+    <MemoryRouter initialEntries={[initialEntry]}>
       <Routes>
         <Route element={<RequireAnonymousRoute />}>
           <Route path="/auth/login" element={<h1>Sign in</h1>} />
         </Route>
-        <Route path="/dashboard" element={<LocationProbe />} />
+        <Route path="/dashboard/*" element={<LocationProbe />} />
       </Routes>
     </MemoryRouter>,
   );
@@ -58,5 +59,67 @@ describe('RequireAnonymousRoute', () => {
 
     expect(screen.getByLabelText('current route')).toHaveTextContent('/dashboard');
     expect(screen.queryByRole('heading', { name: 'Sign in' })).not.toBeInTheDocument();
+  });
+
+  it('returns a synchronized user to a safe local return URL', () => {
+    useAuthStore.getState().setAuthenticated(user);
+    renderGuestRoute(
+      '/auth/login?returnUrl=%2Fdashboard%2Fagents%2F42%3Ftab%3Dtools',
+    );
+
+    expect(screen.getByLabelText('current route')).toHaveTextContent(
+      '/dashboard/agents/42?tab=tools',
+    );
+  });
+
+  it.each([
+    'https://attacker.example/phish',
+    '//attacker.example/phish',
+    '/\\attacker.example/phish',
+  ])('falls back to the dashboard for unsafe return URL %s', (returnUrl) => {
+    useAuthStore.getState().setAuthenticated(user);
+    renderGuestRoute(`/auth/login?returnUrl=${encodeURIComponent(returnUrl)}`);
+
+    expect(screen.getByLabelText('current route')).toHaveTextContent('/dashboard');
+  });
+
+  it('round-trips a protected URL through login and back after authentication', async () => {
+    const interaction = userEvent.setup();
+    useAuthStore.getState().setAnonymous();
+
+    function LoginHarness() {
+      return (
+        <div>
+          <LocationProbe />
+          <button onClick={() => useAuthStore.getState().setAuthenticated(user)} type="button">
+            Complete sign in
+          </button>
+        </div>
+      );
+    }
+
+    const { ProtectedRoute } = await import('./ProtectedRoute');
+    render(
+      <MemoryRouter initialEntries={['/dashboard/agents/42?tab=tools']}>
+        <Routes>
+          <Route element={<ProtectedRoute />}>
+            <Route path="/dashboard/agents/:agentId" element={<LocationProbe />} />
+          </Route>
+          <Route element={<RequireAnonymousRoute />}>
+            <Route path="/auth/login" element={<LoginHarness />} />
+          </Route>
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByLabelText('current route')).toHaveTextContent(
+      '/auth/login?returnUrl=%2Fdashboard%2Fagents%2F42%3Ftab%3Dtools',
+    );
+
+    await interaction.click(screen.getByRole('button', { name: 'Complete sign in' }));
+
+    expect(screen.getByLabelText('current route')).toHaveTextContent(
+      '/dashboard/agents/42?tab=tools',
+    );
   });
 });

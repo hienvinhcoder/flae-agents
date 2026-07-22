@@ -13,6 +13,7 @@ const firebaseMocks = vi.hoisted(() => ({
   getRedirectResult: vi.fn(),
   onAuthStateChanged: vi.fn(),
   syncUser: vi.fn(),
+  logout: vi.fn(),
   clearQueryCache: vi.fn(),
 }));
 
@@ -22,6 +23,7 @@ vi.mock('@tanstack/react-query', () => ({
 
 vi.mock('./firebase', () => ({
   firebaseAuth: firebaseMocks.auth,
+  logout: firebaseMocks.logout,
 }));
 
 vi.mock('firebase/auth', () => ({
@@ -36,6 +38,7 @@ vi.mock('../../features/auth/api/auth-api', () => ({
 import { AuthBootstrap } from './AuthBootstrap';
 import { useAuthStore } from '../stores/auth-store';
 import { useWorkspaceStore } from '../stores/workspace-store';
+import { beginRegistrationMetadata } from './registration-coordinator';
 
 const databaseUser: User = {
   id: 'user-1',
@@ -93,6 +96,10 @@ describe('AuthBootstrap', () => {
     firebaseMocks.auth.currentUser = null;
     firebaseMocks.auth.authStateReady.mockResolvedValue();
     firebaseMocks.getRedirectResult.mockResolvedValue(null);
+    firebaseMocks.logout.mockImplementation(() => {
+      firebaseMocks.auth.currentUser = null;
+      return Promise.resolve();
+    });
     firebaseMocks.onAuthStateChanged.mockImplementation(
       (_auth: unknown, listener: (user: FirebaseUser | null) => void) => {
         authStateListener = listener;
@@ -154,6 +161,7 @@ describe('AuthBootstrap', () => {
         avatar_url: null,
         login_provider: 'google',
       },
+      'firebase-1',
       'firebase-token',
       expect.any(Function),
     );
@@ -192,6 +200,7 @@ describe('AuthBootstrap', () => {
       'Unable to finish signing in. Please try again.',
     );
     expect(screen.getByLabelText('auth error')).not.toHaveTextContent('member@example.com');
+    expect(firebaseMocks.logout).toHaveBeenCalledOnce();
   });
 
   it('does not authenticate a restored user whose Firebase session disappears during sync', async () => {
@@ -218,19 +227,10 @@ describe('AuthBootstrap', () => {
     expect(screen.getByLabelText('auth user')).toHaveTextContent('none');
   });
 
-  it('lets the first auth-state snapshot retry a failed restored-session sync', async () => {
+  it('recovers when the same Firebase UID signs in again after terminal sync cleanup', async () => {
     const restoredUser = firebaseUser();
     firebaseMocks.auth.currentUser = restoredUser;
-    firebaseMocks.syncUser
-      .mockRejectedValueOnce(new Error('temporary backend outage'))
-      .mockResolvedValueOnce(databaseUser);
-    firebaseMocks.onAuthStateChanged.mockImplementation(
-      (_auth: unknown, listener: (user: FirebaseUser | null) => void) => {
-        authStateListener = listener;
-        listener(restoredUser);
-        return unsubscribe;
-      },
-    );
+    firebaseMocks.syncUser.mockRejectedValueOnce(new Error('temporary backend outage'));
 
     render(
       <AuthBootstrap>
@@ -238,10 +238,104 @@ describe('AuthBootstrap', () => {
       </AuthBootstrap>,
     );
 
+    await waitFor(() => expect(firebaseMocks.logout).toHaveBeenCalledOnce());
+    expect(screen.getByLabelText('auth status')).toHaveTextContent('anonymous');
+    expect(screen.getByLabelText('auth error')).toHaveTextContent(
+      'Unable to finish signing in. Please try again.',
+    );
+
+    firebaseMocks.syncUser.mockResolvedValue(databaseUser);
+    firebaseMocks.auth.currentUser = restoredUser;
+    act(() => authStateListener?.(restoredUser));
+
     await waitFor(() =>
       expect(screen.getByLabelText('auth status')).toHaveTextContent('authenticated'),
     );
     expect(firebaseMocks.syncUser).toHaveBeenCalledTimes(2);
+    expect(screen.getByLabelText('auth error')).toHaveTextContent('none');
+  });
+
+  it('waits for committed registration metadata before syncing the new Firebase user', async () => {
+    render(
+      <AuthBootstrap>
+        <AuthStateProbe />
+      </AuthBootstrap>,
+    );
+    await waitFor(() =>
+      expect(screen.getByLabelText('auth status')).toHaveTextContent('anonymous'),
+    );
+
+    const registration = beginRegistrationMetadata('member@example.com', 'Requested Name');
+    const registeredUser = firebaseUser({
+      displayName: null,
+      providerData: [
+        {
+          displayName: null,
+          email: 'member@example.com',
+          phoneNumber: null,
+          photoURL: null,
+          providerId: 'password',
+          uid: 'firebase-1',
+        },
+      ],
+    });
+    firebaseMocks.auth.currentUser = registeredUser;
+    firebaseMocks.syncUser.mockResolvedValue({
+      ...databaseUser,
+      full_name: 'Requested Name',
+      login_providers: ['email_password'],
+    });
+
+    act(() => authStateListener?.(registeredUser));
+    await waitFor(() =>
+      expect(screen.getByLabelText('auth status')).toHaveTextContent('syncing'),
+    );
+    expect(firebaseMocks.syncUser).not.toHaveBeenCalled();
+
+    registration.complete();
+
+    await waitFor(() =>
+      expect(screen.getByLabelText('auth status')).toHaveTextContent('authenticated'),
+    );
+    expect(firebaseMocks.syncUser).toHaveBeenCalledWith(
+      {
+        email: 'member@example.com',
+        full_name: 'Requested Name',
+        avatar_url: null,
+        login_provider: 'email_password',
+      },
+      'firebase-1',
+      'firebase-token',
+      expect.any(Function),
+    );
+  });
+
+  it('never syncs partial backend state when registration metadata setup fails', async () => {
+    render(
+      <AuthBootstrap>
+        <AuthStateProbe />
+      </AuthBootstrap>,
+    );
+    await waitFor(() =>
+      expect(screen.getByLabelText('auth status')).toHaveTextContent('anonymous'),
+    );
+
+    const registration = beginRegistrationMetadata('member@example.com', 'Requested Name');
+    const registeredUser = firebaseUser({ displayName: null });
+    firebaseMocks.auth.currentUser = registeredUser;
+    act(() => authStateListener?.(registeredUser));
+    await waitFor(() =>
+      expect(screen.getByLabelText('auth status')).toHaveTextContent('syncing'),
+    );
+
+    registration.fail();
+
+    await waitFor(() => expect(firebaseMocks.logout).toHaveBeenCalledOnce());
+    expect(firebaseMocks.syncUser).not.toHaveBeenCalled();
+    expect(screen.getByLabelText('auth status')).toHaveTextContent('anonymous');
+    expect(screen.getByLabelText('auth error')).toHaveTextContent(
+      'Unable to finish signing in. Please try again.',
+    );
   });
 
   it('returns to anonymous state when Firebase emits a logout', async () => {

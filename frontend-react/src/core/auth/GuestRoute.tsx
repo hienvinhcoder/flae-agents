@@ -1,9 +1,11 @@
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 
 import { useAuthStore } from '../stores/auth-store';
+import { safeReturnUrl } from './return-url';
 
 export function RequireAnonymousRoute() {
   const status = useAuthStore((state) => state.status);
+  const location = useLocation();
 
   if (status === 'initializing' || status === 'syncing') {
     return (
@@ -19,7 +21,8 @@ export function RequireAnonymousRoute() {
   }
 
   if (status === 'authenticated') {
-    return <Navigate replace to="/dashboard" />;
+    const returnUrl = new URLSearchParams(location.search).get('returnUrl');
+    return <Navigate replace to={safeReturnUrl(returnUrl)} />;
   }
 
   return <Outlet />;

@@ -62,4 +62,31 @@ describe('RegisterPage', () => {
     expect(alert).toHaveTextContent('This email is already in use.');
     expect(alert).not.toHaveTextContent('member@example.com');
   });
+
+  it('preserves the safe return URL when linking back to login', () => {
+    render(
+      <MemoryRouter initialEntries={['/auth/register?returnUrl=%2Fdashboard%2Fsettings']}>
+        <RegisterPage />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('link', { name: 'Sign in' })).toHaveAttribute(
+      'href',
+      '/auth/login?returnUrl=%2Fdashboard%2Fsettings',
+    );
+  });
+
+  it('does not clear a bootstrap sync error when the page mounts', () => {
+    useAuthStore.getState().setAnonymous('Unable to finish signing in. Please try again.');
+
+    render(
+      <MemoryRouter>
+        <RegisterPage />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Unable to finish signing in. Please try again.',
+    );
+  });
 });

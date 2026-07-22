@@ -10,6 +10,8 @@ import {
 } from 'firebase/auth';
 
 import { env } from '../config/env';
+import { AppError } from '../api/errors';
+import { beginRegistrationMetadata, clearRegistrationMetadata } from './registration-coordinator';
 
 const existingApp = getApps().at(0);
 const firebaseApp =
@@ -26,13 +28,38 @@ const firebaseApp =
 export const firebaseAuth = getAuth(firebaseApp);
 
 export async function signInWithEmail(email: string, password: string) {
+  clearRegistrationMetadata(email);
   return signInWithEmailAndPassword(firebaseAuth, email, password);
 }
 
 export async function registerWithEmail(email: string, password: string, fullName: string) {
-  const credential = await createUserWithEmailAndPassword(firebaseAuth, email, password);
-  await updateProfile(credential.user, { displayName: fullName });
-  return credential;
+  const registration = beginRegistrationMetadata(email, fullName);
+  let credential;
+
+  try {
+    credential = await createUserWithEmailAndPassword(firebaseAuth, email, password);
+  } catch (cause) {
+    registration.abort();
+    throw cause;
+  }
+
+  try {
+    await updateProfile(credential.user, { displayName: fullName });
+    registration.complete();
+    return credential;
+  } catch {
+    registration.fail();
+    try {
+      await signOut(firebaseAuth);
+    } catch {
+      // Rollback is best-effort; the bootstrap terminal cleanup is idempotent.
+    }
+    throw new AppError({
+      kind: 'auth',
+      message: 'Unable to finish creating your account. Please try again.',
+      retryable: false,
+    });
+  }
 }
 
 export async function signInWithGoogle() {

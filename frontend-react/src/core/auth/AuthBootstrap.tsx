@@ -4,8 +4,9 @@ import { useEffect, type PropsWithChildren } from 'react';
 
 import { syncUser } from '../../features/auth/api/auth-api';
 import { useAuthStore, type LoginProvider, type SyncUserPayload } from '../stores/auth-store';
-import { useWorkspaceStore } from '../stores/workspace-store';
-import { firebaseAuth } from './firebase';
+import { firebaseAuth, logout as logoutFromFirebase } from './firebase';
+import { consumeRegistrationMetadata } from './registration-coordinator';
+import { clearClientSession } from './session-cleanup';
 
 const SYNC_ERROR_MESSAGE = 'Unable to finish signing in. Please try again.';
 
@@ -16,10 +17,10 @@ function loginProviderFor(user: FirebaseUser): LoginProvider {
   return 'email_password';
 }
 
-function syncPayloadFor(user: FirebaseUser): SyncUserPayload {
+function syncPayloadFor(user: FirebaseUser, registrationFullName?: string): SyncUserPayload {
   return {
     email: user.email ?? '',
-    full_name: user.displayName?.trim() || 'User',
+    full_name: registrationFullName ?? (user.displayName?.trim() || 'User'),
     avatar_url: user.photoURL ?? null,
     login_provider: loginProviderFor(user),
   };
@@ -32,11 +33,20 @@ export function AuthBootstrap({ children }: PropsWithChildren) {
     let active = true;
     let unsubscribe: (() => void) | undefined;
     let operation = 0;
+    let terminalError: string | null = null;
 
-    const clearAnonymousSession = (error: string | null = null) => {
-      useAuthStore.getState().setAnonymous(error);
-      useWorkspaceStore.getState().reset();
-      queryClient.clear();
+    const clearAnonymousSession = (error: string | null = terminalError) => {
+      clearClientSession(queryClient, error);
+    };
+
+    const terminateSync = async () => {
+      terminalError = SYNC_ERROR_MESSAGE;
+      try {
+        await logoutFromFirebase();
+      } catch {
+        // A second sign-out may already have run through the API client's 401 handler.
+      }
+      if (active) clearAnonymousSession();
     };
 
     const synchronize = async (firebaseUser: FirebaseUser) => {
@@ -44,15 +54,18 @@ export function AuthBootstrap({ children }: PropsWithChildren) {
       useAuthStore.getState().setSyncing();
 
       try {
+        const registrationMetadata = await consumeRegistrationMetadata(firebaseUser.email);
         const initialToken = await firebaseUser.getIdToken(false);
         const user = await syncUser(
-          syncPayloadFor(firebaseUser),
+          syncPayloadFor(firebaseUser, registrationMetadata?.fullName),
+          firebaseUser.uid,
           initialToken,
           () => firebaseUser.getIdToken(true),
         );
 
         if (active && operation === currentOperation) {
           if (firebaseAuth.currentUser?.uid === firebaseUser.uid) {
+            terminalError = null;
             useAuthStore.getState().setAuthenticated(user);
           } else {
             clearAnonymousSession();
@@ -60,7 +73,7 @@ export function AuthBootstrap({ children }: PropsWithChildren) {
         }
       } catch {
         if (active && operation === currentOperation) {
-          clearAnonymousSession(SYNC_ERROR_MESSAGE);
+          await terminateSync();
         }
       }
     };
@@ -87,9 +100,7 @@ export function AuthBootstrap({ children }: PropsWithChildren) {
 
       if (!active) return;
 
-      const restoredWasSynchronized =
-        restoredUser !== null && useAuthStore.getState().status === 'authenticated';
-      let skipInitialUid = restoredWasSynchronized ? restoredUser.uid : null;
+      let skipInitialUid = firebaseAuth.currentUser?.uid ?? null;
       unsubscribe = onAuthStateChanged(firebaseAuth, (firebaseUser) => {
         if (!active) return;
 
@@ -105,6 +116,7 @@ export function AuthBootstrap({ children }: PropsWithChildren) {
           return;
         }
 
+        terminalError = null;
         void synchronize(firebaseUser);
       });
     };

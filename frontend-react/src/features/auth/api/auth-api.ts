@@ -1,10 +1,13 @@
 import { AppError } from '../../../core/api/errors';
 import { createApiClient } from '../../../core/api/client';
+import { logout as logoutFromFirebase } from '../../../core/auth/firebase';
 import { env } from '../../../core/config/env';
 import type { SyncUserPayload, User } from '../../../core/stores/auth-store';
+import { authUserSchema } from '../schemas/auth-user-schema';
 
 export async function syncUser(
   payload: SyncUserPayload,
+  expectedFirebaseUid: string,
   initialToken: string,
   refreshToken: () => Promise<string>,
 ): Promise<User> {
@@ -12,8 +15,9 @@ export async function syncUser(
     baseUrl: env.VITE_API_URL,
     tokenProvider: (forceRefresh) =>
       forceRefresh ? refreshToken() : Promise.resolve(initialToken),
+    onUnauthorized: logoutFromFirebase,
   });
-  const user = await client.request<User>({
+  const responseData = await client.request<unknown>({
     path: '/auth/sync-user',
     method: 'POST',
     body: {
@@ -24,7 +28,7 @@ export async function syncUser(
     },
   });
 
-  if (!user) {
+  if (!responseData) {
     throw new AppError({
       kind: 'auth',
       message: 'Unable to synchronize your account. Please try again.',
@@ -32,5 +36,23 @@ export async function syncUser(
     });
   }
 
+  const parsedUser = authUserSchema.safeParse(responseData);
+  if (!parsedUser.success) {
+    throw new AppError({
+      kind: 'server',
+      message: 'The server returned invalid account data.',
+      retryable: false,
+    });
+  }
+
+  if (parsedUser.data.firebase_uid !== expectedFirebaseUid) {
+    throw new AppError({
+      kind: 'auth',
+      message: 'Unable to verify the synchronized account.',
+      retryable: false,
+    });
+  }
+
+  const user: User = parsedUser.data;
   return user;
 }

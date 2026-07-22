@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { signInWithEmail, signInWithGoogle } from '../../../core/auth/firebase';
+import { authPathWithReturnUrl, safeReturnUrl } from '../../../core/auth/return-url';
 import { useAuthStore } from '../../../core/stores/auth-store';
 import { loginSchema, type LoginFormValues } from '../schemas/auth-schema';
 
@@ -17,10 +18,6 @@ function authenticationErrorMessage(error: unknown) {
   }
   if (code === 'auth/popup-closed-by-user') return 'Google sign-in was cancelled.';
   return 'Unable to sign in. Please try again.';
-}
-
-function safeReturnUrl(value: string | null) {
-  return value?.startsWith('/') && !value.startsWith('//') ? value : '/dashboard';
 }
 
 export function LoginPage() {
@@ -39,8 +36,7 @@ export function LoginPage() {
   } = useForm<LoginFormValues>({ resolver: zodResolver(loginSchema) });
 
   useEffect(() => {
-    clearError();
-    return clearError;
+    return () => clearError();
   }, [clearError]);
 
   useEffect(() => {
@@ -132,7 +128,10 @@ export function LoginPage() {
         </button>
 
         <p className="mt-6 text-center text-ui-ink-secondary">
-          New to FLAE? <Link to="/auth/register">Create an account</Link>
+          New to FLAE?{' '}
+          <Link to={authPathWithReturnUrl('/auth/register', searchParams.get('returnUrl'))}>
+            Create an account
+          </Link>
         </p>
       </section>
     </main>

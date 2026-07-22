@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { registerWithEmail, signInWithGoogle } from '../../../core/auth/firebase';
+import { authPathWithReturnUrl, safeReturnUrl } from '../../../core/auth/return-url';
 import { useAuthStore } from '../../../core/stores/auth-store';
 import { registerSchema, type RegisterFormValues } from '../schemas/auth-schema';
 
@@ -16,10 +17,6 @@ function registrationErrorMessage(error: unknown) {
   if (code === 'auth/weak-password') return 'Choose a stronger password.';
   if (code === 'auth/popup-closed-by-user') return 'Google sign-in was cancelled.';
   return 'Unable to create your account. Please try again.';
-}
-
-function safeReturnUrl(value: string | null) {
-  return value?.startsWith('/') && !value.startsWith('//') ? value : '/dashboard';
 }
 
 export function RegisterPage() {
@@ -38,8 +35,7 @@ export function RegisterPage() {
   } = useForm<RegisterFormValues>({ resolver: zodResolver(registerSchema) });
 
   useEffect(() => {
-    clearError();
-    return clearError;
+    return () => clearError();
   }, [clearError]);
 
   useEffect(() => {
@@ -144,7 +140,10 @@ export function RegisterPage() {
         </button>
 
         <p className="mt-6 text-center text-ui-ink-secondary">
-          Already have an account? <Link to="/auth/login">Sign in</Link>
+          Already have an account?{' '}
+          <Link to={authPathWithReturnUrl('/auth/login', searchParams.get('returnUrl'))}>
+            Sign in
+          </Link>
         </p>
       </section>
     </main>

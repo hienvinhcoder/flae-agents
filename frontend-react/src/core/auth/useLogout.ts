@@ -3,8 +3,8 @@ import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { useAuthStore } from '../stores/auth-store';
-import { useWorkspaceStore } from '../stores/workspace-store';
 import { logout as logoutFromFirebase } from './firebase';
+import { clearClientSession } from './session-cleanup';
 
 const LOGOUT_ERROR_MESSAGE = 'Unable to sign out. Please try again.';
 
@@ -21,9 +21,7 @@ export function useLogout() {
 
     try {
       await logoutFromFirebase();
-      useAuthStore.getState().setAnonymous();
-      useWorkspaceStore.getState().reset();
-      queryClient.clear();
+      clearClientSession(queryClient);
       void navigate('/auth/login', { replace: true });
     } catch {
       useAuthStore.getState().setError(LOGOUT_ERROR_MESSAGE);

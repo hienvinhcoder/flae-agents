@@ -76,4 +76,23 @@ describe('LoginPage', () => {
     expect(screen.getByText('Password must contain at least 6 characters.')).toBeInTheDocument();
     expect(firebaseMocks.signInWithEmail).not.toHaveBeenCalled();
   });
+
+  it('preserves the safe return URL when linking to registration', () => {
+    renderPage();
+
+    expect(screen.getByRole('link', { name: 'Create an account' })).toHaveAttribute(
+      'href',
+      '/auth/register?returnUrl=%2Fdashboard%2Fagents',
+    );
+  });
+
+  it('does not clear a bootstrap sync error when the page mounts', () => {
+    useAuthStore.getState().setAnonymous('Unable to finish signing in. Please try again.');
+
+    renderPage();
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Unable to finish signing in. Please try again.',
+    );
+  });
 });

@@ -47,6 +47,15 @@ import {
   signInWithEmail,
   signInWithGoogle,
 } from './firebase';
+import { consumeRegistrationMetadata } from './registration-coordinator';
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((promiseResolve) => {
+    resolve = promiseResolve;
+  });
+  return { promise, resolve };
+}
 
 describe('Firebase authentication adapter', () => {
   beforeEach(() => {
@@ -83,6 +92,62 @@ describe('Firebase authentication adapter', () => {
     expect(firebaseMocks.updateProfile).toHaveBeenCalledWith(firebaseMocks.credential.user, {
       displayName: 'Member One',
     });
+  });
+
+  it('publishes registration metadata before createUser and only releases it after profile update', async () => {
+    const profileUpdate = deferred<void>();
+    let metadata: ReturnType<typeof consumeRegistrationMetadata> | undefined;
+    firebaseMocks.createUserWithEmailAndPassword.mockImplementation(() => {
+      metadata = consumeRegistrationMetadata('member@example.com');
+      return Promise.resolve(firebaseMocks.credential);
+    });
+    firebaseMocks.updateProfile.mockReturnValue(profileUpdate.promise);
+
+    const registration = registerWithEmail(
+      'member@example.com',
+      'secret-value',
+      'Member One',
+    );
+    await Promise.resolve();
+    expect(metadata).toBeDefined();
+    let metadataSettled = false;
+    void metadata?.finally(() => {
+      metadataSettled = true;
+    });
+    await Promise.resolve();
+    expect(metadataSettled).toBe(false);
+
+    profileUpdate.resolve();
+
+    await expect(registration).resolves.toEqual(firebaseMocks.credential);
+    await expect(metadata).resolves.toEqual({ fullName: 'Member One' });
+  });
+
+  it('rolls back Firebase auth and blocks metadata consumption when profile update fails', async () => {
+    let metadata: ReturnType<typeof consumeRegistrationMetadata> | undefined;
+    firebaseMocks.createUserWithEmailAndPassword.mockImplementation(() => {
+      metadata = consumeRegistrationMetadata('member@example.com');
+      return Promise.resolve(firebaseMocks.credential);
+    });
+    firebaseMocks.updateProfile.mockRejectedValue(
+      new Error('member@example.com profile update included firebase-token'),
+    );
+
+    const registration = registerWithEmail(
+      'member@example.com',
+      'secret-value',
+      'Member One',
+    );
+
+    await expect(registration).rejects.toMatchObject({
+      kind: 'auth',
+      message: 'Unable to finish creating your account. Please try again.',
+    });
+    await expect(metadata).rejects.toMatchObject({
+      kind: 'auth',
+      message: 'Unable to finish creating your account. Please try again.',
+    });
+    expect(firebaseMocks.signOut).toHaveBeenCalledWith(firebaseAuth);
   });
 
   it('signs out the configured Firebase session', async () => {
