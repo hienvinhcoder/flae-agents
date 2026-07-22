@@ -58,7 +58,7 @@ describe('createApiClient', () => {
       method: 'GET',
       workspaceId: 'workspace-1',
     });
-    expectTypeOf(result).toEqualTypeOf<Promise<{ id: string }>>();
+    expectTypeOf(result).toEqualTypeOf<Promise<{ id: string } | null>>();
     await expect(result).resolves.toEqual({ id: 'item-1' });
 
     const request = harness.requests[0];
@@ -77,10 +77,19 @@ describe('createApiClient', () => {
       fetchImpl: harness.fetchImpl,
     });
 
-    await client.request({ path: '/health', method: 'GET', auth: false });
+    await client.request({
+      path: '/health',
+      method: 'GET',
+      auth: false,
+      headers: {
+        Authorization: 'Bearer caller-token',
+        'X-Workspace-ID': 'caller-workspace',
+      },
+    });
 
     expect(tokenProvider).not.toHaveBeenCalled();
     expect(harness.requests[0]?.headers.has('Authorization')).toBe(false);
+    expect(harness.requests[0]?.headers.has('X-Workspace-ID')).toBe(false);
   });
 
   it('sets JSON content type for JSON bodies but not FormData', async () => {
@@ -178,7 +187,12 @@ describe('createApiClient', () => {
 
     const error = await client.request({ path: '/items', method: 'GET' }).catch((cause: unknown) => cause);
 
-    expect(error).toMatchObject({ kind: 'auth', status: 401, retryable: false });
+    expect(error).toMatchObject({
+      kind: 'auth',
+      status: 401,
+      retryable: false,
+      code: 'AUTH_CLEANUP_FAILED',
+    });
     expect(harness.requests).toHaveLength(2);
     expect(tokenProvider).toHaveBeenCalledTimes(2);
     expect(onUnauthorized).toHaveBeenCalledTimes(1);
@@ -344,20 +358,37 @@ describe('createApiClient', () => {
       fetchImpl: harness.fetchImpl,
     });
 
-    await expect(
-      client.request<{ id: string } | null>({ path: '/items', method: 'GET' }),
-    ).resolves.toBeNull();
+    await expect(client.request<{ id: string }>({ path: '/items', method: 'GET' })).resolves.toBeNull();
   });
 
-  it('returns undefined for a successful 204 response', async () => {
-    const harness = createFetchHarness(new Response(null, { status: 204 }));
+  it.each([204, 205])('returns undefined for an explicit void response with HTTP %i', async (status) => {
+    const harness = createFetchHarness(new Response(null, { status }));
     const client = createApiClient({
       baseUrl: 'https://api.example.test',
       tokenProvider: () => Promise.resolve(null),
       fetchImpl: harness.fetchImpl,
     });
 
-    await expect(client.request<void>({ path: '/items', method: 'DELETE' })).resolves.toBeUndefined();
+    const result = client.request({ path: '/items', method: 'DELETE', response: 'void' });
+    expectTypeOf(result).toEqualTypeOf<Promise<void>>();
+    await expect(result).resolves.toBeUndefined();
+  });
+
+  it.each([204, 205])('rejects HTTP %i as an invalid data response', async (status) => {
+    const harness = createFetchHarness(new Response(null, { status }));
+    const client = createApiClient({
+      baseUrl: 'https://api.example.test',
+      tokenProvider: () => Promise.resolve(null),
+      fetchImpl: harness.fetchImpl,
+    });
+
+    const error = await client
+      .request<{ id: string }>({ path: '/items', method: 'GET' })
+      .catch((cause: unknown) => cause);
+
+    expect(error).toBeInstanceOf(AppError);
+    expect(error).toMatchObject({ kind: 'server', status, retryable: false });
+    expect((error as Error).message).toBe('The server returned an invalid response.');
   });
 
   it('normalizes an ordinary 4xx response without exposing its body', async () => {

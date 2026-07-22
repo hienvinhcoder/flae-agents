@@ -7,7 +7,7 @@ type JsonPrimitive = boolean | null | number | string;
 export type JsonValue = JsonPrimitive | { readonly [key: string]: JsonValue } | readonly JsonValue[];
 export type RequestBody = Blob | FormData | JsonValue | URLSearchParams;
 
-export interface ApiRequestOptions {
+interface ApiRequestOptionsBase {
   path: string;
   method: HttpMethod;
   body?: RequestBody;
@@ -17,6 +17,16 @@ export interface ApiRequestOptions {
   headers?: HeadersInit;
 }
 
+export interface DataApiRequestOptions extends ApiRequestOptionsBase {
+  response?: 'data';
+}
+
+export interface VoidApiRequestOptions extends ApiRequestOptionsBase {
+  response: 'void';
+}
+
+export type ApiRequestOptions = DataApiRequestOptions | VoidApiRequestOptions;
+
 export interface ApiClientOptions {
   baseUrl: string;
   tokenProvider: (forceRefresh?: boolean) => Promise<string | null>;
@@ -25,7 +35,8 @@ export interface ApiClientOptions {
 }
 
 export interface ApiClient {
-  request<T>(options: ApiRequestOptions): Promise<T>;
+  request<T>(options: DataApiRequestOptions): Promise<T | null>;
+  request(options: VoidApiRequestOptions): Promise<void>;
 }
 
 function joinUrl(baseUrl: string, path: string) {
@@ -112,13 +123,14 @@ async function discardResponseBody(response: Response) {
   }
 }
 
-function httpError(status: number) {
+function httpError(status: number, code?: string) {
   if (status === 401) {
     return new AppError({
       kind: 'auth',
       message: 'Your session has expired. Please sign in again.',
       status,
       retryable: false,
+      code,
     });
   }
 
@@ -152,7 +164,7 @@ function isApiResponse(value: unknown): value is ApiResponse<unknown> {
   );
 }
 
-async function parseResponse<T>(response: Response): Promise<T> {
+async function parseResponse<T>(response: Response): Promise<T | null> {
   let parsed: unknown;
 
   try {
@@ -176,7 +188,7 @@ async function parseResponse<T>(response: Response): Promise<T> {
     });
   }
 
-  return parsed.data as T;
+  return parsed.data as T | null;
 }
 
 export function createApiClient({
@@ -185,10 +197,12 @@ export function createApiClient({
   onUnauthorized,
   fetchImpl = fetch,
 }: ApiClientOptions): ApiClient {
-  async function request<T>(options: ApiRequestOptions): Promise<T> {
+  function request<T>(options: DataApiRequestOptions): Promise<T | null>;
+  function request(options: VoidApiRequestOptions): Promise<void>;
+  async function request<T>(options: ApiRequestOptions): Promise<T | null | void> {
     const authenticated = options.auth !== false;
 
-    async function execute(forceRefresh: boolean): Promise<T> {
+    async function execute(forceRefresh: boolean): Promise<T | null | void> {
       if (options.signal?.aborted) {
         throw abortError();
       }
@@ -199,6 +213,8 @@ export function createApiClient({
         if (!headers.has('Accept')) {
           headers.set('Accept', 'application/json');
         }
+        headers.delete('Authorization');
+        headers.delete('X-Workspace-ID');
         if (options.workspaceId !== undefined) {
           headers.set('X-Workspace-ID', options.workspaceId);
         }
@@ -215,7 +231,6 @@ export function createApiClient({
         }
 
         try {
-          headers.delete('Authorization');
           if (token) {
             headers.set('Authorization', `Bearer ${token}`);
           }
@@ -255,12 +270,13 @@ export function createApiClient({
 
       if (response.status === 401 && authenticated) {
         await discardResponseBody(response);
+        let cleanupFailed = false;
         try {
           await onUnauthorized?.();
         } catch {
-          // Cleanup failures must not replace the terminal safe authentication error.
+          cleanupFailed = true;
         }
-        throw httpError(401);
+        throw httpError(401, cleanupFailed ? 'AUTH_CLEANUP_FAILED' : undefined);
       }
 
       if (!response.ok) {
@@ -268,8 +284,19 @@ export function createApiClient({
         throw httpError(response.status);
       }
 
-      if (response.status === 204) {
-        return undefined as T;
+      if (options.response === 'void') {
+        await discardResponseBody(response);
+        return undefined;
+      }
+
+      if (response.status === 204 || response.status === 205) {
+        await discardResponseBody(response);
+        throw new AppError({
+          kind: 'server',
+          message: 'The server returned an invalid response.',
+          status: response.status,
+          retryable: false,
+        });
       }
 
       return parseResponse<T>(response);
