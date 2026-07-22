@@ -3,6 +3,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { useState, type PropsWithChildren } from 'react';
 
 import { AppError } from '../../core/api/errors';
+import { AuthBootstrap } from '../../core/auth/AuthBootstrap';
 
 function createQueryClient() {
   return new QueryClient({
@@ -26,7 +27,7 @@ export function AppProviders({ children }: PropsWithChildren) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {children}
+      <AuthBootstrap>{children}</AuthBootstrap>
       {import.meta.env.DEV ? <ReactQueryDevtools initialIsOpen={false} /> : null}
     </QueryClientProvider>
   );

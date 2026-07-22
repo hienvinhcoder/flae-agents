@@ -1,7 +1,16 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
 import { useEffect } from 'react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+const authBootstrapMock = vi.hoisted(() => vi.fn());
+
+vi.mock('../../core/auth/AuthBootstrap', () => ({
+  AuthBootstrap: ({ children }: { children: React.ReactNode }) => {
+    authBootstrapMock();
+    return <div data-testid="auth-bootstrap">{children}</div>;
+  },
+}));
 
 import { AppError } from '../../core/api/errors';
 import { AppProviders } from './AppProviders';
@@ -27,6 +36,8 @@ describe('AppProviders', () => {
     );
 
     expect(screen.getByText('Provider child')).toBeInTheDocument();
+    expect(screen.getByTestId('auth-bootstrap')).toBeInTheDocument();
+    expect(authBootstrapMock).toHaveBeenCalledOnce();
     rerender(
       <AppProviders>
         <QueryClientConsumer onClient={onClient} />
