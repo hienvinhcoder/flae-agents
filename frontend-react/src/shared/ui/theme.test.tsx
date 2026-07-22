@@ -10,12 +10,13 @@ import { describe, expect, it } from 'vitest';
 const sourceDirectory = join(cwd(), 'src');
 const stylesheetPath = join(sourceDirectory, 'styles.css');
 const stylesheet = existsSync(stylesheetPath) ? readFileSync(stylesheetPath, 'utf8') : '';
+const primarySoftValue = ['rgba(', ['242', '140', '69', '0.1'].join(', '), ')'].join('');
 
 const immutableBrandTokens = [
   ['--color-primary', `#${['f2', '8c', '45'].join('')}`],
   ['--color-primary-hover', `#${['e7', '7e', '37'].join('')}`],
   ['--color-primary-active', `#${['d9', '6f', '26'].join('')}`],
-  ['--color-primary-soft', 'rgba(242, 140, 69, 0.1)'],
+  ['--color-primary-soft', primarySoftValue],
 ] as const;
 
 function collectTypeScriptFiles(directory: string): string[] {
@@ -53,7 +54,15 @@ describe('theme contract', () => {
   });
 
   it('keeps brand color literals out of TypeScript source', () => {
-    const brandLiteral = new RegExp(`#(?:${['f28c45', 'e77e37', 'd96f26'].join('|')})`, 'i');
+    const primarySoftPattern = [
+      'rgba\\(',
+      ['242', '140', '69', '0\\.1'].join(',\\s*'),
+      '\\)',
+    ].join('');
+    const brandLiteral = new RegExp(
+      [`#(?:${['f28c45', 'e77e37', 'd96f26'].join('|')})`, primarySoftPattern].join('|'),
+      'i',
+    );
     const violations = collectTypeScriptFiles(sourceDirectory).filter((path) =>
       brandLiteral.test(readFileSync(path, 'utf8')),
     );
