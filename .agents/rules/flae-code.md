@@ -30,7 +30,7 @@ Tài liệu này định nghĩa các quy tắc lập trình, kiến trúc hệ t
   * Python: Sử dụng `snake_case`.
 * **Kích thước File:** **Tối đa 450 dòng** cho mỗi file mã nguồn. Nếu vượt quá giới hạn này, bắt buộc phải phân tách logic sang các module/file nhỏ hơn.
 * **Strict Typing:** Khai báo kiểu dữ liệu rõ ràng và chặt chẽ (Type Hints) cho cả TypeScript và Python. Hạn chế tối đa việc sử dụng kiểu `any`.
-* **Kiểm thử (Testing):** Bắt buộc viết unit test / integration test cho cả Frontend và Backend khi hoàn thành bất kỳ tính năng (feature) mới nào. Đảm bảo độ bao phủ test (coverage) luôn đạt **trên 75%**.
+* **Kiểm thử (Testing):** Bắt buộc viết unit test / integration test cho cả Frontend và Backend khi hoàn thành bất kỳ tính năng (feature) mới nào. Đảm bảo độ bao phủ test (coverage) luôn đạt **tối thiểu 75%**.
 
 ### 3.2. Frontend (React, Vite, Tailwind, TypeScript)
 * **Kiến trúc theo feature:** Mỗi domain nằm tại `src/features/<feature-name>/` và chỉ tạo các thư mục cần dùng trong tập chuẩn `routes/`, `pages/`, `ui/`, `api/`, `hooks/`, `schemas/`, `types/`. Không tạo feature tổng hợp chứa nhiều domain. Mã dùng chung đa feature nằm trong `src/shared/`; hạ tầng khởi động, providers và router cấp ứng dụng nằm trong `src/app/`.

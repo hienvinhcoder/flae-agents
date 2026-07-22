@@ -27,7 +27,7 @@ These variables are immutable. They must appear exactly in `frontend-react/src/s
 }
 ```
 
-Primary controls use dark foreground text (`--color-on-primary`), not white. This keeps CTA contrast at or above AA.
+Primary controls use `--color-on-primary: #251309`, not white. It provides 7.32:1 contrast on the immutable primary color.
 
 ### Neutral palette
 
@@ -37,24 +37,25 @@ Primary controls use dark foreground text (`--color-on-primary`), not white. Thi
 | `--color-surface` | `#15181d` | Navigation, cards, primary panels |
 | `--color-surface-raised` | `#1c2026` | Menus, dialogs, inspectors |
 | `--color-surface-interactive` | `#252a32` | Hovered rows and selected wells |
-| `--color-border` | `#303640` | Dividers and default control borders |
-| `--color-border-strong` | `#48515e` | Selected and emphasized boundaries |
+| `--color-divider` | `#303640` | Decorative separators only; never a control, state, or selection boundary |
+| `--color-border` | `#697584` | Default control and panel boundaries; at least 3.08:1 on supported surfaces |
+| `--color-border-strong` | `#7e8b9d` | Selected and emphasized boundaries; at least 4.72:1 on raised surfaces |
 | `--color-text` | `#f4f2ee` | Headings and essential values |
 | `--color-text-secondary` | `#c5c7cb` | Body copy and labels |
 | `--color-text-muted` | `#969ba4` | Metadata and helper text |
 | `--color-text-disabled` | `#686e78` | Disabled content only |
 
-Do not communicate state through muted or disabled colors alone. Disabled controls also require native `disabled` or `aria-disabled` semantics.
+The divider token may separate already-distinct content regions, but it must not be the only visual indication of a control, selection, focus, error, or state. Do not communicate state through muted or disabled colors alone. Disabled controls also require native `disabled` or `aria-disabled` semantics.
 
 ### Semantic and AI states
 
-| Meaning | Solid token | Soft token | Use |
+| Meaning | Solid token and value | Soft token and value | Use |
 | --- | --- | --- | --- |
-| AI | `--color-ai` | `--color-ai-soft` | Generated insight, agent reasoning, AI affordance |
-| Success | `--color-success` | `--color-success-soft` | Connected, healthy, complete |
-| Warning | `--color-warning` | `--color-warning-soft` | Pending, stale, degraded |
-| Danger | `--color-danger` | `--color-danger-soft` | Error, failure, destructive action |
-| Info | `--color-info` | `--color-info-soft` | Neutral notice or guidance |
+| AI | `--color-ai: #ad91ff` | `--color-ai-soft: rgba(173, 145, 255, 0.12)` | Generated insight, agent reasoning, AI affordance |
+| Success | `--color-success: #64d892` | `--color-success-soft: rgba(100, 216, 146, 0.12)` | Connected, healthy, complete |
+| Warning | `--color-warning: #efbd62` | `--color-warning-soft: rgba(239, 189, 98, 0.12)` | Pending, stale, degraded |
+| Danger | `--color-danger: #f07b7d` | `--color-danger-soft: rgba(240, 123, 125, 0.12)` | Error, failure, destructive action |
+| Info | `--color-info: #75adf7` | `--color-info-soft: rgba(117, 173, 247, 0.12)` | Neutral notice or guidance |
 
 Every status combines color with text, an icon, or both. Soft colors are backgrounds only; use the corresponding solid token for icons and indicators.
 
@@ -86,8 +87,9 @@ Spacing uses a four-pixel base. Only use the token scale: `--space-1` (4), `--sp
 | `--radius-lg` | `12px` | Panels and cards |
 | `--radius-xl` | `16px` | Dialogs and major overlays |
 | `--radius-pill` | `999px` | Status pills only |
-| `--shadow-panel` | Low, wide shadow | Floating panels on canvas |
-| `--shadow-overlay` | Strong, wide shadow | Dialogs and command palette |
+| `--shadow-panel` | `0 1px 0 rgba(255, 255, 255, 0.035), 0 16px 48px rgba(0, 0, 0, 0.28)` | Floating panels on canvas |
+| `--shadow-overlay` | `0 24px 80px rgba(0, 0, 0, 0.48)` | Dialogs and command palette |
+| `--focus-ring` | `0 0 0 3px rgba(242, 140, 69, 0.34)` | Additional focus separation around the 2px outline |
 
 Hierarchy comes from surface, border, and spacing before shadow. Never stack shadows or add decorative glow.
 
@@ -119,7 +121,7 @@ Shared UI primitives own their state styling. Feature code selects a supported v
 | Dialog | Raised surface, `--radius-xl`, overlay shadow, labelled title and managed focus |
 | Data row | Canvas/surface default and interactive hover; selection must remain visible without hover |
 
-Tailwind 4 mappings in `styles.css` expose utilities such as `bg-brand`, `bg-ui-panel`, `text-ui-ink`, `border-ui-line`, and `text-state-danger`. Prefer those utilities. Custom CSS is allowed only for reusable recipes, third-party integration, or behavior Tailwind cannot express clearly.
+Tailwind 4 mappings in `styles.css` expose the complete component contract: brand colors and foreground, neutral surfaces/boundaries/text including disabled text, AI and semantic solid/soft colors, UI/code fonts, control/panel/dialog/status radii, and panel/overlay/focus shadows. Representative utilities include `bg-brand`, `text-brand-foreground`, `bg-ui-panel`, `border-ui-line`, `text-ui-ink-disabled`, `bg-accent-ai-soft`, `bg-state-danger-soft`, `rounded-ui-dialog`, and `shadow-ui-focus`. Prefer these utilities. Custom CSS is allowed only for reusable recipes, third-party integration, or behavior Tailwind cannot express clearly.
 
 Application source must not repeat brand hex literals outside `frontend-react/src/styles.css`; the immutable contract block in this document is the documentation exception. Feature code must never create a local substitute for a global token.
 
