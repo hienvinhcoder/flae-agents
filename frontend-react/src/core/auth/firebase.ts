@@ -50,7 +50,7 @@ export async function registerWithEmail(email: string, password: string, fullNam
   } catch {
     registration.fail();
     try {
-      await signOut(firebaseAuth);
+      await logoutIfCurrentUser(credential.user.uid);
     } catch {
       // Rollback is best-effort; the bootstrap terminal cleanup is idempotent.
     }
