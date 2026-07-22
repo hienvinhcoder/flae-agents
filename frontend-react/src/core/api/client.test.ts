@@ -227,4 +227,32 @@ describe('createApiClient', () => {
     expect(error).toMatchObject({ kind, status, retryable });
     expect((error as Error).message).not.toContain('must-not-leak');
   });
+
+  it('normalizes an ordinary 4xx response without exposing its body', async () => {
+    const sensitiveValue = 'Bearer private-token';
+    const harness = createFetchHarness(
+      jsonResponse(
+        {
+          success: false,
+          data: { submittedSecret: sensitiveValue },
+          message: `Access denied for ${sensitiveValue}`,
+          code: `FORBIDDEN_${sensitiveValue}`,
+        },
+        403,
+      ),
+    );
+    const client = createApiClient({
+      baseUrl: 'https://api.example.test',
+      tokenProvider: () => Promise.resolve('private-token'),
+      fetchImpl: harness.fetchImpl,
+    });
+
+    const error = await client.request({ path: '/items', method: 'GET' }).catch((cause: unknown) => cause);
+
+    expect(error).toBeInstanceOf(AppError);
+    expect(error).toMatchObject({ kind: 'validation', status: 403, retryable: false });
+    expect((error as AppError).code).toBeUndefined();
+    expect((error as Error).message).not.toContain(sensitiveValue);
+    expect(String((error as Error).cause)).not.toContain(sensitiveValue);
+  });
 });
