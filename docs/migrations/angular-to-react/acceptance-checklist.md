@@ -15,15 +15,15 @@ These stable IDs define migration acceptance. Tests may be component, integratio
 ## Authentication
 
 - [ ] **AUTH-01 — restores Firebase session.** App initialization waits for Firebase redirect handling and `authStateReady`, obtains the restored user's token, calls auth sync, stores the database user, then releases route guards without a false login redirect.
-- [ ] **AUTH-02 — signs in and returns to the requested route.** Email/password sign-in sets loading until Firebase returns, then clears it before backend sync; navigation waits for the synced database user and honors the captured `returnUrl` (default `/dashboard`). Google popup sign-in sets loading but has no success callback, so successful navigation occurs after sync while the shared loading flag remains true. Either path clears loading in its error handler.
+- [ ] **AUTH-02 — signs in and returns to the requested route.** Email/password sign-in sets loading until Firebase returns, then clears it before backend sync; navigation waits for the synced database user and honors the captured `returnUrl` (default `/dashboard`). The Angular Google popup path leaves its shared loading flag true after success. The approved React target deliberately clears the form's Google pending state when the popup resolves while `RequireAnonymousRoute` continues showing the session-check skeleton through backend sync, so no auth form flashes before navigation. Either path clears loading in its error handler.
   - [ ] **AUTH-02A — signs in with email/password.** Firebase success clears loading before backend sync; the synced user triggers the captured/default navigation.
-  - [ ] **AUTH-02B — signs in with Google.** Popup success relies on auth-state sync/navigation and leaves Angular's shared loading flag true; cancellation/error clears it.
+  - [ ] **AUTH-02B — signs in with Google.** Popup success relies on auth-state sync/navigation. Angular leaves its shared loading flag true; React intentionally clears the local popup pending state on success and keeps route-level session blocking active until sync finishes. `LoginPage` and guest-route tests lock this adopted behavior.
 - [ ] **AUTH-03 — registers a user.** Registration sets loading until Firebase returns, clears it before backend sync, then routes after the synced database user reaches the store; duplicate email, weak password, and fallback failures clear loading and render the mapped inline error.
 - [ ] **AUTH-04 — reports login failures.** Wrong password/user-not-found/invalid credential share the invalid-credentials message; a closed Google popup has the cancellation message; leaving the auth page clears stale errors and subscriptions.
 - [ ] **AUTH-05 — logs out completely.** Logout resets auth state, workspace state, and persisted active workspace, then navigates to `/auth/login`; a failed logout stops loading and exposes an error.
 - [ ] **AUTH-06 — reacts to session expiry.** A backend `401` resets auth, signs out of Firebase, shows the expiry warning, and routes to login with the current URL as `returnUrl`; an auth-state transition to null does the equivalent redirect.
 
-Keeping auth loading active through backend sync and clearing the Google success state are potential React hardening changes, not requirements of `AUTH-02`/`AUTH-03` Angular parity.
+Clearing the Google success pending state is an approved React UX hardening decision, not Angular parity. It is adopted because the project is unreleased and the user explicitly allowed UI/UX redesign; route-level auth blocking still prevents premature rendering during backend synchronization.
 
 ## Workspaces, settings, membership, invitations, and OAuth
 

@@ -13,6 +13,11 @@ const firebaseMocks = vi.hoisted(() => ({
   getRedirectResult: vi.fn(),
   onAuthStateChanged: vi.fn(),
   syncUser: vi.fn(),
+  clearQueryCache: vi.fn(),
+}));
+
+vi.mock('@tanstack/react-query', () => ({
+  useQueryClient: () => ({ clear: firebaseMocks.clearQueryCache }),
 }));
 
 vi.mock('./firebase', () => ({
@@ -30,6 +35,7 @@ vi.mock('../../features/auth/api/auth-api', () => ({
 
 import { AuthBootstrap } from './AuthBootstrap';
 import { useAuthStore } from '../stores/auth-store';
+import { useWorkspaceStore } from '../stores/workspace-store';
 
 const databaseUser: User = {
   id: 'user-1',
@@ -94,9 +100,11 @@ describe('AuthBootstrap', () => {
       },
     );
     useAuthStore.getState().resetForBootstrap();
+    useWorkspaceStore.getState().reset();
   });
 
   it('waits for redirect handling and Firebase readiness before exposing an anonymous session', async () => {
+    useWorkspaceStore.getState().setCurrentWorkspaceId('workspace-1');
     const { unmount } = render(
       <AuthBootstrap>
         <AuthStateProbe>application</AuthStateProbe>
@@ -114,6 +122,9 @@ describe('AuthBootstrap', () => {
       firebaseMocks.auth.authStateReady.mock.invocationCallOrder[0] ?? Number.POSITIVE_INFINITY,
     );
     expect(firebaseMocks.onAuthStateChanged).toHaveBeenCalledOnce();
+    expect(useWorkspaceStore.getState().currentWorkspaceId).toBeNull();
+    expect(localStorage.getItem('current_workspace_id')).toBeNull();
+    expect(firebaseMocks.clearQueryCache).toHaveBeenCalledOnce();
 
     unmount();
     expect(unsubscribe).toHaveBeenCalledOnce();
@@ -246,10 +257,14 @@ describe('AuthBootstrap', () => {
     await waitFor(() =>
       expect(screen.getByLabelText('auth status')).toHaveTextContent('authenticated'),
     );
+    useWorkspaceStore.getState().setCurrentWorkspaceId('workspace-1');
 
     act(() => authStateListener?.(null));
 
     expect(screen.getByLabelText('auth status')).toHaveTextContent('anonymous');
     expect(screen.getByLabelText('auth user')).toHaveTextContent('none');
+    expect(useWorkspaceStore.getState().currentWorkspaceId).toBeNull();
+    expect(localStorage.getItem('current_workspace_id')).toBeNull();
+    expect(firebaseMocks.clearQueryCache).toHaveBeenCalledOnce();
   });
 });
