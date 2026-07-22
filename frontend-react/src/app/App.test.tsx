@@ -1,9 +1,10 @@
 import { render, screen } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
 
 import { App } from './App';
 
 describe('App', () => {
-  test('exposes the FLAE application landmark', () => {
+  it('exposes the FLAE application landmark', () => {
     render(<App />);
 
     expect(screen.getByRole('main', { name: /flae application/i })).toBeInTheDocument();
