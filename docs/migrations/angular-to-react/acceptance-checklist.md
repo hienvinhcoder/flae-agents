@@ -34,7 +34,7 @@ Keeping auth loading active through backend sync and clearing the Google success
 - [ ] **WS-05 — enforces membership actions.** Only owner/admin users can invite and manage allowed member fields; successful role/status/remove/invite operations update local lists, while failures preserve data and surface the backend/fallback error.
   - [ ] **WS-05A — scopes invitation reads and writes.** Active owner/admin can list and create invitations; member/viewer receives `403`; token failure receives `401`.
   - [ ] **WS-05B — enforces role/status ownership rules.** Nobody changes their own role/status; only owner changes owner/admin or transfers ownership; admin changes only member/viewer and cannot promote to owner/admin.
-  - [ ] **WS-05C — enforces removal rules.** Owner cannot be removed; admin cannot remove admin; denied operations preserve the local list and surface the backend `400`/`403`/`404` result.
+  - [ ] **WS-05C — distinguishes removal UI policy from backend enforcement.** Angular hides all self-management controls. Backend rejects owner removal (`400`) and an admin removing another admin (`403`), but permits an admin to remove itself because the self branch runs first. React may retain a frontend prohibition as Angular-visible policy and defense-in-depth hardening, but must not describe a direct admin self-removal request as backend `403`; changing that server result requires separate backend hardening.
 - [ ] **WS-06 — keeps invitation revocation local-only.** Revoking a pending invitation removes it from current UI state without issuing an HTTP request, documenting the current missing backend endpoint.
 - [ ] **WS-07 — records the unavailable workspace OAuth contract.** Angular sends the documented URL/callback payloads, but this repository has no matching backend routes; current calls return `404`. React must not claim a successful typed OAuth flow without a separately supplied backend contract.
 - [ ] **WS-08 — gates workspace-dependent requests (required React hardening).** Current Angular agent edit and agent-specific chat may issue `/workspaces/null/agents/...` requests with an empty workspace header while selection is absent/loading. React must not start any workspace-dependent query or mutation until it has a validated workspace ID; load failure stops the sync banner and retains existing/empty state without malformed calls.
@@ -107,7 +107,7 @@ A dedicated search-empty message or visible handling for message-level `{ type: 
 - [ ] **API-03 — handles connection loss and recovery.** Status `0` opens the connection modal, blocked requests remain quiet, health/auth sync can probe recovery, and a successful bypass request closes the modal.
 - [ ] **API-04 — handles server and auth errors.** `5xx` displays the translated server toast; non-sync `401` performs AUTH-06; local subscribers still receive errors where the interceptor rethrows.
 - [ ] **API-05 — validates workspace selection without changing ordering.** React validates nested `UserItemResponse`: strings `code`, `message`, `id`, `firebase_uid`, `email`, `full_name`; boolean `is_active`; `login_providers` containing only `email_password | google | facebook`; nullable strings `avatar_url`, `current_workspace_id`. Angular writes signal/storage before the request and retains them on failure. Only automatic initialization applies the validated returned user to the auth profile after success; sidebar selection ignores that payload.
-- [ ] **API-06 — preserves SSE transport constraints.** Native `EventSource` sends encoded message and Firebase token in the query and workspace in the path; it sends neither authorization nor workspace headers, and closes on done/error/unsubscribe.
+- [ ] **API-06 — preserves SSE transport constraints securely.** Native `EventSource` sends encoded message and Firebase token in the query and workspace in the path; it sends neither authorization nor workspace headers, and closes on done/error/unsubscribe. Proxy/application logging redacts the `token` query parameter until header-authenticated React streaming removes query-string credentials.
 
 Waiting for current-workspace API success before applying local selection, or rolling local selection back on failure, would be React hardening rather than `API-05` Angular parity.
 
@@ -126,6 +126,8 @@ for id in $(sed -n '/^| `\//p' docs/migrations/angular-to-react/route-parity.md 
   | rg -o '[A-Z]+-[0-9]{2}[A-Z]?' | sort -u); do
   rg -q "\*\*$id —" docs/migrations/angular-to-react/acceptance-checklist.md || exit 1
 done
+! sed -n '/^| `\//p' docs/migrations/angular-to-react/route-parity.md \
+  | rg '[A-Z]+-[0-9]{2}–[A-Z]+-[0-9]{2}'
 
 # No unresolved contract placeholders or stale parity claims remain.
 ! rg -n 'typed contract requir[e]d|backend-agreed typ[e]|physics and drawing operate on the visible topolog[y]|workspace-dependent pages do not issue malformed request[s]' \
@@ -137,7 +139,7 @@ Acceptance for this contract-freeze task:
 - [ ] Every route/redirect match maps to a row in `route-parity.md` and at least one stable ID above.
 - [ ] Every HTTP/EventSource match maps to an operation row in `api-contracts.md`.
 - [ ] The line-broken auth-sync `.post` call, which the exact HTTP regex does not match, is still documented.
-- [ ] Stable acceptance definitions are unique; every explicit route-table ID resolves; family ranges such as `KB-01–KB-09` have both endpoints and an independently defined contiguous family above.
+- [ ] Stable acceptance definitions are unique and every route-table ID is listed explicitly and resolves to its independently defined acceptance item.
 - [ ] The unresolved-phrase scan exits successfully.
 - [ ] Only the three files under `docs/migrations/angular-to-react/` changed.
 - [ ] No Angular product source was modified.
