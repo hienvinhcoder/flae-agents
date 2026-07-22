@@ -15,11 +15,13 @@ These stable IDs define migration acceptance. Tests may be component, integratio
 ## Authentication
 
 - [ ] **AUTH-01 — restores Firebase session.** App initialization waits for Firebase redirect handling and `authStateReady`, obtains the restored user's token, calls auth sync, stores the database user, then releases route guards without a false login redirect.
-- [ ] **AUTH-02 — signs in and returns to the requested route.** Email/password or Google popup sign-in exposes a loading state, syncs the user, clears loading, and honors the captured `returnUrl` (default `/dashboard`).
-- [ ] **AUTH-03 — registers a user.** Registration exposes loading, syncs the new Firebase user, and routes to the dashboard; duplicate email, weak password, and fallback failures render the mapped inline error.
+- [ ] **AUTH-02 — signs in and returns to the requested route.** Email/password sign-in sets loading until Firebase returns, then clears it before backend sync; navigation waits for the synced database user and honors the captured `returnUrl` (default `/dashboard`). Google popup sign-in sets loading but has no success callback, so successful navigation occurs after sync while the shared loading flag remains true. Either path clears loading in its error handler.
+- [ ] **AUTH-03 — registers a user.** Registration sets loading until Firebase returns, clears it before backend sync, then routes after the synced database user reaches the store; duplicate email, weak password, and fallback failures clear loading and render the mapped inline error.
 - [ ] **AUTH-04 — reports login failures.** Wrong password/user-not-found/invalid credential share the invalid-credentials message; a closed Google popup has the cancellation message; leaving the auth page clears stale errors and subscriptions.
 - [ ] **AUTH-05 — logs out completely.** Logout resets auth state, workspace state, and persisted active workspace, then navigates to `/auth/login`; a failed logout stops loading and exposes an error.
 - [ ] **AUTH-06 — reacts to session expiry.** A backend `401` resets auth, signs out of Firebase, shows the expiry warning, and routes to login with the current URL as `returnUrl`; an auth-state transition to null does the equivalent redirect.
+
+Keeping auth loading active through backend sync and clearing the Google success state are potential React hardening changes, not requirements of `AUTH-02`/`AUTH-03` Angular parity.
 
 ## Workspaces, settings, membership, invitations, and OAuth
 
@@ -60,19 +62,21 @@ These stable IDs define migration acceptance. Tests may be component, integratio
 - [ ] **AGENT-02 — applies role-based management.** Owner/admin can create/edit/delete agents; member/viewer cannot see management actions; permission lookup failure defaults the list to `member`.
 - [ ] **AGENT-03 — creates a valid agent.** `/dashboard/agents/new` permits owner/admin only, requires name/system prompt/avatar/model/temperature, disables while saving, and returns to the list on success while retaining the form on error.
 - [ ] **AGENT-04 — edits an existing agent.** `/dashboard/agents/:agentId/edit` loads and populates the form, applies model/temperature defaults, redirects on permission/fetch failure, and saves a partial agent update.
-- [ ] **AGENT-05 — renders agent chat states.** `/dashboard/agents/:agentId/chat` loads agent and sessions independently, opens the first session, renders no-session/no-message states, and exposes fetch/create/delete/stream errors without corrupting the active selection.
+- [ ] **AGENT-05 — renders agent chat states.** `/dashboard/agents/:agentId/chat` loads agent and sessions independently, opens the first session, renders no-session/no-message states, and exposes fetch/create/delete plus stream transport/parse errors without corrupting the active selection; message-level stream errors follow `CHAT-05` completion behavior.
 - [ ] **AGENT-06 — cancels an active stream.** Navigating away/unmounting while an agent response is streaming unsubscribes and closes the underlying `EventSource`; no later token/citation/error updates the page.
 - [ ] **AGENT-07 — deletes an agent deliberately.** A confirmed successful delete reloads the list; cancellation sends no request; failure preserves the card and shows a toast.
 
 ## Default chat and shared conversation behavior
 
-- [ ] **CHAT-01 — renders default chat states.** `/dashboard/chat` loads the active workspace's default agent, then sessions/messages; it renders loading, missing-agent, no-session, empty-session, and session-search-empty states distinctly.
+- [ ] **CHAT-01 — renders default chat states.** `/dashboard/chat` loads the active workspace's default agent, then sessions/messages; it renders loading, missing-agent, no-session, and empty-session states distinctly. When sessions exist but search matches none, all groups are blank and Angular renders no dedicated search-empty message.
 - [ ] **CHAT-02 — switches workspace.** A workspace change reloads the default agent and then its sessions; clearing the workspace immediately clears agent, sessions, active session, and messages.
 - [ ] **CHAT-03 — manages sessions.** The first returned session opens automatically; create prepends and selects; confirmed delete removes and selects the next available session; deleting the last active session clears messages and selection.
-- [ ] **CHAT-04 — streams an optimistic message.** Send trims input, blocks duplicate sends while streaming, appends temporary user/assistant messages, appends token text, replaces citations, and reloads persisted messages after `done`.
-- [ ] **CHAT-05 — handles stream errors.** Parse/network/server errors close the source, exit streaming, toast, and replace the pending assistant body with the connection-error text.
+- [ ] **CHAT-04 — streams an optimistic message.** Send trims input, blocks duplicate sends while streaming, appends temporary user/assistant messages, appends token text, replaces citations, and reloads persisted messages when the stream completes after `done` or a message-level `error` event.
+- [ ] **CHAT-05 — distinguishes transport failure from an error event.** JSON parse failure or native `EventSource.onerror` errors the subscription, closes the source, exits streaming, toasts, and replaces the pending assistant body with connection-error text. A parsed `{ type: 'error' }` message is emitted, ignored by the component's `next` handler, then closes/completes the source; completion exits streaming and reloads persisted messages without a toast or fallback.
 - [ ] **CHAT-06 — preserves reading position.** Streaming auto-scrolls only while the user remains near the bottom; explicit session load forces an initial scroll to bottom.
-- [ ] **CHAT-07 — types stream events.** Token, citations, done, and error events are validated as a discriminated union; unknown/malformed events take the stream error path rather than entering UI state.
+- [ ] **CHAT-07 — types stream events.** Token, citations, done, and error events are validated as a discriminated union. Rejecting unknown well-formed event types instead of ignoring them is typed-contract hardening, not current Angular parity.
+
+A dedicated search-empty message or visible handling for message-level `{ type: 'error' }` would be React hardening and must not be attributed to the Angular behavior frozen by `CHAT-01`/`CHAT-05`.
 
 ## Knowledge graph
 
