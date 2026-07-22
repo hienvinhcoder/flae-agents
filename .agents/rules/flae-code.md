@@ -15,7 +15,7 @@ Tài liệu này định nghĩa các quy tắc lập trình, kiến trúc hệ t
 ---
 
 ## 2. KIẾN TRÚC & TECH STACK
-* **Frontend (`frontend/`):** Angular, Tailwind CSS, TypeScript, RxJS (WebSockets).
+* **Frontend (`frontend-react/`):** React SPA, Vite, TypeScript strict mode, Tailwind CSS, React Router, TanStack Query, Zustand và Firebase.
 * **Backend (`backend/`):** FastAPI, Pydantic, SQLAlchemy, Alembic, asyncpg, Redis, PostgreSQL.
 * **Package Manager (Backend):** Sử dụng `uv` để quản lý các gói phụ thuộc và môi trường ảo.
 
@@ -32,31 +32,29 @@ Tài liệu này định nghĩa các quy tắc lập trình, kiến trúc hệ t
 * **Strict Typing:** Khai báo kiểu dữ liệu rõ ràng và chặt chẽ (Type Hints) cho cả TypeScript và Python. Hạn chế tối đa việc sử dụng kiểu `any`.
 * **Kiểm thử (Testing):** Bắt buộc viết unit test / integration test cho cả Frontend và Backend khi hoàn thành bất kỳ tính năng (feature) mới nào. Đảm bảo độ bao phủ test (coverage) luôn đạt **trên 75%**.
 
-### 3.2. Frontend (Angular, Tailwind, TypeScript)
-* **Kiến trúc Feature-Based Module:** Tổ chức thư mục theo cấu trúc `core/` → `shared/` → `features/`:
-  * `core/`: Chứa **DUY NHẤT** các thành phần dùng chung toàn cục (guards, AdminLayout, PublicLayout, auth/workspace models dùng chung, auth/toast/API services, stores toàn cục). Không đặt model chuyên dụng của một feature vào đây trừ khi service trong core cần import nó.
-  * `shared/`: Chứa các UI components "dumb" (button, badge, pipes) có thể tái sử dụng trên nhiều features khác nhau. Không chứa logic nghiệp vụ (business logic).
-  * `features/`: Mỗi thư mục con đại diện cho **MỘT domain nghiệp vụ độc lập** (ví dụ: `auth/`, `knowledge/`, `settings/`, `agents/`, `inbox/`, `invite/`, `briefing/`, `reports/`). Tuyệt đối **KHÔNG** tạo "God Feature" (ví dụ: một thư mục `dashboard/` chứa tất cả các trang). Mỗi feature phải tự quản lý routes, pages và UI components riêng của mình.
-* **Cấu trúc chi tiết của một Feature:**
-  ```text
-  features/<feature-name>/
-  ├── pages/           ← Smart/Container components (chứa business logic, inject services)
-  ├── ui/              ← Dumb/Presentational components (chỉ nhận dữ liệu qua input() và phát sự kiện qua output())
-  ├── models/          ← (Tùy chọn) Models/interfaces dành riêng cho feature
-  ├── services/        ← (Tùy chọn) Services dành riêng cho feature
-  └── <feature>.routes.ts  ← Routes của feature, được lazy load
-  ```
-* **Routing:** `AdminLayoutComponent` đóng vai trò là layout wrapper và khai báo ở `app.routes.ts`. Mỗi feature có file `<feature>.routes.ts` riêng và được load qua `loadChildren` (Lazy Loading) từ `app.routes.ts`. Tuyệt đối **KHÔNG** gộp routes của nhiều features vào một file duy nhất.
-* **Pattern Smart/Dumb Component:** Phân tách rõ ràng trách nhiệm:
-  * UI components trong thư mục `ui/` phải là **Dumb/Presentational Components** (chỉ tương tác qua Angular Signals `input()` và `output()`, không chứa logic nghiệp vụ và không inject API/Services).
-  * Logic nghiệp vụ, quản lý state và gọi API phải nằm ở **Smart/Container Components** trong thư mục `pages/` hoặc các Services.
-* **Reactivity & State:** Áp dụng Angular Signals (`signal()`, `computed()`, `effect()`) và Signal-based `input()`/`output()` để quản lý state và tính phản ứng. Ưu tiên Signals hơn RxJS cho việc quản lý trạng thái ở cấp độ component.
-* **Design System & Styling:** 
-  * Mọi thiết kế UI/UX và giao diện component phải tuân thủ nghiêm ngặt theo tài liệu hệ thống thiết kế được quy định tại [DESIGN.md](../../DESIGN.md).
-  * Sử dụng các class tiện ích của Tailwind CSS dựa trên Color Tokens và Class Recipes của [DESIGN.md](../../DESIGN.md). Chỉ viết CSS tùy chỉnh khi thực sự cần thiết hoặc đóng gói thành component dùng chung.
-* **Hiệu năng & Tài nguyên:** 
-  * Áp dụng Lazy Loading cho tất cả các routes của feature.
-  * Quản lý vòng đời chặt chẽ, luôn hủy đăng ký (unsubscribe) các RxJS subscription hoặc đóng kết nối WebSockets đúng cách khi component/service bị hủy (unmount) để tránh rò rỉ bộ nhớ (memory leak).
+### 3.2. Frontend (React, Vite, Tailwind, TypeScript)
+* **Kiến trúc theo feature:** Mỗi domain nằm tại `src/features/<feature-name>/` và chỉ tạo các thư mục cần dùng trong tập chuẩn `routes/`, `pages/`, `ui/`, `api/`, `hooks/`, `schemas/`, `types/`. Không tạo feature tổng hợp chứa nhiều domain. Mã dùng chung đa feature nằm trong `src/shared/`; hạ tầng khởi động, providers và router cấp ứng dụng nằm trong `src/app/`.
+* **React components:** Chỉ dùng functional components và hooks. Props, callback, dữ liệu route và kết quả API phải có kiểu tường minh; không dùng `any`. Mỗi file mã nguồn tối đa 450 dòng và phải tách theo trách nhiệm trước khi vượt giới hạn.
+* **Ranh giới UI:** Component trong `shared/ui/` chỉ nhận typed props và phát callback; không gọi API, không đọc/ghi global store và không chứa business logic theo feature. Pages và feature hooks phối hợp dữ liệu, hành vi và UI.
+* **Routing:** Route của feature phải lazy-load theo ranh giới feature. Public path là giao diện ổn định: không đổi, xóa hoặc tái sử dụng path đã phát hành nếu chưa có kế hoạch tương thích và test điều hướng.
+* **Phân loại state:**
+  * TanStack Query quản lý toàn bộ server state: fetch, cache, mutation, invalidation và trạng thái request.
+  * Zustand chỉ dùng cho client state thực sự được chia sẻ giữa nhiều nhánh component hoặc route.
+  * React local state là mặc định cho state chỉ thuộc một component hoặc một cây component gần nhau.
+  * Tuyệt đối không sao chép query data từ TanStack Query vào Zustand.
+* **Form:** Form không đơn giản (nhiều field, validation phụ thuộc, submit bất đồng bộ hoặc dùng lại schema) phải dùng React Hook Form kết hợp Zod. Schema là nguồn xác thực và suy luận kiểu duy nhất cho dữ liệu form.
+* **API layer:** Mọi request đi qua API layer có typed request/response và chuẩn hóa lỗi. Component, page và shared UI không được gọi `fetch`, Axios hoặc SDK mạng trực tiếp.
+* **Effects & tài nguyên:** Chỉ dùng `useEffect` để đồng bộ với hệ thống bên ngoài React như browser API, subscription, timer hoặc kết nối realtime; không dùng effect để suy ra state có thể tính trong render. Effect tạo subscription, listener, timer, request có thể hủy hoặc kết nối phải trả về cleanup tương ứng.
+* **Testing:** Dùng Vitest và React Testing Library cho unit/integration tests, Playwright cho luồng end-to-end quan trọng. Test hành vi người dùng và accessibility thay vì implementation detail; coverage Frontend phải đạt tối thiểu 75%.
+* **UI/UX & accessibility:** Tuân thủ [DESIGN.md](../../DESIGN.md), dùng semantic HTML trước ARIA, hỗ trợ đầy đủ keyboard, focus hiển thị rõ, `prefers-reduced-motion` và tương phản WCAG 2.2 AA. Không dùng màu làm tín hiệu duy nhất.
+* **Design tokens:** Dùng Tailwind utilities và CSS variables từ `frontend-react/src/styles.css`. Không hardcode brand literal trong `.ts`/`.tsx`, không tạo token cục bộ thay thế token hệ thống và không override nội bộ shared primitive từ feature code.
+
+### 3.2.1. Quy tắc tạm thời trong giai đoạn migration
+* `frontend/` là Angular reference-only; không phát triển runtime mới trong thư mục này.
+* `frontend-react/` là React app đang active và là đích duy nhất cho implementation mới.
+* Cấm runtime import theo cả hai chiều giữa `frontend/` và `frontend-react/`.
+* Một feature chỉ được xem là đã migrate khi acceptance tests tương ứng pass.
+* Xóa toàn bộ quy tắc migration tạm thời tại thời điểm cutover hoàn tất.
 
 ### 3.3. Backend (FastAPI, Pydantic, SQLAlchemy, uv)
 * **Quản lý Package:** Bắt buộc sử dụng `uv` thay cho `pip` để quản lý dependencies và môi trường ảo nhằm đảm bảo hiệu năng và tính nhất quán.
