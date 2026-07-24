@@ -10,6 +10,27 @@ export const queryKeys = {
     ["workspaces", workspaceId, "knowledge", documentId] as const,
   topics: (workspaceId: string) =>
     ["workspaces", workspaceId, "topics"] as const,
+  topicLists: (workspaceId: string) =>
+    ["workspaces", workspaceId, "topics", "list"] as const,
+  topicList: (
+    workspaceId: string,
+    query: string,
+    status: string,
+    limit: number,
+    offset: number,
+  ) =>
+    [
+      "workspaces",
+      workspaceId,
+      "topics",
+      "list",
+      query,
+      status,
+      limit,
+      offset,
+    ] as const,
+  topicDetail: (workspaceId: string, topicIdOrSlug: string) =>
+    ["workspaces", workspaceId, "topics", "detail", topicIdOrSlug] as const,
   agents: (workspaceId: string) =>
     ["workspaces", workspaceId, "agents"] as const,
 };
