@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { AppProviders } from './providers/AppProviders';
 import '../core/config/env';
+import { initializeI18n } from '../shared/i18n';
 import '../styles.css';
 
 const rootElement = document.getElementById('root');
@@ -11,6 +12,8 @@ const rootElement = document.getElementById('root');
 if (!rootElement) {
   throw new Error('Root element not found');
 }
+
+await initializeI18n();
 
 createRoot(rootElement).render(
   <StrictMode>

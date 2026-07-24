@@ -29,19 +29,29 @@ function normalizeWorkspaceId(value: string | null) {
 
 interface WorkspaceState {
   currentWorkspaceId: string | null;
+  isSelectionInitialized: boolean;
+  syncStatus: 'idle' | 'syncing' | 'success' | 'error';
+  clearSyncStatus: () => void;
   setCurrentWorkspaceId: (workspaceId: string | null) => void;
+  setSelectionInitialized: (initialized: boolean) => void;
+  setSyncStatus: (status: WorkspaceState['syncStatus']) => void;
   reset: () => void;
 }
 
 export const useWorkspaceStore = create<WorkspaceState>((set) => ({
   currentWorkspaceId: readWorkspaceId(),
+  isSelectionInitialized: false,
+  syncStatus: 'idle',
+  clearSyncStatus: () => set({ syncStatus: 'idle' }),
   setCurrentWorkspaceId: (workspaceId) => {
     const normalizedId = normalizeWorkspaceId(workspaceId);
     persistWorkspaceId(normalizedId);
     set({ currentWorkspaceId: normalizedId });
   },
+  setSelectionInitialized: (isSelectionInitialized) => set({ isSelectionInitialized }),
+  setSyncStatus: (syncStatus) => set({ syncStatus }),
   reset: () => {
     persistWorkspaceId(null);
-    set({ currentWorkspaceId: null });
+    set({ currentWorkspaceId: null, isSelectionInitialized: false, syncStatus: 'idle' });
   },
 }));

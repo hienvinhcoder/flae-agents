@@ -16,6 +16,9 @@ const user: User = {
   email: 'member@example.com',
   full_name: 'Member One',
   is_active: true,
+  login_providers: ['google'],
+  avatar_url: null,
+  current_workspace_id: null,
 };
 
 function LoginLocation() {

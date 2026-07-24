@@ -1,8 +1,8 @@
 import { AppError } from '../../../core/api/errors';
 import { createApiClient } from '../../../core/api/client';
+import { userItemResponseSchema } from '../../../core/auth/user-schema';
 import { env } from '../../../core/config/env';
 import type { SyncUserPayload, User } from '../../../core/stores/auth-store';
-import { authUserSchema } from '../schemas/auth-user-schema';
 
 export async function syncUser(
   payload: SyncUserPayload,
@@ -36,7 +36,7 @@ export async function syncUser(
     });
   }
 
-  const parsedUser = authUserSchema.safeParse(responseData);
+  const parsedUser = userItemResponseSchema.safeParse(responseData);
   if (!parsedUser.success) {
     throw new AppError({
       kind: 'server',

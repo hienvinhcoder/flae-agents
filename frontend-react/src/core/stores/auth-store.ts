@@ -1,17 +1,8 @@
 import { create } from 'zustand';
 
-export type LoginProvider = 'email_password' | 'google' | 'facebook';
+import type { LoginProvider, User } from '../auth/user-schema';
 
-export interface User {
-  id: string;
-  firebase_uid: string;
-  email: string;
-  full_name: string;
-  avatar_url?: string | null;
-  is_active: boolean;
-  login_providers?: LoginProvider[];
-  current_workspace_id?: string | null;
-}
+export type { LoginProvider, User } from '../auth/user-schema';
 
 export interface SyncUserPayload {
   email: string;
