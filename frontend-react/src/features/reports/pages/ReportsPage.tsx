@@ -1,2 +1,9 @@
-import { PlaceholderPage } from '../../../shared/ui/PlaceholderPage';
-export function ReportsPage() { return <PlaceholderPage description="Analyst reports are being prepared for migration." title="Analyst reports" />; }
+import { PlaceholderPage } from "../../../shared/ui/PlaceholderPage";
+export function ReportsPage() {
+  return (
+    <PlaceholderPage
+      description="Analyst reporting is under development."
+      title="Analyst reports"
+    />
+  );
+}
