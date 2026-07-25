@@ -12,6 +12,10 @@ import {
   type ManualDocumentPayload,
   type UploadDocumentPayload,
 } from "../types/knowledge";
+import {
+  knowledgeGraphDataSchema,
+  type KnowledgeGraphData,
+} from "../graph/types";
 
 function requireWorkspaceId(workspaceId: string | null) {
   if (!workspaceId?.trim()) {
@@ -171,4 +175,25 @@ export async function deleteDocument(
     throw invalidData("The server returned invalid document deletion data.");
   }
   return data;
+}
+
+export async function getKnowledgeGraph(
+  workspaceId: string | null,
+  client: ApiClient,
+  signal?: AbortSignal,
+): Promise<KnowledgeGraphData> {
+  const id = requireWorkspaceId(workspaceId);
+  const data = await client.request<unknown>({
+    auth: true,
+    method: "GET",
+    path: "/knowledge-base/graph",
+    signal,
+    workspaceId: id,
+  });
+  if (data === null) return { edges: [], nodes: [] };
+  const result = knowledgeGraphDataSchema.safeParse(data);
+  if (!result.success) {
+    throw invalidData("The server returned invalid knowledge graph data.");
+  }
+  return result.data;
 }

@@ -33,3 +33,7 @@ export const getIngestionStatus = (
 ) => knowledgeApi.getIngestionStatus(workspaceId, documentId, client);
 export const deleteDocument = (workspaceId: string, documentId: string) =>
   knowledgeApi.deleteDocument(workspaceId, documentId, client);
+export const getKnowledgeGraph = (
+  workspaceId: string,
+  signal?: AbortSignal,
+) => knowledgeApi.getKnowledgeGraph(workspaceId, client, signal);

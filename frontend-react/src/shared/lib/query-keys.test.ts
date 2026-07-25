@@ -10,6 +10,9 @@ describe('queryKeys', () => {
 
   it('creates stable, workspace-isolated feature keys', () => {
     expect(queryKeys.knowledge('workspace-a')).toEqual(['workspaces', 'workspace-a', 'knowledge']);
+    expect(queryKeys.knowledgeGraph('workspace-a')).toEqual([
+      'workspaces', 'workspace-a', 'knowledge', 'graph',
+    ]);
     expect(queryKeys.topics('workspace-a')).toEqual(['workspaces', 'workspace-a', 'topics']);
     expect(queryKeys.agents('workspace-a')).toEqual(['workspaces', 'workspace-a', 'agents']);
     expect(queryKeys.defaultAgent('workspace-a')).toEqual([

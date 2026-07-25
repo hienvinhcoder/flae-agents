@@ -8,6 +8,7 @@ import {
   createManualDocument,
   deleteDocument,
   getDocument,
+  getKnowledgeGraph,
   getIngestionStatus,
   listDocuments,
   retryIngestion,
@@ -187,5 +188,99 @@ describe("knowledge API", () => {
       message: "The server returned invalid knowledge document data.",
     });
     expect(String(error)).not.toContain("Private acquisition notes");
+  });
+
+  it("GRAPH-01 requests and validates the workspace knowledge graph", async () => {
+    const graph = {
+      edges: [
+        {
+          description: null,
+          id: "edge-1",
+          label: "OWNS",
+          source: "node-1",
+          target: "node-2",
+          weight: 2,
+        },
+      ],
+      nodes: [
+        {
+          degree: 1,
+          description: null,
+          frequency: 3,
+          id: "node-1",
+          name: "Ada",
+          type: "person",
+        },
+        {
+          degree: 1,
+          id: "node-2",
+          name: "FLAE",
+          type: "organization",
+        },
+      ],
+    };
+    const request = vi.fn().mockResolvedValue(graph);
+    const signal = new AbortController().signal;
+
+    await expect(
+      getKnowledgeGraph("ws-1", { request } as ApiClient, signal),
+    ).resolves.toEqual({
+      ...graph,
+      nodes: [graph.nodes[0], { ...graph.nodes[1], frequency: 1 }],
+    });
+    expect(request).toHaveBeenCalledWith({
+      auth: true,
+      method: "GET",
+      path: "/knowledge-base/graph",
+      signal,
+      workspaceId: "ws-1",
+    });
+  });
+
+  it("GRAPH-01 normalizes a null graph envelope to an empty graph", async () => {
+    const request = vi.fn().mockResolvedValue(null);
+
+    await expect(
+      getKnowledgeGraph("ws-1", { request } as ApiClient),
+    ).resolves.toEqual({ edges: [], nodes: [] });
+  });
+
+  it("GRAPH-05 rejects graph requests without a workspace and malformed graph data", async () => {
+    const request = vi.fn().mockResolvedValue({
+      edges: [],
+      nodes: [{ id: "node-1", name: "Ada", type: 42 }],
+    });
+
+    await expect(
+      getKnowledgeGraph(null, { request } as ApiClient),
+    ).rejects.toThrow(/workspace/i);
+    expect(request).not.toHaveBeenCalled();
+
+    await expect(
+      getKnowledgeGraph("ws-1", { request } as ApiClient),
+    ).rejects.toMatchObject({
+      kind: "server",
+      message: "The server returned invalid knowledge graph data.",
+    });
+  });
+
+  it.each([
+    ["frequency", { edges: [], nodes: [{ degree: 0, frequency: -1, id: "node-1", name: "Ada", type: "person" }] }],
+    ["degree", { edges: [], nodes: [{ degree: -1, frequency: 1, id: "node-1", name: "Ada", type: "person" }] }],
+    ["weight", {
+      edges: [{ id: "edge-1", source: "node-1", target: "node-2", weight: -1 }],
+      nodes: [
+        { degree: 1, frequency: 1, id: "node-1", name: "Ada", type: "person" },
+        { degree: 1, frequency: 1, id: "node-2", name: "FLAE", type: "company" },
+      ],
+    }],
+  ])("GRAPH-01 rejects negative graph %s values", async (_field, payload) => {
+    const request = vi.fn().mockResolvedValue(payload);
+    await expect(
+      getKnowledgeGraph("ws-1", { request } as ApiClient),
+    ).rejects.toMatchObject({
+      kind: "server",
+      message: "The server returned invalid knowledge graph data.",
+    });
   });
 });

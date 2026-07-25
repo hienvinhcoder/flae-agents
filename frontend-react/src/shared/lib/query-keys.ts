@@ -8,6 +8,8 @@ export const queryKeys = {
     ["workspaces", workspaceId, "knowledge"] as const,
   knowledgeDocument: (workspaceId: string, documentId: string) =>
     ["workspaces", workspaceId, "knowledge", documentId] as const,
+  knowledgeGraph: (workspaceId: string) =>
+    ["workspaces", workspaceId, "knowledge", "graph"] as const,
   topics: (workspaceId: string) =>
     ["workspaces", workspaceId, "topics"] as const,
   topicLists: (workspaceId: string) =>
