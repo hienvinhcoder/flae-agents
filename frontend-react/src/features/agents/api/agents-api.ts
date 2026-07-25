@@ -96,6 +96,24 @@ export async function getAgent(
   );
 }
 
+export async function getDefaultAgent(
+  workspaceId: string | null,
+  client: ApiClient,
+  signal?: AbortSignal,
+): Promise<AgentDetail> {
+  const id = requireWorkspaceId(workspaceId);
+  return parseAgent(
+    await client.request<unknown>({
+      auth: true,
+      method: "GET",
+      path: `${agentsPath(id)}/default`,
+      signal,
+      workspaceId: id,
+    }),
+    "The server returned invalid default agent data.",
+  );
+}
+
 export async function createAgent(
   workspaceId: string | null,
   payload: AgentCreatePayload,

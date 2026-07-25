@@ -21,6 +21,10 @@ export const getAgent = (
   agentId: string,
   signal?: AbortSignal,
 ) => agentsApi.getAgent(workspaceId, agentId, client, signal);
+export const getDefaultAgent = (
+  workspaceId: string,
+  signal?: AbortSignal,
+) => agentsApi.getDefaultAgent(workspaceId, client, signal);
 export const createAgent = (
   workspaceId: string,
   payload: AgentCreatePayload,

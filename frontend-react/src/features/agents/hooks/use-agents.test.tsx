@@ -10,12 +10,14 @@ import {
   useAgentDetail,
   useAgents,
   useCurrentWorkspaceRole,
+  useDefaultAgent,
 } from "./use-agents";
 
 const agentsApi = vi.hoisted(() => ({
   createAgent: vi.fn(),
   deleteAgent: vi.fn(),
   getAgent: vi.fn(),
+  getDefaultAgent: vi.fn(),
   listAgents: vi.fn(),
   updateAgent: vi.fn(),
 }));
@@ -145,6 +147,62 @@ describe("agent queries", () => {
       agentId,
       expect.any(AbortSignal),
     );
+  });
+
+  it("loads the default agent only after workspace validation", async () => {
+    agentsApi.getDefaultAgent.mockResolvedValue({ ...agent, is_default: true });
+    useWorkspaceStore.getState().setSelectionInitialized(false);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const initialProps: { selectedWorkspace: string | null } = {
+      selectedWorkspace: workspaceId,
+    };
+    const { rerender, result } = renderHook(
+      ({ selectedWorkspace }: { selectedWorkspace: string | null }) =>
+        useDefaultAgent(selectedWorkspace),
+      {
+        initialProps,
+        wrapper: createWrapper(queryClient),
+      },
+    );
+
+    expect(agentsApi.getDefaultAgent).not.toHaveBeenCalled();
+    act(() => useWorkspaceStore.getState().setSelectionInitialized(true));
+    rerender({ selectedWorkspace: workspaceId });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(agentsApi.getDefaultAgent).toHaveBeenCalledWith(
+      workspaceId,
+      expect.any(AbortSignal),
+    );
+    expect(queryClient.getQueryData(queryKeys.defaultAgent(workspaceId))).toMatchObject({
+      id: agentId,
+      is_default: true,
+    });
+  });
+
+  it("clears default-agent data when the workspace is removed", async () => {
+    agentsApi.getDefaultAgent.mockResolvedValue({ ...agent, is_default: true });
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const initialProps: { selectedWorkspace: string | null } = {
+      selectedWorkspace: workspaceId,
+    };
+    const { rerender, result } = renderHook(
+      ({ selectedWorkspace }: { selectedWorkspace: string | null }) =>
+        useDefaultAgent(selectedWorkspace),
+      {
+        initialProps,
+        wrapper: createWrapper(queryClient),
+      },
+    );
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    act(() => useWorkspaceStore.getState().setCurrentWorkspaceId(null));
+    rerender({ selectedWorkspace: null });
+
+    expect(result.current.data).toBeUndefined();
   });
 
   it("invalidates agent list and detail after create and update", async () => {

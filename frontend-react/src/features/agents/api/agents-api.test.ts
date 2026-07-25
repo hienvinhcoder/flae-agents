@@ -7,6 +7,7 @@ import {
   deleteAgent,
   deleteSession,
   getAgent,
+  getDefaultAgent,
   listAgents,
   listMessages,
   listSessions,
@@ -113,6 +114,27 @@ describe("agents API", () => {
       path: `/workspaces/${workspaceId}/agents/${agentId}`,
       workspaceId,
     });
+  });
+
+  it("loads and validates the workspace default agent", async () => {
+    const defaultAgent = { ...agent, is_default: true };
+    const request = vi.fn().mockResolvedValue(defaultAgent);
+
+    await expect(
+      getDefaultAgent(workspaceId, { request } as ApiClient),
+    ).resolves.toEqual(defaultAgent);
+    expect(request).toHaveBeenCalledWith({
+      auth: true,
+      method: "GET",
+      path: `/workspaces/${workspaceId}/agents/default`,
+      signal: undefined,
+      workspaceId,
+    });
+
+    request.mockResolvedValueOnce({ ...defaultAgent, is_default: "yes" });
+    await expect(
+      getDefaultAgent(workspaceId, { request } as ApiClient),
+    ).rejects.toMatchObject({ kind: "server" });
   });
 
   it("preserves false agent and session deletion responses", async () => {

@@ -70,6 +70,18 @@ export function useAgentDetail(
   });
 }
 
+export function useDefaultAgent(workspaceId: string | null) {
+  const isSelectionInitialized = useWorkspaceStore(
+    (state) => state.isSelectionInitialized,
+  );
+  return useQuery({
+    enabled: isSelectionInitialized && hasId(workspaceId),
+    queryFn: ({ signal }) =>
+      runtimeApi.getDefaultAgent(workspaceId as string, signal),
+    queryKey: queryKeys.defaultAgent(workspaceId ?? "none"),
+  });
+}
+
 export function useCurrentWorkspaceRole(
   workspaceId: string | null,
   userUid: string | null,
