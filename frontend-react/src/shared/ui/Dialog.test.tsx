@@ -46,4 +46,22 @@ describe('Dialog', () => {
     );
     expect(triggerRef.current).toHaveFocus();
   });
+
+  it('keeps focus on the panel when a blocking dialog has no enabled control', async () => {
+    render(
+      <>
+        <button>Outside</button>
+        <Dialog dismissible={false} onClose={vi.fn()} open title="Checking connection">
+          <button disabled>Checking...</button>
+        </Dialog>
+      </>,
+    );
+
+    const dialog = screen.getByRole('dialog', { name: 'Checking connection' });
+    expect(dialog).toHaveFocus();
+    await userEvent.tab();
+    expect(dialog).toHaveFocus();
+    await userEvent.tab({ shift: true });
+    expect(dialog).toHaveFocus();
+  });
 });

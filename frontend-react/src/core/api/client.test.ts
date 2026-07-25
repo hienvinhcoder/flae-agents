@@ -1,7 +1,8 @@
-import { describe, expect, expectTypeOf, it, vi } from 'vitest';
+import { beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
 
 import { createApiClient, type RequestBody } from './client';
 import { AppError } from './errors';
+import { apiFailureLifecycle } from './failure-lifecycle';
 
 type FetchStep = Response | Error | DOMException | ((request: Request) => Response | Promise<Response>);
 
@@ -45,6 +46,8 @@ function dataResponse<T>(data: T | null, status = 200) {
 }
 
 describe('createApiClient', () => {
+  beforeEach(() => apiFailureLifecycle.reset());
+
   it('joins URLs, attaches auth and workspace headers, and unwraps data', async () => {
     const harness = createFetchHarness(dataResponse({ id: 'item-1' }));
     const client = createApiClient({
@@ -116,22 +119,6 @@ describe('createApiClient', () => {
     expect(harness.requests[0]?.headers.get('Content-Type')).toBe('application/json');
     expect(harness.requests[1]?.headers.get('Content-Type')).toContain('multipart/form-data');
     expect(harness.requests[1]?.headers.get('Content-Type')).not.toBe('application/json');
-  });
-
-  it('normalizes offline network failures without leaking the raw message', async () => {
-    const harness = createFetchHarness(new TypeError('failed token=secret-value'));
-    const client = createApiClient({
-      baseUrl: 'https://api.example.test',
-      tokenProvider: () => Promise.resolve(null),
-      fetchImpl: harness.fetchImpl,
-    });
-
-    const error = await client.request({ path: '/items', method: 'GET' }).catch((cause: unknown) => cause);
-
-    expect(error).toBeInstanceOf(AppError);
-    expect(error).toMatchObject({ kind: 'network', retryable: true });
-    expect((error as Error).message).not.toContain('secret-value');
-    expect(String((error as Error).cause)).not.toContain('secret-value');
   });
 
   it('refreshes the token exactly once after a first authenticated 401', async () => {

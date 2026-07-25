@@ -6,7 +6,6 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NavLink, Outlet } from 'react-router-dom';
 
-import { ConnectionDialog } from '../errors/ConnectionDialog';
 import type { User } from '../../core/auth/user-schema';
 import { useAuthStore } from '../../core/stores/auth-store';
 import { useWorkspaceStore } from '../../core/stores/workspace-store';
@@ -15,7 +14,6 @@ import { useSelectWorkspace, useWorkspaces } from '../../features/settings/hooks
 import { Button } from '../../shared/ui/Button';
 import { ErrorState } from '../../shared/ui/ErrorState';
 import { Skeleton } from '../../shared/ui/Skeleton';
-import { ToastViewport } from '../../shared/ui/Toast';
 
 export interface AppShellProps {
   fetchWorkspaces: () => Promise<Workspace[]>;
@@ -49,24 +47,12 @@ const navigation: readonly NavigationItem[] = [
 export function AppShell({ fetchWorkspaces, logoutController, syncSelection }: AppShellProps) {
   const { i18n, t } = useTranslation();
   const [navigationOpen, setNavigationOpen] = useState(false);
-  const [offline, setOffline] = useState(() => typeof navigator !== 'undefined' && !navigator.onLine);
   const currentWorkspaceId = useWorkspaceStore((state) => state.currentWorkspaceId);
   const syncStatus = useWorkspaceStore((state) => state.syncStatus);
   const clearSyncStatus = useWorkspaceStore((state) => state.clearSyncStatus);
   const user = useAuthStore((state) => state.user);
   const workspaces = useWorkspaces({ fetchWorkspaces, syncSelection });
   const selectWorkspace = useSelectWorkspace({ syncSelection });
-
-  useEffect(() => {
-    const handleOffline = () => setOffline(true);
-    const handleOnline = () => setOffline(false);
-    window.addEventListener('offline', handleOffline);
-    window.addEventListener('online', handleOnline);
-    return () => {
-      window.removeEventListener('offline', handleOffline);
-      window.removeEventListener('online', handleOnline);
-    };
-  }, []);
 
   useEffect(() => {
     if (syncStatus !== 'success') return undefined;
@@ -149,8 +135,6 @@ export function AppShell({ fetchWorkspaces, logoutController, syncSelection }: A
         </main>
       </div>
 
-      <ToastViewport />
-      <ConnectionDialog onRetry={() => setOffline(!navigator.onLine)} open={offline} />
     </div>
   );
 }

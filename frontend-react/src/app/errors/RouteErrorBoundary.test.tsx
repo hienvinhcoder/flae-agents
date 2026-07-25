@@ -44,5 +44,6 @@ describe('RouteErrorBoundary', () => {
     expect(await screen.findByRole('main', { name: 'FLAE application' })).toBeInTheDocument();
     expect(screen.getByText('This page could not be displayed safely.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Reload page' })).toBeInTheDocument();
+    expect(screen.queryByText(/Route request failed/)).not.toBeInTheDocument();
   });
 });

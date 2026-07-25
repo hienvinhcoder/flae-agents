@@ -1,4 +1,5 @@
 import { AppError } from './errors';
+import { apiFailureLifecycle, isFailureBypassPath } from './failure-lifecycle';
 import type { ApiResponse } from './types';
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -41,6 +42,11 @@ export interface ApiClient {
 
 function joinUrl(baseUrl: string, path: string) {
   return `${baseUrl.replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`;
+}
+
+function isHealthPath(path: string) {
+  const normalized = path.split(/[?#]/, 1)[0]?.replace(/\/+$/, '') ?? '';
+  return normalized.endsWith('/health');
 }
 
 function isNativeBody(body: RequestBody): body is Blob | FormData | URLSearchParams {
@@ -201,10 +207,15 @@ export function createApiClient({
   function request(options: VoidApiRequestOptions): Promise<void>;
   async function request<T>(options: ApiRequestOptions): Promise<T | null | void> {
     const authenticated = options.auth !== false;
+    const bypassGlobalFailure = isFailureBypassPath(options.path);
 
     async function execute(forceRefresh: boolean): Promise<T | null | void> {
       if (options.signal?.aborted) {
         throw abortError();
+      }
+
+      if (apiFailureLifecycle.isConnectionDown() && !bypassGlobalFailure) {
+        return options.response === 'void' ? undefined : null;
       }
 
       let headers: Headers;
@@ -255,7 +266,9 @@ export function createApiClient({
           signal: options.signal,
         });
       } catch (cause) {
-        throw lifecycleError(cause, 'network', options.signal);
+        const error = lifecycleError(cause, 'network', options.signal);
+        if (error.retryable) apiFailureLifecycle.reportNetworkFailure();
+        throw error;
       }
 
       if (options.signal?.aborted) {
@@ -276,13 +289,25 @@ export function createApiClient({
         } catch {
           cleanupFailed = true;
         }
+        if (!bypassGlobalFailure) {
+          try {
+            await apiFailureLifecycle.handleUnauthorized();
+          } catch {
+            cleanupFailed = true;
+          }
+        }
         throw httpError(401, cleanupFailed ? 'AUTH_CLEANUP_FAILED' : undefined);
       }
 
       if (!response.ok) {
         await discardResponseBody(response);
+        if (response.status >= 500 && !isHealthPath(options.path)) {
+          apiFailureLifecycle.reportServerFailure();
+        }
         throw httpError(response.status);
       }
+
+      if (bypassGlobalFailure) apiFailureLifecycle.reportRecovery();
 
       if (options.response === 'void') {
         await discardResponseBody(response);
