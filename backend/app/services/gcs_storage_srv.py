@@ -2,11 +2,13 @@
 Service quản lý file trên Google Cloud Storage (GCS).
 Path format: {workspace_id}/knowledge-base/{document_id}/{filename}
 """
+import os
 import uuid
 from typing import Optional
 
 from google.cloud import storage
 from google.api_core import exceptions as google_exceptions
+from google.oauth2.credentials import Credentials
 
 from app.core.config import settings
 from app.core.logger import get_logger
@@ -19,7 +21,13 @@ _storage_client: Optional[storage.Client] = None
 def _get_client() -> storage.Client:
     global _storage_client
     if _storage_client is None:
-        _storage_client = storage.Client()
+        if os.getenv("STORAGE_EMULATOR_HOST"):
+            _storage_client = storage.Client(
+                project=os.getenv("GOOGLE_CLOUD_PROJECT"),
+                credentials=Credentials(token="owner"),
+            )
+        else:
+            _storage_client = storage.Client()
     return _storage_client
 
 

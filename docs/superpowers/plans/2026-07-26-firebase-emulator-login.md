@@ -181,6 +181,8 @@ git commit -m "feat: route Firebase SDKs to local emulators"
 - Modify: `docker-compose.yml`
 - Modify: `.env.example`
 - Modify: `backend/.env.example`
+- Modify: `backend/app/services/gcs_storage_srv.py`
+- Create: `backend/tests/services/test_gcs_storage_service.py`
 
 - [ ] **Step 1: Write a failing configuration contract test**
 
@@ -245,16 +247,26 @@ Set `GOOGLE_CLOUD_PROJECT=flae-agents`, `FIREBASE_AUTH_EMULATOR_HOST=firebase-em
 
 Correct the documented Storage variable from `FIREBASE_STORAGE_EMULATOR_HOST` to `STORAGE_EMULATOR_HOST` in both environment examples.
 
-- [ ] **Step 5: Run the configuration test and verify GREEN**
+- [ ] **Step 5: Write and verify the Storage emulator credential test**
+
+Test that `_get_client()` passes a local `owner` credential and project ID only when `STORAGE_EMULATOR_HOST` is set, while production still calls `storage.Client()` without overrides.
+
+Run: `cd backend && uv run pytest tests/services/test_gcs_storage_service.py -q`
+
+Expected before implementation: FAIL because the current client factory receives no emulator credential.
+
+Implement the emulator-only credential with `google.oauth2.credentials.Credentials(token="owner")`, then rerun the test and require PASS.
+
+- [ ] **Step 6: Run the configuration test and verify GREEN**
 
 Run: `bash tests/firebase-emulator-config.test.sh`
 
 Expected: PASS with the complete local emulator contract.
 
-- [ ] **Step 6: Commit the container contract**
+- [ ] **Step 7: Commit the container contract**
 
 ```bash
-git add tests/firebase-emulator-config.test.sh firebase/firebase.json firebase/Dockerfile docker-compose.yml .env.example backend/.env.example
+git add tests/firebase-emulator-config.test.sh firebase/firebase.json firebase/storage.rules firebase/Dockerfile docker-compose.yml .env.example backend/.env.example backend/app/services/gcs_storage_srv.py backend/tests/services/test_gcs_storage_service.py docs/superpowers/plans/2026-07-26-firebase-emulator-login.md
 git commit -m "feat: run Firebase emulators in Docker Compose"
 ```
 
