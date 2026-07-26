@@ -1,5 +1,8 @@
 # Kế hoạch Triển khai: Chức năng Topics (Chủ đề Tri thức)
 
+> [!IMPORTANT]
+> **Historical implementation notes:** Architecture (including Angular and backend architecture), file paths, commands, and testing guidance in this document are historical and are superseded by [`docs/superpowers/specs/2026-07-22-angular-to-react-migration-design.md`](../../superpowers/specs/2026-07-22-angular-to-react-migration-design.md). The product requirements described here remain valid.
+
 Tài liệu này mô tả chi tiết kế hoạch hiện thực hóa tính năng **Topics** nhằm tổ chức tri thức dạng semantic cluster trên hệ thống **FLAE Agents**. Kế hoạch bao gồm các thay đổi cấu trúc cơ sở dữ liệu PostgreSQL (rag_db), tích hợp pipeline tự động gom cụm khi ingest tài liệu, xây dựng API endpoints bất đồng bộ và thiết kế giao diện quản lý trên Angular 18 sử dụng Signals. Đặc biệt, hệ thống sẽ sử dụng **Temporal** để quản lý background task cập nhật tóm tắt topic.
 
 ---

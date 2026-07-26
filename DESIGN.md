@@ -1,6 +1,6 @@
 # FLAE React Design System
 
-This document is the source of truth for the React SPA redesign. The direction is a dark, technical AI command center: quiet graphite surfaces, dense but readable information, and restrained color that makes system state and primary actions immediately legible.
+This document is the source of truth for the production React SPA in `frontend/`. The direction is a dark, technical AI command center: quiet graphite surfaces, dense but readable information, and restrained color that makes system state and primary actions immediately legible.
 
 ## 1. Principles
 
@@ -16,7 +16,7 @@ Use roughly 85% neutral surfaces, 10% text and borders, and no more than 5% bran
 
 ### Immutable brand palette
 
-These variables are immutable. They must appear exactly in `frontend-react/src/styles.css`; React and TypeScript source must reference the variables or mapped Tailwind utilities instead of repeating the literals.
+These variables are immutable. They must appear exactly in `frontend/src/styles.css`; React and TypeScript source must reference the variables or mapped Tailwind utilities instead of repeating the literals.
 
 ```css
 :root {
@@ -123,7 +123,7 @@ Shared UI primitives own their state styling. Feature code selects a supported v
 
 Tailwind 4 mappings in `styles.css` expose the complete component contract: brand colors and foreground, neutral surfaces/boundaries/text including disabled text, AI and semantic solid/soft colors, UI/code fonts, control/panel/dialog/status radii, and panel/overlay/focus shadows. Representative utilities include `bg-brand`, `text-brand-foreground`, `bg-ui-panel`, `border-ui-line`, `text-ui-ink-disabled`, `bg-accent-ai-soft`, `bg-state-danger-soft`, `rounded-ui-dialog`, and `shadow-ui-focus`. Prefer these utilities. Custom CSS is allowed only for reusable recipes, third-party integration, or behavior Tailwind cannot express clearly.
 
-Application source must not repeat brand hex literals outside `frontend-react/src/styles.css`; the immutable contract block in this document is the documentation exception. Feature code must never create a local substitute for a global token.
+Application source must not repeat brand hex literals outside `frontend/src/styles.css`; the immutable contract block in this document is the documentation exception. Feature code must never create a local substitute for a global token.
 
 ## 7. Interaction, focus, and motion
 

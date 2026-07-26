@@ -1,5 +1,8 @@
 # Spec: Chức năng Topics (Chủ đề Tri thức)
 
+> [!IMPORTANT]
+> **Historical implementation notes:** Architecture (including Angular and backend architecture), file paths, commands, and testing guidance in this document are historical and are superseded by [`docs/superpowers/specs/2026-07-22-angular-to-react-migration-design.md`](../../superpowers/specs/2026-07-22-angular-to-react-migration-design.md). The product requirements described here remain valid.
+
 ## Objective
 **Topics** là lớp tổ chức tri thức cấp cao (semantic layer) nằm trên các chunks, documents, entities, relationships và code symbols. Thay vì bắt người dùng phải tổ chức cấu trúc thư mục thủ công, hệ thống tự động gom các thành phần tri thức liên quan vào các **Semantic Clusters** (ví dụ: Billing System, Mobile App, Authentication, MCP Server) để giúp cả AI Agent và người dùng hiểu rõ ngữ cảnh của một khu vực kiến thức.
 

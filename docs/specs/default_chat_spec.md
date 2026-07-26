@@ -1,5 +1,8 @@
 # Spec: AI Chat Mặc Định (Hỏi Đáp RAG Với Default QA Agent)
 
+> [!IMPORTANT]
+> **Historical implementation notes:** Architecture (including Angular and backend architecture), file paths, commands, and testing guidance in this document are historical and are superseded by [`docs/superpowers/specs/2026-07-22-angular-to-react-migration-design.md`](../superpowers/specs/2026-07-22-angular-to-react-migration-design.md). The product requirements described here remain valid.
+
 ## Objective
 Xây dựng một trang AI Chat tập trung (tương tự ChatGPT, Claude Code) cho phép người dùng trong cùng một Workspace có thể trực tiếp hỏi đáp với AI Assistant mặc định mà không cần phải thực hiện bước tạo Agent mới từ trước.
 - **Default QA Agent**: Mỗi Workspace sẽ có một AI Agent mặc định (Default Agent). Hệ thống sẽ tự động định danh/tạo thực thể này khi người dùng truy cập trang Chat hoặc thực hiện các hoạt động liên quan.

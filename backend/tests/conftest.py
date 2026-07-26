@@ -1,6 +1,9 @@
 import os
 import sys
 
+# Prevent import-time model construction from requiring a real credential in tests.
+os.environ.setdefault("GEMINI_API_KEY", "test-gemini-api-key")
+
 # Cấu hình tên database test
 POSTGRES_TEST_DB = "flae_db_test"
 RAG_TEST_DB = "rag_db_test"

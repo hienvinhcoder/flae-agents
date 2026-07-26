@@ -15,7 +15,7 @@ Tài liệu này định nghĩa các quy tắc lập trình, kiến trúc hệ t
 ---
 
 ## 2. KIẾN TRÚC & TECH STACK
-* **Frontend (`frontend-react/`):** React SPA, Vite, TypeScript strict mode, Tailwind CSS, React Router, TanStack Query, Zustand và Firebase.
+* **Frontend (`frontend/`):** React SPA, Vite, TypeScript strict mode, Tailwind CSS, React Router, TanStack Query, Zustand và Firebase.
 * **Backend (`backend/`):** FastAPI, Pydantic, SQLAlchemy, Alembic, asyncpg, Redis, PostgreSQL.
 * **Package Manager (Backend):** Sử dụng `uv` để quản lý các gói phụ thuộc và môi trường ảo.
 
@@ -47,14 +47,7 @@ Tài liệu này định nghĩa các quy tắc lập trình, kiến trúc hệ t
 * **Effects & tài nguyên:** Chỉ dùng `useEffect` để đồng bộ với hệ thống bên ngoài React như browser API, subscription, timer hoặc kết nối realtime; không dùng effect để suy ra state có thể tính trong render. Effect tạo subscription, listener, timer, request có thể hủy hoặc kết nối phải trả về cleanup tương ứng.
 * **Testing:** Dùng Vitest và React Testing Library cho unit/integration tests, Playwright cho luồng end-to-end quan trọng. Test hành vi người dùng và accessibility thay vì implementation detail; coverage Frontend phải đạt tối thiểu 75%.
 * **UI/UX & accessibility:** Tuân thủ [DESIGN.md](../../DESIGN.md), dùng semantic HTML trước ARIA, hỗ trợ đầy đủ keyboard, focus hiển thị rõ, `prefers-reduced-motion` và tương phản WCAG 2.2 AA. Không dùng màu làm tín hiệu duy nhất.
-* **Design tokens:** Dùng Tailwind utilities và CSS variables từ `frontend-react/src/styles.css`. Không hardcode brand literal trong `.ts`/`.tsx`, không tạo token cục bộ thay thế token hệ thống và không override nội bộ shared primitive từ feature code.
-
-### 3.2.1. Quy tắc tạm thời trong giai đoạn migration
-* `frontend/` là Angular reference-only; không phát triển runtime mới trong thư mục này.
-* `frontend-react/` là React app đang active và là đích duy nhất cho implementation mới.
-* Cấm runtime import theo cả hai chiều giữa `frontend/` và `frontend-react/`.
-* Một feature chỉ được xem là đã migrate khi acceptance tests tương ứng pass.
-* Xóa toàn bộ quy tắc migration tạm thời tại thời điểm cutover hoàn tất.
+* **Design tokens:** Dùng Tailwind utilities và CSS variables từ `frontend/src/styles.css`. Không hardcode brand literal trong `.ts`/`.tsx`, không tạo token cục bộ thay thế token hệ thống và không override nội bộ shared primitive từ feature code.
 
 ### 3.3. Backend (FastAPI, Pydantic, SQLAlchemy, uv)
 * **Quản lý Package:** Bắt buộc sử dụng `uv` thay cho `pip` để quản lý dependencies và môi trường ảo nhằm đảm bảo hiệu năng và tính nhất quán.

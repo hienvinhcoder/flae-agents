@@ -1,5 +1,8 @@
 # Spec: Q&A Agent (Hỏi đáp dựa trên tài liệu đã upload)
 
+> [!IMPORTANT]
+> **Historical implementation notes:** Architecture (including Angular and backend architecture), file paths, commands, and testing guidance in this document are historical and are superseded by [`docs/superpowers/specs/2026-07-22-angular-to-react-migration-design.md`](../superpowers/specs/2026-07-22-angular-to-react-migration-design.md). The product requirements described here remain valid.
+
 ## Objective
 Xây dựng tính năng Q&A Agent cho nền tảng FLAE Agents. Cho phép người dùng (trong cùng Workspace) tạo các Agent thông minh được cấu hình System Prompt riêng, sau đó Agent này sẽ trả lời các câu hỏi dựa trên các tài liệu đã được tải lên và trích xuất (ingested) trong Knowledge Base của Workspace đó.
 
