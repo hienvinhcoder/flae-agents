@@ -43,6 +43,37 @@ const edge: RendererEdge = {
 };
 
 describe("graph controls", () => {
+  it("only references the search result list while suggestions are rendered", () => {
+    const { rerender } = render(
+      <GraphToolbar
+        onCommand={vi.fn()}
+        onFocusNode={vi.fn()}
+        onSearchChange={vi.fn()}
+        search=""
+        suggestions={[]}
+      />,
+    );
+
+    expect(screen.getByRole("searchbox", { name: /search entities/i })).not.toHaveAttribute(
+      "aria-controls",
+    );
+
+    rerender(
+      <GraphToolbar
+        onCommand={vi.fn()}
+        onFocusNode={vi.fn()}
+        onSearchChange={vi.fn()}
+        search="ada"
+        suggestions={[node]}
+      />,
+    );
+
+    expect(screen.getByRole("searchbox", { name: /search entities/i })).toHaveAttribute(
+      "aria-controls",
+      "graph-search-results",
+    );
+  });
+
   it("GRAPH-02C emits search, focus, zoom, and reset actions", async () => {
     const user = userEvent.setup();
     const onFocusNode = vi.fn();

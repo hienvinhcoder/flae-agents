@@ -94,6 +94,7 @@ describe("TopicDetailPage", () => {
     );
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     expect(screen.getByText("Customer evidence")).toBeInTheDocument();
+    expect(screen.getByLabelText("Topic metadata")).toHaveTextContent("Active");
     await user.click(screen.getByRole("tab", { name: /source documents/i }));
     expect(screen.getByText("Roadmap")).toBeInTheDocument();
 

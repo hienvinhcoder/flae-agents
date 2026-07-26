@@ -11,7 +11,7 @@ const dependencies = vi.hoisted(() => ({
 
 vi.mock("../../../core/realtime/sse", () => ({ streamSse: dependencies.streamSse }));
 vi.mock("../../../core/auth/firebase", () => ({
-  firebaseAuth: { currentUser: { getIdToken: dependencies.getIdToken } },
+  getAuthToken: dependencies.getIdToken,
 }));
 vi.mock("../../../core/config/env", () => ({
   env: { VITE_API_URL: "https://api.example.test/v1" },

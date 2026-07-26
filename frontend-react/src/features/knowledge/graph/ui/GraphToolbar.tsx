@@ -27,7 +27,7 @@ export function GraphToolbar({
         <Search aria-hidden className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-ui-ink-muted" />
         <input
           aria-autocomplete="list"
-          aria-controls="graph-search-results"
+          aria-controls={suggestions.length ? "graph-search-results" : undefined}
           className="min-h-10 w-full rounded-ui-control border border-ui-line bg-ui-canvas/80 pl-9 pr-3 text-ui-ink placeholder:text-ui-ink-muted"
           id="graph-search"
           onChange={(event) => onSearchChange(event.target.value)}

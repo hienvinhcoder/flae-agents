@@ -75,6 +75,17 @@ describe("KnowledgeGraphPage", () => {
     expect(await screen.findByText("1 nodes / 0 edges / ws-1")).toBeInTheDocument();
   });
 
+  it("keeps the graph controls stacking layer above the interactive canvas", async () => {
+    renderPage();
+
+    await screen.findByText("1 nodes / 0 edges / ws-1");
+    const controlsLayer = screen.getByRole("searchbox", {
+      name: /search entities/i,
+    }).parentElement?.parentElement?.parentElement;
+
+    expect(controlsLayer).toHaveClass("relative", "z-30");
+  });
+
   it("GRAPH-01 renders an empty prompt linking back to knowledge documents", async () => {
     runtimeApi.getKnowledgeGraph.mockResolvedValue({ edges: [], nodes: [] });
     renderPage();

@@ -13,7 +13,7 @@ const agentsApi = vi.hoisted(() => ({
 const chatApi = vi.hoisted(() => ({ streamChat: vi.fn() }));
 vi.mock("../../agents/api/agents-runtime-api", () => agentsApi);
 vi.mock("../api/chat-api", () => chatApi);
-vi.mock("../../../core/auth/firebase", () => ({ firebaseAuth: { currentUser: null } }));
+vi.mock("../../../core/auth/firebase", () => ({ getAuthToken: vi.fn().mockResolvedValue(null) }));
 vi.mock("../../../core/config/env", () => ({ env: { VITE_API_URL: "https://api.example.test" } }));
 
 const workspaceId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";

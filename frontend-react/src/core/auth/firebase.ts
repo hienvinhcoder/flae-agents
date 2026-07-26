@@ -12,6 +12,7 @@ import {
 import { env } from '../config/env';
 import { AppError } from '../api/errors';
 import { beginRegistrationMetadata, clearRegistrationMetadata } from './registration-coordinator';
+import { clearE2eAuthSession, e2eAuthToken, isE2eMode, setE2eAuthSession } from './e2e-auth';
 
 const existingApp = getApps().at(0);
 const firebaseApp =
@@ -28,11 +29,19 @@ const firebaseApp =
 export const firebaseAuth = getAuth(firebaseApp);
 
 export async function signInWithEmail(email: string, password: string) {
+  if (isE2eMode()) {
+    setE2eAuthSession(email);
+    return;
+  }
   clearRegistrationMetadata(email);
   return signInWithEmailAndPassword(firebaseAuth, email, password);
 }
 
 export async function registerWithEmail(email: string, password: string, fullName: string) {
+  if (isE2eMode()) {
+    setE2eAuthSession(email, fullName);
+    return;
+  }
   const registration = beginRegistrationMetadata(email, fullName);
   let credential;
 
@@ -63,14 +72,32 @@ export async function registerWithEmail(email: string, password: string, fullNam
 }
 
 export async function signInWithGoogle() {
+  if (isE2eMode()) {
+    setE2eAuthSession();
+    return;
+  }
   return signInWithPopup(firebaseAuth, new GoogleAuthProvider());
 }
 
 export async function logout() {
+  if (isE2eMode()) {
+    clearE2eAuthSession();
+    return;
+  }
   await signOut(firebaseAuth);
 }
 
 export async function logoutIfCurrentUser(expectedFirebaseUid: string) {
+  if (isE2eMode()) {
+    clearE2eAuthSession();
+    return;
+  }
   if (firebaseAuth.currentUser?.uid !== expectedFirebaseUid) return;
   await logout();
+}
+
+export function getAuthToken(forceRefresh = false) {
+  const localToken = e2eAuthToken();
+  if (localToken) return Promise.resolve(localToken);
+  return firebaseAuth.currentUser?.getIdToken(forceRefresh) ?? Promise.resolve(null);
 }

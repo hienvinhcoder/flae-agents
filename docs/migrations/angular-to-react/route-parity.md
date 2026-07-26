@@ -2,6 +2,20 @@
 
 This document freezes the observable route behavior of the Angular frontend before the React migration. The Angular files named below are reference-only. React target names are stable migration names, not existing Angular symbols.
 
+## Verification status
+
+Every route row is decided. The 74 stable IDs are checked in [`acceptance-checklist.md`](acceptance-checklist.md), whose evidence matrix distinguishes deterministic browser E2E coverage from Vitest integration/unit coverage. Browser fixtures use the real React router, pages, hooks, and production adapters; they replace only authentication identity and backend transport behind a development-only `VITE_E2E_MODE` gate.
+
+| Route group | Browser evidence | Supporting evidence |
+| --- | --- | --- |
+| Root, auth, protected redirects, dashboard shell | [`auth.spec.ts`](../../../frontend-react/tests/e2e/auth.spec.ts) | [`router.test.tsx`](../../../frontend-react/src/app/router/router.test.tsx), [`ProtectedRoute.test.tsx`](../../../frontend-react/src/core/auth/ProtectedRoute.test.tsx), [`GuestRoute.test.tsx`](../../../frontend-react/src/core/auth/GuestRoute.test.tsx) |
+| Workspace, settings, invitation | [`workspace.spec.ts`](../../../frontend-react/tests/e2e/workspace.spec.ts) | [`SettingsPage.test.tsx`](../../../frontend-react/src/features/settings/pages/SettingsPage.test.tsx), [`InviteAcceptPage.test.tsx`](../../../frontend-react/src/features/invite/pages/InviteAcceptPage.test.tsx) |
+| Knowledge and graph | [`knowledge.spec.ts`](../../../frontend-react/tests/e2e/knowledge.spec.ts), [`graph.spec.ts`](../../../frontend-react/tests/e2e/graph.spec.ts) | [`KnowledgeListPage.test.tsx`](../../../frontend-react/src/features/knowledge/pages/KnowledgeListPage.test.tsx), [`KnowledgeGraphPage.test.tsx`](../../../frontend-react/src/features/knowledge/pages/KnowledgeGraphPage.test.tsx) |
+| Topics | [`topics.spec.ts`](../../../frontend-react/tests/e2e/topics.spec.ts) | [`TopicListPage.test.tsx`](../../../frontend-react/src/features/topics/pages/TopicListPage.test.tsx), [`TopicDetailPage.test.tsx`](../../../frontend-react/src/features/topics/pages/TopicDetailPage.test.tsx) |
+| Agents and chat | [`agents.spec.ts`](../../../frontend-react/tests/e2e/agents.spec.ts), [`chat.spec.ts`](../../../frontend-react/tests/e2e/chat.spec.ts) | [`AgentListPage.test.tsx`](../../../frontend-react/src/features/agents/pages/AgentListPage.test.tsx), [`AgentConfigPage.test.tsx`](../../../frontend-react/src/features/agents/pages/AgentConfigPage.test.tsx), [`AgentChatPage.test.tsx`](../../../frontend-react/src/features/agents/pages/AgentChatPage.test.tsx) |
+
+No screenshot threshold is used as an acceptance proxy. Responsive polish and canvas rendering remain subject to ordinary manual visual review, while route behavior, keyboard interaction, focus, accessibility semantics, and critical mutations have deterministic specifications. Playwright discovers all 11 tests, but the local sandbox cannot bind port 4200; CI/root-host execution remains required before claiming the browser suite passes. The optional real-backend smoke is limited to public health and requires `E2E_REAL_BACKEND_URL`; deterministic parity does not depend on a real Firebase account or mutable backend records.
+
 ## Guard and layout rules
 
 - `authGuard` waits until Firebase authentication initialization has completed. An authenticated user proceeds; a guest is redirected to `/auth/login?returnUrl=<requested-url>`.

@@ -13,6 +13,12 @@ import { useTopicActions, useTopicDetail } from "../hooks/use-topics";
 import { topicEditSchema } from "../schemas/topic-schema";
 import type { TopicMember, TopicStatus } from "../types/topic";
 
+const topicStatusLabels: Record<TopicStatus, string> = {
+  active: "Active",
+  archived: "Archived",
+  needs_review: "Needs review",
+};
+
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Unable to load topic details.";
 }
@@ -324,7 +330,7 @@ export function TopicDetailPage() {
           <dl className="mt-4 grid gap-4 text-sm">
             <div>
               <dt className="text-ui-ink-muted">Status</dt>
-              <dd className="mt-1 font-semibold capitalize text-ui-ink">{topic.status.replace("_", " ")}</dd>
+              <dd className="mt-1 font-semibold text-ui-ink">{topicStatusLabels[topic.status]}</dd>
             </div>
             <div>
               <dt className="text-ui-ink-muted">Confidence</dt>

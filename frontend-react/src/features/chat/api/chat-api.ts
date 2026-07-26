@@ -1,4 +1,4 @@
-import { firebaseAuth } from "../../../core/auth/firebase";
+import { getAuthToken } from "../../../core/auth/firebase";
 import { env } from "../../../core/config/env";
 import { streamSse } from "../../../core/realtime/sse";
 import { parseStreamEvent, type StreamEvent } from "../types/stream";
@@ -30,7 +30,7 @@ export function streamChat({
     onEvent,
     parseEvent: parseStreamEvent,
     signal,
-    tokenProvider: () => firebaseAuth.currentUser?.getIdToken() ?? Promise.resolve(null),
+    tokenProvider: getAuthToken,
     url,
   });
 }

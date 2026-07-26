@@ -45,7 +45,7 @@ export function KnowledgeGraphPage() {
       </header>
 
       <div className="surface-panel mt-5 overflow-hidden bg-ui-canvas">
-        <div className="flex flex-col gap-3 border-b border-ui-divider bg-ui-panel/90 p-3 backdrop-blur xl:flex-row xl:items-end xl:justify-between">
+        <div className="relative z-30 flex flex-col gap-3 border-b border-ui-divider bg-ui-panel/90 p-3 backdrop-blur xl:flex-row xl:items-end xl:justify-between">
           <GraphToolbar
             onCommand={(type) => controller.issueCommand(type)}
             onFocusNode={controller.focusNode}

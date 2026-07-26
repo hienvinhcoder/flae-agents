@@ -7,6 +7,7 @@ import { useAuthStore, type LoginProvider, type SyncUserPayload } from '../store
 import { firebaseAuth, logoutIfCurrentUser } from './firebase';
 import { consumeRegistrationMetadata } from './registration-coordinator';
 import { clearClientSession, clearProtectedClientData } from './session-cleanup';
+import { isE2eMode, readE2eAuthSession, subscribeToE2eAuth } from './e2e-auth';
 
 const SYNC_ERROR_MESSAGE = 'Unable to finish signing in. Please try again.';
 
@@ -31,6 +32,17 @@ export function AuthBootstrap({ children }: PropsWithChildren) {
   const retryRevision = useAuthStore((state) => state.retryRevision);
 
   useEffect(() => {
+    if (isE2eMode()) {
+      const restoreLocalSession = () => {
+        const user = readE2eAuthSession();
+        if (user) useAuthStore.getState().setAuthenticated(user);
+        else clearClientSession(queryClient);
+      };
+      useAuthStore.getState().resetForBootstrap();
+      restoreLocalSession();
+      return subscribeToE2eAuth(restoreLocalSession);
+    }
+
     let active = true;
     let unsubscribe: (() => void) | undefined;
     let operation = 0;

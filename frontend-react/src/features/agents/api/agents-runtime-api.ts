@@ -1,5 +1,5 @@
 import { createApiClient } from "../../../core/api/client";
-import { firebaseAuth } from "../../../core/auth/firebase";
+import { getAuthToken } from "../../../core/auth/firebase";
 import { env } from "../../../core/config/env";
 import type {
   AgentCreatePayload,
@@ -10,8 +10,7 @@ import * as agentsApi from "./agents-api";
 
 const client = createApiClient({
   baseUrl: env.VITE_API_URL,
-  tokenProvider: (forceRefresh) =>
-    firebaseAuth.currentUser?.getIdToken(forceRefresh) ?? Promise.resolve(null),
+  tokenProvider: getAuthToken,
 });
 
 export const listAgents = (workspaceId: string, signal?: AbortSignal) =>
