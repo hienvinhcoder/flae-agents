@@ -1,59 +1,43 @@
-# Frontend
+# FLAE Agents Frontend
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.3.23.
+The frontend is a React application built with Vite and TypeScript. The local development server runs at `http://localhost:4200`.
 
-## Development server
+## Local development
 
-To start a local development server, run:
-
-```bash
-ng serve
-```
-
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+Use Node.js 20.19.0 or a compatible version declared in `package.json`, then install dependencies and create the local environment file:
 
 ```bash
-ng generate component component-name
+npm ci
+cp .env.example .env
+npm run dev
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+Update `.env` with the backend, WebSocket, and Firebase values for your environment. The Vite development server listens on all interfaces and uses port 4200.
+
+## Quality checks
+
+Run the checks independently as needed:
 
 ```bash
-ng generate --help
+npm run test
+npm run typecheck
+npm run lint
+npm run test:coverage
+npm run test:e2e
 ```
 
-## Building
-
-To build the project run:
+Playwright E2E tests require Chromium. Install it once with:
 
 ```bash
-ng build
+npx playwright install chromium
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+## Production build
 
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
+Set the required `VITE_*` environment variables, then create an optimized build:
 
 ```bash
-ng test
+npm run build
 ```
 
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+The build output is written to `dist/`. Deploy that directory to a static web host or CDN. Configure the host to serve `index.html` as the fallback for routes that do not match a static file so client-side navigation works correctly.

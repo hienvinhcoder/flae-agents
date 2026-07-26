@@ -147,5 +147,37 @@
     "DETAIL_RELATIONS_COUNT": "Số mối quan hệ",
     "DETAIL_PROCESSING_TIME": "Thời gian xử lý",
     "DETAIL_TOKEN_USAGE": "Token đã sử dụng"
+  },
+  "SHELL": {
+    "SKIP_CONTENT": "Bỏ qua đến nội dung",
+    "BRAND_SUBTITLE": "Vận hành AI",
+    "OPEN_NAV": "Mở điều hướng",
+    "CLOSE_NAV": "Đóng điều hướng",
+    "CLOSE_NAV_OVERLAY": "Đóng lớp điều hướng",
+    "CLOSE_DIALOG": "Đóng hộp thoại",
+    "PRIMARY_NAV": "Điều hướng chính",
+    "WORKSPACE": "Không gian làm việc",
+    "LOADING_WORKSPACES": "Đang tải không gian làm việc",
+    "INITIALIZING": "Đang tải và đồng bộ không gian làm việc",
+    "NO_WORKSPACE": "Không có không gian làm việc",
+    "LOAD_ERROR": "Không thể tải không gian làm việc.",
+    "KNOWLEDGE_GRAPH": "Đồ thị tri thức",
+    "SYNCING": "Đang đồng bộ không gian làm việc",
+    "SYNC_SUCCESS": "Đã đồng bộ không gian làm việc",
+    "SYNC_ERROR": "Không thể đồng bộ; lựa chọn cục bộ vẫn được giữ",
+    "LOGGING_OUT": "Đang đăng xuất",
+    "LOGOUT_ERROR": "Không thể đăng xuất. Vui lòng thử lại.",
+    "LOADING_ROUTE": "Đang tải trang"
+  },
+  "APP": {
+    "ARIA": "Ứng dụng FLAE",
+    "LOADING": "Đang tải ứng dụng"
+  },
+  "ERROR_PAGE": {
+    "APP_ARIA": "Ứng dụng FLAE",
+    "TITLE": "Đã xảy ra lỗi",
+    "NOT_FOUND": "Không tìm thấy trang yêu cầu.",
+    "GENERAL": "Không thể hiển thị trang này an toàn.",
+    "RETRY": "Tải lại"
   }
 }

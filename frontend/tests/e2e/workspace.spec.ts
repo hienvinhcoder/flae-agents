@@ -8,13 +8,14 @@ test('selects a workspace through the production adapter with scoped headers', a
   const selection = page.waitForRequest((request) =>
     request.url().endsWith('/api/v1/users/current-workspace') && request.method() === 'PUT');
   await page.goto('/dashboard/briefing');
-  await page.getByLabel('Workspace').selectOption(ids.secondWorkspace);
+  const workspaceSelector = page.getByRole('combobox', { name: 'Workspace', exact: true });
+  await workspaceSelector.selectOption(ids.secondWorkspace);
 
   const request = await selection;
   expect(request.headers().authorization).toBe('Bearer flae-e2e-token');
   expect(request.headers()['x-workspace-id']).toBe(ids.secondWorkspace);
   expect(request.postDataJSON()).toEqual({ workspace_id: ids.secondWorkspace });
-  await expect(page.getByLabel('Workspace')).toHaveValue(ids.secondWorkspace);
+  await expect(workspaceSelector).toHaveValue(ids.secondWorkspace);
 });
 
 test('invites a member and traps then restores dialog focus', async ({ page }) => {

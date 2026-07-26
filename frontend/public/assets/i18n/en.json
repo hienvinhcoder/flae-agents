@@ -147,5 +147,37 @@
     "DETAIL_RELATIONS_COUNT": "Number of Relations",
     "DETAIL_PROCESSING_TIME": "Processing Time",
     "DETAIL_TOKEN_USAGE": "Tokens Used"
+  },
+  "SHELL": {
+    "SKIP_CONTENT": "Skip to content",
+    "BRAND_SUBTITLE": "AI operations",
+    "OPEN_NAV": "Open navigation",
+    "CLOSE_NAV": "Close navigation",
+    "CLOSE_NAV_OVERLAY": "Close navigation overlay",
+    "CLOSE_DIALOG": "Close dialog",
+    "PRIMARY_NAV": "Primary navigation",
+    "WORKSPACE": "Workspace",
+    "LOADING_WORKSPACES": "Loading workspaces",
+    "INITIALIZING": "Loading and synchronizing workspace",
+    "NO_WORKSPACE": "No workspace",
+    "LOAD_ERROR": "Workspaces could not be loaded.",
+    "KNOWLEDGE_GRAPH": "Knowledge graph",
+    "SYNCING": "Synchronizing workspace",
+    "SYNC_SUCCESS": "Workspace synchronized",
+    "SYNC_ERROR": "Workspace synchronization failed; your local selection was kept",
+    "LOGGING_OUT": "Signing out",
+    "LOGOUT_ERROR": "Unable to sign out. Please try again.",
+    "LOADING_ROUTE": "Loading page"
+  },
+  "APP": {
+    "ARIA": "FLAE application",
+    "LOADING": "Loading application"
+  },
+  "ERROR_PAGE": {
+    "APP_ARIA": "FLAE application",
+    "TITLE": "Something went wrong",
+    "NOT_FOUND": "The requested page could not be found.",
+    "GENERAL": "This page could not be displayed safely.",
+    "RETRY": "Reload page"
   }
 }

@@ -1,8 +1,0 @@
-@if (connectionModalService.isServerDown()) {
-  <app-connection-modal></app-connection-modal>
-} @else if (!authStore.isAuthReady()) {
-  <app-loading-skeleton></app-loading-skeleton>
-} @else {
-  <router-outlet></router-outlet>
-}
-<app-toast-container></app-toast-container>
