@@ -31,7 +31,7 @@ The existing login form and authentication error mapping remain unchanged. Succe
 
 Firebase Admin continues to initialize from the existing service-account configuration. When `FIREBASE_AUTH_EMULATOR_HOST` is present, the Admin SDK accepts unsigned emulator tokens and validates them against the configured project ID.
 
-The existing `GCSStorageService` continues using `google.cloud.storage.Client()`. The Python client automatically uses anonymous credentials and the emulator endpoint when `STORAGE_EMULATOR_HOST` is present. The configured bucket remains `flae-knowledge-base`; local startup or the first upload may create it in the emulator.
+The existing `GCSStorageService` continues using `google.cloud.storage.Client()`. The Python client automatically uses anonymous credentials and the emulator endpoint when `STORAGE_EMULATOR_HOST` is present. Local Compose sets `GCS_BUCKET_NAME=flae-agents.appspot.com` so frontend and backend use the same emulated bucket; production may continue supplying its existing bucket name.
 
 Both `backend` and `flae-worker` receive the same Auth and Storage emulator variables because API requests and Temporal ingestion activities can access Firebase-backed services.
 
