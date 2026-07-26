@@ -15,5 +15,5 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["tests/e2e"]
+  "include": ["tests/e2e", "tests/firebase"]
 }

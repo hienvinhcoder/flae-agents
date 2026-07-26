@@ -21,6 +21,9 @@ curl --fail --silent \
   -H 'Authorization: Bearer owner' \
   http://127.0.0.1:9199/storage/v1/b/flae-agents.appspot.com/o >/dev/null
 
+docker compose exec -T backend uv run python -c \
+  'import asyncio, uuid; from app.services.gcs_storage_srv import GCSStorageService; exec("async def smoke():\n    path = await GCSStorageService.upload_file(uuid.UUID(\"00000000-0000-4000-8000-000000000001\"), uuid.uuid4(), \"smoke.txt\", b\"firebase-emulator-smoke\", \"text/plain\")\n    assert GCSStorageService.download_file_sync(path) == b\"firebase-emulator-smoke\"\n    await GCSStorageService.delete_file(path)\nasyncio.run(smoke())")'
+
 for attempt in {1..90}; do
   if curl --fail --silent http://127.0.0.1:8000/docs >/dev/null; then
     break

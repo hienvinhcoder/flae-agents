@@ -23,7 +23,7 @@ export default mergeConfig(
       },
       css: true,
       environment: 'jsdom',
-      exclude: ['tests/e2e/**', 'node_modules/**', 'dist/**'],
+      exclude: ['tests/e2e/**', 'tests/firebase/**', 'node_modules/**', 'dist/**'],
       maxWorkers: 4,
       setupFiles: ['./tests/setup.ts'],
     },

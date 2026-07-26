@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const firebaseMocks = vi.hoisted(() => ({
   app: {},
-  auth: {} as object,
-  storage: {} as object,
+  auth: {},
+  storage: {},
   useEmulators: false,
   getApps: vi.fn(() => [firebaseMocks.app]),
   getAuth: vi.fn(() => firebaseMocks.auth),
