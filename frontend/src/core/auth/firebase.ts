@@ -8,11 +8,13 @@ import {
   signOut,
   updateProfile,
 } from 'firebase/auth';
+import { getStorage } from 'firebase/storage';
 
 import { env } from '../config/env';
 import { AppError } from '../api/errors';
 import { beginRegistrationMetadata, clearRegistrationMetadata } from './registration-coordinator';
 import { clearE2eAuthSession, e2eAuthToken, isE2eMode, setE2eAuthSession } from './e2e-auth';
+import { configureFirebaseEmulators } from './firebase-emulators';
 
 const existingApp = getApps().at(0);
 const firebaseApp =
@@ -27,6 +29,13 @@ const firebaseApp =
   });
 
 export const firebaseAuth = getAuth(firebaseApp);
+export const firebaseStorage = getStorage(firebaseApp);
+
+configureFirebaseEmulators({
+  enabled: env.VITE_USE_FIREBASE_EMULATORS,
+  auth: firebaseAuth,
+  storage: firebaseStorage,
+});
 
 export async function signInWithEmail(email: string, password: string) {
   if (isE2eMode()) {

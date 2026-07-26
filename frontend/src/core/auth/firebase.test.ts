@@ -7,6 +7,9 @@ const firebaseMocks = vi.hoisted(() => ({
   initializeApp: vi.fn(() => ({})),
   getApps: vi.fn(() => []),
   getAuth: vi.fn(() => firebaseMocks.auth),
+  getStorage: vi.fn(() => ({})),
+  connectAuthEmulator: vi.fn(),
+  connectStorageEmulator: vi.fn(),
   signInWithEmailAndPassword: vi.fn(),
   createUserWithEmailAndPassword: vi.fn(),
   updateProfile: vi.fn(),
@@ -22,6 +25,7 @@ vi.mock('../config/env', () => ({
     VITE_FIREBASE_STORAGE_BUCKET: 'flae.test',
     VITE_FIREBASE_MESSAGING_SENDER_ID: 'sender',
     VITE_FIREBASE_APP_ID: 'app',
+    VITE_USE_FIREBASE_EMULATORS: false,
   },
 }));
 
@@ -33,11 +37,17 @@ vi.mock('firebase/app', () => ({
 vi.mock('firebase/auth', () => ({
   GoogleAuthProvider: class GoogleAuthProvider {},
   getAuth: firebaseMocks.getAuth,
+  connectAuthEmulator: firebaseMocks.connectAuthEmulator,
   signInWithEmailAndPassword: firebaseMocks.signInWithEmailAndPassword,
   createUserWithEmailAndPassword: firebaseMocks.createUserWithEmailAndPassword,
   updateProfile: firebaseMocks.updateProfile,
   signInWithPopup: firebaseMocks.signInWithPopup,
   signOut: firebaseMocks.signOut,
+}));
+
+vi.mock('firebase/storage', () => ({
+  getStorage: firebaseMocks.getStorage,
+  connectStorageEmulator: firebaseMocks.connectStorageEmulator,
 }));
 
 import {
