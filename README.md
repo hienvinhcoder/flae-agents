@@ -5,10 +5,11 @@ FLAE Agents là một nền tảng quản lý và vận hành AI Agents đa khá
 ## 🚀 Công nghệ sử dụng (Tech Stack)
 
 ### Frontend (`frontend/`)
-- **Framework**: Angular (phiên bản mới nhất, sử dụng Standalone Components & Angular Signals)
+- **Framework**: React 19, Vite và TypeScript strict mode
 - **Styling**: Tailwind CSS (Utility-first)
-- **State**: Angular Signals (quản lý state phản ứng cục bộ và toàn cục của UI).
-- **Communication (Realtime)**: RxJS & WebSockets để lắng nghe và xử lý luồng dữ liệu cập nhật trạng thái agent theo thời gian thực.
+- **Routing**: React Router với lazy loading theo feature
+- **State**: TanStack Query cho server state, Zustand cho shared client state và React state cho state cục bộ.
+- **Communication (Realtime)**: Typed API client, Server-Sent Events và WebSockets với cleanup khi component unmount.
 
 ### Backend (`backend/`)
 - **Web Framework**: FastAPI (Python)
@@ -23,7 +24,7 @@ FLAE Agents là một nền tảng quản lý và vận hành AI Agents đa khá
 
 Trước khi khởi chạy dự án, hãy đảm bảo máy tính của bạn đã cài đặt các công cụ sau:
 1. **Docker & Docker Compose** (để chạy các dịch vụ database, cache, temporal, backend và worker)
-2. **Node.js (phiên bản 18+) & npm** (để chạy frontend Angular cục bộ)
+2. **Node.js & npm**: Node `^20.19.0`, `^22.13.0` hoặc `>=24.0.0` theo `engines` trong `frontend/package.json` (để chạy frontend React/Vite cục bộ)
 3. **Python (3.10+)** (nếu bạn muốn debug backend hoặc worker trực tiếp ngoài Docker)
 
 ---
@@ -32,7 +33,7 @@ Trước khi khởi chạy dự án, hãy đảm bảo máy tính của bạn đ
 
 Để đảm bảo frontend có thể tự động tải lại (hot-reload) khi bạn chỉnh sửa mã nguồn, toàn bộ hệ thống được thiết kế chạy kết hợp:
 * **Backend, Databases, Redis, Temporal**: Chạy trong môi trường ảo hóa Docker Compose.
-* **Frontend (Angular)**: Chạy trực tiếp ở máy host qua công cụ `ng serve`.
+* **Frontend (React/Vite)**: Chạy trực tiếp ở máy host qua Vite để hỗ trợ hot reload.
 
 Chúng tôi đã chuẩn bị sẵn 2 script để bạn dễ dàng quản lý việc khởi động và tắt hệ thống.
 
@@ -44,8 +45,8 @@ Từ thư mục gốc của dự án, chạy lệnh:
 
 **Script này sẽ tự động:**
 - Khởi chạy Postgres, Redis, Backend API, Worker, Temporal và Temporal UI dưới dạng container chạy ngầm (`docker compose up -d`).
-- Kiểm tra thư mục `frontend/`, tự động chạy `npm install` nếu chưa cài đặt các thư viện Node.js.
-- Khởi chạy frontend Angular ở chế độ foreground (`npm run start` tức `ng serve`). Bạn có thể theo dõi tiến trình compile và hot-reload trực tiếp trên terminal này.
+- Kiểm tra thư mục `frontend/`, tự động chạy `npm ci` khi `node_modules/` chưa tồn tại hoặc `npm ls --depth=0` phát hiện cây dependency trực tiếp đã cài không hợp lệ, cũ hoặc chưa đầy đủ.
+- Khởi chạy frontend React ở chế độ foreground (`npm run dev` tức Vite dev server). Bạn có thể theo dõi tiến trình build và hot reload trực tiếp trên terminal này.
 
 👉 **Địa chỉ truy cập**:
 * **Frontend Web App**: [http://localhost:4200](http://localhost:4200)
@@ -55,14 +56,14 @@ Từ thư mục gốc của dự án, chạy lệnh:
 ---
 
 ### 2. Dừng hệ thống
-Khi bạn muốn dừng hoàn toàn dự án, nhấn `Ctrl+C` tại terminal đang chạy frontend để thoát `ng serve`, sau đó chạy:
+Khi bạn muốn dừng hoàn toàn dự án, nhấn `Ctrl+C` tại terminal đang chạy frontend để thoát Vite, sau đó chạy:
 ```bash
 ./stop.sh
 ```
 
 **Script này sẽ tự động:**
 - Gỡ bỏ và tắt toàn bộ các container Docker Compose đang chạy ngầm (`docker compose down`).
-- Tìm và dọn dẹp các tiến trình node/angular đang lắng nghe ở cổng `4200` để tránh xung đột cổng ở lần chạy tiếp theo.
+- Tìm và dừng mọi tiến trình đang lắng nghe ở cổng `4200` mà không xác minh tiến trình đó có thuộc dự án hay không. Chỉ chạy `./stop.sh` khi cổng `4200` được dành riêng cho dự án này.
 
 ---
 
@@ -75,10 +76,12 @@ Khi bạn muốn dừng hoàn toàn dự án, nhấn `Ctrl+C` tại terminal đa
 │   ├── pyproject.toml      # Quản lý dependencies với uv
 │   └── Dockerfile          # Dockerfile cho backend api và worker
 │
-├── frontend/               # Mã nguồn Angular Frontend
-│   ├── src/                # Components, Services, Guards, Assets
+├── frontend/               # Mã nguồn React/Vite Frontend
+│   ├── src/                # App shell, core infrastructure, features và shared UI
+│   ├── tests/              # Thiết lập test và Playwright E2E
 │   ├── package.json        # Định nghĩa dependencies & scripts frontend
-│   └── Dockerfile          # Dockerfile cho môi trường production/staging
+│   ├── vite.config.ts      # Cấu hình Vite dev server/build
+│   └── Dockerfile          # Container Vite cho môi trường phát triển
 │
 ├── docker-compose.yml      # Cấu hình các dịch vụ hạ tầng chạy local
 ├── start.sh                # Script khởi động nhanh môi trường dev

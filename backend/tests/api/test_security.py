@@ -18,7 +18,7 @@ async def test_get_current_workspace_id_from_path_cache_hit():
             }
         ]
     }
-    
+
     with patch("app.core.security.redis_client.get", AsyncMock(return_value=json.dumps(cache_data))):
         db = AsyncMock()
         res = await get_current_workspace_id(
@@ -42,7 +42,7 @@ async def test_get_current_workspace_id_from_header_cache_hit():
             }
         ]
     }
-    
+
     with patch("app.core.security.redis_client.get", AsyncMock(return_value=json.dumps(cache_data))):
         db = AsyncMock()
         res = await get_current_workspace_id(
@@ -58,7 +58,7 @@ async def test_get_current_workspace_id_from_header_cache_hit():
 async def test_get_current_workspace_id_prioritize_path_over_header():
     path_workspace_uuid = uuid.uuid4()
     header_workspace_uuid = uuid.uuid4()
-    
+
     # User chỉ active ở path_workspace_uuid
     cache_data = {
         "workspaces": [
@@ -74,7 +74,7 @@ async def test_get_current_workspace_id_prioritize_path_over_header():
             }
         ]
     }
-    
+
     with patch("app.core.security.redis_client.get", AsyncMock(return_value=json.dumps(cache_data))):
         db = AsyncMock()
         res = await get_current_workspace_id(
@@ -116,20 +116,20 @@ async def test_get_current_workspace_id_invalid_header_uuid():
 async def test_get_current_workspace_id_db_fallback_success():
     workspace_uuid = uuid.uuid4()
     db = AsyncMock()
-    
+
     # Mock DB response
     mock_member = MagicMock()
     mock_member.workspace_id = workspace_uuid
     mock_member.role = WorkspaceRole.admin
     mock_member.status = WorkspaceMemberStatus.active
-    
+
     db_result = MagicMock()
     db_result.scalars.return_value.all.return_value = [mock_member]
     db.execute = AsyncMock(return_value=db_result)
-    
+
     with patch("app.core.security.redis_client.get", AsyncMock(return_value=None)), \
          patch("app.core.security.redis_client.setex", AsyncMock()) as mock_setex:
-         
+
         res = await get_current_workspace_id(
             workspace_id=workspace_uuid,
             x_workspace_id=None,
@@ -144,15 +144,15 @@ async def test_get_current_workspace_id_db_fallback_success():
 async def test_get_current_workspace_id_no_access():
     workspace_uuid = uuid.uuid4()
     db = AsyncMock()
-    
+
     # Mock DB response - Trả về danh sách rỗng (User không thuộc workspace nào)
     db_result = MagicMock()
     db_result.scalars.return_value.all.return_value = []
     db.execute = AsyncMock(return_value=db_result)
-    
+
     with patch("app.core.security.redis_client.get", AsyncMock(return_value=None)), \
          patch("app.core.security.redis_client.setex", AsyncMock()):
-         
+
         with pytest.raises(HTTPException) as exc_info:
             await get_current_workspace_id(
                 workspace_id=workspace_uuid,
@@ -167,20 +167,20 @@ async def test_get_current_workspace_id_no_access():
 async def test_get_current_workspace_id_inactive_status():
     workspace_uuid = uuid.uuid4()
     db = AsyncMock()
-    
+
     # Mock DB response - User thuộc workspace nhưng status là pending/inactive
     mock_member = MagicMock()
     mock_member.workspace_id = workspace_uuid
     mock_member.role = WorkspaceRole.member
     mock_member.status = WorkspaceMemberStatus.suspended
-    
+
     db_result = MagicMock()
     db_result.scalars.return_value.all.return_value = [mock_member]
     db.execute = AsyncMock(return_value=db_result)
-    
+
     with patch("app.core.security.redis_client.get", AsyncMock(return_value=None)), \
          patch("app.core.security.redis_client.setex", AsyncMock()):
-         
+
         with pytest.raises(HTTPException) as exc_info:
             await get_current_workspace_id(
                 workspace_id=workspace_uuid,
@@ -196,7 +196,7 @@ async def test_require_roles_cache_hit_allowed():
     workspace_uuid = uuid.uuid4()
     allowed_roles = [WorkspaceRole.admin, WorkspaceRole.owner]
     dependency = require_roles(allowed_roles)
-    
+
     cache_data = {
         "workspaces": [
             {
@@ -206,7 +206,7 @@ async def test_require_roles_cache_hit_allowed():
             }
         ]
     }
-    
+
     with patch("app.core.security.redis_client.get", AsyncMock(return_value=json.dumps(cache_data))):
         db = AsyncMock()
         res = await dependency(user_uid="test_user", workspace_id=workspace_uuid, db=db)
@@ -218,7 +218,7 @@ async def test_require_roles_cache_hit_denied():
     workspace_uuid = uuid.uuid4()
     allowed_roles = [WorkspaceRole.admin, WorkspaceRole.owner]
     dependency = require_roles(allowed_roles)
-    
+
     cache_data = {
         "workspaces": [
             {
@@ -228,7 +228,7 @@ async def test_require_roles_cache_hit_denied():
             }
         ]
     }
-    
+
     with patch("app.core.security.redis_client.get", AsyncMock(return_value=json.dumps(cache_data))):
         db = AsyncMock()
         with pytest.raises(HTTPException) as exc_info:
@@ -242,17 +242,17 @@ async def test_require_roles_redis_unavailable_db_allowed():
     workspace_uuid = uuid.uuid4()
     allowed_roles = [WorkspaceRole.admin, WorkspaceRole.owner]
     dependency = require_roles(allowed_roles)
-    
+
     db = AsyncMock()
     mock_member = MagicMock()
     mock_member.workspace_id = workspace_uuid
     mock_member.role = WorkspaceRole.admin
     mock_member.status = WorkspaceMemberStatus.active
-    
+
     db_result = MagicMock()
     db_result.scalar_one_or_none.return_value = mock_member
     db.execute = AsyncMock(return_value=db_result)
-    
+
     with patch("app.core.security.redis_client.get", AsyncMock(side_effect=Exception("Redis connection error"))):
         res = await dependency(user_uid="test_user", workspace_id=workspace_uuid, db=db)
         assert res == WorkspaceRole.admin
@@ -263,17 +263,17 @@ async def test_require_roles_redis_unavailable_db_denied():
     workspace_uuid = uuid.uuid4()
     allowed_roles = [WorkspaceRole.admin, WorkspaceRole.owner]
     dependency = require_roles(allowed_roles)
-    
+
     db = AsyncMock()
     mock_member = MagicMock()
     mock_member.workspace_id = workspace_uuid
     mock_member.role = WorkspaceRole.member
     mock_member.status = WorkspaceMemberStatus.active
-    
+
     db_result = MagicMock()
     db_result.scalar_one_or_none.return_value = mock_member
     db.execute = AsyncMock(return_value=db_result)
-    
+
     with patch("app.core.security.redis_client.get", AsyncMock(side_effect=Exception("Redis offline"))):
         with pytest.raises(HTTPException) as exc_info:
             await dependency(user_uid="test_user", workspace_id=workspace_uuid, db=db)
@@ -286,17 +286,17 @@ async def test_require_roles_cache_miss_db_allowed():
     workspace_uuid = uuid.uuid4()
     allowed_roles = [WorkspaceRole.admin, WorkspaceRole.owner]
     dependency = require_roles(allowed_roles)
-    
+
     db = AsyncMock()
     mock_member = MagicMock()
     mock_member.workspace_id = workspace_uuid
     mock_member.role = WorkspaceRole.owner
     mock_member.status = WorkspaceMemberStatus.active
-    
+
     db_result = MagicMock()
     db_result.scalar_one_or_none.return_value = mock_member
     db.execute = AsyncMock(return_value=db_result)
-    
+
     with patch("app.core.security.redis_client.get", AsyncMock(return_value=None)):
         res = await dependency(user_uid="test_user", workspace_id=workspace_uuid, db=db)
         assert res == WorkspaceRole.owner
@@ -307,15 +307,61 @@ async def test_require_roles_cache_miss_db_not_member():
     workspace_uuid = uuid.uuid4()
     allowed_roles = [WorkspaceRole.admin, WorkspaceRole.owner]
     dependency = require_roles(allowed_roles)
-    
+
     db = AsyncMock()
     db_result = MagicMock()
     db_result.scalar_one_or_none.return_value = None
     db.execute = AsyncMock(return_value=db_result)
-    
+
     with patch("app.core.security.redis_client.get", AsyncMock(return_value=None)):
         with pytest.raises(HTTPException) as exc_info:
             await dependency(user_uid="test_user", workspace_id=workspace_uuid, db=db)
         assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
         assert "Permission denied" in exc_info.value.detail
         db.execute.assert_called_once()
+
+
+from app.core.security import verify_token
+from app.api.v1.endpoints.chat_stream import verify_token_stream
+from fastapi.security import HTTPAuthorizationCredentials
+
+@pytest.mark.asyncio
+async def test_verify_token_success():
+    mock_credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials="test_token_123")
+    mock_decoded = {"uid": "user_123", "email": "user@example.com"}
+
+    with patch("app.core.security.auth.verify_id_token", return_value=mock_decoded) as mock_verify:
+        from app.core.config import settings
+        res = await verify_token(credentials=mock_credentials)
+        assert res == mock_decoded
+        mock_verify.assert_called_once_with("test_token_123", clock_skew_seconds=settings.FIREBASE_CLOCK_SKEW_SECONDS)
+
+@pytest.mark.asyncio
+async def test_verify_token_failure():
+    mock_credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials="invalid_token")
+
+    with patch("app.core.security.auth.verify_id_token", side_effect=Exception("Invalid token")):
+        with pytest.raises(HTTPException) as exc_info:
+            await verify_token(credentials=mock_credentials)
+        assert exc_info.value.status_code == status.HTTP_401_UNAUTHORIZED
+
+@pytest.mark.asyncio
+async def test_verify_token_stream_header_success():
+    mock_credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials="test_token_123")
+    mock_decoded = {"uid": "user_123"}
+
+    with patch("app.api.v1.endpoints.chat_stream.auth.verify_id_token", return_value=mock_decoded) as mock_verify:
+        from app.core.config import settings
+        res = await verify_token_stream(credentials=mock_credentials, token=None)
+        assert res == "user_123"
+        mock_verify.assert_called_once_with("test_token_123", clock_skew_seconds=settings.FIREBASE_CLOCK_SKEW_SECONDS)
+
+@pytest.mark.asyncio
+async def test_verify_token_stream_query_success():
+    mock_decoded = {"uid": "user_456"}
+
+    with patch("app.api.v1.endpoints.chat_stream.auth.verify_id_token", return_value=mock_decoded) as mock_verify:
+        from app.core.config import settings
+        res = await verify_token_stream(credentials=None, token="query_token_456")
+        assert res == "user_456"
+        mock_verify.assert_called_once_with("query_token_456", clock_skew_seconds=settings.FIREBASE_CLOCK_SKEW_SECONDS)

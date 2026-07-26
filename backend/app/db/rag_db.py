@@ -40,17 +40,17 @@ register_adapter(np.ndarray, adapt_numpy_array)
 class DBManager:
     """
     Manager class quản lý kết nối và các thao tác trên RAG Database (flae_knowledge_db / rag_db).
-    
+
     Hỗ trợ:
     - Các thao tác đồng bộ sử dụng Pandas DataFrame và psycopg2 (phục vụ offline ingestion pipeline).
     - Các thao tác bất đồng bộ (async) qua SQLAlchemy AsyncSession phục vụ API của FastAPI.
     - Cơ chế cô lập dữ liệu Row-Level Security (RLS) theo workspace_id.
     - Cơ chế phân vùng bảng (Partition Table) theo workspace_id.
     """
-    def __init__(self, db_url: Optional[str] = None, embedding_dimensions: int = 768, schema: str = "public"):
+    def __init__(self, db_url: Optional[str] = None, embedding_dimensions: Optional[int] = None, schema: str = "public"):
         # Sử dụng URL truyền vào hoặc mặc định lấy từ settings
         self.async_db_url = db_url or settings.RAG_DATABASE_URL
-        self.embedding_dimensions = embedding_dimensions
+        self.embedding_dimensions = embedding_dimensions or settings.EMBEDDING_DIMENSIONS
         self.schema = schema.lower().replace("-", "_")
 
         # Phân tích URL để kết nối thông qua psycopg2 (đồng bộ)
@@ -106,7 +106,7 @@ class DBManager:
         try:
             # 1. Tạo extension pgvector
             cur.execute("CREATE EXTENSION IF NOT EXISTS vector;")
-            
+
             # 2. Tạo schema
             if self.schema != "public":
                 cur.execute(f"CREATE SCHEMA IF NOT EXISTS {self.schema};")
@@ -120,7 +120,7 @@ class DBManager:
                     text TEXT,
                     token_count INT,
                     embedding vector({self.embedding_dimensions}),
-                    source_document_name TEXT,
+                    source_document_id TEXT,
                     entity_ids JSONB,
                     relation_ids JSONB,
                     PRIMARY KEY (workspace_id, chunk_id)
@@ -138,6 +138,7 @@ class DBManager:
                     entity_type TEXT,
                     description TEXT,
                     source_chunk_ids JSONB,
+                    chunk_descriptions JSONB,
                     degree INT,
                     frequency INT,
                     embedding vector({self.embedding_dimensions}),
@@ -159,6 +160,7 @@ class DBManager:
                     keywords TEXT,
                     description TEXT,
                     source_chunk_ids JSONB,
+                    chunk_meta JSONB,
                     frequency INT,
                     degree INT,
                     embedding vector({self.embedding_dimensions}),
@@ -167,21 +169,43 @@ class DBManager:
                 """
             )
 
-            # 6. Kích hoạt Row Level Security (RLS) trên các bảng chính
-            cur.execute(f"ALTER TABLE {self.schema}.chunks ENABLE ROW LEVEL SECURITY;")
-            cur.execute(f"ALTER TABLE {self.schema}.entities ENABLE ROW LEVEL SECURITY;")
-            cur.execute(f"ALTER TABLE {self.schema}.relationships ENABLE ROW LEVEL SECURITY;")
+            # Đảm bảo các cột mới tồn tại cho các DB cũ chưa drop
+            cur.execute(f"ALTER TABLE {self.schema}.entities ADD COLUMN IF NOT EXISTS chunk_descriptions JSONB;")
+            cur.execute(f"ALTER TABLE {self.schema}.relationships ADD COLUMN IF NOT EXISTS chunk_meta JSONB;")
+
+            # 5.5. Khởi tạo các bảng Topics mới nếu chưa tồn tại
+            from app.db.rag_ddl import (
+                CREATE_TOPICS_TABLE,
+                CREATE_TOPIC_MEMBERSHIPS_TABLE,
+                CREATE_TOPIC_ALIASES_TABLE,
+                CREATE_TOPIC_UPDATE_QUEUE_TABLE,
+                CREATE_TOPIC_FOREIGN_KEYS,
+                CREATE_RLS_POLICY_TEMPLATE
+            )
+
+            cur.execute(CREATE_TOPICS_TABLE.format(schema=self.schema, dimensions=self.embedding_dimensions))
+            cur.execute(CREATE_TOPIC_MEMBERSHIPS_TABLE.format(schema=self.schema))
+            cur.execute(CREATE_TOPIC_ALIASES_TABLE.format(schema=self.schema))
+            cur.execute(CREATE_TOPIC_UPDATE_QUEUE_TABLE.format(schema=self.schema))
+
+            for fk_sql in CREATE_TOPIC_FOREIGN_KEYS:
+                cur.execute(fk_sql.format(schema=self.schema))
+
+            # 6. Kích hoạt Row Level Security (RLS) trên tất cả các bảng
+            all_tables = ["chunks", "entities", "relationships", "topics", "topic_memberships", "topic_aliases", "topic_update_queue"]
+            for table_name in all_tables:
+                cur.execute(f"ALTER TABLE {self.schema}.{table_name} ENABLE ROW LEVEL SECURITY;")
 
             # 7. Tạo RLS policies (Kiểm tra sự tồn tại của policy trước khi tạo bằng PL/pgSQL)
-            for table_name in ["chunks", "entities", "relationships"]:
+            for table_name in all_tables:
                 policy_name = f"{table_name}_workspace_isolation_policy"
                 cur.execute(f"""
                     DO $$
                     BEGIN
                         IF NOT EXISTS (
-                            SELECT 1 FROM pg_policies 
-                            WHERE schemaname = '{self.schema}' 
-                              AND tablename = '{table_name}' 
+                            SELECT 1 FROM pg_policies
+                            WHERE schemaname = '{self.schema}'
+                              AND tablename = '{table_name}'
                               AND policyname = '{policy_name}'
                         ) THEN
                             CREATE POLICY {policy_name} ON {self.schema}.{table_name}
@@ -191,7 +215,7 @@ class DBManager:
                     $$;
                 """)
 
-            logger.info(f"✅ Đã khởi tạo schema '{self.schema}' cho RAG database với RLS & Partitioning.")
+            logger.info(f"✅ Đã khởi tạo schema '{self.schema}' cho RAG database với RLS & Partitioning (bao gồm Topics).")
         except Exception as e:
             logger.error(f"❌ Lỗi khi khởi tạo database RAG: {e}")
             raise e
@@ -206,19 +230,35 @@ class DBManager:
         """
         # Chuẩn hóa workspace_id để chỉ chứa ký tự chữ và số và dấu gạch dưới
         workspace_safe = "".join([c if c.isalnum() else "_" for c in workspace_id]).lower()
-        
-        # Tạo bảng partition con cho chunks, entities, relationships
+
+        # Tạo bảng partition con cho chunks, entities, relationships, topics
         cur.execute(f"""
-            CREATE TABLE IF NOT EXISTS {self.schema}.chunks_{workspace_safe} 
+            CREATE TABLE IF NOT EXISTS {self.schema}.chunks_{workspace_safe}
             PARTITION OF {self.schema}.chunks FOR VALUES IN ('{workspace_id}');
         """)
         cur.execute(f"""
-            CREATE TABLE IF NOT EXISTS {self.schema}.entities_{workspace_safe} 
+            CREATE TABLE IF NOT EXISTS {self.schema}.entities_{workspace_safe}
             PARTITION OF {self.schema}.entities FOR VALUES IN ('{workspace_id}');
         """)
         cur.execute(f"""
-            CREATE TABLE IF NOT EXISTS {self.schema}.relationships_{workspace_safe} 
+            CREATE TABLE IF NOT EXISTS {self.schema}.relationships_{workspace_safe}
             PARTITION OF {self.schema}.relationships FOR VALUES IN ('{workspace_id}');
+        """)
+        cur.execute(f"""
+            CREATE TABLE IF NOT EXISTS {self.schema}.topics_{workspace_safe}
+            PARTITION OF {self.schema}.topics FOR VALUES IN ('{workspace_id}');
+        """)
+        cur.execute(f"""
+            CREATE TABLE IF NOT EXISTS {self.schema}.topic_memberships_{workspace_safe}
+            PARTITION OF {self.schema}.topic_memberships FOR VALUES IN ('{workspace_id}');
+        """)
+        cur.execute(f"""
+            CREATE TABLE IF NOT EXISTS {self.schema}.topic_aliases_{workspace_safe}
+            PARTITION OF {self.schema}.topic_aliases FOR VALUES IN ('{workspace_id}');
+        """)
+        cur.execute(f"""
+            CREATE TABLE IF NOT EXISTS {self.schema}.topic_update_queue_{workspace_safe}
+            PARTITION OF {self.schema}.topic_update_queue FOR VALUES IN ('{workspace_id}');
         """)
         return workspace_safe
 
@@ -240,21 +280,21 @@ class DBManager:
             df = pd.read_sql(query, conn)
 
             vector_cols = ["embedding"]
-            json_cols = ["source_chunk_ids", "entity_ids", "relation_ids"]
+            json_cols = ["source_chunk_ids", "entity_ids", "relation_ids", "chunk_descriptions", "chunk_meta"]
 
             def parse_vector(x: Any) -> Optional[np.ndarray]:
+                if x is None or (isinstance(x, float) and pd.isna(x)):
+                    return None
                 if isinstance(x, str):
                     return np.array(json.loads(x))
-                elif x is not None:
-                    return np.array(x)
-                return None
+                return np.array(x)
 
-            def parse_json(x: Any) -> list:
-                if isinstance(x, list):
+            def parse_json(x: Any) -> Any:
+                if isinstance(x, (list, dict)):
                     return x
                 elif isinstance(x, str):
                     return json.loads(x)
-                return []
+                return None
 
             for col in df.columns:
                 if col in vector_cols:
@@ -269,7 +309,7 @@ class DBManager:
         finally:
             conn.close()
 
-    def save_df(self, df: pd.DataFrame, table_name: str, pk_col: str, workspace_id: str):
+    def save_df(self, df: pd.DataFrame, table_name: str, pk_col: str, workspace_id: str, overwrite: bool = False):
         """
         Lưu DataFrame vào cơ sở dữ liệu.
         Đảm bảo partition tồn tại, thiết lập RLS session context và thực hiện UPSERT.
@@ -284,12 +324,12 @@ class DBManager:
         try:
             # 1. Thiết lập RLS context cho transaction hiện tại
             cur.execute("SET LOCAL app.current_workspace_id = %s;", (workspace_id,))
-            
+
             # 2. Đảm bảo bảng partition con của workspace này tồn tại
             self._ensure_partition(cur, workspace_id)
 
             df_to_save = df.copy()
-            
+
             # Gán cột định danh workspace_id
             df_to_save["workspace_id"] = workspace_id
 
@@ -304,16 +344,22 @@ class DBManager:
                 return x
 
             for col in df_to_save.columns:
-                first_valid_idx = df_to_save[col].first_valid_index()
-                sample = df_to_save[col].loc[first_valid_idx] if first_valid_idx is not None else None
-
-                if sample is None:
-                    continue
-
-                if isinstance(sample, np.ndarray):
-                    df_to_save[col] = pd.Series([to_list(x) for x in df_to_save[col]], dtype=object)
-                elif isinstance(sample, (list, dict)) and col in ["source_chunk_ids", "entity_ids", "relation_ids"]:
-                    df_to_save[col] = pd.Series([robust_json_dumps(x) for x in df_to_save[col]], dtype=object)
+                if col == "embedding":
+                    def to_vector_str(x):
+                        if x is None or (isinstance(x, float) and pd.isna(x)):
+                            return None
+                        if isinstance(x, np.ndarray):
+                            return json.dumps(x.tolist())
+                        if isinstance(x, list):
+                            return json.dumps(x)
+                        return str(x)
+                    df_to_save[col] = df_to_save[col].apply(to_vector_str)
+                elif col in ["source_chunk_ids", "entity_ids", "relation_ids", "chunk_descriptions", "chunk_meta"]:
+                    def to_json_str(x):
+                        if x is None or (isinstance(x, float) and pd.isna(x)):
+                            return None
+                        return robust_json_dumps(x)
+                    df_to_save[col] = df_to_save[col].apply(to_json_str)
 
             columns = list(df_to_save.columns)
 
@@ -327,10 +373,62 @@ class DBManager:
             values = [tuple(safe_sql_val(x) for x in row) for row in df_to_save.to_numpy()]
 
             cols_str = ", ".join(columns)
-            
+
             # Khóa chính của bảng partition là (workspace_id, pk_col)
             # Cần chỉ định đầy đủ trong ON CONFLICT
-            update_sets = [f"{col} = EXCLUDED.{col}" for col in columns if col not in [pk_col, "workspace_id"]]
+            if not overwrite and table_name == "entities":
+                update_sets = []
+                for col in columns:
+                    if col in [pk_col, "workspace_id"]:
+                        continue
+                    if col == "description":
+                        update_sets.append(
+                            f"description = CASE WHEN length(COALESCE(EXCLUDED.description, '')) > length(COALESCE({table_name}.description, '')) THEN EXCLUDED.description ELSE COALESCE({table_name}.description, EXCLUDED.description) END"
+                        )
+                    elif col == "source_chunk_ids":
+                        update_sets.append(
+                            f"source_chunk_ids = (SELECT COALESCE(jsonb_agg(DISTINCT elem), '[]'::jsonb) FROM (SELECT jsonb_array_elements(COALESCE({table_name}.source_chunk_ids, '[]'::jsonb)) AS elem UNION SELECT jsonb_array_elements(COALESCE(EXCLUDED.source_chunk_ids, '[]'::jsonb)) AS elem) sub)"
+                        )
+                    elif col == "chunk_descriptions":
+                        update_sets.append(
+                            f"chunk_descriptions = COALESCE({table_name}.chunk_descriptions, '{{}}'::jsonb) || COALESCE(EXCLUDED.chunk_descriptions, '{{}}'::jsonb)"
+                        )
+                    elif col == "frequency":
+                        update_sets.append(
+                            f"frequency = COALESCE({table_name}.frequency, 0) + COALESCE(EXCLUDED.frequency, 0)"
+                        )
+                    else:
+                        update_sets.append(f"{col} = EXCLUDED.{col}")
+            elif not overwrite and table_name == "relationships":
+                update_sets = []
+                for col in columns:
+                    if col in [pk_col, "workspace_id"]:
+                        continue
+                    if col == "description":
+                        update_sets.append(
+                            f"description = CASE WHEN COALESCE({table_name}.description, '') = '' THEN EXCLUDED.description WHEN COALESCE(EXCLUDED.description, '') = '' THEN {table_name}.description WHEN {table_name}.description LIKE '%%' || EXCLUDED.description || '%%' THEN {table_name}.description ELSE {table_name}.description || ' | ' || EXCLUDED.description END"
+                        )
+                    elif col == "keywords":
+                        update_sets.append(
+                            f"keywords = CASE WHEN COALESCE({table_name}.keywords, '') = '' THEN EXCLUDED.keywords WHEN COALESCE(EXCLUDED.keywords, '') = '' THEN {table_name}.keywords WHEN {table_name}.keywords LIKE '%%' || EXCLUDED.keywords || '%%' THEN {table_name}.keywords ELSE {table_name}.keywords || ', ' || EXCLUDED.keywords END"
+                        )
+                    elif col == "source_chunk_ids":
+                        update_sets.append(
+                            f"source_chunk_ids = (SELECT COALESCE(jsonb_agg(DISTINCT elem), '[]'::jsonb) FROM (SELECT jsonb_array_elements(COALESCE({table_name}.source_chunk_ids, '[]'::jsonb)) AS elem UNION SELECT jsonb_array_elements(COALESCE(EXCLUDED.source_chunk_ids, '[]'::jsonb)) AS elem) sub)"
+                        )
+                    elif col == "chunk_meta":
+                        update_sets.append(
+                            f"chunk_meta = COALESCE({table_name}.chunk_meta, '{{}}'::jsonb) || COALESCE(EXCLUDED.chunk_meta, '{{}}'::jsonb)"
+                        )
+                    elif col == "frequency":
+                        update_sets.append(
+                            f"frequency = COALESCE({table_name}.frequency, 0) + COALESCE(EXCLUDED.frequency, 0)"
+                        )
+                    else:
+                        update_sets.append(f"{col} = EXCLUDED.{col}")
+            else:
+                update_sets = [f"{col} = EXCLUDED.{col}" for col in columns if col not in [pk_col, "workspace_id"]]
+
             update_str = ", ".join(update_sets)
 
             if update_str:
@@ -369,7 +467,7 @@ class DBManager:
             try:
                 # Đảm bảo thiết lập RLS trong transaction hiện tại
                 await session.execute(
-                    text("SET LOCAL app.current_workspace_id = :workspace_id"),
+                    text("SELECT set_config('app.current_workspace_id', :workspace_id, true)"),
                     {"workspace_id": workspace_id}
                 )
                 yield session
@@ -388,11 +486,11 @@ class DBManager:
             # PostgreSQL <=> đại diện cho Cosine Distance
             # Cosine Similarity = 1 - Cosine Distance
             sql = text(f"""
-                SELECT 
-                    chunk_id, 
-                    text, 
-                    token_count, 
-                    source_document_name,
+                SELECT
+                    chunk_id,
+                    text,
+                    token_count,
+                    source_document_id,
                     entity_ids,
                     relation_ids,
                     1 - (embedding <=> :embedding::vector) as similarity
@@ -404,14 +502,14 @@ class DBManager:
                 sql,
                 {"embedding": query_embedding, "limit": limit}
             )
-            
+
             chunks = []
             for row in result:
                 chunks.append({
                     "chunk_id": row.chunk_id,
                     "text": row.text,
                     "token_count": row.token_count,
-                    "source_document_name": row.source_document_name,
+                    "source_document_id": row.source_document_id,
                     "entity_ids": row.entity_ids,
                     "relation_ids": row.relation_ids,
                     "similarity": float(row.similarity) if row.similarity is not None else 0.0
@@ -434,7 +532,7 @@ class DBManager:
             finally:
                 cur.close()
                 conn.close()
-        
+
         loop = asyncio.get_event_loop()
         await loop.run_in_executor(None, sync_task)
 
@@ -445,4 +543,3 @@ class DBManager:
 
 
 rag_db_manager = DBManager()
-

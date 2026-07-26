@@ -1,4 +1,3 @@
-version: '3.8'
 
 services:
   postgres:
@@ -20,6 +19,10 @@ services:
       retries: 5
     networks:
       - app-network
+    logging:
+      driver: "none"
+    command: ["postgres", "-c", "log_min_messages=panic", "-c", "log_min_error_statement=panic", "-c", "log_statement=none"]
+
 
   redis:
     image: redis:7-alpine
@@ -34,16 +37,19 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    command: /bin/bash -c "uv run python -m scripts.prestart && uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload --reload-dir app --reload-dir ."
     ports:
       - "8000:8000"
+    env_file:
+      - .env
     environment:
+      # Override các biến cần dùng hostname nội bộ Docker network
       - POSTGRES_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/flae_db
       - RAG_DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/rag_db
+      - AGENT_STATE_DATABASE_URL=postgresql://postgres:postgres@postgres:5432/flae_agent_state_db
       - REDIS_URL=redis://redis:6379/0
       - TEMPORAL_HOST=temporal:7233
-      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
-      - GCS_BUCKET_NAME=${GCS_BUCKET_NAME:-flae-knowledge-base}
-      - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS:-}
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/firebaseadmin.json
       - UV_LINK_MODE=copy
     volumes:
       - ./backend:/app
@@ -75,6 +81,10 @@ services:
         condition: service_healthy
     networks:
       - app-network
+    logging:
+      driver: "none"
+    entrypoint: ["/bin/sh", "-c", "/etc/temporal/entrypoint.sh autosetup > /dev/null 2>&1"]
+
 
   temporal-ui:
     image: temporalio/ui:2.24.0
@@ -86,21 +96,26 @@ services:
       - temporal
     networks:
       - app-network
+    logging:
+      driver: "none"
+    entrypoint: ["/bin/sh", "-c", "./start-ui-server.sh > /dev/null 2>&1"]
+
 
   flae-worker:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    command: uv run flae-worker
+    command: uv run watchfiles flae-worker app workers
+    env_file:
+      - .env
     environment:
+      # Override các biến cần dùng hostname nội bộ Docker network
       - POSTGRES_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/flae_db
       - RAG_DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/rag_db
+      - AGENT_STATE_DATABASE_URL=postgresql://postgres:postgres@postgres:5432/flae_agent_state_db
       - REDIS_URL=redis://redis:6379/0
       - TEMPORAL_HOST=temporal:7233
-      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
-      - GCS_BUCKET_NAME=${GCS_BUCKET_NAME:-flae-knowledge-base}
-      - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS:-}
-      - ENVIRONMENT=local
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/firebaseadmin.json
       - UV_LINK_MODE=copy
     volumes:
       - ./backend:/app
@@ -122,4 +137,3 @@ networks:
 volumes:
   postgres_data:
   redis_data:
-  frontend_node_modules:

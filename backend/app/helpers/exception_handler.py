@@ -2,7 +2,30 @@ import enum
 from fastapi import Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.schemas.sche_base import ResponseSchemaBase
+from app.core.config import settings
+from typing import Any
+
+
+def _make_cors_response(request: Request, status_code: int, content: Any) -> JSONResponse:
+    origin = request.headers.get("origin")
+    headers = {}
+    if origin:
+        if "*" in settings.BACKEND_CORS_ORIGINS or origin in settings.BACKEND_CORS_ORIGINS:
+            headers["Access-Control-Allow-Origin"] = origin
+            headers["Access-Control-Allow-Credentials"] = "true"
+            headers["Access-Control-Allow-Methods"] = "*"
+            headers["Access-Control-Allow-Headers"] = "*"
+        elif settings.ENVIRONMENT == "local":
+            headers["Access-Control-Allow-Origin"] = origin
+            headers["Access-Control-Allow-Credentials"] = "true"
+            headers["Access-Control-Allow-Methods"] = "*"
+            headers["Access-Control-Allow-Headers"] = "*"
+    else:
+        headers["Access-Control-Allow-Origin"] = "*"
+
+    return JSONResponse(status_code=status_code, content=content, headers=headers)
 
 
 class ExceptionType(enum.Enum):
@@ -38,7 +61,8 @@ from fastapi.exceptions import RequestValidationError
 
 async def http_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     assert isinstance(exc, CustomException)
-    return JSONResponse(
+    return _make_cors_response(
+        request,
         status_code=exc.http_code,
         content=jsonable_encoder(ResponseSchemaBase.custom_response(exc.code, exc.message or "")),
     )
@@ -46,7 +70,8 @@ async def http_exception_handler(request: Request, exc: Exception) -> JSONRespon
 
 async def validation_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     assert isinstance(exc, RequestValidationError)
-    return JSONResponse(
+    return _make_cors_response(
+        request,
         status_code=400,
         content=jsonable_encoder(ResponseSchemaBase.custom_response("400", get_message_validation(exc))),
     )
@@ -56,7 +81,8 @@ async def fastapi_error_handler(request: Request, exc: Exception) -> JSONRespons
     import logging
 
     logging.error(f"Internal server error: {exc}", exc_info=True)
-    return JSONResponse(
+    return _make_cors_response(
+        request,
         status_code=500,
         content=jsonable_encoder(ResponseSchemaBase.custom_response("500", "Có lỗi xảy ra, vui lòng liên hệ admin!")),
     )
@@ -66,9 +92,19 @@ from sqlalchemy.exc import NoResultFound
 
 
 async def sqlalchemy_not_found_handler(request: Request, exc: Exception) -> JSONResponse:
-    return JSONResponse(
+    return _make_cors_response(
+        request,
         status_code=404,
         content=jsonable_encoder(ResponseSchemaBase.custom_response("404", "Không tìm thấy dữ liệu yêu cầu")),
+    )
+
+
+async def starlette_http_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    assert isinstance(exc, StarletteHTTPException)
+    return _make_cors_response(
+        request,
+        status_code=exc.status_code,
+        content=jsonable_encoder(ResponseSchemaBase.custom_response(str(exc.status_code), exc.detail)),
     )
 
 

@@ -3,6 +3,9 @@ from firebase_admin import auth, credentials
 from fastapi import Depends, HTTPException, status, Header
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.core.config import settings
+from app.core.logger import get_logger
+
+logger = get_logger(__name__)
 
 security = HTTPBearer()
 
@@ -25,12 +28,13 @@ async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(secur
     """
     token = credentials.credentials
     try:
-        decoded_token = auth.verify_id_token(token)
+        decoded_token = auth.verify_id_token(token, clock_skew_seconds=settings.FIREBASE_CLOCK_SKEW_SECONDS)
         return decoded_token
     except Exception as e:
+        logger.error(f"Firebase token verification failed: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Invalid authentication credentials: {str(e)}",
+            detail="Invalid token or expired session",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -84,8 +88,8 @@ from app.db.database import redis_client
 from app.models.workspace import WorkspaceRole, WorkspaceMember, WorkspaceMemberStatus
 
 async def get_current_workspace_id(
-    workspace_id: uuid.UUID = None,
-    x_workspace_id: str = Header(None, alias="X-Workspace-ID"),
+    workspace_id: uuid.UUID | None = None,
+    x_workspace_id: str | None = Header(None, alias="X-Workspace-ID"),
     user_uid: str = Depends(get_current_user_uid),
     db: AsyncSession = Depends(get_db)
 ) -> uuid.UUID:

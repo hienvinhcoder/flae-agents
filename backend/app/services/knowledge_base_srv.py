@@ -5,7 +5,7 @@ Tất cả thao tác DB đều nằm trong service layer.
 """
 import uuid
 import hashlib
-from typing import Optional
+from typing import Optional, Any
 
 from fastapi import UploadFile
 from sqlalchemy import select, delete
@@ -27,6 +27,7 @@ from app.schemas.sche_knowledge_base import (
     IngestionStatusResponse,
 )
 from app.services.gcs_storage_srv import GCSStorageService
+from app.services.knowalge_base.cleanup import cleanup_rag_data as _cleanup_rag_data
 
 logger = get_logger(__name__)
 
@@ -86,34 +87,7 @@ async def _start_ingestion_workflow(doc: KnowledgeDocument) -> str:
     return workflow_id
 
 
-async def _cleanup_rag_data(workspace_id: str, document_id: str) -> None:
-    """Xóa chunks/entities/relationships liên quan đến document trong rag_db."""
-    from app.db.rag_db import rag_db_manager
 
-    doc_hash = hashlib.md5(document_id.encode()).hexdigest()
-
-    try:
-        rag_db_manager.initialize()
-        conn = rag_db_manager.get_conn()
-        conn.autocommit = True
-        cur = conn.cursor()
-        schema = rag_db_manager.schema
-
-        # Xóa chunks có source_document_name chứa document_id hash
-        cur.execute(
-            f"DELETE FROM {schema}.chunks "
-            f"WHERE workspace_id = %s AND source_document_name = %s",
-            (workspace_id, doc_hash),
-        )
-
-        cur.close()
-        conn.close()
-        logger.info(
-            f"Cleaned up RAG data for document {document_id} "
-            f"in workspace {workspace_id}"
-        )
-    except Exception as e:
-        logger.warning(f"Failed to cleanup RAG data: {e}")
 
 
 # ── Service Class ──────────────────────────────────────────────────

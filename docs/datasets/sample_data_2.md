@@ -1,0 +1,11 @@
+## Phần 4: Sự ra đời và hoạt động của Flash AI
+Flash AI là một startup công nghệ tiên phong được thành lập bởi ông Nguyễn Minh Trí. Mặc dù ông Trí bận rộn với vai trò Tổng Giám đốc tại TechVibe, ông đã bổ nhiệm bà Lê Thị Mai làm Giám đốc Điều hành (CEO) của Flash AI để toàn quyền quản lý hoạt động hàng ngày. Dưới sự dẫn dắt của bà Mai, Flash AI đã phát triển thành công sản phẩm FlashSearch, một công cụ tìm kiếm thông minh tích hợp AI thế hệ mới. Trụ sở chính của Flash AI đặt tại thành phố Đà Nẵng, nơi tập trung nhiều tài năng công nghệ trẻ của miền Trung.
+
+## Phần 5: Mối quan hệ giữa Flash AI và Tập đoàn VinaGroup
+Vào đầu năm 2026, Flash AI đã nhận được khoản đầu tư chiến lược trị giá 5 triệu USD từ Tập đoàn VinaGroup. Ông Phạm Hoàng Nam, Chủ tịch Hội đồng Quản trị của VinaGroup, đánh giá rất cao tiềm năng của sản phẩm FlashSearch. Với nguồn vốn này, bà Lê Thị Mai công bố kế hoạch mở rộng thị trường và nâng cấp hệ thống hạ tầng kỹ thuật của FlashSearch. Toàn bộ hệ thống dữ liệu lớn và thuật toán tìm kiếm của FlashSearch hiện được vận hành và tối ưu hóa trên nền tảng điện toán đám mây Google Cloud Platform (GCP).
+
+## Phần 6: Sự cạnh tranh giữa VietBank và GlobalBank
+Trong phân khúc ngân hàng số, Ngân hàng VietBank đang cạnh tranh gay gắt với đối thủ lớn là Ngân hàng GlobalBank. Để đối phó với việc VietBank tích hợp VibeAI của TechVibe, bà Nguyễn Thu Trang - Tổng giám đốc của GlobalBank - đã quyết định ký hợp đồng hợp tác dài hạn với Flash AI. Theo đó, GlobalBank sẽ là ngân hàng đầu tiên tích hợp FlashSearch vào hệ thống tìm kiếm giao dịch và truy vấn thông tin nội bộ. Một chi tiết thú vị là bà Nguyễn Thu Trang và ông Nguyễn Minh Trí (sáng lập viên của Flash AI) từng là bạn cùng lớp khóa 2010 tại Đại học Bách Khoa.
+
+## Phần 7: Dự án Hybrid Cloud của TechVibe và Flash AI
+Để tối ưu hóa chi phí và nâng cao tính sẵn sàng của hệ thống, TechVibe và Flash AI đã bắt đầu thảo luận về một dự án hợp tác kỹ thuật chung. Dự án này nhằm mục đích kết nối hệ thống VibeAI (chạy trên AWS) và FlashSearch (chạy trên GCP) thành một giải pháp Hybrid Cloud toàn diện. Người chịu trách nhiệm chính điều phối kỹ thuật cho dự án này là ông Lê Huy Hoàng, Lead Architect của TechVibe. Ông Hoàng dự kiến dự án sẽ hoàn tất quá trình tích hợp và chạy thử nghiệm vào cuối năm 2026.

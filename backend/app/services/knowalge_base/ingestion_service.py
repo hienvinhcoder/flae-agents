@@ -5,90 +5,20 @@ Pipeline: PDF→Markdown → Chunking → Embedding → Entity Extraction → Fu
 Tất cả các hàm trong module này là sync (sử dụng trong Temporal activities).
 """
 import re
-import hashlib
-from typing import Dict, List, Tuple
-from collections import Counter
+import numpy as np
+from typing import Dict, List, Tuple, Any
 
 from app.core.config import settings
 from app.core.logger import get_logger
 from app.services.knowalge_base.parser_service import ParserService
-from app.services.knowalge_base.prompts import TUPLE_DELIMITER, COMPLETION_DELIMITER, ENTITY_EXTRACTION_SYSTEM, ENTITY_EXTRACTION_USER
+from app.services.knowalge_base.utils import update_graph_degrees
+from app.services.knowalge_base.ingestion_helpers import (
+    parse_extraction_output,
+    merge_entities,
+    merge_relations,
+)
 
 logger = get_logger(__name__)
-
-
-# ── Private helper functions (Module-level) ───────────────────────
-
-
-def _parse_extraction_output(
-    raw_text: str, chunk_id: str
-) -> Tuple[List[Dict], List[Dict]]:
-    """Parse LLM output thành entities và relations."""
-    entities: list[dict] = []
-    relations: list[dict] = []
-
-    lines = [line.strip() for line in raw_text.split(COMPLETION_DELIMITER)[0].split("\n") if line.strip()]
-
-    for line in lines:
-        parts = line.split(TUPLE_DELIMITER)
-        if parts[0].lower() == "entity" and len(parts) == 4:
-            entity_name = parts[1].strip()
-            entities.append({
-                "entity_id": f"ent-{hashlib.md5(entity_name.encode()).hexdigest()}",
-                "entity_name": entity_name,
-                "entity_type": parts[2].strip(),
-                "description": parts[3].strip(),
-                "source_chunk_id": chunk_id,
-            })
-        elif parts[0].lower() == "relation" and len(parts) == 5:
-            src, tgt = sorted((parts[1].strip(), parts[2].strip()))
-            relations.append({
-                "relation_id": f"rel-{hashlib.md5(f'{src}-{tgt}'.encode()).hexdigest()}",
-                "source": src,
-                "target": tgt,
-                "keywords": parts[3].strip(),
-                "description": parts[4].strip(),
-                "source_chunk_id": chunk_id,
-            })
-
-    return entities, relations
-
-
-def _merge_entities(entities: List[Dict]) -> List[Dict]:
-    """Merge entities trùng tên, tính frequency."""
-    grouped: dict[str, list[dict]] = {}
-    for e in entities:
-        grouped.setdefault(e["entity_name"], []).append(e)
-
-    merged = []
-    for name, group in grouped.items():
-        main = max(group, key=lambda x: len(x["description"]))
-        main["entity_type"] = Counter([e["entity_type"] for e in group]).most_common(1)[0][0]
-        main["source_chunk_ids"] = list({e["source_chunk_id"] for e in group})
-        main["frequency"] = len(group)
-        main.pop("source_chunk_id", None)
-        merged.append(main)
-
-    return merged
-
-
-def _merge_relations(relations: List[Dict]) -> List[Dict]:
-    """Merge relations trùng source-target, tính frequency."""
-    grouped: dict[tuple, list[dict]] = {}
-    for r in relations:
-        grouped.setdefault((r["source"], r["target"]), []).append(r)
-
-    merged = []
-    for key, group in grouped.items():
-        main = max(group, key=lambda x: len(x["description"]))
-        main["description"] = " | ".join({r["description"] for r in group})
-        main["keywords"] = ", ".join({r["keywords"] for r in group})
-        main["source_chunk_ids"] = list({r["source_chunk_id"] for r in group})
-        main["frequency"] = len(group)
-        main.pop("source_chunk_id", None)
-        merged.append(main)
-
-    return merged
 
 
 # ── Ingestion Service Class ────────────────────────────────────────
@@ -101,25 +31,35 @@ class IngestionService:
         chunks: List[Dict],
         entities: List[Dict],
         relations: List[Dict],
-        source_doc_name: str,
-    ) -> Dict[str, int]:
+        source_doc_id: str,
+    ) -> Dict[str, Any]:
         """
         Fusion & lưu chunks/entities/relations vào RAG database.
+        Áp dụng Incremental Knowledge Fusion & LLM Summarization ở Python level.
         """
         import pandas as pd
         from app.db.rag_db import rag_db_manager
+        from app.services.knowalge_base.fusion_service import run_incremental_fusion
         from typing import Any, cast
+        from sqlalchemy import text
 
         rag_db_manager.initialize()
 
-        # Gán source_document_name cho chunks
+        # 1. Chạy Incremental Fusion để gộp & tóm tắt mô tả qua LLM
+        final_entities, final_relations, summarization_tokens, touched_entity_ids = run_incremental_fusion(
+            workspace_id=workspace_id,
+            new_entities=entities,
+            new_relations=relations,
+            db_manager=rag_db_manager
+        )
+
+        # 2. Gán source_document_id cho chunks
         for chunk in chunks:
-            chunk["source_document_name"] = source_doc_name
+            chunk["source_document_id"] = source_doc_id
 
         # Lưu chunks
         chunks_df = pd.DataFrame(chunks)
         if "embedding" in chunks_df.columns:
-            # Filter chunks có embedding
             valid_chunks = chunks_df[
                 chunks_df["embedding"].apply(lambda x: x is not None)
             ]
@@ -128,7 +68,6 @@ class IngestionService:
 
         chunk_count = 0
         if not valid_chunks.empty:
-            # Gán entity_ids và relation_ids vào chunks
             valid_chunks = valid_chunks.copy()
             valid_chunks["entity_ids"] = [[] for _ in range(len(valid_chunks))]
             valid_chunks["relation_ids"] = [[] for _ in range(len(valid_chunks))]
@@ -138,7 +77,7 @@ class IngestionService:
                 for idx, cid in enumerate(valid_chunks["chunk_id"])
             }
 
-            for ent in entities:
+            for ent in final_entities:
                 src_chunks = ent.get("source_chunk_ids", [])
                 if isinstance(src_chunks, list):
                     for cid in src_chunks:
@@ -148,7 +87,7 @@ class IngestionService:
                                 ent["entity_id"]
                             )
 
-            for rel in relations:
+            for rel in final_relations:
                 src_chunks = rel.get("source_chunk_ids", [])
                 if isinstance(src_chunks, list):
                     for cid in src_chunks:
@@ -158,83 +97,118 @@ class IngestionService:
                                 rel["relation_id"]
                             )
 
+            # Loại bỏ các cột tạm phục vụ Classify Topic trước khi lưu database
+            for col in ["topic_assignments", "topic_candidates"]:
+                if col in valid_chunks.columns:
+                    valid_chunks = valid_chunks.drop(columns=[col])
+
             rag_db_manager.save_df(
                 valid_chunks, "chunks", pk_col="chunk_id",
-                workspace_id=workspace_id,
+                workspace_id=workspace_id, overwrite=True
             )
             chunk_count = len(valid_chunks)
 
-        # Lưu entities (tạo embeddings nếu cần)
+        # 3. Tạo vector embeddings gia tăng cho entities có embedding = None
         entity_count = 0
-        if entities:
-            entities_df = pd.DataFrame(entities)
-            # Tạo entity embeddings
-            texts = [
-                f"{e['entity_name']}\n{e['description']}" for e in entities
-            ]
-            embs, _ = IngestionService.generate_embeddings(texts, "entities")
-            entities_df["embedding"] = cast(Any, embs)
-            entities_df["degree"] = 0
+        if final_entities:
+            final_entities_df = pd.DataFrame(final_entities)
+
+            # Chỉ tạo embeddings cho các entities mới hoặc đổi mô tả (embedding là None)
+            mask = final_entities_df["embedding"].isna() | final_entities_df["embedding"].apply(lambda x: x is None or (isinstance(x, list) and len(x) == 0) or (isinstance(x, np.ndarray) and x.size == 0))
+            entities_to_embed = final_entities_df[mask]
+
+            if not entities_to_embed.empty:
+                logger.info(f"Generating embeddings for {len(entities_to_embed)} new/updated entities...")
+                texts = [
+                    f"{e['entity_name']}\n{e['description']}"
+                    for e in entities_to_embed.to_dict("records")
+                ]
+                embs, _ = IngestionService.generate_embeddings(texts, "entities")
+
+                # Cập nhật embeddings
+                temp_embs = dict(zip(entities_to_embed["entity_id"], embs))
+                embs_list = []
+                for _, row in final_entities_df.iterrows():
+                    embs_list.append(temp_embs.get(row["entity_id"], row["embedding"]))
+                final_entities_df["embedding"] = pd.Series(embs_list, dtype=object)
 
             rag_db_manager.save_df(
-                entities_df, "entities", pk_col="entity_id",
-                workspace_id=workspace_id,
+                final_entities_df, "entities", pk_col="entity_id",
+                workspace_id=workspace_id, overwrite=True
             )
-            entity_count = len(entities_df)
+            entity_count = len(final_entities_df)
 
-        # Lưu relations (tạo embeddings nếu cần)
+        # 4. Tạo vector embeddings gia tăng cho relationships có embedding = None
         relation_count = 0
-        if relations:
-            rels_df = pd.DataFrame(relations)
-            rels_df.rename(
-                columns={"source": "source_name", "target": "target_name"},
-                inplace=True,
-            )
+        if final_relations:
+            rels_df = pd.DataFrame(final_relations)
 
-            # Map entity IDs
-            name_to_id = {}
-            if entities:
-                name_to_id = {
-                    e["entity_name"]: e["entity_id"] for e in entities
-                }
-            rels_df["source_id"] = rels_df["source_name"].map(
-                lambda n: name_to_id.get(n, f"ent-{hashlib.md5(n.encode()).hexdigest()}")
-            )
-            rels_df["target_id"] = rels_df["target_name"].map(
-                lambda n: name_to_id.get(n, f"ent-{hashlib.md5(n.encode()).hexdigest()}")
-            )
-            rels_df["degree"] = 0
-
-            # Tạo relation embeddings
-            texts = [
-                f"{r.get('keywords', '')}\t{r.get('source_name', '')}\n"
-                f"{r.get('target_name', '')}\n{r.get('description', '')}"
-                for r in rels_df.to_dict("records")
-            ]
-            embs, _ = IngestionService.generate_embeddings(texts, "relationships")
-            rels_df["embedding"] = cast(Any, embs)
-
-            # Ensure correct columns
+            # Đảm bảo các cột đúng định dạng
             rel_cols = [
                 "relation_id", "source_id", "source_name",
                 "target_id", "target_name", "keywords",
-                "description", "source_chunk_ids", "frequency",
+                "description", "source_chunk_ids", "chunk_meta", "frequency",
                 "degree", "embedding",
             ]
             for col in rel_cols:
                 if col not in rels_df.columns:
                     rels_df[col] = None
+            rels_df = rels_df[rel_cols]
+
+            # Chỉ tạo embeddings cho các relationships mới/đổi mô tả
+            mask = rels_df["embedding"].isna() | rels_df["embedding"].apply(lambda x: x is None or (isinstance(x, list) and len(x) == 0) or (isinstance(x, np.ndarray) and x.size == 0))
+            rels_to_embed = rels_df[mask]
+
+            if not rels_to_embed.empty:
+                logger.info(f"Generating embeddings for {len(rels_to_embed)} new/updated relationships...")
+                texts = [
+                    f"{r.get('keywords', '')}\t{r.get('source_name', '')}\n"
+                    f"{r.get('target_name', '')}\n{r.get('description', '')}"
+                    for r in rels_to_embed.to_dict("records")
+                ]
+                embs, _ = IngestionService.generate_embeddings(texts, "relationships")
+
+                temp_embs = dict(zip(rels_to_embed["relation_id"], embs))
+                embs_list = []
+                for _, row in rels_df.iterrows():
+                    embs_list.append(temp_embs.get(row["relation_id"], row["embedding"]))
+                rels_df["embedding"] = pd.Series(embs_list, dtype=object)
 
             rag_db_manager.save_df(
-                rels_df[rel_cols], "relationships", pk_col="relation_id",
-                workspace_id=workspace_id,
+                rels_df, "relationships", pk_col="relation_id",
+                workspace_id=workspace_id, overwrite=True
             )
             relation_count = len(rels_df)
+
+        # 5. Cập nhật Degree cho Entities và Relationships bị ảnh hưởng trong DB bằng SQL
+        if touched_entity_ids:
+            update_graph_degrees(rag_db_manager, workspace_id, touched_entity_ids)
+
+        # 6. Gán và đề xuất Topics từ các chunks
+        affected_topics = []
+        from app.services.srv_topic import TopicService
+        for chunk in chunks:
+            cands = chunk.get("topic_candidates", [])
+            assigns = chunk.get("topic_assignments", [])
+            if cands or assigns:
+                try:
+                    topics = TopicService.resolve_topic_assignments(
+                        workspace_id=workspace_id,
+                        chunk_id=chunk["chunk_id"],
+                        chunk_embedding=chunk.get("embedding") or [],
+                        llm_assignments=assigns,
+                        llm_candidates=cands,
+                        doc_id=source_doc_id
+                    )
+                    affected_topics.extend(topics)
+                except Exception as ex:
+                    logger.error(f"Lỗi khi xử lý topic cho chunk {chunk.get('chunk_id')}: {ex}")
 
         return {
             "chunk_count": chunk_count,
             "entity_count": entity_count,
             "relation_count": relation_count,
+            "affected_topic_ids": list(set(affected_topics))
         }
 
     @staticmethod
@@ -286,6 +260,15 @@ class IngestionService:
 
                     batch_embs = [emb.values for emb in response.embeddings]
                     all_embeddings.extend(batch_embs)
+
+                    # Gọi API count_tokens để lấy số lượng token thực tế và cộng dồn vào total_tokens
+                    try:
+                        token_count_resp = client.models.count_tokens(model=model_name, contents=batch)
+                        if token_count_resp.total_tokens is not None:
+                            total_tokens += token_count_resp.total_tokens
+                    except Exception as token_err:
+                        logger.warning(f"Không thể đếm số lượng token: {token_err}")
+
                     time.sleep(0.1)
                     break
                 except Exception as e:
@@ -294,7 +277,7 @@ class IngestionService:
                         time.sleep(retry_delay)
                     else:
                         logger.error(f"Embedding batch failed after retries: {e}")
-                        all_embeddings.extend([None] * len(batch))
+                        raise RuntimeError(f"Failed to generate embeddings after {max_retries} retries: {e}")
 
         final: list[list | None] = [None] * len(texts)
         for idx, emb in enumerate(all_embeddings):
@@ -315,14 +298,15 @@ class IngestionService:
         return chunks, tokens
 
     @staticmethod
-    def extract_entities_from_chunks(
+    async def extract_entities_from_chunks(
         chunks: List[Dict],
+        workspace_id: str,
         entity_types: list[str] | None = None,
     ) -> Tuple[List[Dict], List[Dict], int]:
-        """Trích xuất entities & relations từ chunks qua Gemini LLM."""
-        from google import genai
-        from google.genai import types
-        import time
+        """Trích xuất entities & relations từ chunks qua LangGraph agent."""
+        import asyncio
+        from app.agents.extractor.graph import run_extraction_agent
+        from app.services.srv_topic import TopicService
 
         api_key = settings.GEMINI_API_KEY
         model_name = settings.GEMINI_LLM_MODEL
@@ -332,51 +316,60 @@ class IngestionService:
             return [], [], 0
 
         if entity_types is None:
-            entity_types = ["person", "organization", "location", "event", "product", "concept", "equipment", "category", "other"]
+            entity_types = settings.RAG_ENTITY_TYPES
 
-        client = genai.Client(api_key=api_key)
+        semaphore = asyncio.Semaphore(4)
         total_tokens = 0
         all_entities: list[dict] = []
         all_relations: list[dict] = []
-        max_retries = 3
 
-        for chunk in chunks:
-            system_prompt = ENTITY_EXTRACTION_SYSTEM.format(
-                entity_types=", ".join(entity_types),
-                delim=TUPLE_DELIMITER,
-                completion=COMPLETION_DELIMITER,
-                input_text=chunk["text"],
-            )
-            user_prompt = ENTITY_EXTRACTION_USER.format(delim=TUPLE_DELIMITER, completion=COMPLETION_DELIMITER)
-
-            for attempt in range(max_retries + 1):
+        async def process_chunk(chunk: dict) -> dict:
+            nonlocal total_tokens
+            async with semaphore:
+                # Pre-filter topics cho chunk dựa trên vector similarity
+                candidates = []
                 try:
-                    response = client.models.generate_content(
-                        model=model_name,
-                        contents=user_prompt,
-                        config=types.GenerateContentConfig(system_instruction=system_prompt, temperature=0.1),
+                    candidates = await TopicService.pre_filter_topics(
+                        workspace_id=workspace_id,
+                        chunk_embedding=chunk.get("embedding") or [],
+                        text_content=chunk.get("text") or "",
+                        entity_names=[]
                     )
-                    if hasattr(response, "usage_metadata") and response.usage_metadata and response.usage_metadata.total_token_count is not None:
-                        total_tokens += response.usage_metadata.total_token_count
+                except Exception as ex:
+                    logger.warning(f"Lỗi khi pre-filter topics cho chunk {chunk.get('chunk_id')}: {ex}")
 
-                    if not response.text:
-                        raise ValueError("Gemini API response did not return any text.")
+                res, tokens = await run_extraction_agent(
+                    chunk=chunk,
+                    model_name=model_name,
+                    api_key=api_key,
+                    entity_types=entity_types,
+                    candidate_topics=candidates,
+                    glean_max=settings.RAG_GLEAN_MAX,
+                    language="auto"
+                )
 
-                    ents, rels = _parse_extraction_output(response.text, chunk["chunk_id"])
-                    all_entities.extend(ents)
-                    all_relations.extend(rels)
-                    time.sleep(0.2)
-                    break
-                except Exception as e:
-                    if attempt < max_retries:
-                        logger.warning(f"Extraction attempt {attempt + 1} failed for chunk {chunk['chunk_id']}: {e}")
-                        time.sleep(2)
-                    else:
-                        logger.error(f"Extraction failed for chunk {chunk['chunk_id']}: {e}")
+                # Gắn kết quả topic assignments/candidates vào chunk để dùng ở bước fuse
+                chunk["topic_assignments"] = res.get("topic_assignments", [])
+                chunk["topic_candidates"] = res.get("topic_candidates", [])
+
+                return {"res": res, "tokens": tokens}
+
+        tasks = [process_chunk(chunk) for chunk in chunks]
+        results = await asyncio.gather(*tasks)
+
+        for result in results:
+            res = result["res"]
+            tokens = result["tokens"]
+            total_tokens += tokens
+            all_entities.extend(res.get("entities", []))
+            all_relations.extend(res.get("relations", []))
 
         # Merge duplicates
-        merged_entities = _merge_entities(all_entities)
-        merged_relations = _merge_relations(all_relations)
+        merged_entities = merge_entities(all_entities)
+        merged_relations = merge_relations(all_relations)
 
-        logger.info(f"Extraction complete: {len(merged_entities)} entities, {len(merged_relations)} relations, {total_tokens} tokens")
+        logger.info(
+            f"Extraction complete via LangGraph: {len(merged_entities)} entities, "
+            f"{len(merged_relations)} relations, {total_tokens} tokens"
+        )
         return merged_entities, merged_relations, total_tokens

@@ -22,8 +22,13 @@ from app.schemas.sche_knowledge_base import (
     DocumentDetail,
     ManualDocumentCreate,
     IngestionStatusResponse,
+    KnowledgeGraphResponse,
+    KnowledgeSearchRequest,
+    KnowledgeSearchResponse,
 )
 from app.services.knowledge_base_srv import KnowledgeBaseService
+from app.services.knowledge_graph_srv import KnowledgeGraphService
+from app.services.knowalge_base.retriever_service import RetrieverService
 from app.core.logger import get_logger
 
 logger = get_logger(__name__)
@@ -102,6 +107,24 @@ async def list_documents(
 ):
     docs = await KnowledgeBaseService.list_documents(db, workspace_id)
     return DataResponse[list[DocumentListItem]].success_response(data=docs)
+
+
+@router.get(
+    "/graph",
+    response_model=DataResponse[KnowledgeGraphResponse],
+    summary="Lấy đồ thị tri thức (Knowledge Graph) của workspace",
+)
+async def get_knowledge_graph(
+    workspace_id: uuid.UUID = Depends(get_current_workspace_id),
+):
+    try:
+        graph_data = await KnowledgeGraphService.get_graph(workspace_id)
+        return DataResponse[KnowledgeGraphResponse].success_response(data=graph_data)
+    except Exception as e:
+        logger.error(f"Error fetching knowledge graph: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Không thể lấy đồ thị tri thức: {str(e)}"
+        )
 
 
 @router.get(
@@ -187,3 +210,33 @@ async def get_ingestion_status(
     return DataResponse[IngestionStatusResponse].success_response(
         data=status
     )
+
+
+@router.post(
+    "/search",
+    response_model=DataResponse[KnowledgeSearchResponse],
+    summary="Tìm kiếm hybrid (vector + Graph RAG) trong Knowledge Base",
+)
+async def search_knowledge_base(
+    payload: KnowledgeSearchRequest,
+    workspace_id: uuid.UUID = Depends(get_current_workspace_id),
+):
+    try:
+        results, diagnostics = await RetrieverService.retrieve(
+            workspace_id=str(workspace_id),
+            query=payload.query,
+            top_k_chunks=payload.top_k_chunks,
+            top_k_paths=payload.top_k_paths,
+        )
+        return DataResponse[KnowledgeSearchResponse].success_response(
+            data=KnowledgeSearchResponse(
+                top_chunks=results["top_chunks"],
+                top_paths=results["top_paths"],
+                diagnostics=diagnostics,
+            )
+        )
+    except Exception as e:
+        logger.error(f"Lỗi khi tìm kiếm trong Knowledge Base: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Tìm kiếm thất bại: {str(e)}"
+        )

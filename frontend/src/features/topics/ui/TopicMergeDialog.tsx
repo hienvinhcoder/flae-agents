@@ -1,0 +1,141 @@
+import { GitMerge } from "lucide-react";
+import { useState } from "react";
+
+import { Button } from "../../../shared/ui/Button";
+import { Dialog } from "../../../shared/ui/Dialog";
+import { Select } from "../../../shared/ui/Select";
+import { topicMergeSchema } from "../schemas/topic-schema";
+import type { Topic, TopicMergePayload } from "../types/topic";
+
+interface TopicMergeDialogProps {
+  isSubmitting: boolean;
+  onClose: () => void;
+  onSubmit: (payload: TopicMergePayload) => Promise<boolean>;
+  open: boolean;
+  topics: readonly Topic[];
+}
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Unable to merge topics.";
+}
+
+export function TopicMergeDialog({
+  isSubmitting,
+  onClose,
+  onSubmit,
+  open,
+  topics,
+}: TopicMergeDialogProps) {
+  const [targetId, setTargetId] = useState("");
+  const [sourceIds, setSourceIds] = useState<string[]>([]);
+  const [error, setError] = useState<string>();
+
+  const resetAndClose = () => {
+    setTargetId("");
+    setSourceIds([]);
+    setError(undefined);
+    onClose();
+  };
+
+  const submit = async () => {
+    const result = topicMergeSchema.safeParse({
+      source_topic_ids: sourceIds,
+      target_topic_id: targetId,
+    });
+    if (!result.success) {
+      setError(result.error.issues[0]?.message ?? "Select topics to merge.");
+      return;
+    }
+    setError(undefined);
+    try {
+      const merged = await onSubmit(result.data);
+      if (!merged) {
+        setError("Unable to merge topics.");
+        return;
+      }
+      resetAndClose();
+    } catch (submitError) {
+      setError(errorMessage(submitError));
+    }
+  };
+
+  return (
+    <Dialog
+      description="Choose the topic to keep, then select the duplicate topics to combine into it."
+      onClose={isSubmitting ? () => undefined : resetAndClose}
+      open={open}
+      title="Merge duplicate topics"
+    >
+      <div className="grid gap-5">
+        <Select
+          disabled={isSubmitting}
+          label="Target topic"
+          onChange={(event) => {
+            setTargetId(event.target.value);
+            setSourceIds([]);
+            setError(undefined);
+          }}
+          options={[
+            { label: "Select a target", value: "" },
+            ...topics.map((topic) => ({ label: topic.name, value: topic.topic_id })),
+          ]}
+          value={targetId}
+        />
+
+        <fieldset className="grid gap-3">
+          <legend className="font-semibold text-ui-ink">Source topics</legend>
+          <p className="text-sm text-ui-ink-muted">
+            Their evidence will move to the target topic.
+          </p>
+          <div className="grid max-h-52 gap-2 overflow-y-auto rounded-ui-control border border-ui-line bg-ui-canvas p-3">
+            {topics
+              .filter((topic) => topic.topic_id !== targetId)
+              .map((topic) => (
+                <label
+                  className="flex min-h-10 cursor-pointer items-center gap-3 rounded-ui-control px-2 py-1.5 text-ui-ink transition-colors duration-200 hover:bg-ui-interactive"
+                  key={topic.topic_id}
+                >
+                  <input
+                    checked={sourceIds.includes(topic.topic_id)}
+                    className="h-4 w-4 accent-brand"
+                    disabled={isSubmitting}
+                    onChange={(event) => {
+                      setError(undefined);
+                      setSourceIds((current) =>
+                        event.target.checked
+                          ? [...current, topic.topic_id]
+                          : current.filter((id) => id !== topic.topic_id),
+                      );
+                    }}
+                    type="checkbox"
+                  />
+                  <span>{topic.name}</span>
+                </label>
+              ))}
+          </div>
+        </fieldset>
+
+        {error ? (
+          <p className="rounded-ui-control border border-state-danger bg-state-danger-soft p-3 text-sm text-state-danger" role="alert">
+            {error}
+          </p>
+        ) : null}
+
+        <div className="flex flex-wrap justify-end gap-3 border-t border-ui-divider pt-4">
+          <Button disabled={isSubmitting} onClick={resetAndClose} variant="ghost">
+            Cancel
+          </Button>
+          <Button
+            disabled={!targetId || sourceIds.length === 0}
+            isLoading={isSubmitting}
+            loadingText="Merging"
+            onClick={() => void submit()}
+          >
+            <GitMerge aria-hidden className="h-4 w-4" />
+            Merge
+          </Button>
+        </div>
+      </div>
+    </Dialog>
+  );
+}

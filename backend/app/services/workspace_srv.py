@@ -89,7 +89,7 @@ class WorkspaceService:
         )
         db.add(workspace)
         await db.flush()  # flush để lấy id
-        
+
         # 2. Tạo WorkspaceMember (owner)
         member = WorkspaceMember(
             workspace_id=workspace.id,
@@ -100,22 +100,22 @@ class WorkspaceService:
         db.add(member)
         await db.commit()
         await db.refresh(workspace)
-        
+
         workspace_id_str = str(workspace.id)
-        
+
         # 3. Cập nhật current_workspace_id của user
         await WorkspaceService.update_current_workspace(db, user_uid, workspace_id_str)
-        
+
         # Xóa cache Redis membership của user
         await redis_client.delete(f"user:membership:{user_uid}")
-        
+
         # 4. Kích hoạt tạo phân vùng RAG
         try:
             await rag_db_manager.create_workspace_partition(workspace_id_str)
             logger.info(f"RAG partitions initialized for manual workspace {workspace_id_str}")
         except Exception as e:
             logger.error(f"Failed to create RAG partition for manual workspace {workspace_id_str}: {e}")
-            
+
         logger.info(f"Manual workspace {workspace_id_str} created by user {user_uid}")
         return workspace
 
@@ -137,7 +137,7 @@ class WorkspaceService:
         )
         db.add(new_ws)
         await db.flush()  # flush để lấy id
-        
+
         # 2. Tạo WorkspaceMember (owner)
         member = WorkspaceMember(
             workspace_id=new_ws.id,
@@ -146,23 +146,33 @@ class WorkspaceService:
             status=WorkspaceMemberStatus.active
         )
         db.add(member)
-        
+
         # 3. Cập nhật current_workspace_id của user
         user.current_workspace_id = str(new_ws.id)
+
+        # 4. Commit User + Workspace + Member TRƯỚC khi tạo RAG partition.
+        # Đảm bảo dữ liệu quan trọng (user, workspace) luôn được lưu,
+        # không bị rollback bởi lỗi RAG partition phụ trợ.
         await db.commit()
         await db.refresh(user)
         await db.refresh(new_ws)
-        
+
         # Xóa cache Redis membership
-        await redis_client.delete(f"user:membership:{user_uid}")
-        
-        # 4. Kích hoạt tạo phân vùng RAG
+        try:
+            await redis_client.delete(f"user:membership:{user_uid}")
+        except Exception as ex:
+            logger.warning(f"Failed to invalidate Redis membership cache for {user_uid}: {ex}")
+
+        # 5. Kích hoạt tạo phân vùng RAG (non-blocking)
+        # RAG partition sẽ được tạo lazy khi cần nếu thất bại ở đây
         try:
             await rag_db_manager.create_workspace_partition(str(new_ws.id))
             logger.info(f"RAG partitions initialized for default workspace {new_ws.id}")
         except Exception as ex:
             logger.error(f"Failed to create RAG partition for default workspace {new_ws.id}: {ex}")
-            
+            # Không raise exception — workspace vẫn hoạt động bình thường,
+            # RAG partition sẽ được tạo khi user lần đầu sử dụng Knowledge Base
+
         return new_ws
 
     @staticmethod
@@ -219,7 +229,7 @@ class WorkspaceService:
         # 2. Tạo token ngẫu nhiên và lưu invitation
         token = str(uuid.uuid4())
         expires_at = datetime.now(timezone.utc) + timedelta(days=7)
-        
+
         invitation = WorkspaceInvitation(
             workspace_id=workspace_id,
             email=request.email,
@@ -232,7 +242,7 @@ class WorkspaceService:
         db.add(invitation)
         await db.commit()
         await db.refresh(invitation)
-        
+
         # 3. Kích hoạt Temporal Workflow gửi email lời mời
         try:
             from app.core.temporal import get_temporal_client
@@ -247,7 +257,7 @@ class WorkspaceService:
             logger.info(f"Temporal Workflow triggered for invitation: {invitation.id}")
         except Exception as e:
             logger.error(f"Failed to trigger Temporal Workflow for invitation {invitation.id}: {e}")
-            
+
         return invitation
 
     @staticmethod
@@ -268,7 +278,7 @@ class WorkspaceService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Invitation not found or already accepted/expired"
             )
-            
+
         if invitation.expires_at < datetime.now(timezone.utc):
             invitation.status = InvitationStatus.expired
             await db.commit()
@@ -276,17 +286,17 @@ class WorkspaceService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invitation token has expired"
             )
-            
+
         # 2. Lấy thông tin user hiện tại
         user_result = await db.execute(select(User).where(User.firebase_uid == user_uid))
         user = user_result.scalar_one()
-        
+
         if user.email.lower() != invitation.email.lower():
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="This invitation was sent to a different email address"
             )
-            
+
         # 3. Tạo WorkspaceMember
         member_result = await db.execute(
             select(WorkspaceMember).where(
@@ -308,17 +318,17 @@ class WorkspaceService:
                 status=WorkspaceMemberStatus.active
             )
             db.add(member)
-            
+
         # 4. Cập nhật trạng thái invitation và current_workspace_id của user
         invitation.status = InvitationStatus.accepted
         user.current_workspace_id = str(invitation.workspace_id)
-        
+
         await db.commit()
         await db.refresh(user)
-        
+
         # 5. Xóa Redis membership cache
         await redis_client.delete(f"user:membership:{user_uid}")
-        
+
         logger.info(f"User {user_uid} accepted invitation to workspace {invitation.workspace_id}")
         return user
 
@@ -350,4 +360,17 @@ class WorkspaceService:
         )
         return list(result.scalars().all())
 
-
+    @staticmethod
+    async def is_active_member(db: AsyncSession, workspace_id: uuid.UUID, user_uid: str) -> bool:
+        """Kiểm tra xem user có phải là thành viên active của workspace không."""
+        from sqlalchemy import and_
+        result = await db.execute(
+            select(WorkspaceMember).where(
+                and_(
+                    WorkspaceMember.workspace_id == workspace_id,
+                    WorkspaceMember.user_uid == user_uid,
+                    WorkspaceMember.status == WorkspaceMemberStatus.active
+                )
+            )
+        )
+        return result.scalar_one_or_none() is not None

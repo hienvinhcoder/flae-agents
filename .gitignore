@@ -2,3 +2,8 @@
 firebase/data/
 backend/firebaseadmin.json
 demo-app/
+
+.env
+
+# Local isolated worktrees used by coding agents
+.worktrees/

@@ -87,9 +87,14 @@ async def chunk_document_activity(params: dict) -> list[dict]:
 
     raw_text = params["raw_text"]
     doc_hash = params["doc_hash"]
-    strategy = params.get("strategy", "semantic")
-    chunk_size = params.get("chunk_size", 1200)
-    chunk_overlap = params.get("chunk_overlap", 100)
+    strategy = params.get("strategy", settings.RAG_CHUNKING_STRATEGY)
+
+    # Chọn default size/overlap từ settings tương ứng với chiến lược
+    default_size = settings.RAG_SEMANTIC_TARGET if strategy == "semantic" else settings.RAG_FIXED_SIZE
+    default_overlap = settings.RAG_SEMANTIC_OVERLAP if strategy == "semantic" else settings.RAG_FIXED_OVERLAP
+
+    chunk_size = params.get("chunk_size", default_size)
+    chunk_overlap = params.get("chunk_overlap", default_overlap)
 
     chunks = ChunkingService.chunk_document(
         text=raw_text,
@@ -120,7 +125,8 @@ async def generate_embeddings_activity(params: dict) -> list[dict]:
 async def extract_entities_activity(params: dict) -> dict:
     """Trích xuất entities & relations từ batch chunks."""
     chunks = params["chunks"]
-    entities, relations, tokens = IngestionService.extract_entities_from_chunks(chunks)
+    workspace_id = params["workspace_id"]
+    entities, relations, tokens = await IngestionService.extract_entities_from_chunks(chunks, workspace_id)
     logger.info(
         f"Extraction complete: {len(entities)} entities, "
         f"{len(relations)} relations, {tokens} tokens"
@@ -128,6 +134,7 @@ async def extract_entities_activity(params: dict) -> dict:
     return {
         "entities": entities,
         "relations": relations,
+        "chunks": chunks,
         "tokens_used": tokens,
     }
 
@@ -142,14 +149,14 @@ async def fuse_and_save_activity(params: dict) -> dict:
     chunks = params["chunks"]
     entities = params.get("entities", [])
     relations = params.get("relations", [])
-    source_doc_name = params["source_doc_name"]
+    source_doc_id = params["source_doc_id"]
 
     res = IngestionService.fuse_and_save(
         workspace_id=workspace_id,
         chunks=chunks,
         entities=entities,
         relations=relations,
-        source_doc_name=source_doc_name,
+        source_doc_id=source_doc_id,
     )
     return res
 
@@ -168,3 +175,15 @@ async def finalize_ingestion(params: dict) -> None:
             metrics=metrics,
         )
 
+
+@activity.defn
+async def trigger_topic_updates_activity(params: dict) -> None:
+    """Kích hoạt TopicUpdateWorkflow cho các topic bị ảnh hưởng."""
+    workspace_id = params["workspace_id"]
+    affected_topic_ids = params.get("affected_topic_ids", [])
+
+    if not affected_topic_ids:
+        return
+
+    from app.services.srv_topic import TopicService
+    await TopicService.trigger_topic_updates_via_temporal(workspace_id, affected_topic_ids)

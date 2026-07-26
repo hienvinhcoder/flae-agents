@@ -12,7 +12,9 @@ from app.helpers.exception_handler import (
     validation_exception_handler,
     fastapi_error_handler,
     sqlalchemy_not_found_handler,
+    starlette_http_exception_handler,
 )
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from sqlalchemy.exc import NoResultFound
 from app.db.database import setup_database
 
@@ -23,9 +25,23 @@ setup_logging()
 setup_database()
 
 
+from contextlib import asynccontextmanager
+from app.db.checkpoint import init_checkpoint_db, close_checkpoint_db
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Khởi tạo database checkpoint cho LangGraph
+    await init_checkpoint_db()
+    yield
+    # Shutdown: Đóng kết nối
+    await close_checkpoint_db()
+
+
 def get_application() -> FastAPI:
     application = FastAPI(
         title=settings.PROJECT_NAME,
+        lifespan=lifespan,
         docs_url="/docs",
         redoc_url="/redoc",
         openapi_url=f"{settings.API_V1_STR}/openapi.json",
@@ -51,6 +67,7 @@ def get_application() -> FastAPI:
     application.add_exception_handler(CustomException, http_exception_handler)
     application.add_exception_handler(RequestValidationError, validation_exception_handler)
     application.add_exception_handler(NoResultFound, sqlalchemy_not_found_handler)
+    application.add_exception_handler(StarletteHTTPException, starlette_http_exception_handler)
     application.add_exception_handler(Exception, fastapi_error_handler)
 
     return application
