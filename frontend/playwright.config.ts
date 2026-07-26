@@ -26,6 +26,7 @@ export default defineConfig({
       VITE_FIREBASE_MESSAGING_SENDER_ID: '123456789',
       VITE_FIREBASE_PROJECT_ID: 'flae-e2e',
       VITE_FIREBASE_STORAGE_BUCKET: 'flae-e2e.invalid',
+      VITE_USE_FIREBASE_EMULATORS: 'false',
       VITE_WS_URL: 'ws://127.0.0.1:8000',
     },
     port: 4200,

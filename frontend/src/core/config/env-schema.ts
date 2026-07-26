@@ -24,6 +24,9 @@ const environmentSchema = z.object({
   VITE_FIREBASE_STORAGE_BUCKET: z.string().trim().min(1),
   VITE_FIREBASE_MESSAGING_SENDER_ID: z.string().trim().min(1),
   VITE_FIREBASE_APP_ID: z.string().trim().min(1),
+  VITE_USE_FIREBASE_EMULATORS: z
+    .enum(['true', 'false'])
+    .transform((value) => value === 'true'),
 });
 
 export type Environment = Readonly<z.infer<typeof environmentSchema>>;

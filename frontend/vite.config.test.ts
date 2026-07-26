@@ -11,6 +11,7 @@ const validEnvironment = {
   VITE_FIREBASE_STORAGE_BUCKET: 'example.appspot.com',
   VITE_FIREBASE_MESSAGING_SENDER_ID: '1234567890',
   VITE_FIREBASE_APP_ID: '1:1234567890:web:example',
+  VITE_USE_FIREBASE_EMULATORS: 'false',
 } as const;
 
 describe('validateBuildEnvironment', () => {

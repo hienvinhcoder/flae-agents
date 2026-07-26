@@ -9,6 +9,7 @@ const validEnvironment = {
   VITE_FIREBASE_STORAGE_BUCKET: 'example.appspot.com',
   VITE_FIREBASE_MESSAGING_SENDER_ID: '1234567890',
   VITE_FIREBASE_APP_ID: '1:1234567890:web:example',
+  VITE_USE_FIREBASE_EMULATORS: 'false',
 } as const;
 
 async function loadEnvironmentModule() {
@@ -27,9 +28,36 @@ describe('parseEnv', () => {
 
   it('parses a complete valid environment', async () => {
     const { env, parseEnv } = await loadEnvironmentModule();
+    const expectedEnvironment = {
+      ...validEnvironment,
+      VITE_USE_FIREBASE_EMULATORS: false,
+    };
 
-    expect(parseEnv(validEnvironment)).toEqual(validEnvironment);
-    expect(env).toEqual(validEnvironment);
+    expect(parseEnv(validEnvironment)).toEqual(expectedEnvironment);
+    expect(env).toEqual(expectedEnvironment);
+  });
+
+  it('parses the Firebase emulator flag as a boolean', async () => {
+    const { parseEnv } = await loadEnvironmentModule();
+
+    expect(
+      parseEnv({
+        ...validEnvironment,
+        VITE_USE_FIREBASE_EMULATORS: 'true',
+      }).VITE_USE_FIREBASE_EMULATORS,
+    ).toBe(true);
+    expect(parseEnv(validEnvironment).VITE_USE_FIREBASE_EMULATORS).toBe(false);
+  });
+
+  it('rejects an invalid Firebase emulator flag', async () => {
+    const { parseEnv } = await loadEnvironmentModule();
+
+    expect(() =>
+      parseEnv({
+        ...validEnvironment,
+        VITE_USE_FIREBASE_EMULATORS: 'sometimes',
+      }),
+    ).toThrow(/VITE_USE_FIREBASE_EMULATORS/);
   });
 
   it('lists missing keys without exposing supplied secret values', async () => {
