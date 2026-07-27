@@ -23,7 +23,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         {...props}
         aria-describedby={describedBy}
         aria-invalid={Boolean(error)}
-        className={`min-h-11 w-full rounded-ui-control border border-ui-line bg-ui-raised px-3 py-2 text-ui-ink transition-colors duration-200 placeholder:text-ui-ink-muted hover:border-ui-line-strong ${className}`}
+        className={`min-h-11 w-full rounded-ui-control border border-ui-line bg-ui-raised px-3 py-2 text-ui-ink transition-colors duration-200 motion-reduce:transition-none placeholder:text-ui-ink-muted hover:border-ui-line-strong ${className}`}
         id={id}
         ref={ref}
       />
