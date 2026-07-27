@@ -1,11 +1,12 @@
 import { Building2, ChevronLeft, ChevronRight, X } from "lucide-react";
-import { type KeyboardEvent, type RefObject, useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { type KeyboardEvent, type RefObject, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, useLocation } from "react-router-dom";
 
 import { findActiveNavigationItem, navigationGroups } from "./admin-navigation";
+import { RailTooltipPortal } from "./RailTooltipPortal";
 import type { SidebarLayout } from "./use-sidebar-layout";
+import { type TooltipInteraction, useRailTooltip } from "./use-rail-tooltip";
 
 export interface AdminSidebarProps {
   desktopLayout: SidebarLayout;
@@ -25,22 +26,12 @@ interface SidebarContentProps {
   workspaceName: string;
 }
 
-interface RailTooltip {
-  label: string;
-  left: number;
-  top: number;
-}
-
-interface RailTooltipTarget {
-  label: string;
-  target: HTMLElement;
-}
-
-type TooltipInteraction = "focus" | "hover";
-
 const focusableSelector = [
-  "a[href]", "button:not([disabled])", "input:not([disabled])",
-  "select:not([disabled])", "textarea:not([disabled])",
+  "a[href]",
+  "button:not([disabled])",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
   '[tabindex]:not([tabindex="-1"])',
 ].join(",");
 
@@ -115,7 +106,11 @@ function NavigationGroups({
   hideTooltip?: (target: HTMLElement, interaction: TooltipInteraction) => void;
   onSelect?: () => void;
   presentation: "desktop" | "mobile";
-  showTooltip?: (target: HTMLElement, label: string, interaction: TooltipInteraction) => void;
+  showTooltip?: (
+    target: HTMLElement,
+    label: string,
+    interaction: TooltipInteraction,
+  ) => void;
 }) {
   const { t } = useTranslation();
 
@@ -159,9 +154,15 @@ function NavigationGroups({
               end
               onBlur={(event) => hideTooltip?.(event.currentTarget, "focus")}
               onClick={onSelect}
-              onFocus={(event) => showTooltip?.(event.currentTarget, label, "focus")}
-              onMouseEnter={(event) => showTooltip?.(event.currentTarget, label, "hover")}
-              onMouseLeave={(event) => hideTooltip?.(event.currentTarget, "hover")}
+              onFocus={(event) =>
+                showTooltip?.(event.currentTarget, label, "focus")
+              }
+              onMouseEnter={(event) =>
+                showTooltip?.(event.currentTarget, label, "hover")
+              }
+              onMouseLeave={(event) =>
+                hideTooltip?.(event.currentTarget, "hover")
+              }
               ref={(element) => {
                 // NavLink owns aria-current, so reapply the longest-prefix result.
                 if (isActive) element?.setAttribute("aria-current", "page");
@@ -204,49 +205,9 @@ function SidebarContent({
   const isMobile = presentation === "mobile";
   const expanded = isMobile || desktopLayout === "expanded";
   const responsiveExpansion = !isMobile && expanded;
-  const [tooltip, setTooltip] = useState<RailTooltip | null>(null);
-  const focusedTooltipRef = useRef<RailTooltipTarget | null>(null);
-  const hoveredTooltipRef = useRef<RailTooltipTarget | null>(null);
-
-  function positionTooltip(nextTooltip: RailTooltipTarget | null) {
-    if (!nextTooltip) {
-      setTooltip(null);
-      return;
-    }
-
-    const rect = nextTooltip.target.getBoundingClientRect();
-    setTooltip({
-      label: nextTooltip.label,
-      left: rect.right + 13,
-      top: rect.top + rect.height / 2,
-    });
-  }
-
-  function showTooltip(target: HTMLElement, label: string, interaction: TooltipInteraction) {
-    const nextTooltip = { label, target };
-    if (interaction === "hover") hoveredTooltipRef.current = nextTooltip;
-    else focusedTooltipRef.current = nextTooltip;
-    positionTooltip(nextTooltip);
-  }
-
-  function hideTooltip(target: HTMLElement, interaction: TooltipInteraction) {
-    const interactionRef =
-      interaction === "hover" ? hoveredTooltipRef : focusedTooltipRef;
-    if (interactionRef.current?.target === target) interactionRef.current = null;
-    positionTooltip(hoveredTooltipRef.current ?? focusedTooltipRef.current);
-  }
-
-  function clearTooltip() {
-    focusedTooltipRef.current = null;
-    hoveredTooltipRef.current = null;
-    setTooltip(null);
-  }
-
-  useEffect(() => {
-    if (isMobile) return undefined;
-
-    window.addEventListener("resize", clearTooltip);
-    return () => window.removeEventListener("resize", clearTooltip);
+  const { clearTooltip, hideTooltip, showTooltip, tooltip } = useRailTooltip({
+    disabled: isMobile,
+    resetKey: desktopLayout,
   });
 
   return (
@@ -310,18 +271,9 @@ function SidebarContent({
           ) : null}
         </button>
       ) : null}
-      {!isMobile && tooltip
-        ? createPortal(
-            <span
-              aria-hidden="true"
-              className={`pointer-events-none fixed z-50 -translate-y-1/2 whitespace-nowrap rounded-ui-control border border-ui-divider bg-ui-raised px-3 py-2 text-sm font-medium text-ui-ink shadow-ui-panel ${expanded ? "lg:hidden" : ""}`}
-              style={{ left: tooltip.left, top: tooltip.top }}
-            >
-              {tooltip.label}
-            </span>,
-            document.body,
-          )
-        : null}
+      {!isMobile ? (
+        <RailTooltipPortal hiddenAtLarge={expanded} tooltip={tooltip} />
+      ) : null}
     </div>
   );
 }

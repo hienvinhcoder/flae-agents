@@ -196,7 +196,8 @@ describe("AdminSidebar", () => {
     expect(screen.queryByText("Knowledge Graph")).not.toBeInTheDocument();
 
     await user.hover(link);
-    const hoveredTooltip = screen.getByText("Knowledge Graph");
+    const hoveredTooltip = screen.getByTestId("admin-sidebar-tooltip");
+    expect(hoveredTooltip).toHaveTextContent("Knowledge Graph");
     expect(hoveredTooltip).toHaveAttribute("aria-hidden", "true");
     expect(hoveredTooltip).toHaveClass("fixed");
     expect(hoveredTooltip).toHaveStyle({ left: "85px", top: "122px" });
@@ -245,6 +246,30 @@ describe("AdminSidebar", () => {
 
     await user.unhover(link);
     expect(screen.queryByText("Knowledge Graph")).not.toBeInTheDocument();
+  });
+
+  it("clears mixed rail tooltip state when the desktop layout changes", async () => {
+    const user = userEvent.setup();
+    const view = await renderSidebar({ desktopLayout: "collapsed" });
+
+    const sidebar = screen.getByTestId("admin-sidebar");
+    const link = within(sidebar).getByRole("link", {
+      name: "Knowledge Graph",
+    });
+
+    fireEvent.focus(link);
+    await user.hover(link);
+    expect(screen.getByTestId("admin-sidebar-tooltip")).toBeInTheDocument();
+
+    view.rerenderSidebar({ desktopLayout: "expanded" });
+    expect(
+      screen.queryByTestId("admin-sidebar-tooltip"),
+    ).not.toBeInTheDocument();
+
+    view.rerenderSidebar({ desktopLayout: "collapsed" });
+    expect(
+      screen.queryByTestId("admin-sidebar-tooltip"),
+    ).not.toBeInTheDocument();
   });
 
   it("clears a visible rail tooltip when navigation scrolls", async () => {

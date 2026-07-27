@@ -3,27 +3,35 @@ import {
   expectNoA11yViolations,
   installAuthSession,
   test,
-} from './fixtures';
+} from "./fixtures";
 
-const sidebarLayoutKey = 'flae_admin_sidebar_layout';
+const sidebarLayoutKey = "flae_admin_sidebar_layout";
 
 const responsiveViewports = [
-  { expectedSidebarWidth: 0, height: 812, label: 'mobile', width: 375 },
-  { expectedSidebarWidth: 72, height: 1024, label: 'tablet', width: 768 },
-  { expectedSidebarWidth: 288, height: 768, label: 'desktop', width: 1024 },
-  { expectedSidebarWidth: 288, height: 900, label: 'wide desktop', width: 1440 },
+  { expectedSidebarWidth: 0, height: 812, label: "mobile", width: 375 },
+  { expectedSidebarWidth: 72, height: 1024, label: "tablet", width: 768 },
+  { expectedSidebarWidth: 288, height: 768, label: "desktop", width: 1024 },
+  {
+    expectedSidebarWidth: 288,
+    height: 900,
+    label: "wide desktop",
+    width: 1440,
+  },
 ] as const;
 
 for (const viewport of responsiveViewports) {
   test(`keeps the admin shell responsive at the ${viewport.label} viewport`, async ({
     page,
   }) => {
-    await page.setViewportSize({ height: viewport.height, width: viewport.width });
+    await page.setViewportSize({
+      height: viewport.height,
+      width: viewport.width,
+    });
     await installAuthSession(page);
-    await page.goto('/dashboard/briefing');
+    await page.goto("/dashboard/briefing");
 
     await expect(
-      page.getByRole('heading', { name: 'Morning briefing' }),
+      page.getByRole("heading", { name: "Morning briefing" }),
     ).toBeVisible();
     expect(
       await page.evaluate(
@@ -33,59 +41,89 @@ for (const viewport of responsiveViewports) {
       ),
     ).toBe(true);
 
-    const sidebarBox = await page.getByTestId('admin-sidebar').boundingBox();
+    const sidebarBox = await page.getByTestId("admin-sidebar").boundingBox();
     expect(sidebarBox?.width ?? 0).toBe(viewport.expectedSidebarWidth);
   });
 }
 
-test('persists desktop collapse preference without letting tablet layout overwrite it', async ({
+test("persists the collapsed desktop preference across reloads", async ({
   page,
 }) => {
   await page.setViewportSize({ height: 900, width: 1440 });
   await installAuthSession(page);
-  await page.goto('/dashboard/briefing');
+  await page.goto("/dashboard/briefing");
 
-  const sidebar = page.getByTestId('admin-sidebar');
-  await page.getByRole('button', { name: 'Collapse navigation' }).click();
-  await expect(sidebar).toHaveAttribute('data-desktop-layout', 'collapsed');
-  expect(await page.evaluate((key) => localStorage.getItem(key), sidebarLayoutKey)).toBe(
-    'collapsed',
-  );
+  const sidebar = page.getByTestId("admin-sidebar");
+  await page.getByRole("button", { name: "Collapse navigation" }).click();
+  await expect(sidebar).toHaveAttribute("data-desktop-layout", "collapsed");
+  expect(
+    await page.evaluate((key) => localStorage.getItem(key), sidebarLayoutKey),
+  ).toBe("collapsed");
 
   await page.reload();
-  await expect(sidebar).toHaveAttribute('data-desktop-layout', 'collapsed');
-  await expect.poll(async () => (await sidebar.boundingBox())?.width ?? 0).toBe(72);
-
-  await page.setViewportSize({ height: 1024, width: 768 });
-  await expect.poll(async () => (await sidebar.boundingBox())?.width ?? 0).toBe(72);
-  expect(await page.evaluate((key) => localStorage.getItem(key), sidebarLayoutKey)).toBe(
-    'collapsed',
-  );
+  await expect(sidebar).toHaveAttribute("data-desktop-layout", "collapsed");
+  await expect
+    .poll(async () => (await sidebar.boundingBox())?.width ?? 0)
+    .toBe(72);
 });
 
-test('supports keyboard and backdrop dismissal for the accessible mobile drawer', async ({
+test("keeps the expanded desktop preference while tablet uses the rail layout", async ({
+  page,
+}) => {
+  await page.setViewportSize({ height: 900, width: 1440 });
+  await page.addInitScript(
+    (key) => localStorage.setItem(key, "expanded"),
+    sidebarLayoutKey,
+  );
+  await installAuthSession(page);
+  await page.goto("/dashboard/briefing");
+
+  const sidebar = page.getByTestId("admin-sidebar");
+  await expect(sidebar).toHaveAttribute("data-desktop-layout", "expanded");
+  await expect
+    .poll(async () => (await sidebar.boundingBox())?.width ?? 0)
+    .toBe(288);
+
+  await page.setViewportSize({ height: 1024, width: 768 });
+  await expect
+    .poll(async () => (await sidebar.boundingBox())?.width ?? 0)
+    .toBe(72);
+  expect(
+    await page.evaluate((key) => localStorage.getItem(key), sidebarLayoutKey),
+  ).toBe("expanded");
+
+  await page.setViewportSize({ height: 900, width: 1440 });
+  await expect(sidebar).toHaveAttribute("data-desktop-layout", "expanded");
+  await expect
+    .poll(async () => (await sidebar.boundingBox())?.width ?? 0)
+    .toBe(288);
+});
+
+test("supports keyboard and backdrop dismissal for the accessible mobile drawer", async ({
   page,
 }) => {
   await page.setViewportSize({ height: 812, width: 375 });
   await installAuthSession(page);
-  await page.goto('/dashboard/briefing');
+  await page.goto("/dashboard/briefing");
 
-  const trigger = page.getByRole('button', { name: 'Open navigation' });
+  const trigger = page.getByRole("button", { name: "Open navigation" });
   await trigger.click();
-  const drawer = page.getByRole('dialog', { name: 'Primary navigation' });
+  const drawer = page.getByRole("dialog", { name: "Primary navigation" });
   await expect(drawer).toBeVisible();
   await expect(
-    page.getByRole('button', { name: 'Close navigation', exact: true }),
+    page.getByRole("button", { name: "Close navigation", exact: true }),
   ).toBeFocused();
   await expectNoA11yViolations(page);
 
-  await page.keyboard.press('Escape');
+  await page.keyboard.press("Escape");
   await expect(drawer).toBeHidden();
   await expect(trigger).toBeFocused();
 
   await trigger.click();
   await expect(drawer).toBeVisible();
-  const backdrop = page.getByRole('button', { name: 'Close navigation overlay' });
+  const backdrop = page.getByRole("button", {
+    name: "Close navigation overlay",
+  });
   const [backdropBox, drawerBox] = await Promise.all([
     backdrop.boundingBox(),
     drawer.boundingBox(),
@@ -102,42 +140,47 @@ test('supports keyboard and backdrop dismissal for the accessible mobile drawer'
   await expect(drawer).toBeHidden();
 });
 
-test('reduces the sidebar width transition to a near-instant duration', async ({ page }) => {
+test("collapses the sidebar without animation under reduced motion", async ({
+  page,
+}) => {
   await page.setViewportSize({ height: 900, width: 1440 });
-  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await installAuthSession(page);
-  await page.goto('/dashboard/briefing');
+  await page.goto("/dashboard/briefing");
 
-  const transitionDuration = await page
-    .getByTestId('admin-sidebar')
-    .evaluate((element) => getComputedStyle(element).transitionDuration);
-  const durationMs = transitionDuration.endsWith('ms')
-    ? Number.parseFloat(transitionDuration)
-    : Number.parseFloat(transitionDuration) * 1000;
-  expect(durationMs).toBe(0.01);
+  const sidebar = page.getByTestId("admin-sidebar");
+  await page.getByRole("button", { name: "Collapse navigation" }).click();
+
+  await expect(sidebar).toHaveAttribute("data-desktop-layout", "collapsed");
+  expect(
+    await sidebar.evaluate((element) => element.getAnimations().length),
+  ).toBe(0);
+  expect((await sidebar.boundingBox())?.width).toBe(72);
 });
 
-test('keeps short rail navigation usable and invalidates portal tooltip geometry', async ({
+test("keeps short rail navigation usable and invalidates portal tooltip geometry", async ({
   page,
 }) => {
   await page.setViewportSize({ height: 500, width: 768 });
   await installAuthSession(page);
-  await page.goto('/dashboard/briefing');
+  await page.goto("/dashboard/briefing");
 
-  const sidebar = page.getByTestId('admin-sidebar');
-  const navigation = page.getByRole('navigation', { name: 'Primary navigation' });
-  const settings = navigation.getByRole('link', { name: 'Settings' });
-  const knowledgeGraph = navigation.getByRole('link', { name: 'Knowledge graph' });
-  const tooltip = page
-    .locator('body > span[aria-hidden="true"]')
-    .filter({ hasText: /^Knowledge graph$/ });
+  const sidebar = page.getByTestId("admin-sidebar");
+  const navigation = page.getByRole("navigation", {
+    name: "Primary navigation",
+  });
+  const settings = navigation.getByRole("link", { name: "Settings" });
+  const knowledgeGraph = navigation.getByRole("link", {
+    name: "Knowledge graph",
+  });
+  const tooltip = page.getByTestId("admin-sidebar-tooltip");
 
   expect(
     await navigation.evaluate((element) => getComputedStyle(element).overflowY),
   ).toMatch(/^(auto|scroll)$/);
   await navigation.evaluate((element) => {
     element.scrollTop = element.scrollHeight;
-    element.dispatchEvent(new Event('scroll'));
+    element.dispatchEvent(new Event("scroll"));
   });
   await expect(settings).toBeVisible();
 
@@ -150,14 +193,16 @@ test('keeps short rail navigation usable and invalidates portal tooltip geometry
   ]);
   expect(sidebarBox).not.toBeNull();
   expect(tooltipBox).not.toBeNull();
-  expect(tooltipBox!.x).toBeGreaterThanOrEqual(sidebarBox!.x + sidebarBox!.width);
+  expect(tooltipBox!.x).toBeGreaterThanOrEqual(
+    sidebarBox!.x + sidebarBox!.width,
+  );
   expect(tooltipBox!.x + tooltipBox!.width).toBeLessThanOrEqual(768);
   expect(tooltipBox!.y).toBeGreaterThanOrEqual(0);
   expect(tooltipBox!.y + tooltipBox!.height).toBeLessThanOrEqual(500);
 
   await navigation.evaluate((element) => {
     element.scrollTop += 1;
-    element.dispatchEvent(new Event('scroll'));
+    element.dispatchEvent(new Event("scroll"));
   });
   await expect(tooltip).toHaveCount(0);
 
