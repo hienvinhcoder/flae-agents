@@ -106,28 +106,79 @@ describe("graph controls", () => {
       "min-h-11",
       "min-w-11",
     );
-    expect(screen.getByRole("button", { name: /focus flae/i })).toHaveClass(
+    expect(screen.getByRole("button", { name: "FLAE company" })).toHaveClass(
       "min-h-11",
     );
+    expect(screen.getByLabelText("Entity details")).toHaveClass("md:max-h-none");
   });
 
   it("keeps the exact localized graph namespace in parity", () => {
-    const expectedKeys = [
-      "EYEBROW", "DESCRIPTION", "VISIBLE_COUNTS", "TOOLS_ARIA",
-      "BACK_TO_KNOWLEDGE", "SEARCH_LABEL", "SEARCH_PLACEHOLDER",
-      "VIEW_CONTROLS", "ZOOM_IN", "ZOOM_OUT", "FIT_GRAPH", "ENTITY_TYPE",
-      "ALL_ENTITY_TYPES", "PHYSICS_ON", "PHYSICS_OFF", "LOADING",
-      "SELECT_WORKSPACE", "SELECT_WORKSPACE_DESCRIPTION", "EMPTY_TITLE",
-      "EMPTY_DESCRIPTION", "OPEN_KNOWLEDGE", "GESTURE_HINT", "ENTITY_DETAILS",
-      "RELATIONSHIP_DETAILS", "CLOSE_DETAILS", "CONNECTED_ENTITIES",
-      "NO_CONNECTIONS", "FREQUENCY", "DEGREE", "WEIGHT", "LOAD_ERROR",
-    ];
-    const enGraph = (en as Record<string, unknown>).GRAPH as Record<string, string>;
-    const viGraph = (viTranslations as Record<string, unknown>).GRAPH as Record<string, string>;
-
-    expect(Object.keys(enGraph)).toEqual(expectedKeys);
-    expect(Object.keys(viGraph)).toEqual(expectedKeys);
-    expect(viGraph.ZOOM_IN).toBe("Phóng to");
+    expect(en.GRAPH).toEqual({
+      EYEBROW: "Workspace intelligence / entity topology",
+      DESCRIPTION: "Trace extracted entities, relationships, and evidence across workspace knowledge.",
+      VISIBLE_COUNTS: "{{nodes}} visible nodes / {{edges}} visible edges",
+      TOOLS_ARIA: "Graph tools",
+      BACK_TO_KNOWLEDGE: "Back to knowledge base",
+      SEARCH_LABEL: "Search entities",
+      SEARCH_PLACEHOLDER: "Search entities",
+      VIEW_CONTROLS: "Graph view controls",
+      ZOOM_IN: "Zoom in",
+      ZOOM_OUT: "Zoom out",
+      FIT_GRAPH: "Fit graph",
+      ENTITY_TYPE: "Entity type",
+      ALL_ENTITY_TYPES: "All entity types",
+      PHYSICS_ON: "Physics on",
+      PHYSICS_OFF: "Physics off",
+      LOADING: "Loading knowledge graph",
+      SELECT_WORKSPACE: "Select a workspace",
+      SELECT_WORKSPACE_DESCRIPTION: "Select a workspace to explore its graph.",
+      EMPTY_TITLE: "No graph data yet",
+      EMPTY_DESCRIPTION: "Upload documents and wait for entity extraction to complete.",
+      OPEN_KNOWLEDGE: "Open knowledge base",
+      GESTURE_HINT: "Wheel to zoom / drag canvas to pan / drag nodes to reposition",
+      ENTITY_DETAILS: "Entity details",
+      RELATIONSHIP_DETAILS: "Relationship details",
+      CLOSE_DETAILS: "Close details",
+      CONNECTED_ENTITIES: "Connected entities ({{count}})",
+      NO_CONNECTIONS: "No visible connections.",
+      FREQUENCY: "Frequency {{value}}",
+      DEGREE: "Degree {{value}}",
+      WEIGHT: "Weight {{value}}",
+      LOAD_ERROR: "Unable to load the knowledge graph.",
+    });
+    expect(viTranslations.GRAPH).toEqual({
+      EYEBROW: "Tri thức không gian làm việc / cấu trúc thực thể",
+      DESCRIPTION: "Theo dõi các thực thể, mối quan hệ và bằng chứng được trích xuất từ tri thức của không gian làm việc.",
+      VISIBLE_COUNTS: "{{nodes}} nút hiển thị / {{edges}} liên kết hiển thị",
+      TOOLS_ARIA: "Công cụ đồ thị",
+      BACK_TO_KNOWLEDGE: "Quay lại cơ sở tri thức",
+      SEARCH_LABEL: "Tìm kiếm thực thể",
+      SEARCH_PLACEHOLDER: "Tìm kiếm thực thể",
+      VIEW_CONTROLS: "Điều khiển khung nhìn đồ thị",
+      ZOOM_IN: "Phóng to",
+      ZOOM_OUT: "Thu nhỏ",
+      FIT_GRAPH: "Căn vừa đồ thị",
+      ENTITY_TYPE: "Loại thực thể",
+      ALL_ENTITY_TYPES: "Tất cả loại thực thể",
+      PHYSICS_ON: "Mô phỏng đang bật",
+      PHYSICS_OFF: "Mô phỏng đang tắt",
+      LOADING: "Đang tải đồ thị tri thức",
+      SELECT_WORKSPACE: "Chọn không gian làm việc",
+      SELECT_WORKSPACE_DESCRIPTION: "Chọn một không gian làm việc để khám phá đồ thị.",
+      EMPTY_TITLE: "Chưa có dữ liệu đồ thị",
+      EMPTY_DESCRIPTION: "Tải lên tài liệu và chờ quá trình trích xuất thực thể hoàn tất.",
+      OPEN_KNOWLEDGE: "Mở cơ sở tri thức",
+      GESTURE_HINT: "Cuộn để thu phóng / kéo nền để di chuyển / kéo nút để đổi vị trí",
+      ENTITY_DETAILS: "Chi tiết thực thể",
+      RELATIONSHIP_DETAILS: "Chi tiết mối quan hệ",
+      CLOSE_DETAILS: "Đóng chi tiết",
+      CONNECTED_ENTITIES: "Thực thể liên kết ({{count}})",
+      NO_CONNECTIONS: "Không có liên kết hiển thị.",
+      FREQUENCY: "Tần suất {{value}}",
+      DEGREE: "Bậc liên kết {{value}}",
+      WEIGHT: "Trọng số {{value}}",
+      LOAD_ERROR: "Không thể tải đồ thị tri thức.",
+    });
   });
 
   it("only references the search result list while suggestions are rendered", () => {
@@ -224,8 +275,24 @@ describe("graph controls", () => {
     expect(screen.getByRole("heading", { name: "Ada" })).toBeInTheDocument();
     expect(screen.getByText("Founder")).toBeInTheDocument();
     expect(screen.getByText(/frequency 4/i)).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: /focus flae/i }));
+    const neighborButton = screen.getByRole("button", { name: "FLAE company" });
+    expect(neighborButton).toHaveAccessibleName("FLAE company");
+    await user.click(neighborButton);
     expect(onFocusNode).toHaveBeenCalledWith("node-2");
+  });
+
+  it("uses the localized entity type label when a node type is missing", () => {
+    renderControl(
+      <GraphSelectionPanel
+        neighbors={[]}
+        onClose={vi.fn()}
+        onFocusNode={vi.fn()}
+        selectedEdge={null}
+        selectedNode={{ ...node, type: "" }}
+      />,
+    );
+
+    expect(screen.getByText("Entity type")).toBeInTheDocument();
   });
 
   it("GRAPH-02A renders edge details and navigates to either endpoint", async () => {
@@ -243,8 +310,12 @@ describe("graph controls", () => {
 
     expect(screen.getByRole("heading", { name: "FOUNDED" })).toBeInTheDocument();
     expect(screen.getByText("Current relationship")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: /focus source node-1/i }));
-    await user.click(screen.getByRole("button", { name: /focus target node-2/i }));
+    const sourceButton = screen.getByRole("button", { name: "node-1" });
+    const targetButton = screen.getByRole("button", { name: "node-2" });
+    expect(sourceButton).toHaveAccessibleName("node-1");
+    expect(targetButton).toHaveAccessibleName("node-2");
+    await user.click(sourceButton);
+    await user.click(targetButton);
     expect(onFocusNode.mock.calls).toEqual([["node-1"], ["node-2"]]);
   });
 });

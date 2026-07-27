@@ -9,7 +9,7 @@ import { PageToolbar } from "../../../shared/ui/PageToolbar";
 import { Toast } from "../../../shared/ui/Toast";
 import { useGraphController } from "../graph/hooks/use-graph-controller";
 import type { GraphSelection } from "../graph/types";
-import { GraphCanvas } from "../graph/ui/GraphCanvas";
+import { GraphCanvas, type GraphCanvasLabels } from "../graph/ui/GraphCanvas";
 import { GraphFilters } from "../graph/ui/GraphFilters";
 import { GraphSelectionPanel } from "../graph/ui/GraphSelectionPanel";
 import { GraphToolbar } from "../graph/ui/GraphToolbar";
@@ -29,6 +29,16 @@ export function KnowledgeGraphPage() {
   const { t } = useTranslation();
   const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId);
   const controller = useGraphController(workspaceId);
+  const graphCanvasLabels: GraphCanvasLabels = {
+    ariaLabel: t("SHELL.KNOWLEDGE_GRAPH"),
+    fallbackText: `${t("SHELL.KNOWLEDGE_GRAPH")}. ${t("GRAPH.DESCRIPTION")}`,
+    instructions: `${t("GRAPH.DESCRIPTION")} ${t("GRAPH.VIEW_CONTROLS")}: Arrow, Enter, Space, Escape. ${t("GRAPH.GESTURE_HINT")} ${t("GRAPH.ZOOM_IN")}; ${t("GRAPH.ZOOM_OUT")}; ${t("GRAPH.FIT_GRAPH")}.`,
+    navigationPrefix: t("GRAPH.VIEW_CONTROLS"),
+    nodeLabel: t("GRAPH.ENTITY_DETAILS"),
+    noneLabel: t("GRAPH.NO_CONNECTIONS"),
+    relationshipLabel: t("GRAPH.RELATIONSHIP_DETAILS"),
+    selectionPrefix: t("SHELL.KNOWLEDGE_GRAPH"),
+  };
   const onSelectionChange = (selection: GraphSelection | null) => {
     if (!selection) controller.clearSelection();
     else if (selection.kind === "node") controller.selectNode(selection.id);
@@ -91,6 +101,7 @@ export function KnowledgeGraphPage() {
           <GraphCanvas
             command={controller.command}
             graph={controller.graph}
+            labels={graphCanvasLabels}
             onSelectionChange={onSelectionChange}
             physicsEnabled={controller.physicsEnabled}
             selection={controller.selection}

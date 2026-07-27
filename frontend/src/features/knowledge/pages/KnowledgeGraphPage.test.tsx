@@ -27,12 +27,20 @@ vi.mock("../../../core/auth/AuthBootstrap", () => ({
   AuthBootstrap: ({ children }: PropsWithChildren) => children,
 }));
 vi.mock("../graph/ui/GraphCanvas", () => ({
-  GraphCanvas: ({ graph, onSelectionChange, workspaceKey }: {
+  GraphCanvas: ({ graph, labels, onSelectionChange, workspaceKey }: {
     graph: KnowledgeGraphData;
+    labels?: {
+      ariaLabel: string;
+      instructions: string;
+    };
     onSelectionChange: (selection: { id: string; kind: "node" } | null) => void;
     workspaceKey: string;
   }) => (
-    <div aria-label="Interactive knowledge graph">
+    <div
+      aria-label={labels?.ariaLabel ?? "Interactive knowledge graph"}
+      data-testid="graph-canvas"
+    >
+      <span>{labels?.instructions}</span>
       <span>{graph.nodes.length} nodes / {graph.edges.length} edges / {workspaceKey}</span>
       <span>{graph.nodes.map((node) => node.name).join(", ")}</span>
       {graph.nodes[0] ? (
@@ -117,16 +125,34 @@ describe("KnowledgeGraphPage", () => {
       screen.getByRole("toolbar", { name: /graph tools/i }),
     ).toBeInTheDocument();
     expect(
-      screen.getByLabelText(/interactive knowledge graph/i),
+      screen.getByTestId("graph-canvas"),
     ).toBeInTheDocument();
+  });
+
+  it("passes localized accessibility labels into the graph canvas", async () => {
+    renderPage();
+
+    const canvas = await screen.findByTestId("graph-canvas");
+    expect(canvas).toHaveAccessibleName("Knowledge graph");
+    expect(canvas).toHaveTextContent(
+      "Trace extracted entities, relationships, and evidence across workspace knowledge.",
+    );
+  });
+
+  it("passes Vietnamese accessibility labels into the graph canvas", async () => {
+    renderPageInVietnamese();
+
+    const canvas = await screen.findByTestId("graph-canvas");
+    expect(canvas).toHaveAccessibleName("Đồ thị tri thức");
+    expect(canvas).toHaveTextContent(
+      "Theo dõi các thực thể, mối quan hệ và bằng chứng được trích xuất từ tri thức của không gian làm việc.",
+    );
   });
 
   it("fills the available dashboard viewport while retaining its minimum height", async () => {
     renderPage();
 
-    const workSurface = (await screen.findByLabelText(
-      /interactive knowledge graph/i,
-    )).parentElement;
+    const workSurface = (await screen.findByTestId("graph-canvas")).parentElement;
 
     expect(workSurface).toHaveClass("h-[calc(100dvh-18rem)]", "min-h-[32rem]");
   });

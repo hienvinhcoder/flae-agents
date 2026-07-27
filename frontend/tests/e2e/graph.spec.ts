@@ -9,7 +9,7 @@ test.beforeEach(async ({ page }) => {
 
 test('filters, selects, and navigates the graph with accessible controls', async ({ page }) => {
   await expect(page.getByRole('toolbar', { name: 'Graph tools' })).toBeVisible();
-  await expect(page.getByLabel('Interactive knowledge graph')).toBeVisible();
+  await expect(page.locator('canvas[aria-label="Knowledge graph"]')).toBeVisible();
   const zoomIn = page.getByRole('button', { name: 'Zoom in' });
   const zoomInBox = await zoomIn.boundingBox();
   expect(zoomInBox?.height).toBeGreaterThanOrEqual(44);
@@ -30,9 +30,39 @@ test('filters, selects, and navigates the graph with accessible controls', async
 test('fills a tall dashboard viewport without horizontal overflow', async ({ page }) => {
   await page.setViewportSize({ height: 1000, width: 1440 });
 
-  const graphSurface = page.getByLabel('Interactive knowledge graph').locator('..');
+  const graphSurface = page.locator('canvas[aria-label="Knowledge graph"]').locator('..');
   const surfaceBox = await graphSurface.boundingBox();
   expect(surfaceBox?.height).toBeGreaterThanOrEqual(700);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+    ),
+  ).toBe(true);
+});
+
+test('keeps the mobile inspector within the graph and supports keyboard suggestions', async ({ page }) => {
+  await page.setViewportSize({ height: 812, width: 375 });
+
+  await page.getByLabel('Search entities').fill('FLAE');
+  const suggestion = page.getByRole('option', { name: 'FLAE platform product' });
+  await suggestion.focus();
+  await expect(suggestion).toBeFocused();
+  await suggestion.press('Enter');
+
+  const graphSurface = page.locator('canvas[aria-label="Knowledge graph"]').locator('..');
+  const inspector = page.getByLabel('Entity details');
+  await expect(inspector).toContainText('FLAE platform');
+  const surfaceBox = await graphSurface.boundingBox();
+  const inspectorBox = await inspector.boundingBox();
+  expect(surfaceBox).not.toBeNull();
+  expect(inspectorBox).not.toBeNull();
+  expect(inspectorBox!.x).toBeGreaterThanOrEqual(surfaceBox!.x);
+  expect(inspectorBox!.x + inspectorBox!.width).toBeLessThanOrEqual(
+    surfaceBox!.x + surfaceBox!.width,
+  );
+  expect(inspectorBox!.y + inspectorBox!.height).toBeLessThanOrEqual(
+    surfaceBox!.y + surfaceBox!.height,
+  );
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
