@@ -16,7 +16,6 @@ const labels: GraphCanvasLabels = {
   instructions: "Use Arrow, Enter, Space, and Escape to navigate the graph.",
   navigationPrefix: "Graph view controls",
   nodeLabel: "Entity details",
-  noneLabel: "No visible connections.",
   relationshipLabel: "Relationship details",
   selectionPrefix: "Knowledge graph",
 };
@@ -26,7 +25,6 @@ const viLabels: GraphCanvasLabels = {
   instructions: "Dùng Arrow, Enter, Space và Escape để điều khiển. Cuộn để thu phóng / kéo nền để di chuyển / kéo nút để đổi vị trí.",
   navigationPrefix: "Điều khiển khung nhìn đồ thị",
   nodeLabel: "Chi tiết thực thể",
-  noneLabel: "Không có liên kết hiển thị.",
   relationshipLabel: "Chi tiết mối quan hệ",
   selectionPrefix: "Đồ thị tri thức",
 };
@@ -107,6 +105,7 @@ describe("GraphCanvas", () => {
     const canvas = screen.getByLabelText("Knowledge graph");
     expect(canvas).toHaveAttribute("tabindex", "0");
     expect(canvas).toHaveAccessibleDescription(labels.instructions);
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
     const options = renderer.createGraphRenderer.mock.calls[0]?.[1] as {
       onActiveItemChange: (selection: { id: string; kind: "node" }) => void;
     };
@@ -141,8 +140,8 @@ describe("GraphCanvas", () => {
     expect(screen.getByRole("status")).toHaveTextContent(
       "Điều khiển khung nhìn đồ thị: Chi tiết thực thể Ada",
     );
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "Đồ thị tri thức: Không có liên kết hiển thị.",
+    expect(screen.getByRole("status").textContent).toBe(
+      "Điều khiển khung nhìn đồ thị: Chi tiết thực thể Ada",
     );
   });
 
@@ -180,10 +179,10 @@ describe("GraphCanvas", () => {
     );
 
     expect(screen.getByRole("status")).not.toHaveTextContent("Ada");
-    expect(screen.getByRole("status")).toHaveTextContent(labels.noneLabel);
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
   });
 
-  it("reconciles the active item when graph identities change", () => {
+  it("preserves active IDs across data updates and resets when navigation identities change", () => {
     const instance = { destroy: vi.fn(), execute: vi.fn(), update: vi.fn() };
     renderer.createGraphRenderer.mockReturnValue(instance);
     const { rerender } = render(
@@ -213,7 +212,21 @@ describe("GraphCanvas", () => {
         workspaceKey="ws-1"
       />,
     );
+    expect(instance.destroy).not.toHaveBeenCalled();
     expect(screen.getByRole("status")).toHaveTextContent("Ada Lovelace");
+
+    rerender(
+      <GraphCanvas
+        command={null}
+        graph={{ edges: [], nodes: [{ ...adaGraph.nodes[0]!, name: "Ada Lovelace" }] }}
+        labels={labels}
+        onSelectionChange={vi.fn()}
+        physicsEnabled
+        selection={{ id: "node-1", kind: "node" }}
+        workspaceKey="ws-1"
+      />,
+    );
+    expect(instance.destroy).not.toHaveBeenCalled();
 
     rerender(
       <GraphCanvas
@@ -226,7 +239,8 @@ describe("GraphCanvas", () => {
         workspaceKey="ws-1"
       />,
     );
+    expect(instance.destroy).toHaveBeenCalledOnce();
     expect(screen.getByRole("status")).not.toHaveTextContent("Ada Lovelace");
-    expect(screen.getByRole("status")).toHaveTextContent(labels.noneLabel);
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
   });
 });

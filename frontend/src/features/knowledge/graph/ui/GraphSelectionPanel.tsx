@@ -73,10 +73,20 @@ export function GraphSelectionPanel({
           </div>
           <div className="grid gap-2">
             <button className="flex min-h-11 min-w-11 items-center justify-between rounded-ui-control border border-ui-divider bg-ui-canvas/50 p-3 text-left text-ui-ink-secondary transition-colors hover:bg-ui-interactive motion-reduce:transition-none" onClick={() => onFocusNode(selectedEdge.source)} type="button">
-              <span>{selectedEdge.source}</span><ArrowRight aria-hidden className="h-4 w-4" />
+              <span>
+                <small className="block text-ui-ink-muted">{t("GRAPH.SOURCE")}</small>
+                {" "}
+                <span>{selectedEdge.source}</span>
+              </span>
+              <ArrowRight aria-hidden className="h-4 w-4" />
             </button>
             <button className="flex min-h-11 min-w-11 items-center justify-between rounded-ui-control border border-ui-divider bg-ui-canvas/50 p-3 text-left text-ui-ink-secondary transition-colors hover:bg-ui-interactive motion-reduce:transition-none" onClick={() => onFocusNode(selectedEdge.target)} type="button">
-              <span>{selectedEdge.target}</span><ArrowRight aria-hidden className="h-4 w-4" />
+              <span>
+                <small className="block text-ui-ink-muted">{t("GRAPH.TARGET")}</small>
+                {" "}
+                <span>{selectedEdge.target}</span>
+              </span>
+              <ArrowRight aria-hidden className="h-4 w-4" />
             </button>
           </div>
           <p className="rounded-ui-control border border-ui-divider bg-ui-canvas/60 p-3 text-ui-ink-secondary">{selectedEdge.description}</p>

@@ -35,7 +35,6 @@ export function KnowledgeGraphPage() {
     instructions: `${t("GRAPH.DESCRIPTION")} ${t("GRAPH.VIEW_CONTROLS")}: Arrow, Enter, Space, Escape. ${t("GRAPH.GESTURE_HINT")} ${t("GRAPH.ZOOM_IN")}; ${t("GRAPH.ZOOM_OUT")}; ${t("GRAPH.FIT_GRAPH")}.`,
     navigationPrefix: t("GRAPH.VIEW_CONTROLS"),
     nodeLabel: t("GRAPH.ENTITY_DETAILS"),
-    noneLabel: t("GRAPH.NO_CONNECTIONS"),
     relationshipLabel: t("GRAPH.RELATIONSHIP_DETAILS"),
     selectionPrefix: t("SHELL.KNOWLEDGE_GRAPH"),
   };

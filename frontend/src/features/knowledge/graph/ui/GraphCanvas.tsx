@@ -19,14 +19,21 @@ export interface GraphCanvasLabels {
   instructions: string;
   navigationPrefix: string;
   nodeLabel: string;
-  noneLabel: string;
   relationshipLabel: string;
   selectionPrefix: string;
 }
 
 interface ActiveState {
+  graphIdentity: string;
   item: GraphSelection | null;
   workspaceKey: string;
+}
+
+function graphNavigationIdentity(graph: RendererGraph) {
+  return JSON.stringify({
+    edges: graph.edges.map((edge) => edge.id),
+    nodes: graph.nodes.map((node) => node.id),
+  });
 }
 
 export function GraphCanvas({
@@ -41,14 +48,17 @@ export function GraphCanvas({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rendererRef = useRef<GraphRenderer | null>(null);
   const selectionCallback = useRef(onSelectionChange);
+  const graphIdentity = graphNavigationIdentity(graph);
   const [activeState, setActiveState] = useState<ActiveState>({
+    graphIdentity,
     item: null,
     workspaceKey,
   });
   const instructionsId = useId();
   const statusId = useId();
 
-  const activeItem = activeState.workspaceKey === workspaceKey
+  const activeItem = activeState.graphIdentity === graphIdentity
+    && activeState.workspaceKey === workspaceKey
     && activeState.item
     && (activeState.item.kind === "node"
       ? graph.nodes.some((node) => node.id === activeState.item?.id)
@@ -56,8 +66,7 @@ export function GraphCanvas({
     ? activeState.item
     : null;
 
-  const describe = (item: GraphSelection | null, prefix: string) => {
-    if (!item) return `${prefix}: ${labels.noneLabel}`;
+  const describe = (item: GraphSelection, prefix: string) => {
     if (item.kind === "node") {
       const node = graph.nodes.find((candidate) => candidate.id === item.id);
       return `${prefix}: ${labels.nodeLabel} ${node?.name ?? item.id}`;
@@ -65,6 +74,10 @@ export function GraphCanvas({
     const edge = graph.edges.find((candidate) => candidate.id === item.id);
     return `${prefix}: ${labels.relationshipLabel} ${edge?.displayLabel ?? item.id}`;
   };
+  const liveStatus = [
+    activeItem ? describe(activeItem, labels.navigationPrefix) : "",
+    selection ? describe(selection, labels.selectionPrefix) : "",
+  ].filter(Boolean).join(". ");
 
   useEffect(() => {
     selectionCallback.current = onSelectionChange;
@@ -74,7 +87,11 @@ export function GraphCanvas({
     const canvas = canvasRef.current;
     if (!canvas) return undefined;
     const renderer = createGraphRenderer(canvas, {
-      onActiveItemChange: (item) => setActiveState({ item, workspaceKey }),
+      onActiveItemChange: (item) => setActiveState({
+        graphIdentity,
+        item,
+        workspaceKey,
+      }),
       onSelectionChange: (nextSelection) =>
         selectionCallback.current(nextSelection),
     });
@@ -83,7 +100,7 @@ export function GraphCanvas({
       renderer.destroy();
       rendererRef.current = null;
     };
-  }, [workspaceKey]);
+  }, [graphIdentity, workspaceKey]);
 
   useEffect(() => {
     rendererRef.current?.update({ graph, physicsEnabled, selection });
@@ -99,7 +116,7 @@ export function GraphCanvas({
         {labels.instructions}
       </p>
       <p aria-live="polite" className="sr-only" id={statusId} role="status">
-        {describe(activeItem, labels.navigationPrefix)} {describe(selection, labels.selectionPrefix)}
+        {liveStatus}
       </p>
       <canvas
         aria-describedby={instructionsId}

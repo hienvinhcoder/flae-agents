@@ -1,11 +1,13 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { I18nextProvider } from "react-i18next";
 import type { ReactElement } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import en from "../../../../../public/assets/i18n/en.json";
 import viTranslations from "../../../../../public/assets/i18n/vi.json";
 import { TestI18nProvider } from "../../../../../tests/TestI18nProvider";
+import { createI18n } from "../../../../shared/i18n";
 import type { RendererEdge, RendererNode } from "../types";
 import { GraphFilters } from "./GraphFilters";
 import { GraphSelectionPanel } from "./GraphSelectionPanel";
@@ -48,6 +50,15 @@ const edge: RendererEdge = {
 
 function renderControl(ui: ReactElement) {
   return render(ui, { wrapper: TestI18nProvider });
+}
+
+const viI18n = await createI18n(
+  { en: { translation: en }, vi: { translation: viTranslations } },
+  "vi",
+);
+
+function renderVietnameseControl(ui: ReactElement) {
+  return render(<I18nextProvider i18n={viI18n}>{ui}</I18nextProvider>);
 }
 
 describe("graph controls", () => {
@@ -138,6 +149,8 @@ describe("graph controls", () => {
       GESTURE_HINT: "Wheel to zoom / drag canvas to pan / drag nodes to reposition",
       ENTITY_DETAILS: "Entity details",
       RELATIONSHIP_DETAILS: "Relationship details",
+      SOURCE: "Source",
+      TARGET: "Target",
       CLOSE_DETAILS: "Close details",
       CONNECTED_ENTITIES: "Connected entities ({{count}})",
       NO_CONNECTIONS: "No visible connections.",
@@ -171,6 +184,8 @@ describe("graph controls", () => {
       GESTURE_HINT: "Cuộn để thu phóng / kéo nền để di chuyển / kéo nút để đổi vị trí",
       ENTITY_DETAILS: "Chi tiết thực thể",
       RELATIONSHIP_DETAILS: "Chi tiết mối quan hệ",
+      SOURCE: "Nguồn",
+      TARGET: "Đích",
       CLOSE_DETAILS: "Đóng chi tiết",
       CONNECTED_ENTITIES: "Thực thể liên kết ({{count}})",
       NO_CONNECTIONS: "Không có liên kết hiển thị.",
@@ -310,12 +325,31 @@ describe("graph controls", () => {
 
     expect(screen.getByRole("heading", { name: "FOUNDED" })).toBeInTheDocument();
     expect(screen.getByText("Current relationship")).toBeInTheDocument();
-    const sourceButton = screen.getByRole("button", { name: "node-1" });
-    const targetButton = screen.getByRole("button", { name: "node-2" });
-    expect(sourceButton).toHaveAccessibleName("node-1");
-    expect(targetButton).toHaveAccessibleName("node-2");
+    const sourceButton = screen.getByRole("button", { name: "Source node-1" });
+    const targetButton = screen.getByRole("button", { name: "Target node-2" });
+    expect(sourceButton).toHaveAccessibleName("Source node-1");
+    expect(targetButton).toHaveAccessibleName("Target node-2");
     await user.click(sourceButton);
     await user.click(targetButton);
     expect(onFocusNode.mock.calls).toEqual([["node-1"], ["node-2"]]);
+  });
+
+  it("localizes visible relationship direction labels in Vietnamese", () => {
+    renderVietnameseControl(
+      <GraphSelectionPanel
+        neighbors={[]}
+        onClose={vi.fn()}
+        onFocusNode={vi.fn()}
+        selectedEdge={edge}
+        selectedNode={null}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Nguồn node-1" })).toHaveAccessibleName(
+      "Nguồn node-1",
+    );
+    expect(screen.getByRole("button", { name: "Đích node-2" })).toHaveAccessibleName(
+      "Đích node-2",
+    );
   });
 });

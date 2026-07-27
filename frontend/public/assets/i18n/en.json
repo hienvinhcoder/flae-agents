@@ -311,6 +311,8 @@
     "GESTURE_HINT": "Wheel to zoom / drag canvas to pan / drag nodes to reposition",
     "ENTITY_DETAILS": "Entity details",
     "RELATIONSHIP_DETAILS": "Relationship details",
+    "SOURCE": "Source",
+    "TARGET": "Target",
     "CLOSE_DETAILS": "Close details",
     "CONNECTED_ENTITIES": "Connected entities ({{count}})",
     "NO_CONNECTIONS": "No visible connections.",

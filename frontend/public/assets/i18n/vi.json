@@ -311,6 +311,8 @@
     "GESTURE_HINT": "Cuộn để thu phóng / kéo nền để di chuyển / kéo nút để đổi vị trí",
     "ENTITY_DETAILS": "Chi tiết thực thể",
     "RELATIONSHIP_DETAILS": "Chi tiết mối quan hệ",
+    "SOURCE": "Nguồn",
+    "TARGET": "Đích",
     "CLOSE_DETAILS": "Đóng chi tiết",
     "CONNECTED_ENTITIES": "Thực thể liên kết ({{count}})",
     "NO_CONNECTIONS": "Không có liên kết hiển thị.",
