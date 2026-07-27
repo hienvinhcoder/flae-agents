@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 export type SidebarLayout = 'expanded' | 'collapsed';
 
@@ -27,13 +27,13 @@ function persistSidebarLayout(layout: SidebarLayout): void {
 
 export function useSidebarLayout() {
   const [layout, setLayout] = useState<SidebarLayout>(readSidebarLayout);
+  const layoutRef = useRef(layout);
   const toggle = useCallback(() => {
-    setLayout((currentLayout) => {
-      const nextLayout =
-        currentLayout === 'expanded' ? 'collapsed' : 'expanded';
-      persistSidebarLayout(nextLayout);
-      return nextLayout;
-    });
+    const nextLayout =
+      layoutRef.current === 'expanded' ? 'collapsed' : 'expanded';
+    layoutRef.current = nextLayout;
+    setLayout(nextLayout);
+    persistSidebarLayout(nextLayout);
   }, []);
 
   return { layout, toggle } as const;

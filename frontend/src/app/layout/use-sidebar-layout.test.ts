@@ -30,6 +30,25 @@ describe('useSidebarLayout', () => {
     expect(localStorage.getItem(SIDEBAR_LAYOUT_STORAGE_KEY)).toBe('expanded');
   });
 
+  it('persists rapid StrictMode toggles exactly once each', () => {
+    const setItemSpy = vi.spyOn(Storage.prototype, 'setItem');
+    const { result } = renderHook(() => useSidebarLayout(), {
+      reactStrictMode: true,
+    });
+
+    act(() => {
+      result.current.toggle();
+      result.current.toggle();
+    });
+
+    expect(result.current.layout).toBe('expanded');
+    expect(setItemSpy.mock.calls).toEqual([
+      [SIDEBAR_LAYOUT_STORAGE_KEY, 'collapsed'],
+      [SIDEBAR_LAYOUT_STORAGE_KEY, 'expanded'],
+    ]);
+    expect(localStorage.getItem(SIDEBAR_LAYOUT_STORAGE_KEY)).toBe('expanded');
+  });
+
   it.each<SidebarLayout>(['expanded', 'collapsed'])(
     'restores a valid %s layout',
     (storedLayout) => {
