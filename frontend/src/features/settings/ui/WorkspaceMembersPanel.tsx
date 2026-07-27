@@ -1,10 +1,11 @@
 import { UserPlus } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "../../../shared/ui/Button";
 import { ErrorState } from "../../../shared/ui/ErrorState";
 import { Skeleton } from "../../../shared/ui/Skeleton";
-import { InviteMemberDialog } from "./InviteMemberDialog";
+import { Table, type TableColumn } from "../../../shared/ui/Table";
 import type { InviteMemberForm } from "../schemas/workspace-schema";
 import type {
   WorkspaceInvitation,
@@ -12,9 +13,14 @@ import type {
   WorkspaceMemberStatus,
   WorkspaceRole,
 } from "../types/workspace";
+import { InviteMemberDialog } from "./InviteMemberDialog";
 
 interface WorkspaceMembersPanelProps {
   actionError?: string;
+  announceActionError?: boolean;
+  announceInvitationsError?: boolean;
+  announceInviteError?: boolean;
+  announceMembersError?: boolean;
   currentUserUid: string;
   invitationsError?: string;
   inviteError?: string;
@@ -35,11 +41,96 @@ interface WorkspaceMembersPanelProps {
   ) => Promise<void>;
 }
 
+interface MemberControlsProps {
+  canManage: boolean;
+  member: WorkspaceMember;
+  onRemove: (userUid: string) => Promise<void>;
+  onUpdate: (
+    userUid: string,
+    role: WorkspaceRole,
+    status: WorkspaceMemberStatus,
+  ) => Promise<void>;
+  roles: readonly WorkspaceRole[];
+}
+
 function displayName(member: WorkspaceMember) {
   return member.full_name?.trim() || member.email || "Workspace member";
 }
 
+function roleKey(role: WorkspaceRole) {
+  return `SETTINGS_UI.ROLE_${role.toUpperCase()}`;
+}
+
+function statusKey(status: WorkspaceMemberStatus) {
+  return `SETTINGS_UI.STATUS_${status.toUpperCase()}`;
+}
+
+function MemberIdentity({ member }: { member: WorkspaceMember }) {
+  return (
+    <div className="min-w-0">
+      <p className="truncate font-semibold text-ui-ink">
+        {displayName(member)}
+      </p>
+      <p className="truncate text-sm text-ui-ink-muted">{member.email}</p>
+    </div>
+  );
+}
+
+function MemberControls({
+  canManage,
+  member,
+  onRemove,
+  onUpdate,
+  roles,
+}: MemberControlsProps) {
+  const { t } = useTranslation();
+  const name = displayName(member);
+
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      {canManage ? (
+        <select
+          aria-label={t("SETTINGS_UI.ROLE_FOR", { name })}
+          className="min-h-11 rounded-ui-control border border-ui-line bg-ui-raised px-3 text-ui-ink"
+          onChange={(event) =>
+            void onUpdate(
+              member.user_uid,
+              event.target.value as WorkspaceRole,
+              member.status,
+            )
+          }
+          value={member.role}
+        >
+          {roles.map((role) => (
+            <option key={role} value={role}>
+              {t(roleKey(role))}
+            </option>
+          ))}
+        </select>
+      ) : (
+        <span className="font-semibold text-ui-ink-secondary">
+          {t(roleKey(member.role))}
+        </span>
+      )}
+      {canManage ? (
+        <Button
+          aria-label={t("SETTINGS_UI.REMOVE_MEMBER", { name })}
+          onClick={() => {
+            if (window.confirm(t("SETTINGS_UI.REMOVE_CONFIRM", { name }))) {
+              void onRemove(member.user_uid);
+            }
+          }}
+          variant="danger"
+        >
+          {t("SETTINGS_UI.REMOVE")}
+        </Button>
+      ) : null}
+    </div>
+  );
+}
+
 export function WorkspaceMembersPanel(props: WorkspaceMembersPanelProps) {
+  const { i18n, t } = useTranslation();
   const [inviteOpen, setInviteOpen] = useState(false);
   const currentRole = useMemo(
     () =>
@@ -60,167 +151,164 @@ export function WorkspaceMembersPanel(props: WorkspaceMembersPanelProps) {
     currentRole === "owner"
       ? (["admin", "member", "viewer"] as const)
       : (["member", "viewer"] as const);
+  const memberColumns: readonly TableColumn<WorkspaceMember>[] = [
+    {
+      header: t("SETTINGS_UI.MEMBER"),
+      key: "member",
+      render: (member) => <MemberIdentity member={member} />,
+    },
+    {
+      header: t("SETTINGS_UI.ROLE"),
+      key: "role",
+      render: (member) => (
+        <MemberControls
+          canManage={canManage(member)}
+          member={member}
+          onRemove={props.onRemove}
+          onUpdate={props.onUpdate}
+          roles={rolesFor()}
+        />
+      ),
+    },
+    {
+      header: t("SETTINGS_UI.STATUS"),
+      key: "status",
+      render: (member) => t(statusKey(member.status)),
+    },
+  ];
+  const locale = i18n.resolvedLanguage === "vi" ? "vi-VN" : "en-US";
 
-  if (props.isLoading)
-    return <Skeleton label="Loading workspace members" lines={4} />;
-  if (props.membersError)
+  if (props.isLoading) {
+    return (
+      <Skeleton label={t("SETTINGS_UI.LOADING_MEMBERS")} lines={4} />
+    );
+  }
+  if (props.membersError) {
     return (
       <ErrorState
+        announce={props.announceMembersError}
         message={props.membersError}
         onRetry={props.onRetryMembers}
-        title="Unable to load workspace members"
+        title={t("SETTINGS_UI.LOAD_MEMBERS_ERROR")}
       />
     );
+  }
 
   return (
-    <div className="grid gap-6">
-      <section className="surface-panel p-6" aria-labelledby="members-title">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="grid gap-8">
+      <section
+        aria-labelledby="members-title"
+        className="border-t border-ui-divider pt-6"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h2
               className="text-xl font-semibold text-ui-ink"
               id="members-title"
             >
-              Members
+              {t("SETTINGS_UI.MEMBERS")}
             </h2>
             <p className="mt-1 text-ui-ink-secondary">
-              Manage roles and workspace access.
+              {t("SETTINGS_UI.MEMBERS_DESCRIPTION")}
             </p>
           </div>
           {canInvite ? (
             <Button onClick={() => setInviteOpen(true)}>
               <UserPlus aria-hidden className="h-4 w-4" />
-              Invite member
+              {t("SETTINGS_UI.INVITE_MEMBER")}
             </Button>
           ) : null}
         </div>
         {props.actionError ? (
-          <p className="mt-4 text-state-danger" role="alert">
+          <p
+            className="mt-4 text-state-danger"
+            role={props.announceActionError === false ? undefined : "alert"}
+          >
             {props.actionError}
           </p>
         ) : null}
-        <div className="mt-5 overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="border-b border-ui-divider text-ui-ink-muted">
-                <th className="px-3 py-2">Member</th>
-                <th className="px-3 py-2">Role</th>
-                <th className="px-3 py-2">Status</th>
-                <th className="px-3 py-2">
-                  <span className="sr-only">Actions</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-ui-divider">
-              {props.members.length === 0 ? (
-                <tr>
-                  <td
-                    className="px-3 py-8 text-center text-ui-ink-muted"
-                    colSpan={4}
-                  >
-                    No workspace members found.
-                  </td>
-                </tr>
-              ) : (
-                props.members.map((member) => {
-                  const name = displayName(member);
-                  return (
-                    <tr key={member.user_uid}>
-                      <td className="px-3 py-3">
-                        <strong className="block text-ui-ink">{name}</strong>
-                        <span className="text-sm text-ui-ink-muted">
-                          {member.email}
-                        </span>
-                      </td>
-                      <td className="px-3 py-3">
-                        {canManage(member) ? (
-                          <select
-                            aria-label={`Role for ${name}`}
-                            className="min-h-10 rounded-ui-control border border-ui-line bg-ui-raised px-2"
-                            onChange={(event) =>
-                              void props.onUpdate(
-                                member.user_uid,
-                                event.target.value as WorkspaceRole,
-                                member.status,
-                              )
-                            }
-                            value={member.role}
-                          >
-                            {rolesFor().map((role) => (
-                              <option key={role} value={role}>
-                                {role}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          member.role
-                        )}
-                      </td>
-                      <td className="px-3 py-3">{member.status}</td>
-                      <td className="px-3 py-3 text-right">
-                        {canManage(member) ? (
-                          <Button
-                            aria-label={`Remove ${name}`}
-                            onClick={() => {
-                              if (
-                                window.confirm(
-                                  `Remove ${name} from this workspace?`,
-                                )
-                              )
-                                void props.onRemove(member.user_uid);
-                            }}
-                            variant="danger"
-                          >
-                            Remove
-                          </Button>
-                        ) : null}
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+        <div className="mt-5">
+          <Table
+            caption={t("SETTINGS_UI.MEMBERS")}
+            columns={memberColumns}
+            emptyMessage={t("SETTINGS_UI.NO_MEMBERS")}
+            getRowKey={(member) => member.user_uid}
+            renderMobileRow={(member) => (
+              <article
+                aria-label={displayName(member)}
+                className="rounded-ui-control border border-ui-divider bg-ui-raised p-4"
+              >
+                <MemberIdentity member={member} />
+                <p className="mt-2 text-sm text-ui-ink-muted">
+                  {t(statusKey(member.status))}
+                </p>
+                <div className="mt-4">
+                  <MemberControls
+                    canManage={canManage(member)}
+                    member={member}
+                    onRemove={props.onRemove}
+                    onUpdate={props.onUpdate}
+                    roles={rolesFor()}
+                  />
+                </div>
+              </article>
+            )}
+            rows={props.members}
+          />
         </div>
       </section>
 
       <section
-        className="surface-panel p-6"
         aria-labelledby="invitations-title"
+        className="border-t border-ui-divider pt-6"
       >
         <h2
           className="text-xl font-semibold text-ui-ink"
           id="invitations-title"
         >
-          Pending invitations
+          {t("SETTINGS_UI.PENDING_INVITATIONS")}
         </h2>
         <div className="mt-4 grid gap-3">
           {props.isInvitationsLoading ? (
-            <Skeleton label="Loading pending invitations" lines={2} />
+            <Skeleton
+              label={t("SETTINGS_UI.LOADING_INVITATIONS")}
+              lines={2}
+            />
           ) : props.invitationsError ? (
             <ErrorState
+              announce={props.announceInvitationsError}
               message={props.invitationsError}
               onRetry={props.onRetryInvitations}
-              retryLabel="Retry invitations"
-              title="Unable to load invitations"
+              retryLabel={t("SETTINGS_UI.RETRY_INVITATIONS")}
+              title={t("SETTINGS_UI.LOAD_INVITATIONS_ERROR")}
             />
           ) : props.invitations.length === 0 ? (
-            <p className="text-ui-ink-muted">No pending invitations.</p>
+            <p className="text-ui-ink-muted">
+              {t("SETTINGS_UI.NO_INVITATIONS")}
+            </p>
           ) : (
             props.invitations.map((invitation) => (
               <div
                 className="flex flex-wrap items-center justify-between gap-3 rounded-ui-control border border-ui-line p-4"
                 key={invitation.id}
               >
-                <div>
-                  <strong className="text-ui-ink">{invitation.email}</strong>
-                  <p className="text-sm text-ui-ink-muted">
-                    {invitation.role} · expires{" "}
-                    {new Date(invitation.expires_at).toLocaleDateString()}
+                <div className="min-w-0">
+                  <strong className="break-all text-ui-ink">
+                    {invitation.email}
+                  </strong>
+                  <p className="mt-1 text-sm text-ui-ink-muted">
+                    {t("SETTINGS_UI.EXPIRES_DATE", {
+                      date: new Date(invitation.expires_at).toLocaleDateString(
+                        locale,
+                      ),
+                      role: t(roleKey(invitation.role)),
+                    })}
                   </p>
                 </div>
                 <span className="rounded-ui-status bg-state-warning-soft px-3 py-1 text-sm text-state-warning">
-                  {invitation.status}
+                  {t(
+                    `SETTINGS_UI.INVITATION_STATUS_${invitation.status.toUpperCase()}`,
+                  )}
                 </span>
               </div>
             ))
@@ -229,6 +317,7 @@ export function WorkspaceMembersPanel(props: WorkspaceMembersPanelProps) {
       </section>
 
       <InviteMemberDialog
+        announceError={props.announceInviteError}
         error={props.inviteError}
         isSubmitting={props.isInviting}
         onClose={() => setInviteOpen(false)}

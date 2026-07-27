@@ -1,16 +1,19 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "../../../shared/ui/Button";
 import { Dialog } from "../../../shared/ui/Dialog";
 import { Input } from "../../../shared/ui/Input";
 import { Select } from "../../../shared/ui/Select";
 import {
-  inviteMemberFormSchema,
+  createInviteMemberFormSchema,
   type InviteMemberForm,
 } from "../schemas/workspace-schema";
 
 interface InviteMemberDialogProps {
+  announceError?: boolean;
   error?: string;
   isSubmitting: boolean;
   onClose: () => void;
@@ -19,21 +22,35 @@ interface InviteMemberDialogProps {
 }
 
 export function InviteMemberDialog({
+  announceError = true,
   error,
   isSubmitting,
   onClose,
   onSubmit,
   open,
 }: InviteMemberDialogProps) {
+  const { i18n, t } = useTranslation();
+  const locale = i18n.resolvedLanguage ?? i18n.language;
+  const validationSchema = useMemo(
+    () =>
+      createInviteMemberFormSchema({
+        emailInvalid: t("SETTINGS_VALIDATION.EMAIL_INVALID"),
+      }),
+    [t],
+  );
   const {
     formState: { errors },
     handleSubmit,
     register,
     reset,
+    trigger,
   } = useForm<InviteMemberForm>({
     defaultValues: { email: "", role: "member" },
-    resolver: zodResolver(inviteMemberFormSchema),
+    resolver: zodResolver(validationSchema),
   });
+  useEffect(() => {
+    if (Object.keys(errors).length > 0) void trigger();
+  }, [errors, locale, trigger]);
   const close = () => {
     reset();
     onClose();
@@ -48,10 +65,11 @@ export function InviteMemberDialog({
 
   return (
     <Dialog
-      description="Send a workspace invitation with the appropriate access level."
+      closeLabel={t("SETTINGS_UI.CANCEL")}
+      description={t("SETTINGS_UI.INVITE_DESCRIPTION")}
       onClose={close}
       open={open}
-      title="Invite member"
+      title={t("SETTINGS_UI.INVITE_TITLE")}
     >
       <form
         className="grid gap-5"
@@ -61,35 +79,38 @@ export function InviteMemberDialog({
         <Input
           autoComplete="email"
           error={errors.email?.message}
-          label="Email"
+          label={t("SETTINGS_UI.EMAIL")}
           type="email"
           {...register("email")}
         />
         <Select
           error={errors.role?.message}
-          label="Role"
+          label={t("SETTINGS_UI.ROLE_LABEL")}
           options={[
-            { label: "Administrator", value: "admin" },
-            { label: "Member", value: "member" },
-            { label: "Viewer", value: "viewer" },
+            { label: t("SETTINGS_UI.ROLE_ADMIN"), value: "admin" },
+            { label: t("SETTINGS_UI.ROLE_MEMBER"), value: "member" },
+            { label: t("SETTINGS_UI.ROLE_VIEWER"), value: "viewer" },
           ]}
           {...register("role")}
         />
         {error ? (
-          <p className="text-state-danger" role="alert">
+          <p
+            className="text-state-danger"
+            role={announceError ? "alert" : undefined}
+          >
             {error}
           </p>
         ) : null}
         <div className="flex justify-end gap-3">
           <Button onClick={close} type="button" variant="secondary">
-            Cancel
+            {t("SETTINGS_UI.CANCEL")}
           </Button>
           <Button
             isLoading={isSubmitting}
-            loadingText="Sending invitation"
+            loadingText={t("SETTINGS_UI.SENDING_INVITE")}
             type="submit"
           >
-            Send invitation
+            {t("SETTINGS_UI.SEND_INVITE")}
           </Button>
         </div>
       </form>

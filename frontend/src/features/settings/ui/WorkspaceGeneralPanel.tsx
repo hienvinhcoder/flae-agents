@@ -1,16 +1,18 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "../../../shared/ui/Button";
 import { Input } from "../../../shared/ui/Input";
 import {
-  workspaceNameFormSchema,
+  createWorkspaceNameFormSchema,
   type WorkspaceNameForm,
 } from "../schemas/workspace-schema";
 import type { Workspace } from "../types/workspace";
 
 interface WorkspaceGeneralPanelProps {
+  announceError?: boolean;
   createMode: boolean;
   error?: string;
   isSaving: boolean;
@@ -20,6 +22,7 @@ interface WorkspaceGeneralPanelProps {
 }
 
 export function WorkspaceGeneralPanel({
+  announceError = true,
   createMode,
   error,
   isSaving,
@@ -27,20 +30,34 @@ export function WorkspaceGeneralPanel({
   onSave,
   workspace,
 }: WorkspaceGeneralPanelProps) {
+  const { i18n, t } = useTranslation();
+  const locale = i18n.resolvedLanguage ?? i18n.language;
+  const validationSchema = useMemo(
+    () =>
+      createWorkspaceNameFormSchema({
+        workspaceNameMax: t("SETTINGS_VALIDATION.WORKSPACE_NAME_MAX"),
+        workspaceNameMin: t("SETTINGS_VALIDATION.WORKSPACE_NAME_MIN"),
+      }),
+    [t],
+  );
   const {
     formState: { errors },
     handleSubmit,
     register,
     reset,
+    trigger,
   } = useForm<WorkspaceNameForm>({
     defaultValues: { name: createMode ? "" : (workspace?.name ?? "") },
-    resolver: zodResolver(workspaceNameFormSchema),
+    resolver: zodResolver(validationSchema),
   });
 
   useEffect(
     () => reset({ name: createMode ? "" : (workspace?.name ?? "") }),
     [createMode, reset, workspace],
   );
+  useEffect(() => {
+    if (Object.keys(errors).length > 0) void trigger();
+  }, [errors, locale, trigger]);
   const submit = handleSubmit(async (payload) => {
     try {
       await onSave(payload);
@@ -51,47 +68,54 @@ export function WorkspaceGeneralPanel({
 
   if (!createMode && !workspace) {
     return (
-      <p className="surface-panel p-6 text-ui-ink-secondary">
-        Select a workspace before editing its settings.
+      <p className="border-y border-ui-divider bg-ui-raised/45 p-6 text-ui-ink-secondary">
+        {t("SETTINGS_UI.SELECT_WORKSPACE")}
       </p>
     );
   }
 
   return (
     <form
-      className="surface-panel grid gap-5 p-6"
+      className="grid gap-5 border-t border-ui-divider pt-6"
       onSubmit={(event) => void submit(event)}
     >
       <div>
         <h2 className="text-xl font-semibold text-ui-ink">
-          {createMode ? "Create workspace" : "General information"}
+          {t(
+            createMode
+              ? "SETTINGS_UI.CREATE_WORKSPACE"
+              : "SETTINGS_UI.GENERAL_INFORMATION",
+          )}
         </h2>
         <p className="mt-1 text-ui-ink-secondary">
-          Use a clear name your team will recognize.
+          {t("SETTINGS_UI.GENERAL_DESCRIPTION")}
         </p>
       </div>
       <Input
         autoComplete="organization"
         error={errors.name?.message}
-        label="Workspace name"
+        label={t("SETTINGS_UI.WORKSPACE_NAME")}
         {...register("name")}
       />
       {error ? (
-        <p className="text-state-danger" role="alert">
+        <p
+          className="text-state-danger"
+          role={announceError ? "alert" : undefined}
+        >
           {error}
         </p>
       ) : null}
       <div className="flex flex-wrap gap-3">
         <Button
           isLoading={isSaving}
-          loadingText="Saving workspace"
+          loadingText={t("SETTINGS_UI.SAVING_WORKSPACE")}
           type="submit"
         >
-          Save workspace
+          {t("SETTINGS_UI.SAVE_WORKSPACE")}
         </Button>
         {createMode ? (
           <Button onClick={onCancelCreate} type="button" variant="secondary">
-            Cancel
+            {t("SETTINGS_UI.CANCEL")}
           </Button>
         ) : null}
       </div>

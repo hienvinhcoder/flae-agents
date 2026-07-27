@@ -1,16 +1,43 @@
 import { useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 
+import { AppError } from "../../../core/api/errors";
 import { useAuthStore } from "../../../core/stores/auth-store";
 import { useWorkspaceStore } from "../../../core/stores/workspace-store";
 import { queryKeys } from "../../../shared/lib/query-keys";
+import { PageHeader } from "../../../shared/ui/PageHeader";
 import { Tabs } from "../../../shared/ui/Tabs";
 import { useWorkspaceSettings } from "../hooks/use-workspace-settings";
 import { WorkspaceGeneralPanel } from "../ui/WorkspaceGeneralPanel";
 import { WorkspaceMembersPanel } from "../ui/WorkspaceMembersPanel";
 import type { Workspace } from "../types/workspace";
 
+function publicErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof AppError) return fallback;
+  return error instanceof Error ? error.message : fallback;
+}
+
+function isGloballyAnnouncedError(error: unknown) {
+  return (
+    error instanceof AppError &&
+    (error.kind === "network" ||
+      error.status === 401 ||
+      (error.kind === "server" && (error.status ?? 0) >= 500))
+  );
+}
+
+function errorView(error: unknown, fallback: string) {
+  return error
+    ? {
+        announce: !isGloballyAnnouncedError(error),
+        message: publicErrorMessage(error, fallback),
+      }
+    : { announce: true, message: undefined };
+}
+
 export function SettingsPage() {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId);
@@ -24,24 +51,23 @@ export function SettingsPage() {
   const createMode = searchParams.get("mode") === "create";
   const activeTab =
     searchParams.get("tab") === "members" ? "members" : "general";
-  const membersError =
-    actions.members.error instanceof Error
-      ? actions.members.error.message
-      : undefined;
-  const invitationsError =
-    actions.invitations.error instanceof Error
-      ? actions.invitations.error.message
-      : undefined;
-  const inviteError =
-    actions.invite.error instanceof Error
-      ? actions.invite.error.message
-      : undefined;
-  const memberActionError =
-    actions.updateMember.error instanceof Error
-      ? actions.updateMember.error.message
-      : actions.removeMember.error instanceof Error
-        ? actions.removeMember.error.message
-        : undefined;
+  const generalError = errorView(
+    actions.rename.error ?? actions.create.error,
+    t("COMMON.ERROR"),
+  );
+  const membersError = errorView(
+    actions.members.error,
+    t("SETTINGS_UI.LOAD_MEMBERS_ERROR"),
+  );
+  const invitationsError = errorView(
+    actions.invitations.error,
+    t("SETTINGS_UI.LOAD_INVITATIONS_ERROR"),
+  );
+  const inviteError = errorView(actions.invite.error, t("COMMON.ERROR"));
+  const memberActionError = errorView(
+    actions.updateMember.error ?? actions.removeMember.error,
+    t("COMMON.ERROR"),
+  );
 
   const setTab = (tab: string) => {
     const next = new URLSearchParams(searchParams);
@@ -53,38 +79,31 @@ export function SettingsPage() {
   return (
     <section
       aria-labelledby="settings-title"
-      className="mx-auto w-full max-w-6xl"
+      className="mx-auto grid w-full max-w-6xl gap-6"
     >
-      <p className="text-metadata">FLAE workspace</p>
-      <h1
-        className="mt-2 text-[1.75rem] font-bold text-ui-ink"
-        id="settings-title"
-      >
-        Workspace settings
-      </h1>
-      <p className="mt-2 text-ui-ink-secondary">
-        Manage workspace details, members, and access.
-      </p>
-      <div className="mt-6">
+      <PageHeader
+        description={t("SETTINGS_UI.DESCRIPTION")}
+        eyebrow={t("SETTINGS_UI.EYEBROW")}
+        title={t("SETTINGS_UI.TITLE")}
+        titleId="settings-title"
+      />
+      <div>
         <Tabs
-          ariaLabel="Workspace settings sections"
+          ariaLabel={t("SETTINGS_UI.SECTIONS_ARIA")}
           defaultValue={activeTab}
           items={[
             {
               id: "general",
-              label: "General",
+              label: t("SETTINGS_UI.GENERAL"),
               content: (
                 <WorkspaceGeneralPanel
                   createMode={createMode}
-                  error={
-                    (actions.rename.error ?? actions.create.error) instanceof
-                    Error
-                      ? (actions.rename.error ?? actions.create.error)?.message
-                      : undefined
-                  }
+                  announceError={generalError.announce}
+                  error={generalError.message}
                   isSaving={
                     actions.rename.isPending || actions.create.isPending
                   }
+                  key={workspaceId ?? "no-workspace"}
                   onCancelCreate={() => {
                     const next = new URLSearchParams(searchParams);
                     next.delete("mode");
@@ -93,9 +112,10 @@ export function SettingsPage() {
                   onSave={async (payload) => {
                     if (createMode) {
                       const created = await actions.create.mutateAsync(payload);
-                      useWorkspaceStore
-                        .getState()
-                        .setCurrentWorkspaceId(created.id);
+                      const workspaceStore = useWorkspaceStore.getState();
+                      if (workspaceStore.currentWorkspaceId === workspaceId) {
+                        workspaceStore.setCurrentWorkspaceId(created.id);
+                      }
                     } else {
                       await actions.rename.mutateAsync(payload);
                     }
@@ -106,19 +126,24 @@ export function SettingsPage() {
             },
             {
               id: "members",
-              label: "Members",
+              label: t("SETTINGS_UI.MEMBERS"),
               content: (
                 <WorkspaceMembersPanel
-                  actionError={memberActionError}
+                  actionError={memberActionError.message}
+                  announceActionError={memberActionError.announce}
+                  announceInvitationsError={invitationsError.announce}
+                  announceInviteError={inviteError.announce}
+                  announceMembersError={membersError.announce}
                   currentUserUid={currentUserUid}
                   invitations={actions.invitations.data ?? []}
-                  invitationsError={invitationsError}
-                  inviteError={inviteError}
+                  invitationsError={invitationsError.message}
+                  inviteError={inviteError.message}
                   isInvitationsLoading={actions.invitations.isPending}
                   isInviting={actions.invite.isPending}
                   isLoading={actions.members.isPending}
+                  key={workspaceId ?? "no-workspace"}
                   members={actions.members.data ?? []}
-                  membersError={membersError}
+                  membersError={membersError.message}
                   onInvite={(payload) =>
                     actions.invite.mutateAsync(payload).then(() => undefined)
                   }

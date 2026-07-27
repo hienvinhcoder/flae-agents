@@ -1,11 +1,25 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { i18n as I18nInstance } from "i18next";
+import { I18nextProvider } from "react-i18next";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import en from "../../../../public/assets/i18n/en.json";
+import viMessages from "../../../../public/assets/i18n/vi.json";
+import { TestI18nProvider } from "../../../../tests/TestI18nProvider";
+import { AppError } from "../../../core/api/errors";
 import { useAuthStore } from "../../../core/stores/auth-store";
 import { useWorkspaceStore } from "../../../core/stores/workspace-store";
+import { createI18n } from "../../../shared/i18n";
 import { queryKeys } from "../../../shared/lib/query-keys";
 import { SettingsPage } from "./SettingsPage";
 
@@ -26,6 +40,11 @@ const workspace = {
   name: "Platform",
   owner_uid: "firebase-1",
   created_at: null,
+};
+const secondWorkspace = {
+  ...workspace,
+  id: "ws-2",
+  name: "Research",
 };
 const owner = {
   workspace_id: "ws-1",
@@ -57,17 +76,35 @@ const invitation = {
   created_at: "2026-07-24T00:00:00Z",
 } as const;
 
-function renderSettings(path = "/dashboard/settings") {
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((next) => {
+    resolve = next;
+  });
+  return { promise, resolve };
+}
+
+function renderSettings(
+  path = "/dashboard/settings",
+  i18n?: I18nInstance,
+) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  queryClient.setQueryData(queryKeys.workspaces, [workspace]);
-  render(
+  queryClient.setQueryData(queryKeys.workspaces, [workspace, secondWorkspace]);
+  const page = (
     <QueryClientProvider client={queryClient}>
       <MemoryRouter initialEntries={[path]}>
         <SettingsPage />
       </MemoryRouter>
-    </QueryClientProvider>,
+    </QueryClientProvider>
+  );
+  render(
+    i18n ? (
+      <I18nextProvider i18n={i18n}>{page}</I18nextProvider>
+    ) : (
+      <TestI18nProvider>{page}</TestI18nProvider>
+    ),
   );
   return queryClient;
 }
@@ -91,6 +128,37 @@ describe("SettingsPage", () => {
     });
   });
 
+  it("renders settings as one Configuration page with URL-backed sections", async () => {
+    renderSettings("/dashboard/settings?tab=members");
+
+    expect(
+      screen.getByRole("heading", { level: 1, name: /workspace settings/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /members/i })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    expect(
+      await screen.findByRole("heading", { level: 2, name: /members/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("renders member identity, role, status, and actions in a mobile summary", async () => {
+    renderSettings("/dashboard/settings?tab=members");
+
+    const summary = await screen.findByRole("article", {
+      name: member.full_name,
+    });
+    expect(summary).toHaveTextContent(member.email);
+    expect(
+      within(summary).getByRole("combobox", { name: /role/i }),
+    ).toBeInTheDocument();
+    expect(summary).toHaveTextContent("Active");
+    expect(
+      within(summary).getByRole("button", { name: /remove member one/i }),
+    ).toBeInTheDocument();
+  });
+
   it("uses the tab query parameter and loads members and invitations", async () => {
     renderSettings("/dashboard/settings?tab=members");
 
@@ -98,7 +166,7 @@ describe("SettingsPage", () => {
       "aria-selected",
       "true",
     );
-    expect(await screen.findByText("member@example.com")).toBeInTheDocument();
+    expect(await screen.findAllByText("member@example.com")).toHaveLength(2);
     expect(await screen.findByText("guest@example.com")).toBeInTheDocument();
     expect(runtimeApi.listWorkspaceMembers).toHaveBeenCalledWith("ws-1");
     expect(runtimeApi.listPendingInvitations).toHaveBeenCalledWith("ws-1");
@@ -131,11 +199,42 @@ describe("SettingsPage", () => {
     );
   });
 
+  it("does not replace a newly selected workspace after a stale create completes", async () => {
+    const user = userEvent.setup();
+    const createRequest = deferred<typeof workspace>();
+    runtimeApi.createManualWorkspace.mockReturnValueOnce(createRequest.promise);
+    renderSettings("/dashboard/settings?mode=create");
+
+    await user.type(
+      screen.getByRole("textbox", { name: /workspace name/i }),
+      "Product Lab",
+    );
+    await user.click(screen.getByRole("button", { name: /save workspace/i }));
+    await waitFor(() =>
+      expect(runtimeApi.createManualWorkspace).toHaveBeenCalledWith(
+        { name: "Product Lab" },
+        expect.anything(),
+      ),
+    );
+
+    act(() => useWorkspaceStore.getState().setCurrentWorkspaceId("ws-2"));
+    await act(async () => {
+      createRequest.resolve({
+        ...workspace,
+        id: "ws-created",
+        name: "Product Lab",
+      });
+      await createRequest.promise;
+    });
+
+    expect(useWorkspaceStore.getState().currentWorkspaceId).toBe("ws-2");
+  });
+
   it("validates an invitation before submitting it", async () => {
     const user = userEvent.setup();
     runtimeApi.inviteWorkspaceMember.mockResolvedValue(invitation);
     renderSettings("/dashboard/settings?tab=members");
-    await screen.findByText("member@example.com");
+    await screen.findAllByText("member@example.com");
 
     await user.click(screen.getByRole("button", { name: /invite member/i }));
     await user.type(
@@ -171,10 +270,14 @@ describe("SettingsPage", () => {
     });
     runtimeApi.removeWorkspaceMember.mockResolvedValue(true);
     renderSettings("/dashboard/settings?tab=members");
-    await screen.findByText("member@example.com");
+    const memberSummary = await screen.findByRole("article", {
+      name: member.full_name,
+    });
 
     fireEvent.change(
-      screen.getByRole("combobox", { name: /role for member one/i }),
+      within(memberSummary).getByRole("combobox", {
+        name: /role for member one/i,
+      }),
       { target: { value: "viewer" } },
     );
     await waitFor(() =>
@@ -185,9 +288,12 @@ describe("SettingsPage", () => {
       ),
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /remove member one/i }));
+    const removeButton = within(memberSummary).getByRole("button", {
+      name: /remove member one/i,
+    });
+    fireEvent.click(removeButton);
     expect(runtimeApi.removeWorkspaceMember).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: /remove member one/i }));
+    fireEvent.click(removeButton);
     await waitFor(() =>
       expect(runtimeApi.removeWorkspaceMember).toHaveBeenCalledWith(
         "ws-1",
@@ -203,7 +309,7 @@ describe("SettingsPage", () => {
     );
     renderSettings("/dashboard/settings?tab=members");
 
-    expect(await screen.findByText("member@example.com")).toBeInTheDocument();
+    expect(await screen.findAllByText("member@example.com")).toHaveLength(2);
     expect(
       await screen.findByText("Invitations are unavailable."),
     ).toBeInTheDocument();
@@ -212,13 +318,30 @@ describe("SettingsPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("keeps infrastructure details private and leaves global failures globally announced", async () => {
+    runtimeApi.listWorkspaceMembers.mockRejectedValueOnce(
+      new AppError({
+        kind: "network",
+        message: "Raw connection details",
+        retryable: true,
+      }),
+    );
+    renderSettings("/dashboard/settings?tab=members");
+
+    expect(
+      await screen.findAllByText("Unable to load workspace members"),
+    ).toHaveLength(2);
+    expect(screen.queryByText("Raw connection details")).not.toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
   it("keeps the invite dialog open and exposes a retryable mutation error", async () => {
     const user = userEvent.setup();
     runtimeApi.inviteWorkspaceMember.mockRejectedValue(
       new Error("Invitation could not be sent."),
     );
     renderSettings("/dashboard/settings?tab=members");
-    await screen.findByText("member@example.com");
+    await screen.findAllByText("member@example.com");
 
     await user.click(screen.getByRole("button", { name: /invite member/i }));
     await user.type(
@@ -231,10 +354,67 @@ describe("SettingsPage", () => {
       "Invitation could not be sent.",
     );
     expect(
-      screen.getByRole("dialog", { name: /invite member/i }),
+      screen.getByRole("dialog", { name: /invite workspace member/i }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /send invitation/i }),
     ).toBeEnabled();
   });
+
+  it("resets member interaction state when the workspace context changes", async () => {
+    const user = userEvent.setup();
+    renderSettings("/dashboard/settings?tab=members");
+    await screen.findAllByText("member@example.com");
+
+    await user.click(screen.getByRole("button", { name: /invite member/i }));
+    expect(
+      screen.getByRole("dialog", { name: /invite workspace member/i }),
+    ).toBeInTheDocument();
+
+    act(() => useWorkspaceStore.getState().setCurrentWorkspaceId("ws-2"));
+
+    await waitFor(() =>
+      expect(runtimeApi.listWorkspaceMembers).toHaveBeenCalledWith("ws-2"),
+    );
+    await screen.findAllByText("member@example.com");
+    expect(
+      screen.queryByRole("dialog", { name: /invite workspace member/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("updates touched copy and validation when the live locale changes", async () => {
+    const user = userEvent.setup();
+    const i18n = await createI18n(
+      {
+        en: { translation: en },
+        vi: { translation: viMessages },
+      },
+      "en",
+    );
+    renderSettings("/dashboard/settings?tab=members", i18n);
+    const summary = await screen.findByRole("article", {
+      name: member.full_name,
+    });
+    expect(summary).toHaveTextContent("Active");
+
+    await act(() => i18n.changeLanguage("vi"));
+
+    expect(
+      screen.getByRole("heading", {
+        level: 1,
+        name: "Cấu hình không gian làm việc",
+      }),
+    ).toBeInTheDocument();
+    expect(summary).toHaveTextContent("Hoạt động");
+    await user.click(screen.getByRole("button", { name: "Mời thành viên" }));
+    await user.type(
+      screen.getByRole("textbox", { name: "Địa chỉ email" }),
+      "not-an-email",
+    );
+    await user.click(screen.getByRole("button", { name: "Gửi lời mời" }));
+    expect(
+      await screen.findByText("Nhập địa chỉ email hợp lệ."),
+    ).toBeInTheDocument();
+  });
+
 });
