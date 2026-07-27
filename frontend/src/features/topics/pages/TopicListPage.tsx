@@ -2,6 +2,7 @@ import { GitMerge, Search } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { AppError } from "../../../core/api/errors";
 import { useWorkspaceStore } from "../../../core/stores/workspace-store";
 import { Button } from "../../../shared/ui/Button";
 import { ErrorState } from "../../../shared/ui/ErrorState";
@@ -17,8 +18,15 @@ import { TopicMergeDialog } from "../ui/TopicMergeDialog";
 const PAGE_SIZE = 12;
 const EMPTY_TOPICS: readonly Topic[] = [];
 
-function errorMessage(error: unknown, fallback: string) {
+function publicErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof AppError) return fallback;
   return error instanceof Error ? error.message : fallback;
+}
+
+function isGloballyAnnouncedServerError(error: unknown) {
+  return error instanceof AppError
+    && error.kind === "server"
+    && (error.status ?? 0) >= 500;
 }
 
 export function TopicListPage() {
@@ -106,8 +114,10 @@ export function TopicListPage() {
       <div className="mt-6">
         {topicsQuery.isError ? (
           <ErrorState
-            message={errorMessage(topicsQuery.error, t("TOPICS.FETCH_ERROR"))}
+            announce={!isGloballyAnnouncedServerError(topicsQuery.error)}
+            message={publicErrorMessage(topicsQuery.error, t("TOPICS.FETCH_ERROR"))}
             onRetry={() => void topicsQuery.refetch()}
+            retryLabel={t("TOPICS.RETRY_LIST")}
             title={t("TOPICS.FETCH_ERROR")}
           />
         ) : topicsQuery.isPending ? (

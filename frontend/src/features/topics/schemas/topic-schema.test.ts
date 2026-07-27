@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { topicEditSchema, topicMergeSchema } from "./topic-schema";
+import {
+  createTopicMergeSchema,
+  topicEditSchema,
+  topicMergeSchema,
+} from "./topic-schema";
 
 describe("topic validation", () => {
   it("requires and trims an editable topic name", () => {
@@ -32,5 +36,38 @@ describe("topic validation", () => {
       source_topic_ids: ["topic-2"],
       target_topic_id: "topic-1",
     });
+  });
+
+  it("creates a merge schema with localized Vietnamese validation", () => {
+    const messages = {
+      "TOPICS.MERGE_SOURCE_REQUIRED": "Chọn ít nhất một chủ đề nguồn.",
+      "TOPICS.MERGE_TARGET_REQUIRED": "Chọn một chủ đề đích.",
+      "TOPICS.MERGE_TARGET_SOURCE_CONFLICT":
+        "Chủ đề đích không thể đồng thời là chủ đề nguồn.",
+    } as const;
+    const schema = createTopicMergeSchema((key) => messages[key]);
+
+    const sourceRequired = schema.safeParse({
+      source_topic_ids: [],
+      target_topic_id: "topic-1",
+    });
+    const targetRequired = schema.safeParse({
+      source_topic_ids: ["topic-1"],
+      target_topic_id: "",
+    });
+    const conflict = schema.safeParse({
+      source_topic_ids: ["topic-1"],
+      target_topic_id: "topic-1",
+    });
+
+    expect(sourceRequired.error?.issues[0]?.message).toBe(
+      messages["TOPICS.MERGE_SOURCE_REQUIRED"],
+    );
+    expect(targetRequired.error?.issues[0]?.message).toBe(
+      messages["TOPICS.MERGE_TARGET_REQUIRED"],
+    );
+    expect(conflict.error?.issues[0]?.message).toBe(
+      messages["TOPICS.MERGE_TARGET_SOURCE_CONFLICT"],
+    );
   });
 });

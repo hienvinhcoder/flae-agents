@@ -24,9 +24,9 @@ const typeLabelKeys: Record<TopicType, string> = {
 
 export function TopicCard({ topic }: { topic: Topic }) {
   const { i18n, t } = useTranslation();
-  const updatedDate = new Intl.DateTimeFormat(i18n.language).format(
-    new Date(topic.updated_at),
-  );
+  const updatedDate = new Intl.DateTimeFormat(
+    i18n.resolvedLanguage ?? i18n.language,
+  ).format(new Date(topic.updated_at));
 
   return (
     <Link
@@ -54,7 +54,7 @@ export function TopicCard({ topic }: { topic: Topic }) {
         {topic.name}
       </h2>
       <p className="mt-2 line-clamp-3 flex-1 text-sm leading-6 text-ui-ink-secondary">
-        {topic.summary ?? t("TOPICS.NO_SUMMARY")}
+        {topic.summary ?? t("TOPICS.CARD_NO_SUMMARY")}
       </p>
 
       <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 border-t border-ui-divider pt-4 text-sm text-ui-ink-muted">

@@ -1,11 +1,12 @@
 import { GitMerge } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { AppError } from "../../../core/api/errors";
 import { Button } from "../../../shared/ui/Button";
 import { Dialog } from "../../../shared/ui/Dialog";
 import { Select } from "../../../shared/ui/Select";
-import { topicMergeSchema } from "../schemas/topic-schema";
+import { createTopicMergeSchema } from "../schemas/topic-schema";
 import type { Topic, TopicMergePayload } from "../types/topic";
 
 interface TopicMergeDialogProps {
@@ -16,7 +17,8 @@ interface TopicMergeDialogProps {
   topics: readonly Topic[];
 }
 
-function errorMessage(error: unknown, fallback: string) {
+function publicErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof AppError) return fallback;
   return error instanceof Error ? error.message : fallback;
 }
 
@@ -28,6 +30,10 @@ export function TopicMergeDialog({
   topics,
 }: TopicMergeDialogProps) {
   const { t } = useTranslation();
+  const schema = useMemo(
+    () => createTopicMergeSchema((key) => t(key)),
+    [t],
+  );
   const [targetId, setTargetId] = useState("");
   const [sourceIds, setSourceIds] = useState<string[]>([]);
   const [error, setError] = useState<string>();
@@ -40,7 +46,7 @@ export function TopicMergeDialog({
   };
 
   const submit = async () => {
-    const result = topicMergeSchema.safeParse({
+    const result = schema.safeParse({
       source_topic_ids: sourceIds,
       target_topic_id: targetId,
     });
@@ -57,14 +63,16 @@ export function TopicMergeDialog({
       }
       resetAndClose();
     } catch (submitError) {
-      setError(errorMessage(submitError, t("TOPICS.MERGE_ERROR")));
+      setError(publicErrorMessage(submitError, t("TOPICS.MERGE_ERROR")));
     }
   };
 
   return (
     <Dialog
+      closeLabel={t("SHELL.CLOSE_DIALOG")}
       description={t("TOPICS.MERGE_CONFIRM_MSG")}
-      onClose={isSubmitting ? () => undefined : resetAndClose}
+      dismissible={!isSubmitting}
+      onClose={resetAndClose}
       open={open}
       title={t("TOPICS.MERGE_DIALOG_TITLE")}
     >

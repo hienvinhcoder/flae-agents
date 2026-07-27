@@ -134,6 +134,15 @@ describe("TopicListPage", () => {
     renderList();
     await screen.findByText("Topic 1");
 
+    await user.click(screen.getByRole("button", { name: /next page/i }));
+    await waitFor(() =>
+      expect(runtimeApi.listTopics).toHaveBeenCalledWith(
+        workspaceId,
+        expect.objectContaining({ limit: 12, offset: 12 }),
+        expect.any(AbortSignal),
+      ),
+    );
+
     await user.type(
       screen.getByRole("searchbox", { name: /search topics/i }),
       "market",
@@ -141,7 +150,16 @@ describe("TopicListPage", () => {
     await waitFor(() =>
       expect(runtimeApi.listTopics).toHaveBeenCalledWith(
         workspaceId,
-        expect.objectContaining({ query: "market" }),
+        expect.objectContaining({ offset: 0, query: "market" }),
+        expect.any(AbortSignal),
+      ),
+    );
+
+    await user.click(screen.getByRole("button", { name: /next page/i }));
+    await waitFor(() =>
+      expect(runtimeApi.listTopics).toHaveBeenCalledWith(
+        workspaceId,
+        expect.objectContaining({ offset: 12, query: "market" }),
         expect.any(AbortSignal),
       ),
     );
@@ -162,14 +180,6 @@ describe("TopicListPage", () => {
       ),
     );
 
-    await user.click(screen.getByRole("button", { name: /next page/i }));
-    await waitFor(() =>
-      expect(runtimeApi.listTopics).toHaveBeenCalledWith(
-        workspaceId,
-        expect.objectContaining({ limit: 12, offset: 12 }),
-        expect.any(AbortSignal),
-      ),
-    );
   });
 
   it("lets users return from an empty trailing page", async () => {
@@ -255,12 +265,18 @@ describe("TopicListPage", () => {
     await user.click(screen.getByRole("button", { name: /^merge$/i }));
     expect(await screen.findByRole("button", { name: /merging/i })).toBeDisabled();
     expect(screen.getByRole("button", { name: /merge topics/i })).toBeDisabled();
+    expect(
+      screen.getByRole("combobox", { name: /target topic/i }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole("checkbox", { name: /market signals/i }),
+    ).toBeDisabled();
+    expect(screen.getByRole("button", { name: /cancel/i })).toBeDisabled();
+    expect(
+      screen.queryByRole("button", { name: /close dialog/i }),
+    ).not.toBeInTheDocument();
 
     await user.keyboard("{Escape}");
-    expect(
-      screen.getByRole("dialog", { name: /merge duplicate topics/i }),
-    ).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: /close dialog/i }));
     expect(
       screen.getByRole("dialog", { name: /merge duplicate topics/i }),
     ).toBeInTheDocument();
