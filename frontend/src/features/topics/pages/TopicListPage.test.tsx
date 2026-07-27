@@ -9,6 +9,7 @@ import {
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useWorkspaceStore } from "../../../core/stores/workspace-store";
+import { TestI18nProvider } from "../../../../tests/TestI18nProvider";
 import type { Topic } from "../types/topic";
 import { TopicListPage } from "./TopicListPage";
 
@@ -66,9 +67,11 @@ function renderList() {
     { initialEntries: ["/dashboard/topics"] },
   );
   render(
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>,
+    <TestI18nProvider>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </TestI18nProvider>,
   );
   return { queryClient, router };
 }
@@ -91,6 +94,32 @@ describe("TopicListPage", () => {
     expect(
       await screen.findByText(`Topic destination ${productTopic.topic_id}`),
     ).toBeInTheDocument();
+  });
+
+  it("exposes search and status controls in a labeled topic toolbar", async () => {
+    renderList();
+
+    const toolbar = await screen.findByRole("toolbar", {
+      name: /topic filters/i,
+    });
+    expect(toolbar).toContainElement(
+      screen.getByRole("searchbox", { name: /search topics/i }),
+    );
+    expect(
+      screen.getByRole("combobox", { name: /topic status/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("requires a workspace before listing topics", () => {
+    useWorkspaceStore.getState().reset();
+    renderList();
+
+    expect(
+      screen.getByText(
+        "Select a workspace before reviewing knowledge topics.",
+      ),
+    ).toBeInTheDocument();
+    expect(runtimeApi.listTopics).not.toHaveBeenCalled();
   });
 
   it("sends debounced search, status, and pagination to the backend", async () => {

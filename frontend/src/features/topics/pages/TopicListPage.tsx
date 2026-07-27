@@ -1,9 +1,12 @@
 import { GitMerge, Search } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { useWorkspaceStore } from "../../../core/stores/workspace-store";
 import { Button } from "../../../shared/ui/Button";
 import { ErrorState } from "../../../shared/ui/ErrorState";
+import { PageHeader } from "../../../shared/ui/PageHeader";
+import { PageToolbar } from "../../../shared/ui/PageToolbar";
 import { Select } from "../../../shared/ui/Select";
 import { Skeleton } from "../../../shared/ui/Skeleton";
 import { useTopicActions, useTopics } from "../hooks/use-topics";
@@ -14,11 +17,12 @@ import { TopicMergeDialog } from "../ui/TopicMergeDialog";
 const PAGE_SIZE = 12;
 const EMPTY_TOPICS: readonly Topic[] = [];
 
-function errorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "Unable to load topics.";
+function errorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
 }
 
 export function TopicListPage() {
+  const { t } = useTranslation();
   const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<"all" | TopicStatus>("all");
@@ -36,88 +40,91 @@ export function TopicListPage() {
   if (!workspaceId) {
     return (
       <section className="surface-panel mx-auto max-w-4xl p-6">
-        <h1 className="text-2xl font-bold text-ui-ink">Knowledge topics</h1>
-        <p className="mt-2 text-ui-ink-secondary">
-          Select a workspace before reviewing knowledge topics.
-        </p>
+        <PageHeader
+          description={t("TOPICS.WORKSPACE_REQUIRED")}
+          eyebrow={t("TOPICS.EYEBROW")}
+          title={t("TOPICS.TITLE")}
+        />
       </section>
     );
   }
 
   return (
     <section aria-labelledby="topics-title" className="mx-auto w-full max-w-7xl">
-      <header className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="text-metadata">Workspace intelligence</p>
-          <h1 className="mt-2 text-[1.75rem] font-bold tracking-tight text-ui-ink" id="topics-title">
-            Knowledge topics
-          </h1>
-          <p className="mt-2 max-w-2xl text-ui-ink-secondary">
-            Review semantic clusters, evidence strength, and areas that need attention.
-          </p>
-        </div>
-        <Button
-          disabled={topics.length < 2 || actions.merge.isPending}
-          onClick={() => setMergeOpen(true)}
-          variant="secondary"
-        >
-          <GitMerge aria-hidden className="h-4 w-4" />
-          Merge topics
-        </Button>
-      </header>
+      <PageHeader
+        actions={(
+          <Button
+            disabled={topics.length < 2 || actions.merge.isPending}
+            onClick={() => setMergeOpen(true)}
+            variant="secondary"
+          >
+            <GitMerge aria-hidden className="h-4 w-4" />
+            {t("TOPICS.MERGE_BTN")}
+          </Button>
+        )}
+        description={t("TOPICS.DESC")}
+        eyebrow={t("TOPICS.EYEBROW")}
+        title={t("TOPICS.TITLE")}
+        titleId="topics-title"
+      />
 
-      <div className="surface-panel mt-6 grid gap-4 p-4 md:grid-cols-[minmax(0,1fr)_14rem]">
-        <div className="relative">
+      <PageToolbar ariaLabel={t("TOPICS.FILTERS_ARIA")} className="mt-6">
+        <div className="relative min-w-[min(100%,18rem)] flex-1">
           <Search aria-hidden className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-ui-ink-muted" />
-          <label className="sr-only" htmlFor="topic-search">Search topics</label>
+          <label className="sr-only" htmlFor="topic-search">
+            {t("TOPICS.SEARCH_LABEL")}
+          </label>
           <input
-            className="min-h-11 w-full rounded-ui-control border border-ui-line bg-ui-raised pl-10 pr-3 text-ui-ink transition-colors duration-200 placeholder:text-ui-ink-muted hover:border-ui-line-strong"
+            className="min-h-11 w-full rounded-ui-control border border-ui-line bg-ui-raised pl-10 pr-3 text-ui-ink placeholder:text-ui-ink-muted"
             id="topic-search"
             onChange={(event) => {
               setQuery(event.target.value);
               setPage(0);
             }}
-            placeholder="Search topic names and summaries"
+            placeholder={t("TOPICS.SEARCH_PLACEHOLDER")}
             type="search"
             value={query}
           />
         </div>
         <Select
-          label="Topic status"
+          className="min-w-52"
+          label={t("TOPICS.STATUS_FILTER")}
           onChange={(event) => {
             setStatus(event.target.value as "all" | TopicStatus);
             setPage(0);
           }}
           options={[
-            { label: "All statuses", value: "all" },
-            { label: "Active", value: "active" },
-            { label: "Needs review", value: "needs_review" },
-            { label: "Archived", value: "archived" },
+            { label: t("TOPICS.ALL_STATUSES"), value: "all" },
+            { label: t("TOPICS.STATUS_ACTIVE"), value: "active" },
+            { label: t("TOPICS.STATUS_NEEDS_REVIEW"), value: "needs_review" },
+            { label: t("TOPICS.STATUS_ARCHIVED"), value: "archived" },
           ]}
           value={status}
         />
-      </div>
+      </PageToolbar>
 
       <div className="mt-6">
         {topicsQuery.isError ? (
           <ErrorState
-            message={errorMessage(topicsQuery.error)}
+            message={errorMessage(topicsQuery.error, t("TOPICS.FETCH_ERROR"))}
             onRetry={() => void topicsQuery.refetch()}
-            title="Unable to load topics"
+            title={t("TOPICS.FETCH_ERROR")}
           />
         ) : topicsQuery.isPending ? (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {Array.from({ length: 6 }, (_, index) => (
               <div className="surface-panel p-5" key={index}>
-                <Skeleton label="Loading topic" lines={4} />
+                <Skeleton label={t("COMMON.LOADING")} lines={4} />
               </div>
             ))}
           </div>
         ) : topics.length === 0 ? (
           <div className="surface-panel p-8 text-center">
-            <h2 className="text-lg font-semibold text-ui-ink">No topics found</h2>
+            <h2 className="text-lg font-semibold text-ui-ink">
+              {t("TOPICS.NO_TOPICS_FOUND")}
+            </h2>
             <p className="mt-2 text-ui-ink-secondary">
-              Try another search or wait for more workspace knowledge to be processed.
+              {t("TOPICS.FILTER_EMPTY_DESCRIPTION")}
             </p>
           </div>
         ) : (
@@ -128,21 +135,23 @@ export function TopicListPage() {
       </div>
 
       {!topicsQuery.isError && (topics.length > 0 || page > 0) ? (
-        <nav aria-label="Topic pages" className="mt-6 flex items-center justify-between gap-4">
+        <nav aria-label={t("TOPICS.TITLE")} className="mt-6 flex items-center justify-between gap-4">
           <Button
             disabled={page === 0 || topicsQuery.isFetching}
             onClick={() => setPage((current) => Math.max(0, current - 1))}
             variant="secondary"
           >
-            Previous page
+            {t("TOPICS.PREVIOUS_PAGE")}
           </Button>
-          <span className="text-sm font-semibold text-ui-ink-secondary">Page {page + 1}</span>
+          <span className="text-sm font-semibold text-ui-ink-secondary">
+            {t("TOPICS.PAGE_NUMBER", { page: page + 1 })}
+          </span>
           <Button
             disabled={topics.length < PAGE_SIZE || topicsQuery.isFetching}
             onClick={() => setPage((current) => current + 1)}
             variant="secondary"
           >
-            Next page
+            {t("TOPICS.NEXT_PAGE")}
           </Button>
         </nav>
       ) : null}

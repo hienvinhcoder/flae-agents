@@ -3,7 +3,12 @@ import { expect, ids, installAuthSession, test } from './fixtures';
 test.beforeEach(async ({ page }) => {
   await installAuthSession(page);
   await page.goto('/dashboard/topics');
-  await expect(page.getByRole('heading', { name: 'Knowledge topics' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Knowledge Topics' })).toBeVisible();
+  const filters = page.getByRole('toolbar', { name: 'Topic filters' });
+  await expect(filters.getByRole('searchbox', { name: 'Search topics' })).toBeVisible();
+  await expect(filters.getByRole('combobox', { name: 'Topic status' })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Product strategy/ })).toContainText('12 evidence');
+  await expect(page.getByRole('link', { name: /Product strategy/ })).toContainText('86% confidence');
 });
 
 test('merges a duplicate topic and archives the retained topic', async ({ page }) => {

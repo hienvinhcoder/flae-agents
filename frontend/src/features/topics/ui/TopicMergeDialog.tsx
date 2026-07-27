@@ -1,5 +1,6 @@
 import { GitMerge } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "../../../shared/ui/Button";
 import { Dialog } from "../../../shared/ui/Dialog";
@@ -15,8 +16,8 @@ interface TopicMergeDialogProps {
   topics: readonly Topic[];
 }
 
-function errorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "Unable to merge topics.";
+function errorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
 }
 
 export function TopicMergeDialog({
@@ -26,6 +27,7 @@ export function TopicMergeDialog({
   open,
   topics,
 }: TopicMergeDialogProps) {
+  const { t } = useTranslation();
   const [targetId, setTargetId] = useState("");
   const [sourceIds, setSourceIds] = useState<string[]>([]);
   const [error, setError] = useState<string>();
@@ -43,56 +45,58 @@ export function TopicMergeDialog({
       target_topic_id: targetId,
     });
     if (!result.success) {
-      setError(result.error.issues[0]?.message ?? "Select topics to merge.");
+      setError(result.error.issues[0]?.message ?? t("TOPICS.MERGE_ERROR"));
       return;
     }
     setError(undefined);
     try {
       const merged = await onSubmit(result.data);
       if (!merged) {
-        setError("Unable to merge topics.");
+        setError(t("TOPICS.MERGE_ERROR"));
         return;
       }
       resetAndClose();
     } catch (submitError) {
-      setError(errorMessage(submitError));
+      setError(errorMessage(submitError, t("TOPICS.MERGE_ERROR")));
     }
   };
 
   return (
     <Dialog
-      description="Choose the topic to keep, then select the duplicate topics to combine into it."
+      description={t("TOPICS.MERGE_CONFIRM_MSG")}
       onClose={isSubmitting ? () => undefined : resetAndClose}
       open={open}
-      title="Merge duplicate topics"
+      title={t("TOPICS.MERGE_DIALOG_TITLE")}
     >
       <div className="grid gap-5">
         <Select
           disabled={isSubmitting}
-          label="Target topic"
+          label={t("TOPICS.MERGE_TARGET_LABEL")}
           onChange={(event) => {
             setTargetId(event.target.value);
             setSourceIds([]);
             setError(undefined);
           }}
           options={[
-            { label: "Select a target", value: "" },
+            { label: t("TOPICS.MERGE_TARGET_PLACEHOLDER"), value: "" },
             ...topics.map((topic) => ({ label: topic.name, value: topic.topic_id })),
           ]}
           value={targetId}
         />
 
         <fieldset className="grid gap-3">
-          <legend className="font-semibold text-ui-ink">Source topics</legend>
+          <legend className="font-semibold text-ui-ink">
+            {t("TOPICS.MERGE_SOURCES_LABEL")}
+          </legend>
           <p className="text-sm text-ui-ink-muted">
-            Their evidence will move to the target topic.
+            {t("TOPICS.MERGE_SOURCE_HINT")}
           </p>
           <div className="grid max-h-52 gap-2 overflow-y-auto rounded-ui-control border border-ui-line bg-ui-canvas p-3">
             {topics
               .filter((topic) => topic.topic_id !== targetId)
               .map((topic) => (
                 <label
-                  className="flex min-h-10 cursor-pointer items-center gap-3 rounded-ui-control px-2 py-1.5 text-ui-ink transition-colors duration-200 hover:bg-ui-interactive"
+                  className="flex min-h-11 cursor-pointer items-center gap-3 rounded-ui-control px-2 py-1.5 text-ui-ink transition-colors duration-200 motion-reduce:transition-none hover:bg-ui-interactive"
                   key={topic.topic_id}
                 >
                   <input
@@ -123,16 +127,16 @@ export function TopicMergeDialog({
 
         <div className="flex flex-wrap justify-end gap-3 border-t border-ui-divider pt-4">
           <Button disabled={isSubmitting} onClick={resetAndClose} variant="ghost">
-            Cancel
+            {t("COMMON.CANCEL")}
           </Button>
           <Button
             disabled={!targetId || sourceIds.length === 0}
             isLoading={isSubmitting}
-            loadingText="Merging"
+            loadingText={t("TOPICS.MERGING")}
             onClick={() => void submit()}
           >
             <GitMerge aria-hidden className="h-4 w-4" />
-            Merge
+            {t("TOPICS.MERGE_ACTION")}
           </Button>
         </div>
       </div>
