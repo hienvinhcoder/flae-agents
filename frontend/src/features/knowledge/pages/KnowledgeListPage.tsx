@@ -23,11 +23,6 @@ const EMPTY_DOCUMENTS: readonly KnowledgeDocument[] = [];
 const EMPTY_PENDING_RETRY_IDS: ReadonlySet<string> = new Set();
 const EMPTY_RETRY_ERRORS: ReadonlyMap<string, string> = new Map();
 
-interface PendingRetryState {
-  documentIds: ReadonlySet<string>;
-  workspaceId: string | null;
-}
-
 interface RetryErrorState {
   errors: ReadonlyMap<string, string>;
   workspaceId: string | null;
@@ -44,8 +39,10 @@ export function KnowledgeListPage() {
   const [status, setStatus] = useState("all");
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
   const pendingRetryKeysRef = useRef<Set<string>>(new Set());
-  const [pendingRetryState, setPendingRetryState] = useState<PendingRetryState>(
-    () => ({ documentIds: new Set(), workspaceId }),
+  const [pendingRetryIdsByWorkspace, setPendingRetryIdsByWorkspace] = useState<
+    ReadonlyMap<string, ReadonlySet<string>>
+  >(
+    () => new Map(),
   );
   const [retryErrorState, setRetryErrorState] = useState<RetryErrorState>(() => ({
     errors: new Map(),
@@ -55,10 +52,9 @@ export function KnowledgeListPage() {
   const [textOpen, setTextOpen] = useState(false);
   const knowledge = useKnowledge(workspaceId, selectedDocumentId);
   const documents = knowledge.documents.data ?? EMPTY_DOCUMENTS;
-  const pendingRetryIds =
-    pendingRetryState.workspaceId === workspaceId
-      ? pendingRetryState.documentIds
-      : EMPTY_PENDING_RETRY_IDS;
+  const pendingRetryIds = workspaceId
+    ? (pendingRetryIdsByWorkspace.get(workspaceId) ?? EMPTY_PENDING_RETRY_IDS)
+    : EMPTY_PENDING_RETRY_IDS;
   const retryErrors =
     retryErrorState.workspaceId === workspaceId
       ? retryErrorState.errors
@@ -113,14 +109,12 @@ export function KnowledgeListPage() {
     if (pendingRetryKeysRef.current.has(operationKey)) return;
     beginRetryErrorScope(documentId, retryWorkspaceId);
     pendingRetryKeysRef.current.add(operationKey);
-    setPendingRetryState((current) => {
+    setPendingRetryIdsByWorkspace((current) => {
       const documentIds = new Set(
-        current.workspaceId === retryWorkspaceId
-          ? current.documentIds
-          : EMPTY_PENDING_RETRY_IDS,
+        current.get(retryWorkspaceId) ?? EMPTY_PENDING_RETRY_IDS,
       );
       documentIds.add(documentId);
-      return { documentIds, workspaceId: retryWorkspaceId };
+      return new Map(current).set(retryWorkspaceId, documentIds);
     });
     try {
       await knowledge.retry.mutateAsync(documentId);
@@ -134,11 +128,18 @@ export function KnowledgeListPage() {
       });
     } finally {
       pendingRetryKeysRef.current.delete(operationKey);
-      setPendingRetryState((current) => {
-        if (current.workspaceId !== retryWorkspaceId) return current;
-        const documentIds = new Set(current.documentIds);
+      setPendingRetryIdsByWorkspace((current) => {
+        const currentDocumentIds = current.get(retryWorkspaceId);
+        if (!currentDocumentIds?.has(documentId)) return current;
+        const documentIds = new Set(currentDocumentIds);
         documentIds.delete(documentId);
-        return { documentIds, workspaceId: retryWorkspaceId };
+        const remaining = new Map(current);
+        if (documentIds.size > 0) {
+          remaining.set(retryWorkspaceId, documentIds);
+        } else {
+          remaining.delete(retryWorkspaceId);
+        }
+        return remaining;
       });
     }
   };

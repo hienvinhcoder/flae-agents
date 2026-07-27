@@ -263,4 +263,68 @@ describe("KnowledgeListPage retry errors", () => {
     expect(screen.queryByText("Old workspace failure")).not.toBeInTheDocument();
     expect(workspaceTwoRetry).not.toBeDisabled();
   });
+
+  it("retains each workspace pending retry when revisiting workspaces", async () => {
+    const user = userEvent.setup();
+    const requests = new Map<string, ReturnType<typeof deferred<unknown>>>();
+    runtimeApi.listDocuments.mockImplementation((workspaceId: string) =>
+      Promise.resolve(
+        workspaceId === "ws-2" ? [workspaceTwoIncident] : [incident],
+      ),
+    );
+    runtimeApi.retryIngestion.mockImplementation((workspaceId: string) => {
+      const request = deferred<unknown>();
+      requests.set(workspaceId, request);
+      return request.promise;
+    });
+    renderPage();
+
+    const workspaceOneTable = within(
+      await screen.findByRole("table", { name: /knowledge documents/i }),
+    );
+    const initialWorkspaceOneRetry = workspaceOneTable.getByRole("button", {
+      name: "Retry Incident handbook",
+    });
+    await user.click(initialWorkspaceOneRetry);
+    expect(initialWorkspaceOneRetry).toBeDisabled();
+    const workspaceOneRequest = requests.get("ws-1");
+
+    act(() => useWorkspaceStore.getState().setCurrentWorkspaceId("ws-2"));
+    expect(await screen.findAllByText("Workspace two handbook")).toHaveLength(2);
+    const workspaceTwoTable = within(
+      screen.getByRole("table", { name: /knowledge documents/i }),
+    );
+    const workspaceTwoRetry = workspaceTwoTable.getByRole("button", {
+      name: "Retry Workspace two handbook",
+    });
+    await user.click(workspaceTwoRetry);
+    expect(workspaceTwoRetry).toBeDisabled();
+    const workspaceTwoRequest = requests.get("ws-2");
+
+    act(() => useWorkspaceStore.getState().setCurrentWorkspaceId("ws-1"));
+    expect(await screen.findAllByText("Incident handbook")).toHaveLength(2);
+    const revisitedWorkspaceOneTable = within(
+      screen.getByRole("table", { name: /knowledge documents/i }),
+    );
+    const revisitedWorkspaceOneRetry = revisitedWorkspaceOneTable.getByRole(
+      "button",
+      { name: "Retry Incident handbook" },
+    );
+    expect(revisitedWorkspaceOneRetry).toBeDisabled();
+    await user.click(revisitedWorkspaceOneRetry);
+    expect(runtimeApi.retryIngestion).toHaveBeenCalledTimes(2);
+
+    workspaceOneRequest?.resolve({});
+    await waitFor(() => expect(revisitedWorkspaceOneRetry).not.toBeDisabled());
+
+    act(() => useWorkspaceStore.getState().setCurrentWorkspaceId("ws-2"));
+    expect(await screen.findAllByText("Workspace two handbook")).toHaveLength(2);
+    const revisitedWorkspaceTwoRetry = within(
+      screen.getByRole("table", { name: /knowledge documents/i }),
+    ).getByRole("button", { name: "Retry Workspace two handbook" });
+    expect(revisitedWorkspaceTwoRetry).toBeDisabled();
+
+    workspaceTwoRequest?.resolve({});
+    await waitFor(() => expect(revisitedWorkspaceTwoRetry).not.toBeDisabled());
+  });
 });
