@@ -1,4 +1,5 @@
 import { RotateCcw, Trash2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "../../../shared/ui/Button";
 import { Dialog } from "../../../shared/ui/Dialog";
@@ -31,6 +32,8 @@ export function DocumentDetailPanel({
   onRetry,
   open,
 }: DocumentDetailPanelProps) {
+  const { t } = useTranslation();
+
   return (
     <Dialog onClose={onClose} open={open} title={document?.title ?? "Document details"}>
       {isLoading ? <Skeleton label="Loading document details" lines={5} /> : null}
@@ -40,7 +43,7 @@ export function DocumentDetailPanel({
           <div className="flex flex-wrap items-center gap-3">
             <StatusBadge status={document.status} />
             <span className="text-sm text-ui-ink-muted">
-              {document.file_name || "Manual content"}
+              {document.file_name || t("KNOWLEDGE.MANUAL_TEXT")}
             </span>
           </div>
           {document.description ? (
@@ -57,7 +60,7 @@ export function DocumentDetailPanel({
               <h3 className="font-semibold text-ui-ink" id="document-content-title">
                 Extracted content
               </h3>
-              <p className="mt-2 max-h-48 overflow-y-auto whitespace-pre-wrap rounded-ui-control bg-ui-canvas p-3 text-sm text-ui-ink-secondary">
+              <p className="mt-2 max-h-48 overflow-y-auto whitespace-pre-wrap rounded-ui-control border border-ui-divider bg-ui-raised p-3 text-sm text-ui-ink-secondary">
                 {document.content_text}
               </p>
             </section>

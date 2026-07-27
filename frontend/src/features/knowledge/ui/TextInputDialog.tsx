@@ -1,5 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "../../../shared/ui/Button";
 import { Dialog } from "../../../shared/ui/Dialog";
@@ -25,6 +26,7 @@ export function TextInputDialog({
   onSubmit,
   open,
 }: TextInputDialogProps) {
+  const { t } = useTranslation();
   const {
     formState: { errors },
     handleSubmit,
@@ -49,10 +51,10 @@ export function TextInputDialog({
 
   return (
     <Dialog
-      description="Add durable reference content directly to the workspace knowledge base."
+      description={t("KNOWLEDGE.MANUAL_DESCRIPTION")}
       onClose={close}
       open={open}
-      title="Add content"
+      title={t("KNOWLEDGE.ADD_TEXT")}
     >
       <form className="grid gap-5" noValidate onSubmit={(event) => void submit(event)}>
         <Input
@@ -72,7 +74,7 @@ export function TextInputDialog({
           <textarea
             aria-describedby={errors.content_text ? "manual-content-error" : undefined}
             aria-invalid={Boolean(errors.content_text)}
-            className="min-h-44 resize-y rounded-ui-control border border-ui-line bg-ui-raised px-3 py-2 text-ui-ink placeholder:text-ui-ink-muted"
+            className="min-h-44 resize-y rounded-ui-control border border-ui-line bg-ui-raised px-3 py-2 text-ui-ink transition-colors duration-200 placeholder:text-ui-ink-muted hover:border-ui-line-strong motion-reduce:transition-none"
             id="manual-content"
             {...register("content_text")}
           />

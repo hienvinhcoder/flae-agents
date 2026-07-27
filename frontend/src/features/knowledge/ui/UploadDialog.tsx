@@ -1,5 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "../../../shared/ui/Button";
 import { Dialog } from "../../../shared/ui/Dialog";
@@ -25,6 +26,7 @@ export function UploadDialog({
   onSubmit,
   open,
 }: UploadDialogProps) {
+  const { t } = useTranslation();
   const {
     control,
     formState: { errors },
@@ -50,10 +52,10 @@ export function UploadDialog({
 
   return (
     <Dialog
-      description="Upload PDF, Markdown, or text files up to 50 MB."
+      description={t("KNOWLEDGE.UPLOAD_DESCRIPTION")}
       onClose={close}
       open={open}
-      title="Upload document"
+      title={t("KNOWLEDGE.UPLOAD_FILE")}
     >
       <form className="grid gap-5" noValidate onSubmit={(event) => void submit(event)}>
         <Controller
@@ -68,7 +70,7 @@ export function UploadDialog({
                 accept=".pdf,.md,.txt"
                 aria-describedby={errors.file ? "knowledge-file-error" : undefined}
                 aria-invalid={Boolean(errors.file)}
-                className="min-h-11 rounded-ui-control border border-ui-line bg-ui-raised px-3 py-2 text-ui-ink file:mr-3 file:rounded-ui-control file:border-0 file:bg-ui-interactive file:px-3 file:py-1"
+                className="min-h-11 rounded-ui-control border border-ui-line bg-ui-raised px-3 py-2 text-ui-ink transition-colors duration-200 file:mr-3 file:rounded-ui-control file:border-0 file:bg-ui-interactive file:px-3 file:py-1 hover:border-ui-line-strong motion-reduce:transition-none"
                 id="knowledge-file"
                 onChange={(event) => onChange(event.target.files?.[0])}
                 ref={ref}

@@ -7,6 +7,8 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('uploads, retries, and deletes knowledge through route components', async ({ page }) => {
+  const table = page.getByRole('table', { name: 'Knowledge documents' });
+  await expect(table).toBeVisible();
   await expectNoA11yViolations(page);
   await page.getByRole('button', { name: 'Upload document' }).click();
   await page.getByLabel('Document file').setInputFiles({
@@ -16,12 +18,22 @@ test('uploads, retries, and deletes knowledge through route components', async (
   });
   await page.getByLabel('Document title').fill('Uploaded handbook');
   await page.getByRole('button', { name: 'Upload', exact: true }).click();
-  await expect(page.getByText('Uploaded handbook')).toBeVisible();
+  await expect(table.getByText('Uploaded handbook')).toBeVisible();
 
-  await page.getByRole('button', { name: 'Retry Failed import' }).click();
-  await expect(page.getByRole('button', { name: /Retry Failed import/ })).toBeHidden();
+  await table.getByRole('button', { name: 'Retry Failed import' }).click();
+  await expect(table.getByRole('button', { name: /Retry Failed import/ })).toBeHidden();
 
   page.once('dialog', (dialog) => dialog.accept());
-  await page.getByRole('button', { name: 'Delete Product guide' }).click();
-  await expect(page.getByText('Product guide')).toBeHidden();
+  await table.getByRole('button', { name: 'Delete Product guide' }).click();
+  await expect(table.getByText('Product guide')).toBeHidden();
+});
+
+test('renders document summaries on a mobile viewport', async ({ page }) => {
+  await page.setViewportSize({ height: 844, width: 390 });
+
+  const productGuide = page.getByRole('article', { name: 'Product guide' });
+  await expect(productGuide).toBeVisible();
+  await expect(productGuide).toContainText('Completed');
+  await expect(productGuide).toContainText('4 chunks');
+  await expectNoA11yViolations(page);
 });

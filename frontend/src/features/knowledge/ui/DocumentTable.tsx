@@ -1,7 +1,9 @@
 import { Eye, RotateCcw, Trash2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "../../../shared/ui/Button";
 import { Skeleton } from "../../../shared/ui/Skeleton";
+import { Table, type TableColumn } from "../../../shared/ui/Table";
 import type { KnowledgeDocument } from "../types/knowledge";
 import { StatusBadge } from "./StatusBadge";
 
@@ -15,9 +17,64 @@ interface DocumentTableProps {
   retryingDocumentId?: string;
 }
 
-function documentTypeLabel(document: KnowledgeDocument) {
-  if (document.document_type === "manual_input") return "Manual text";
-  return document.document_type.toUpperCase();
+interface DocumentActionsProps {
+  document: KnowledgeDocument;
+  isRetrying: boolean;
+  onDelete: (document: KnowledgeDocument) => void;
+  onRetry: (document: KnowledgeDocument) => void;
+  onView: (document: KnowledgeDocument) => void;
+}
+
+function documentTypeLabel(
+  document: KnowledgeDocument,
+  manualTextLabel: string,
+) {
+  return document.document_type === "manual_input"
+    ? manualTextLabel
+    : document.document_type.toUpperCase();
+}
+
+function DocumentActions({
+  document,
+  isRetrying,
+  onDelete,
+  onRetry,
+  onView,
+}: DocumentActionsProps) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="flex flex-wrap justify-end gap-1">
+      {document.status === "failed" ? (
+        <Button
+          aria-label={t("KNOWLEDGE.RETRY_DOCUMENT", { title: document.title })}
+          className="min-w-11 px-3"
+          isLoading={isRetrying}
+          loadingText={t("KNOWLEDGE.STATUS_PROCESSING")}
+          onClick={() => onRetry(document)}
+          variant="ghost"
+        >
+          <RotateCcw aria-hidden className="h-4 w-4" />
+        </Button>
+      ) : null}
+      <Button
+        aria-label={t("KNOWLEDGE.OPEN_DOCUMENT", { title: document.title })}
+        className="min-w-11 px-3"
+        onClick={() => onView(document)}
+        variant="ghost"
+      >
+        <Eye aria-hidden className="h-4 w-4" />
+      </Button>
+      <Button
+        aria-label={t("KNOWLEDGE.DELETE_DOCUMENT", { title: document.title })}
+        className="min-w-11 px-3"
+        onClick={() => onDelete(document)}
+        variant="ghost"
+      >
+        <Trash2 aria-hidden className="h-4 w-4" />
+      </Button>
+    </div>
+  );
 }
 
 export function DocumentTable({
@@ -29,93 +86,102 @@ export function DocumentTable({
   onView,
   retryingDocumentId,
 }: DocumentTableProps) {
+  const { t } = useTranslation();
+
   if (isLoading) {
     return (
-      <div className="surface-panel p-6">
+      <div className="border-y border-ui-divider bg-ui-raised/45 p-6">
         <Skeleton label="Loading knowledge documents" lines={5} />
       </div>
     );
   }
 
+  const columns: readonly TableColumn<KnowledgeDocument>[] = [
+    {
+      header: t("KNOWLEDGE.TABLE_TITLE"),
+      key: "document",
+      render: (document) => (
+        <div>
+          <strong className="block text-ui-ink">{document.title}</strong>
+          <span className="block max-w-xs truncate text-sm text-ui-ink-muted">
+            {document.description ||
+              document.file_name ||
+              t("KNOWLEDGE.NO_DESCRIPTION")}
+          </span>
+        </div>
+      ),
+    },
+    {
+      header: t("KNOWLEDGE.TABLE_TYPE"),
+      key: "type",
+      render: (document) =>
+        documentTypeLabel(document, t("KNOWLEDGE.MANUAL_TEXT")),
+    },
+    {
+      header: t("KNOWLEDGE.TABLE_STATUS"),
+      key: "status",
+      render: (document) => <StatusBadge status={document.status} />,
+    },
+    {
+      header: t("KNOWLEDGE.TABLE_CHUNKS"),
+      key: "chunks",
+      render: (document) => document.chunk_count ?? "-",
+    },
+    {
+      header: t("KNOWLEDGE.TABLE_DATE"),
+      key: "created",
+      render: (document) =>
+        new Date(document.created_at).toLocaleDateString(),
+    },
+    {
+      header: t("KNOWLEDGE.TABLE_ACTIONS"),
+      key: "actions",
+      render: (document) => (
+        <DocumentActions
+          document={document}
+          isRetrying={
+            isRetrying && retryingDocumentId === document.id
+          }
+          onDelete={onDelete}
+          onRetry={onRetry}
+          onView={onView}
+        />
+      ),
+    },
+  ];
+
   return (
-    <div className="overflow-x-auto rounded-ui-panel border border-ui-line bg-ui-panel">
-      <table className="w-full min-w-[52rem] border-collapse text-left">
-        <caption className="sr-only">Knowledge documents</caption>
-        <thead className="bg-ui-raised text-sm text-ui-ink-secondary">
-          <tr>
-            <th className="px-4 py-3 font-semibold" scope="col">Document</th>
-            <th className="px-4 py-3 font-semibold" scope="col">Type</th>
-            <th className="px-4 py-3 font-semibold" scope="col">Status</th>
-            <th className="px-4 py-3 font-semibold" scope="col">Chunks</th>
-            <th className="px-4 py-3 font-semibold" scope="col">Created</th>
-            <th className="px-4 py-3 font-semibold" scope="col">
-              <span className="sr-only">Actions</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-ui-divider">
-          {documents.length === 0 ? (
-            <tr>
-              <td className="px-4 py-12 text-center text-ui-ink-muted" colSpan={6}>
-                No documents match the current filters.
-              </td>
-            </tr>
-          ) : (
-            documents.map((document) => (
-              <tr className="hover:bg-ui-interactive" key={document.id}>
-                <td className="px-4 py-3">
-                  <strong className="block text-ui-ink">{document.title}</strong>
-                  <span className="block max-w-xs truncate text-sm text-ui-ink-muted">
-                    {document.description || document.file_name || "No description"}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-sm text-ui-ink-secondary">
-                  {documentTypeLabel(document)}
-                </td>
-                <td className="px-4 py-3"><StatusBadge status={document.status} /></td>
-                <td className="px-4 py-3 text-ui-ink-secondary">
-                  {document.chunk_count ?? "-"}
-                </td>
-                <td className="px-4 py-3 text-sm text-ui-ink-secondary">
-                  {new Date(document.created_at).toLocaleDateString()}
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex justify-end gap-1">
-                    {document.status === "failed" ? (
-                      <Button
-                        aria-label={`${isRetrying && retryingDocumentId === document.id ? "Retrying" : "Retry"} ${document.title}`}
-                        className="px-3"
-                        isLoading={isRetrying && retryingDocumentId === document.id}
-                        loadingText="Retrying"
-                        onClick={() => onRetry(document)}
-                        variant="ghost"
-                      >
-                        <RotateCcw aria-hidden className="h-4 w-4" />
-                      </Button>
-                    ) : null}
-                    <Button
-                      aria-label={`View ${document.title}`}
-                      className="px-3"
-                      onClick={() => onView(document)}
-                      variant="ghost"
-                    >
-                      <Eye aria-hidden className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      aria-label={`Delete ${document.title}`}
-                      className="px-3"
-                      onClick={() => onDelete(document)}
-                      variant="ghost"
-                    >
-                      <Trash2 aria-hidden className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
-    </div>
+    <Table
+      caption={t("KNOWLEDGE.TABLE_CAPTION")}
+      columns={columns}
+      emptyMessage={t("KNOWLEDGE.EMPTY_STATE_DESC")}
+      getRowKey={(document) => document.id}
+      renderMobileRow={(document) => (
+        <article
+          aria-label={document.title}
+          className="rounded-ui-control border border-ui-divider bg-ui-raised p-4"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <strong className="text-ui-ink">{document.title}</strong>
+            <StatusBadge status={document.status} />
+          </div>
+          <p className="mt-2 text-sm text-ui-ink-secondary">
+            {document.chunk_count ?? 0} {t("KNOWLEDGE.CHUNKS_SHORT")}
+          </p>
+          <div className="mt-3">
+            <DocumentActions
+              document={document}
+              isRetrying={
+                isRetrying && retryingDocumentId === document.id
+              }
+              onDelete={onDelete}
+              onRetry={onRetry}
+              onView={onView}
+            />
+          </div>
+        </article>
+      )}
+      rows={documents}
+    />
   );
 }

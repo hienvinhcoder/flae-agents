@@ -1,10 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useWorkspaceStore } from "../../../core/stores/workspace-store";
+import { TestI18nProvider } from "../../../../tests/TestI18nProvider";
 import type {
   KnowledgeDocument,
   KnowledgeDocumentDetail,
@@ -68,11 +69,13 @@ function renderPage() {
     defaultOptions: { queries: { retry: false } },
   });
   render(
-    <QueryClientProvider client={queryClient}>
-      <MemoryRouter>
-        <KnowledgeListPage />
-      </MemoryRouter>
-    </QueryClientProvider>,
+    <TestI18nProvider>
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <KnowledgeListPage />
+        </MemoryRouter>
+      </QueryClientProvider>
+    </TestI18nProvider>,
   );
   return queryClient;
 }
@@ -89,38 +92,63 @@ describe("KnowledgeListPage", () => {
   it("renders the document list and supports search and status filtering", async () => {
     const user = userEvent.setup();
     renderPage();
+    const table = within(
+      await screen.findByRole("table", { name: /knowledge documents/i }),
+    );
 
-    expect(await screen.findByText("Product roadmap")).toBeInTheDocument();
-    expect(screen.getByText("Incident handbook")).toBeInTheDocument();
+    expect(table.getByText("Product roadmap")).toBeInTheDocument();
+    expect(table.getByText("Incident handbook")).toBeInTheDocument();
 
     await user.type(screen.getByRole("searchbox", { name: /search documents/i }), "roadmap");
-    expect(screen.getByText("Product roadmap")).toBeInTheDocument();
-    expect(screen.queryByText("Incident handbook")).not.toBeInTheDocument();
+    expect(table.getByText("Product roadmap")).toBeInTheDocument();
+    expect(table.queryByText("Incident handbook")).not.toBeInTheDocument();
 
     await user.clear(screen.getByRole("searchbox", { name: /search documents/i }));
     await user.selectOptions(
       screen.getByRole("combobox", { name: /status/i }),
       "failed",
     );
-    expect(screen.queryByText("Product roadmap")).not.toBeInTheDocument();
-    expect(screen.getByText("Incident handbook")).toBeInTheDocument();
+    expect(table.queryByText("Product roadmap")).not.toBeInTheDocument();
+    expect(table.getByText("Incident handbook")).toBeInTheDocument();
+  });
+
+  it("groups knowledge actions in the page header and keeps the table caption", async () => {
+    renderPage();
+
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Knowledge base" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /upload document/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /add content/i }),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole("table", { name: /knowledge documents/i }),
+    ).toBeInTheDocument();
   });
 
   it("loads a selected document detail and exposes processing metrics", async () => {
     const user = userEvent.setup();
     renderPage();
-    await screen.findByText("Product roadmap");
+    const table = within(
+      await screen.findByRole("table", { name: /knowledge documents/i }),
+    );
 
     await user.click(
-      screen.getByRole("button", { name: /view product roadmap/i }),
+      table.getByRole("button", { name: /open product roadmap/i }),
     );
 
     expect(runtimeApi.getDocument).toHaveBeenCalledWith("ws-1", roadmap.id);
+    const detail = within(
+      await screen.findByRole("dialog", { name: "Product roadmap" }),
+    );
     expect(
-      await screen.findByRole("heading", { name: "Product roadmap" }),
+      detail.getByRole("heading", { name: "Product roadmap" }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/12 chunks/i)).toBeInTheDocument();
-    expect(screen.getByText(/4.2 seconds/i)).toBeInTheDocument();
+    expect(detail.getByText(/12 chunks/i)).toBeInTheDocument();
+    expect(detail.getByText(/4.2 seconds/i)).toBeInTheDocument();
   });
 
   it("validates upload metadata and submits a supported file", async () => {
@@ -132,7 +160,7 @@ describe("KnowledgeListPage", () => {
       title: "Architecture",
     });
     renderPage();
-    await screen.findByText("Product roadmap");
+    await screen.findByRole("table", { name: /knowledge documents/i });
 
     await user.click(screen.getByRole("button", { name: /upload document/i }));
     await user.click(screen.getByRole("button", { name: /^upload$/i }));
@@ -168,7 +196,7 @@ describe("KnowledgeListPage", () => {
       title: "Team principles",
     });
     renderPage();
-    await screen.findByText("Product roadmap");
+    await screen.findByRole("table", { name: /knowledge documents/i });
 
     await user.click(screen.getByRole("button", { name: /add content/i }));
     await user.click(screen.getByRole("button", { name: /save content/i }));
@@ -207,17 +235,19 @@ describe("KnowledgeListPage", () => {
       error_message: "Parser failed",
     });
     renderPage();
-    await screen.findByText("Incident handbook");
+    const table = within(
+      await screen.findByRole("table", { name: /knowledge documents/i }),
+    );
 
     await user.click(
-      screen.getByRole("button", { name: /retry incident handbook/i }),
+      table.getByRole("button", { name: /retry incident handbook/i }),
     );
     await waitFor(() =>
       expect(runtimeApi.retryIngestion).toHaveBeenCalledWith("ws-1", incident.id),
     );
 
     await user.click(
-      screen.getByRole("button", { name: /view incident handbook/i }),
+      table.getByRole("button", { name: /open incident handbook/i }),
     );
     expect(
       await screen.findByRole("heading", { name: "Incident handbook" }),
@@ -248,15 +278,19 @@ describe("KnowledgeListPage", () => {
         }),
     );
     renderPage();
-    await screen.findByText("Incident handbook");
+    const table = within(
+      await screen.findByRole("table", { name: /knowledge documents/i }),
+    );
 
     await user.click(
-      screen.getByRole("button", { name: /retry incident handbook/i }),
+      table.getByRole("button", { name: /retry incident handbook/i }),
     );
-    const pendingRetry = await screen.findByRole("button", {
-      name: /retrying incident handbook/i,
+    const pendingRetry = table.getByRole("button", {
+      name: /retry incident handbook/i,
     });
-    expect(pendingRetry).toBeDisabled();
+    await waitFor(() => expect(pendingRetry).toBeDisabled());
+    expect(pendingRetry).toHaveAttribute("aria-busy", "true");
+    expect(pendingRetry).toHaveTextContent("Processing");
     await user.click(pendingRetry);
     expect(runtimeApi.retryIngestion).toHaveBeenCalledTimes(1);
 
