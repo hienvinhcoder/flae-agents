@@ -1,5 +1,5 @@
 import { ArrowLeft } from "lucide-react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
@@ -9,7 +9,7 @@ import { PageHeader } from "../../../shared/ui/PageHeader";
 import { Skeleton } from "../../../shared/ui/Skeleton";
 import type { TabItem } from "../../../shared/ui/Tabs";
 import { useTopicActions, useTopicDetail } from "../hooks/use-topics";
-import type { TopicMember } from "../types/topic";
+import type { TopicDetail, TopicMember } from "../types/topic";
 import { TopicDetailWorkbench } from "../ui/TopicDetailWorkbench";
 import {
   isGloballyAnnouncedTopicError,
@@ -72,6 +72,48 @@ function EvidenceList({
   );
 }
 
+interface TopicActionsControllerProps {
+  onStableId: (topicId: string) => void;
+  routeId: string | null;
+  tabItems: readonly TabItem[];
+  topic: TopicDetail;
+  workspaceId: string;
+}
+
+function TopicActionsController({
+  onStableId,
+  routeId,
+  tabItems,
+  topic,
+  workspaceId,
+}: TopicActionsControllerProps) {
+  const actions = useTopicActions(workspaceId, topic.topic_id, routeId);
+  const activeRef = useRef(true);
+
+  useEffect(() => {
+    activeRef.current = true;
+    return () => {
+      activeRef.current = false;
+    };
+  }, []);
+
+  return (
+    <TopicDetailWorkbench
+      onRequestSummary={() => actions.reSummarize.mutateAsync()}
+      onStableId={(stableTopicId) => {
+        if (activeRef.current) {
+          onStableId(stableTopicId);
+        }
+      }}
+      onUpdate={(payload) => actions.update.mutateAsync(payload)}
+      summaryPending={actions.reSummarize.isPending}
+      tabItems={tabItems}
+      topic={topic}
+      updatePending={actions.update.isPending}
+    />
+  );
+}
+
 export function TopicDetailPage() {
   const { t } = useTranslation();
   const { id } = useParams();
@@ -79,11 +121,6 @@ export function TopicDetailPage() {
   const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId);
   const topicQuery = useTopicDetail(workspaceId, id ?? null);
   const topic = topicQuery.data;
-  const actions = useTopicActions(
-    workspaceId,
-    topic?.topic_id ?? null,
-    id ?? null,
-  );
 
   const tabItems = useMemo<readonly TabItem[]>(() => {
     const members = topic?.members ?? [];
@@ -176,19 +213,17 @@ export function TopicDetailPage() {
         {t("TOPICS.BACK_TO_LIST")}
       </Link>
 
-      <TopicDetailWorkbench
+      <TopicActionsController
         key={`${workspaceId}:${topic.topic_id}`}
-        onRequestSummary={() => actions.reSummarize.mutateAsync()}
         onStableId={(stableTopicId) => {
           if (id !== stableTopicId) {
             void navigate(`/dashboard/topics/${stableTopicId}`, { replace: true });
           }
         }}
-        onUpdate={(payload) => actions.update.mutateAsync(payload)}
-        summaryPending={actions.reSummarize.isPending}
+        routeId={id ?? null}
         tabItems={tabItems}
         topic={topic}
-        updatePending={actions.update.isPending}
+        workspaceId={workspaceId}
       />
     </section>
   );
