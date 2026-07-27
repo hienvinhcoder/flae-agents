@@ -12,6 +12,18 @@ test.beforeEach(async ({ page }) => {
 
 test('creates and edits an agent through the production forms', async ({ page }) => {
   await page.getByRole('link', { name: 'Create agent' }).first().click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Create AI agent' })).toHaveCount(1);
+  await expect(page.getByRole('heading', { level: 2, name: 'Identity' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 2, name: 'Instructions' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 2, name: 'Model and response' })).toBeVisible();
+  await expect(page.getByLabel('AI model')).toHaveAccessibleDescription(
+    "Choose the model that best matches the agent's latency and reasoning needs.",
+  );
+  await page.getByLabel('Avatar color', { exact: true }).selectOption('bg-emerald-500');
+  await page.getByLabel('Avatar icon', { exact: true }).selectOption('database');
+  const appearance = page.getByRole('group', { name: 'Avatar color: Emerald; Avatar icon: Database' });
+  await expect(appearance.getByText('Emerald')).toBeVisible();
+  await expect(appearance.getByText('Database')).toBeVisible();
   await page.getByLabel('Agent name').fill('Release assistant');
   await page.getByLabel('System prompt').fill('Answer release questions with cited workspace evidence.');
   await page.getByRole('button', { name: 'Create agent' }).click();
@@ -21,6 +33,19 @@ test('creates and edits an agent through the production forms', async ({ page })
   await page.getByLabel('Agent name').fill('Launch assistant');
   await page.getByRole('button', { name: 'Save changes' }).click();
   await expect(page.getByRole('heading', { name: 'Launch assistant' })).toBeVisible();
+});
+
+test('keeps configuration actions sticky and contained on mobile', async ({ page }) => {
+  await page.setViewportSize({ height: 812, width: 375 });
+  await page.getByRole('link', { name: 'Create agent' }).first().click();
+
+  const createButton = page.getByRole('button', { name: 'Create agent' });
+  const actionBar = createButton.locator('..');
+  await expect(createButton).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Cancel' })).toBeVisible();
+  expect(await actionBar.evaluate((element) => getComputedStyle(element).position)).toBe('sticky');
+  expect(await createButton.evaluate((element) => element.getBoundingClientRect().height)).toBeGreaterThanOrEqual(44);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
 });
 
 test('opens an agent conversation in the chat workbench', async ({ page }) => {
