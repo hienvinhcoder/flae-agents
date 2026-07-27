@@ -71,7 +71,11 @@ describe("DocumentTable", () => {
     const expectedDate = new Intl.DateTimeFormat("vi").format(
       new Date(document.created_at),
     );
-    expect(within(screen.getByRole("table")).getByText(expectedDate)).toBeInTheDocument();
+    const table = within(screen.getByRole("table"));
+    expect(table.getByText(expectedDate)).toBeInTheDocument();
+    expect(
+      table.getByRole("columnheader", { name: "Khối văn bản" }),
+    ).toBeInTheDocument();
   });
 
   it("uses the caller-provided filtered empty message", () => {

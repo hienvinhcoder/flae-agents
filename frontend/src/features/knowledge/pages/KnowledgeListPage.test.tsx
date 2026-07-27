@@ -1,10 +1,14 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { I18nextProvider } from "react-i18next";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import en from "../../../../public/assets/i18n/en.json";
+import viMessages from "../../../../public/assets/i18n/vi.json";
 import { useWorkspaceStore } from "../../../core/stores/workspace-store";
+import { createI18n } from "../../../shared/i18n";
 import { TestI18nProvider } from "../../../../tests/TestI18nProvider";
 import type {
   KnowledgeDocument,
@@ -22,6 +26,11 @@ const runtimeApi = vi.hoisted(() => ({
 }));
 
 vi.mock("../api/knowledge-runtime-api", () => runtimeApi);
+
+const vietnameseI18n = await createI18n(
+  { en: { translation: en }, vi: { translation: viMessages } },
+  "vi",
+);
 
 const roadmap: KnowledgeDocument = {
   chunk_count: 12,
@@ -70,18 +79,23 @@ const roadmapDetail: KnowledgeDocumentDetail = {
   token_usage: { input: 500, output: 120 },
 };
 
-function renderPage() {
+function renderPage(language: "en" | "vi" = "en") {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
+  const page = (
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>
+        <KnowledgeListPage />
+      </MemoryRouter>
+    </QueryClientProvider>
+  );
   render(
-    <TestI18nProvider>
-      <QueryClientProvider client={queryClient}>
-        <MemoryRouter>
-          <KnowledgeListPage />
-        </MemoryRouter>
-      </QueryClientProvider>
-    </TestI18nProvider>,
+    language === "vi" ? (
+      <I18nextProvider i18n={vietnameseI18n}>{page}</I18nextProvider>
+    ) : (
+      <TestI18nProvider>{page}</TestI18nProvider>
+    ),
   );
   return queryClient;
 }
@@ -374,5 +388,15 @@ describe("KnowledgeListPage", () => {
       title: incident.title,
     });
     await waitFor(() => expect(incidentRetry).not.toBeDisabled());
+  });
+
+  it("localizes the knowledge list retry action", async () => {
+    runtimeApi.listDocuments.mockRejectedValue(new Error("Không thể kết nối"));
+
+    renderPage("vi");
+
+    expect(
+      await screen.findByRole("button", { name: "Thử lại" }),
+    ).toBeInTheDocument();
   });
 });

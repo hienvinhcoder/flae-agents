@@ -20,6 +20,12 @@ function errorMessage(error: unknown) {
 }
 
 const EMPTY_DOCUMENTS: readonly KnowledgeDocument[] = [];
+const EMPTY_RETRY_ERRORS: ReadonlyMap<string, string> = new Map();
+
+interface RetryErrorState {
+  errors: ReadonlyMap<string, string>;
+  workspaceId: string | null;
+}
 
 export function KnowledgeListPage() {
   const { t } = useTranslation();
@@ -31,10 +37,18 @@ export function KnowledgeListPage() {
   const [pendingRetryIds, setPendingRetryIds] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
+  const [retryErrorState, setRetryErrorState] = useState<RetryErrorState>(() => ({
+    errors: new Map(),
+    workspaceId,
+  }));
   const [uploadOpen, setUploadOpen] = useState(false);
   const [textOpen, setTextOpen] = useState(false);
   const knowledge = useKnowledge(workspaceId, selectedDocumentId);
   const documents = knowledge.documents.data ?? EMPTY_DOCUMENTS;
+  const retryErrors =
+    retryErrorState.workspaceId === workspaceId
+      ? retryErrorState.errors
+      : EMPTY_RETRY_ERRORS;
   const filteredDocuments = useMemo(() => {
     const query = search.trim().toLowerCase();
     return documents.filter((document) => {
@@ -48,15 +62,41 @@ export function KnowledgeListPage() {
     });
   }, [documents, search, status]);
 
-  const retryDocument = async (documentId: string) => {
+  const clearRetryError = (documentId: string) => {
+    setRetryErrorState((current) => {
+      const currentErrors =
+        current.workspaceId === workspaceId
+          ? current.errors
+          : EMPTY_RETRY_ERRORS;
+      if (!currentErrors.has(documentId)) {
+        return current.workspaceId === workspaceId
+          ? current
+          : { errors: new Map(), workspaceId };
+      }
+      const remaining = new Map(currentErrors);
+      remaining.delete(documentId);
+      return { errors: remaining, workspaceId };
+    });
+  };
+  const retryDocument = async (documentId: string, title: string) => {
     if (pendingRetryIdsRef.current.has(documentId)) return;
+    clearRetryError(documentId);
     const pending = new Set(pendingRetryIdsRef.current).add(documentId);
     pendingRetryIdsRef.current = pending;
     setPendingRetryIds(pending);
     try {
       await knowledge.retry.mutateAsync(documentId);
+      clearRetryError(documentId);
     } catch {
-      /* Mutation state exposes the retry error while keeping the action safe. */
+      setRetryErrorState((current) => {
+        const errors = new Map(
+          current.workspaceId === workspaceId
+            ? current.errors
+            : EMPTY_RETRY_ERRORS,
+        );
+        errors.set(documentId, t("KNOWLEDGE.RETRY_FAILED", { title }));
+        return { errors, workspaceId };
+      });
     } finally {
       const remaining = new Set(pendingRetryIdsRef.current);
       remaining.delete(documentId);
@@ -65,7 +105,7 @@ export function KnowledgeListPage() {
     }
   };
   const retry = (document: KnowledgeDocument) => {
-    void retryDocument(document.id);
+    void retryDocument(document.id, document.title);
   };
   const remove = async (documentId: string, title: string) => {
     if (!window.confirm(t("KNOWLEDGE.DELETE_CONFIRM", { title }))) return;
@@ -175,6 +215,7 @@ export function KnowledgeListPage() {
                 t("KNOWLEDGE.LOAD_ERROR")
               }
               onRetry={() => void knowledge.documents.refetch()}
+              retryLabel={t("KNOWLEDGE.RETRY_LIST")}
               title={t("KNOWLEDGE.LOAD_ERROR")}
             />
           ) : (
@@ -195,12 +236,15 @@ export function KnowledgeListPage() {
         </div>
       </section>
 
-      {errorMessage(knowledge.retry.error) ||
-      errorMessage(knowledge.remove.error) ? (
-        <p className="mt-4 text-state-danger" role="alert">
-          {errorMessage(knowledge.retry.error) ??
-            errorMessage(knowledge.remove.error)}
-        </p>
+      {retryErrors.size > 0 || errorMessage(knowledge.remove.error) ? (
+        <div className="mt-4 grid gap-1 text-state-danger" role="alert">
+          {[...retryErrors].map(([documentId, message]) => (
+            <p key={documentId}>{message}</p>
+          ))}
+          {errorMessage(knowledge.remove.error) ? (
+            <p>{errorMessage(knowledge.remove.error)}</p>
+          ) : null}
+        </div>
       ) : null}
 
       <UploadDialog
@@ -235,7 +279,12 @@ export function KnowledgeListPage() {
             knowledge.selectedDocument?.title ?? t("KNOWLEDGE.THIS_DOCUMENT");
           void remove(documentId, title);
         }}
-        onRetry={(documentId) => void retryDocument(documentId)}
+        onRetry={(documentId) =>
+          void retryDocument(
+            documentId,
+            knowledge.selectedDocument?.title ?? t("KNOWLEDGE.THIS_DOCUMENT"),
+          )
+        }
         open={Boolean(selectedDocumentId && knowledge.selectedDocumentExists)}
       />
     </section>
