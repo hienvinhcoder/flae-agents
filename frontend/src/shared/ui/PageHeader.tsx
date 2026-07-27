@@ -1,4 +1,4 @@
-import { useId, type ReactNode } from 'react';
+import { Children, useId, type ReactNode } from 'react';
 
 export interface PageHeaderProps {
   actions?: ReactNode;
@@ -7,6 +7,10 @@ export interface PageHeaderProps {
   metadata?: ReactNode;
   title: ReactNode;
   titleId?: string;
+}
+
+function hasRenderableContent(value: ReactNode): boolean {
+  return Children.toArray(value).length > 0;
 }
 
 export function PageHeader({ actions, description, eyebrow, metadata, title, titleId }: PageHeaderProps) {
@@ -19,21 +23,21 @@ export function PageHeader({ actions, description, eyebrow, metadata, title, tit
       className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between"
     >
       <div className="min-w-0">
-        {eyebrow !== null && eyebrow !== undefined ? <p className="text-metadata">{eyebrow}</p> : null}
+        {hasRenderableContent(eyebrow) ? <p className="text-metadata">{eyebrow}</p> : null}
         <h1
           className="mt-2 text-[clamp(1.75rem,3vw,2.35rem)] font-semibold leading-tight tracking-[-0.025em] text-ui-ink"
           id={resolvedTitleId}
         >
           {title}
         </h1>
-        {description !== null && description !== undefined ? (
+        {hasRenderableContent(description) ? (
           <div className="mt-2 max-w-3xl text-ui-ink-secondary">{description}</div>
         ) : null}
-        {metadata !== null && metadata !== undefined ? (
+        {hasRenderableContent(metadata) ? (
           <div className="mt-3 text-sm text-ui-ink-muted">{metadata}</div>
         ) : null}
       </div>
-      {actions !== null && actions !== undefined ? (
+      {hasRenderableContent(actions) ? (
         <div className="flex shrink-0 flex-wrap items-center gap-3">{actions}</div>
       ) : null}
     </header>

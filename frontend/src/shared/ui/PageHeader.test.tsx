@@ -34,4 +34,14 @@ describe('PageHeader', () => {
 
     expect(screen.getByText('0')).toBeInTheDocument();
   });
+
+  it.each([
+    { actions: false, label: 'false' },
+    { actions: [], label: 'an empty array' },
+  ])('omits the action wrapper when actions is $label', ({ actions }) => {
+    render(<PageHeader actions={actions} metadata={0} title="AI agents" />);
+
+    expect(screen.getByText('0')).toBeInTheDocument();
+    expect(screen.getByRole('banner').children).toHaveLength(1);
+  });
 });
