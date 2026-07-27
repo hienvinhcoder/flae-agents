@@ -10,9 +10,9 @@ const sidebarLayoutKey = "flae_admin_sidebar_layout";
 const responsiveViewports = [
   { expectedSidebarWidth: 0, height: 812, label: "mobile", width: 375 },
   { expectedSidebarWidth: 72, height: 1024, label: "tablet", width: 768 },
-  { expectedSidebarWidth: 288, height: 768, label: "desktop", width: 1024 },
+  { expectedSidebarWidth: 280, height: 768, label: "desktop", width: 1024 },
   {
-    expectedSidebarWidth: 288,
+    expectedSidebarWidth: 280,
     height: 900,
     label: "wide desktop",
     width: 1440,
@@ -82,7 +82,7 @@ test("keeps the expanded desktop preference while tablet uses the rail layout", 
   await expect(sidebar).toHaveAttribute("data-desktop-layout", "expanded");
   await expect
     .poll(async () => (await sidebar.boundingBox())?.width ?? 0)
-    .toBe(288);
+    .toBe(280);
 
   await page.setViewportSize({ height: 1024, width: 768 });
   await expect
@@ -96,7 +96,7 @@ test("keeps the expanded desktop preference while tablet uses the rail layout", 
   await expect(sidebar).toHaveAttribute("data-desktop-layout", "expanded");
   await expect
     .poll(async () => (await sidebar.boundingBox())?.width ?? 0)
-    .toBe(288);
+    .toBe(280);
 });
 
 test("supports keyboard and backdrop dismissal for the accessible mobile drawer", async ({
@@ -149,6 +149,21 @@ test("collapses the sidebar without animation under reduced motion", async ({
   await page.goto("/dashboard/briefing");
 
   const sidebar = page.getByTestId("admin-sidebar");
+  const transition = await sidebar.evaluate((element) => {
+    const styles = getComputedStyle(element);
+    const durations = styles.transitionDuration.split(",").map((duration) => {
+      const value = Number.parseFloat(duration);
+      return duration.trim().endsWith("ms") ? value : value * 1000;
+    });
+
+    return {
+      maxDurationMs: Math.max(...durations),
+      property: styles.transitionProperty,
+    };
+  });
+  expect(transition.property).toBe("none");
+  expect(transition.maxDurationMs).toBeLessThanOrEqual(1);
+
   await page.getByRole("button", { name: "Collapse navigation" }).click();
 
   await expect(sidebar).toHaveAttribute("data-desktop-layout", "collapsed");

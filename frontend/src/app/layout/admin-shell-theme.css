@@ -1,0 +1,58 @@
+.admin-shell-theme {
+  color-scheme: light;
+
+  --color-primary: #f97316;
+  --color-primary-hover: #ea580c;
+  --color-primary-active: #ea580c;
+  --color-primary-soft: rgba(249, 115, 22, 0.12);
+  --color-canvas: #f4f2ec;
+  --color-surface: #eae6db;
+  --color-surface-raised: #fbfaf7;
+  --color-surface-interactive: #f0ece3;
+  --color-divider: #dfd9ce;
+  --color-border: #dfd9ce;
+  --color-border-control: #776f64;
+  --color-border-strong: #4b5563;
+  --color-text: #111827;
+  --color-text-secondary: #4b5563;
+  --color-text-muted: #5f6672;
+  --color-text-disabled: #7a8089;
+  --color-on-primary: #111827;
+  --color-link: #9a3412;
+  --color-focus: #9a3412;
+  --color-ai: #9a3412;
+  --color-ai-soft: rgba(234, 88, 12, 0.12);
+  --color-success: #0f6b3d;
+  --color-success-soft: #e1f2e8;
+  --color-warning: #8a5a00;
+  --color-warning-soft: #fff0c2;
+  --color-danger: #b42318;
+  --color-danger-soft: #fee4e2;
+  --color-info: #1d5e91;
+  --color-info-soft: #e0effa;
+  --font-sans:
+    Inter, Geist, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  --font-mono:
+    "JetBrains Mono", "Geist Mono", "SFMono-Regular", Consolas, monospace;
+  --radius-md: 1.125rem;
+  --radius-control: 1.125rem;
+  --radius-lg: 2.5rem;
+  --radius-card: 2.5rem;
+  --radius-xl: 2.5rem;
+  --radius-pill: 9999px;
+  --shadow-panel:
+    0 1px 0 rgba(255, 255, 255, 0.5), 0 18px 50px rgba(99, 78, 55, 0.12);
+  --shadow-overlay: 0 28px 90px rgba(99, 78, 55, 0.2);
+  --focus-ring: 0 0 0 4px rgba(234, 88, 12, 0.22);
+}
+
+.admin-shell-theme .border-ui-line {
+  border-color: var(--color-border-control);
+}
+
+.admin-shell-theme .text-label-md {
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+}

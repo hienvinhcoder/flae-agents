@@ -12,6 +12,7 @@ import { AdminHeader, type LogoutController } from './AdminHeader';
 import { AdminSidebar } from './AdminSidebar';
 import { findActiveNavigationItem, findNavigationGroup } from './admin-navigation';
 import { useSidebarLayout } from './use-sidebar-layout';
+import './admin-shell-theme.css';
 
 export interface AppShellProps {
   fetchWorkspaces: () => Promise<Workspace[]>;
@@ -57,7 +58,7 @@ export function AppShell({ fetchWorkspaces, logoutController, syncSelection }: A
           : null;
 
   return (
-    <div className="min-h-screen bg-ui-canvas text-ui-ink">
+    <div className="admin-shell-theme min-h-screen bg-ui-canvas text-ui-ink">
       <a className="fixed left-4 top-3 z-[60] -translate-y-20 rounded-ui-control bg-brand px-4 py-2 font-semibold text-brand-foreground transition-transform duration-200 focus:translate-y-0" href="#main-content">{t('SHELL.SKIP_CONTENT')}</a>
       <AdminSidebar
         desktopLayout={sidebarLayout}
@@ -67,7 +68,7 @@ export function AppShell({ fetchWorkspaces, logoutController, syncSelection }: A
         workspaceName={selectedWorkspaceName}
       />
 
-      <div className={`md:pl-[72px] transition-[padding] duration-200 motion-reduce:transition-none ${sidebarLayout === 'expanded' ? 'lg:pl-72' : 'lg:pl-[72px]'}`}>
+      <div className={`md:pl-[72px] transition-[padding] duration-200 motion-reduce:transition-none ${sidebarLayout === 'expanded' ? 'lg:pl-[280px]' : 'lg:pl-[72px]'}`}>
         <AdminHeader
           currentWorkspaceId={currentWorkspaceId}
           language={i18n.resolvedLanguage ?? 'vi'}

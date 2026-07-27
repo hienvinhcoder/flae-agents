@@ -21,6 +21,7 @@ interface SidebarContentProps {
   closeButtonRef?: RefObject<HTMLButtonElement | null>;
   desktopLayout?: SidebarLayout;
   onCloseMobile?: () => void;
+  onSelectMobile?: () => void;
   onToggleDesktop?: () => void;
   presentation: "desktop" | "mobile";
   workspaceName: string;
@@ -197,6 +198,7 @@ function SidebarContent({
   closeButtonRef,
   desktopLayout = "expanded",
   onCloseMobile,
+  onSelectMobile,
   onToggleDesktop,
   presentation,
   workspaceName,
@@ -244,7 +246,7 @@ function SidebarContent({
           activePath={activePath}
           expanded={expanded}
           hideTooltip={!isMobile ? hideTooltip : undefined}
-          onSelect={isMobile ? onCloseMobile : undefined}
+          onSelect={isMobile ? onSelectMobile : undefined}
           presentation={presentation}
           showTooltip={!isMobile ? showTooltip : undefined}
         />
@@ -291,6 +293,22 @@ export function AdminSidebar({
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const priorFocusRef = useRef<HTMLElement | null>(null);
+  const navigationCloseRequestedRef = useRef(false);
+  const previousPathnameRef = useRef(location.pathname);
+  const restoreFocusOnCloseRef = useRef(true);
+
+  useEffect(() => {
+    const pathnameChanged = previousPathnameRef.current !== location.pathname;
+    previousPathnameRef.current = location.pathname;
+    if (!pathnameChanged) return;
+    if (mobileOpen && !navigationCloseRequestedRef.current) onCloseMobile();
+    navigationCloseRequestedRef.current = false;
+  }, [location.pathname, mobileOpen, onCloseMobile]);
+
+  const closeMobileFromSelection = () => {
+    navigationCloseRequestedRef.current = true;
+    onCloseMobile();
+  };
 
   useEffect(() => {
     if (!mobileOpen) return undefined;
@@ -299,14 +317,17 @@ export function AdminSidebar({
       document.activeElement instanceof HTMLElement
         ? document.activeElement
         : null;
+    restoreFocusOnCloseRef.current = true;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     closeButtonRef.current?.focus();
 
     return () => {
       document.body.style.overflow = previousOverflow;
-      priorFocusRef.current?.focus();
+      if (restoreFocusOnCloseRef.current) priorFocusRef.current?.focus();
+      navigationCloseRequestedRef.current = false;
       priorFocusRef.current = null;
+      restoreFocusOnCloseRef.current = true;
     };
   }, [mobileOpen]);
 
@@ -315,10 +336,15 @@ export function AdminSidebar({
 
     const mediaQuery = window.matchMedia("(min-width: 48rem)");
     const handleBreakpointChange = (event: MediaQueryListEvent) => {
-      if (event.matches) onCloseMobile();
+      if (!event.matches) return;
+      restoreFocusOnCloseRef.current = false;
+      onCloseMobile();
     };
     mediaQuery.addEventListener("change", handleBreakpointChange);
-    if (mediaQuery.matches) onCloseMobile();
+    if (mediaQuery.matches) {
+      restoreFocusOnCloseRef.current = false;
+      onCloseMobile();
+    }
 
     return () => {
       mediaQuery.removeEventListener("change", handleBreakpointChange);
@@ -355,7 +381,7 @@ export function AdminSidebar({
     <>
       <aside
         className={`fixed inset-y-0 left-0 z-40 hidden w-[72px] border-r border-ui-divider bg-ui-panel transition-[width] duration-200 motion-reduce:transition-none md:flex md:flex-col ${
-          desktopLayout === "expanded" ? "lg:w-72" : "lg:w-[72px]"
+          desktopLayout === "expanded" ? "lg:w-[280px]" : "lg:w-[72px]"
         }`}
         data-desktop-layout={desktopLayout}
         data-testid="admin-sidebar"
@@ -380,7 +406,7 @@ export function AdminSidebar({
           <div
             aria-label={t("SHELL.PRIMARY_NAV")}
             aria-modal="true"
-            className="fixed inset-y-0 left-0 z-40 w-72 rounded-r-ui-panel border-r border-ui-divider bg-ui-panel shadow-ui-overlay md:hidden"
+            className="fixed inset-y-0 left-0 z-40 w-[280px] rounded-r-ui-panel border-r border-ui-divider bg-ui-panel shadow-ui-overlay md:hidden"
             onKeyDown={handleDialogKeyDown}
             ref={dialogRef}
             role="dialog"
@@ -389,6 +415,7 @@ export function AdminSidebar({
               activePath={activeItem?.to}
               closeButtonRef={closeButtonRef}
               onCloseMobile={onCloseMobile}
+              onSelectMobile={closeMobileFromSelection}
               presentation="mobile"
               workspaceName={resolvedWorkspaceName}
             />

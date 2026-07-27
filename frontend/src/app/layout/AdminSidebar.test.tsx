@@ -139,6 +139,7 @@ describe("AdminSidebar", () => {
 
     const sidebar = screen.getByTestId("admin-sidebar");
     expect(sidebar).toHaveAttribute("data-desktop-layout", "expanded");
+    expect(sidebar).toHaveClass("lg:w-[280px]");
     expect(within(sidebar).getByText("FLAE")).toBeInTheDocument();
     expect(within(sidebar).getByText("Company memory")).toBeInTheDocument();
     expect(within(sidebar).getByText("FLAE Labs")).toBeInTheDocument();
@@ -199,7 +200,7 @@ describe("AdminSidebar", () => {
     const hoveredTooltip = screen.getByTestId("admin-sidebar-tooltip");
     expect(hoveredTooltip).toHaveTextContent("Knowledge Graph");
     expect(hoveredTooltip).toHaveAttribute("aria-hidden", "true");
-    expect(hoveredTooltip).toHaveClass("fixed");
+    expect(hoveredTooltip).toHaveClass("admin-shell-theme", "fixed");
     expect(hoveredTooltip).toHaveStyle({ left: "85px", top: "122px" });
     expect(sidebar).not.toContainElement(hoveredTooltip);
 
@@ -328,6 +329,7 @@ describe("AdminSidebar", () => {
     view.rerenderSidebar({ mobileOpen: true, onCloseMobile });
 
     const dialog = screen.getByRole("dialog", { name: "Primary navigation" });
+    expect(dialog).toHaveClass("w-[280px]");
     const closeButton = within(dialog).getByRole("button", {
       name: "Close navigation",
     });
@@ -370,7 +372,7 @@ describe("AdminSidebar", () => {
     expect(onCloseMobile).toHaveBeenCalledOnce();
     view.rerenderSidebar({ mobileOpen: false, onCloseMobile });
     expect(document.body.style.overflow).toBe("clip");
-    expect(trigger).toHaveFocus();
+    expect(trigger).not.toHaveFocus();
   });
 
   it("closes the mobile drawer from the backdrop", async () => {

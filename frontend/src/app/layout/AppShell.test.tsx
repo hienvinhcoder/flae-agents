@@ -3,7 +3,7 @@ import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { PropsWithChildren } from 'react';
 import { I18nextProvider } from 'react-i18next';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useAuthStore } from '../../core/stores/auth-store';
@@ -12,6 +12,10 @@ import { useWorkspaceStore } from '../../core/stores/workspace-store';
 import type { Workspace } from '../../features/settings/types/workspace';
 import { createI18n } from '../../shared/i18n';
 import { AppShell } from './AppShell';
+import appShellSource from './AppShell.tsx?raw';
+
+const adminShellThemeStylesheets = import.meta.glob<string>('./admin-shell-theme.css', { eager: true, import: 'default', query: '?raw' });
+const adminShellThemeStylesheet = Object.values(adminShellThemeStylesheets)[0] ?? '';
 
 const resources = {
   vi: { translation: {
@@ -24,6 +28,11 @@ const resources = {
 };
 
 type MediaQueryChangeListener = (event: MediaQueryListEvent) => void;
+
+function ProgrammaticNavigationControl() {
+  const navigate = useNavigate();
+  return <button onClick={() => void navigate('/dashboard/chat')} type="button">Navigate programmatically</button>;
+}
 
 function installMatchMedia(initialMatches = false) {
   const listeners = new Set<MediaQueryChangeListener>();
@@ -71,6 +80,20 @@ describe('AppShell', () => {
     vi.unstubAllGlobals();
   });
 
+  it('owns the approved light admin-shell theme contract', () => {
+    expect(appShellSource).toMatch(/import\s+['"]\.\/admin-shell-theme\.css['"];?/);
+    expect(appShellSource).toMatch(/className=["'][^"']*admin-shell-theme[^"']*["']/);
+    expect(adminShellThemeStylesheet).not.toBe('');
+    expect(adminShellThemeStylesheet).toMatch(/\.admin-shell-theme\s*\{[^}]*color-scheme:\s*light;/s);
+    expect(adminShellThemeStylesheet).toMatch(/--color-primary:\s*#f97316;/);
+    expect(adminShellThemeStylesheet).toMatch(/--color-canvas:\s*#f4f2ec;/);
+    expect(adminShellThemeStylesheet).toMatch(/--color-surface:\s*#eae6db;/);
+    expect(adminShellThemeStylesheet).toMatch(/--radius-md:\s*1\.125rem;/);
+    expect(adminShellThemeStylesheet).toMatch(/--radius-control:\s*1\.125rem;/);
+    expect(adminShellThemeStylesheet).toMatch(/--radius-lg:\s*2\.5rem;/);
+    expect(adminShellThemeStylesheet).toMatch(/--radius-card:\s*2\.5rem;/);
+  });
+
   it('offers responsive navigation and switches workspace without losing page context', async () => {
     useWorkspaceStore.getState().setCurrentWorkspaceId('ws-1');
     useAuthStore.getState().setAuthenticated({
@@ -105,7 +128,7 @@ describe('AppShell', () => {
     expect(await screen.findByRole('combobox', { name: 'Không gian làm việc' })).toHaveValue('ws-1');
     const main = screen.getByRole('main');
     const contentWrapper = main.parentElement;
-    expect(contentWrapper).toHaveClass('md:pl-[72px]', 'lg:pl-72');
+    expect(contentWrapper).toHaveClass('md:pl-[72px]', 'lg:pl-[280px]');
 
     await userEvent.click(screen.getByRole('button', { name: 'Mở điều hướng' }));
     const mobileNavigation = screen.getByRole('dialog', { name: 'Điều hướng chính' });
@@ -118,7 +141,7 @@ describe('AppShell', () => {
     expect(sidebar).toHaveAttribute('data-desktop-layout', 'collapsed');
     expect(localStorage.getItem('flae_admin_sidebar_layout')).toBe('collapsed');
     expect(contentWrapper).toHaveClass('md:pl-[72px]', 'lg:pl-[72px]');
-    expect(contentWrapper).not.toHaveClass('lg:pl-72');
+    expect(contentWrapper).not.toHaveClass('lg:pl-[280px]');
     expect(within(sidebar).getByRole('link', { name: 'Báo cáo sáng' })).toHaveAttribute('aria-current', 'page');
     expect(screen.getByRole('heading', { name: 'Current page' })).toBeInTheDocument();
 
@@ -126,6 +149,25 @@ describe('AppShell', () => {
 
     await waitFor(() => expect(syncSelection).toHaveBeenCalledWith('ws-2'));
     expect(screen.getByRole('heading', { name: 'Current page' })).toBeInTheDocument();
+  });
+
+  it('closes an open mobile drawer after programmatic pathname navigation', async () => {
+    const i18n = await createI18n(resources, 'vi');
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = ({ children }: PropsWithChildren) => <QueryClientProvider client={queryClient}><I18nextProvider i18n={i18n}><MemoryRouter initialEntries={['/dashboard/briefing']}>{children}</MemoryRouter></I18nextProvider></QueryClientProvider>;
+    render(<Routes><Route element={<AppShell fetchWorkspaces={() => Promise.resolve([])} syncSelection={() => Promise.resolve(useAuthStore.getState().user!)} />} path="/dashboard"><Route element={<ProgrammaticNavigationControl />} path="briefing" /><Route element={<h1>Chat page</h1>} path="chat" /></Route></Routes>, { wrapper });
+
+    await userEvent.click(screen.getByRole('button', { name: 'Mở điều hướng' }));
+    const initialDialog = screen.getByRole('dialog', { name: 'Điều hướng chính' });
+    await userEvent.click(within(initialDialog).getByRole('link', { name: 'Báo cáo sáng' }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Điều hướng chính' })).not.toBeInTheDocument());
+
+    await userEvent.click(screen.getByRole('button', { name: 'Mở điều hướng' }));
+    expect(screen.getByRole('dialog', { name: 'Điều hướng chính' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Navigate programmatically' }));
+
+    expect(await screen.findByRole('heading', { name: 'Chat page' })).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Điều hướng chính' })).not.toBeInTheDocument());
   });
 
   it('restores a collapsed desktop navigation preference', async () => {
