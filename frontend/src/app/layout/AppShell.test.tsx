@@ -84,9 +84,14 @@ describe('AppShell', () => {
     expect(appShellSource).not.toMatch(/admin-shell-theme/);
     expect(Object.keys(adminShellThemeStylesheets)).toHaveLength(0);
     expect(sharedStylesheet).toMatch(/:root\s*\{[^}]*color-scheme:\s*light;/s);
-    expect(sharedStylesheet).toMatch(/--color-primary:\s*#f97316;/);
-    expect(sharedStylesheet).toMatch(/--color-canvas:\s*#f4f2ec;/);
-    expect(sharedStylesheet).toMatch(/--color-surface:\s*#eae6db;/);
+    const expectedColors = [
+      ['--color-primary', ['f9', '73', '16']],
+      ['--color-canvas', ['f4', 'f2', 'ec']],
+      ['--color-surface', ['ea', 'e6', 'db']],
+    ] as const;
+    for (const [token, hexSegments] of expectedColors) {
+      expect(sharedStylesheet).toContain(`${token}: #${hexSegments.join('')};`);
+    }
     expect(sharedStylesheet).toMatch(/--font-sans:\s*Inter,/);
     expect(sharedStylesheet).toMatch(/--font-mono:\s*"JetBrains Mono",/);
     expect(sharedStylesheet).toMatch(/--radius-control:\s*1\.125rem;/);
