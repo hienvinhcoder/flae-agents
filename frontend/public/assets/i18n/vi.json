@@ -56,7 +56,8 @@
     "DELETE_CONFIRM": "Xóa trợ lý \"{{name}}\" và toàn bộ lịch sử hội thoại?",
     "DELETE_FAILED": "Không thể xóa trợ lý.",
     "CHAT_WITH": "Trò chuyện với {{name}}",
-    "START_CONVERSATION": "Bắt đầu hội thoại"
+    "START_CONVERSATION": "Bắt đầu hội thoại",
+    "RETRY": "Thử lại"
   },
   "TOPICS": {
     "TITLE": "Chủ đề Tri thức",

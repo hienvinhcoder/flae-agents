@@ -56,7 +56,8 @@
     "DELETE_CONFIRM": "Delete agent \"{{name}}\" and its conversation history?",
     "DELETE_FAILED": "The agent could not be deleted.",
     "CHAT_WITH": "Chat with {{name}}",
-    "START_CONVERSATION": "Start conversation"
+    "START_CONVERSATION": "Start conversation",
+    "RETRY": "Try again"
   },
   "TOPICS": {
     "TITLE": "Knowledge Topics",

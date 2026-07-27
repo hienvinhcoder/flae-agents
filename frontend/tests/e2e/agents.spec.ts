@@ -65,7 +65,7 @@ test('shows one retry surface and recovers from an agent query failure', async (
   await page.reload();
 
   await expect(page.getByRole('heading', { name: 'Unable to load agents' })).toBeVisible();
-  await page.getByRole('button', { name: 'Reload page' }).click();
+  await page.getByRole('button', { name: 'Try again' }).click();
   await expect(page.getByRole('heading', { name: 'Research assistant' })).toBeVisible();
 });
 

@@ -92,7 +92,7 @@ export function AgentListPage() {
             announce={!isGloballyAnnouncedServerError(agentsQuery.error)}
             message={publicErrorMessage(agentsQuery.error, t("AGENTS_UI.LOAD_ERROR_FALLBACK"))}
             onRetry={() => void agentsQuery.refetch()}
-            retryLabel={t("ERROR_PAGE.RETRY")}
+            retryLabel={t("AGENTS_UI.RETRY")}
             title={t("AGENTS_UI.LOAD_ERROR_TITLE")}
           />
         ) : agentsQuery.isPending ? (

@@ -140,12 +140,15 @@ describe("AgentListPage", () => {
   });
 
   it("announces a query failure once and keeps retry available", async () => {
+    const user = userEvent.setup();
     agentsApi.listAgents.mockRejectedValueOnce(new Error("Agents are temporarily unavailable."));
     renderPage();
 
     expect(await screen.findAllByRole("alert")).toHaveLength(1);
     expect(screen.getAllByText("Agents are temporarily unavailable.")).toHaveLength(1);
-    expect(screen.getByRole("button", { name: "Reload page" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Try again" }));
+    await waitFor(() => expect(agentsApi.listAgents).toHaveBeenCalledTimes(2));
+    expect(await screen.findByText("Research guide")).toBeInTheDocument();
   });
 
   it("uses localized public copy instead of a raw AppError message", async () => {
