@@ -199,7 +199,7 @@ describe("AdminSidebar", () => {
     const hoveredTooltip = screen.getByText("Knowledge Graph");
     expect(hoveredTooltip).toHaveAttribute("aria-hidden", "true");
     expect(hoveredTooltip).toHaveClass("fixed");
-    expect(hoveredTooltip).toHaveStyle({ left: "84px", top: "122px" });
+    expect(hoveredTooltip).toHaveStyle({ left: "85px", top: "122px" });
     expect(sidebar).not.toContainElement(hoveredTooltip);
 
     await user.unhover(link);
@@ -208,6 +208,77 @@ describe("AdminSidebar", () => {
     fireEvent.focus(link);
     expect(screen.getByText("Knowledge Graph")).toBeInTheDocument();
     fireEvent.blur(link);
+    expect(screen.queryByText("Knowledge Graph")).not.toBeInTheDocument();
+  });
+
+  it("keeps a focused rail tooltip visible when the pointer leaves", async () => {
+    const user = userEvent.setup();
+    await renderSidebar({ desktopLayout: "collapsed" });
+
+    const sidebar = screen.getByTestId("admin-sidebar");
+    const link = within(sidebar).getByRole("link", {
+      name: "Knowledge Graph",
+    });
+
+    fireEvent.focus(link);
+    await user.hover(link);
+    await user.unhover(link);
+    expect(screen.getByText("Knowledge Graph")).toBeInTheDocument();
+
+    fireEvent.blur(link);
+    expect(screen.queryByText("Knowledge Graph")).not.toBeInTheDocument();
+  });
+
+  it("keeps a hovered rail tooltip visible when the link blurs", async () => {
+    const user = userEvent.setup();
+    await renderSidebar({ desktopLayout: "collapsed" });
+
+    const sidebar = screen.getByTestId("admin-sidebar");
+    const link = within(sidebar).getByRole("link", {
+      name: "Knowledge Graph",
+    });
+
+    await user.hover(link);
+    fireEvent.focus(link);
+    fireEvent.blur(link);
+    expect(screen.getByText("Knowledge Graph")).toBeInTheDocument();
+
+    await user.unhover(link);
+    expect(screen.queryByText("Knowledge Graph")).not.toBeInTheDocument();
+  });
+
+  it("clears a visible rail tooltip when navigation scrolls", async () => {
+    const user = userEvent.setup();
+    await renderSidebar({ desktopLayout: "collapsed" });
+
+    const sidebar = screen.getByTestId("admin-sidebar");
+    const navigation = within(sidebar).getByRole("navigation", {
+      name: "Primary navigation",
+    });
+    const link = within(sidebar).getByRole("link", {
+      name: "Knowledge Graph",
+    });
+
+    await user.hover(link);
+    expect(screen.getByText("Knowledge Graph")).toBeInTheDocument();
+
+    fireEvent.scroll(navigation);
+    expect(screen.queryByText("Knowledge Graph")).not.toBeInTheDocument();
+  });
+
+  it("clears a visible rail tooltip when the viewport resizes", async () => {
+    const user = userEvent.setup();
+    await renderSidebar({ desktopLayout: "collapsed" });
+
+    const sidebar = screen.getByTestId("admin-sidebar");
+    const link = within(sidebar).getByRole("link", {
+      name: "Knowledge Graph",
+    });
+
+    await user.hover(link);
+    expect(screen.getByText("Knowledge Graph")).toBeInTheDocument();
+
+    fireEvent(window, new Event("resize"));
     expect(screen.queryByText("Knowledge Graph")).not.toBeInTheDocument();
   });
 

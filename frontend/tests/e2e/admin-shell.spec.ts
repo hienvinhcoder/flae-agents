@@ -1,0 +1,170 @@
+import {
+  expect,
+  expectNoA11yViolations,
+  installAuthSession,
+  test,
+} from './fixtures';
+
+const sidebarLayoutKey = 'flae_admin_sidebar_layout';
+
+const responsiveViewports = [
+  { expectedSidebarWidth: 0, height: 812, label: 'mobile', width: 375 },
+  { expectedSidebarWidth: 72, height: 1024, label: 'tablet', width: 768 },
+  { expectedSidebarWidth: 288, height: 768, label: 'desktop', width: 1024 },
+  { expectedSidebarWidth: 288, height: 900, label: 'wide desktop', width: 1440 },
+] as const;
+
+for (const viewport of responsiveViewports) {
+  test(`keeps the admin shell responsive at the ${viewport.label} viewport`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ height: viewport.height, width: viewport.width });
+    await installAuthSession(page);
+    await page.goto('/dashboard/briefing');
+
+    await expect(
+      page.getByRole('heading', { name: 'Morning briefing' }),
+    ).toBeVisible();
+    expect(
+      await page.evaluate(
+        () =>
+          document.documentElement.scrollWidth <=
+          document.documentElement.clientWidth,
+      ),
+    ).toBe(true);
+
+    const sidebarBox = await page.getByTestId('admin-sidebar').boundingBox();
+    expect(sidebarBox?.width ?? 0).toBe(viewport.expectedSidebarWidth);
+  });
+}
+
+test('persists desktop collapse preference without letting tablet layout overwrite it', async ({
+  page,
+}) => {
+  await page.setViewportSize({ height: 900, width: 1440 });
+  await installAuthSession(page);
+  await page.goto('/dashboard/briefing');
+
+  const sidebar = page.getByTestId('admin-sidebar');
+  await page.getByRole('button', { name: 'Collapse navigation' }).click();
+  await expect(sidebar).toHaveAttribute('data-desktop-layout', 'collapsed');
+  expect(await page.evaluate((key) => localStorage.getItem(key), sidebarLayoutKey)).toBe(
+    'collapsed',
+  );
+
+  await page.reload();
+  await expect(sidebar).toHaveAttribute('data-desktop-layout', 'collapsed');
+  await expect.poll(async () => (await sidebar.boundingBox())?.width ?? 0).toBe(72);
+
+  await page.setViewportSize({ height: 1024, width: 768 });
+  await expect.poll(async () => (await sidebar.boundingBox())?.width ?? 0).toBe(72);
+  expect(await page.evaluate((key) => localStorage.getItem(key), sidebarLayoutKey)).toBe(
+    'collapsed',
+  );
+});
+
+test('supports keyboard and backdrop dismissal for the accessible mobile drawer', async ({
+  page,
+}) => {
+  await page.setViewportSize({ height: 812, width: 375 });
+  await installAuthSession(page);
+  await page.goto('/dashboard/briefing');
+
+  const trigger = page.getByRole('button', { name: 'Open navigation' });
+  await trigger.click();
+  const drawer = page.getByRole('dialog', { name: 'Primary navigation' });
+  await expect(drawer).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Close navigation', exact: true }),
+  ).toBeFocused();
+  await expectNoA11yViolations(page);
+
+  await page.keyboard.press('Escape');
+  await expect(drawer).toBeHidden();
+  await expect(trigger).toBeFocused();
+
+  await trigger.click();
+  await expect(drawer).toBeVisible();
+  const backdrop = page.getByRole('button', { name: 'Close navigation overlay' });
+  const [backdropBox, drawerBox] = await Promise.all([
+    backdrop.boundingBox(),
+    drawer.boundingBox(),
+  ]);
+  expect(backdropBox).not.toBeNull();
+  expect(drawerBox).not.toBeNull();
+  const drawerRight = drawerBox!.x + drawerBox!.width;
+  await backdrop.click({
+    position: {
+      x: drawerRight + (backdropBox!.width - drawerRight) / 2,
+      y: backdropBox!.height / 2,
+    },
+  });
+  await expect(drawer).toBeHidden();
+});
+
+test('reduces the sidebar width transition to a near-instant duration', async ({ page }) => {
+  await page.setViewportSize({ height: 900, width: 1440 });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await installAuthSession(page);
+  await page.goto('/dashboard/briefing');
+
+  const transitionDuration = await page
+    .getByTestId('admin-sidebar')
+    .evaluate((element) => getComputedStyle(element).transitionDuration);
+  const durationMs = transitionDuration.endsWith('ms')
+    ? Number.parseFloat(transitionDuration)
+    : Number.parseFloat(transitionDuration) * 1000;
+  expect(durationMs).toBe(0.01);
+});
+
+test('keeps short rail navigation usable and invalidates portal tooltip geometry', async ({
+  page,
+}) => {
+  await page.setViewportSize({ height: 500, width: 768 });
+  await installAuthSession(page);
+  await page.goto('/dashboard/briefing');
+
+  const sidebar = page.getByTestId('admin-sidebar');
+  const navigation = page.getByRole('navigation', { name: 'Primary navigation' });
+  const settings = navigation.getByRole('link', { name: 'Settings' });
+  const knowledgeGraph = navigation.getByRole('link', { name: 'Knowledge graph' });
+  const tooltip = page
+    .locator('body > span[aria-hidden="true"]')
+    .filter({ hasText: /^Knowledge graph$/ });
+
+  expect(
+    await navigation.evaluate((element) => getComputedStyle(element).overflowY),
+  ).toMatch(/^(auto|scroll)$/);
+  await navigation.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+    element.dispatchEvent(new Event('scroll'));
+  });
+  await expect(settings).toBeVisible();
+
+  await knowledgeGraph.scrollIntoViewIfNeeded();
+  await knowledgeGraph.hover();
+  await expect(tooltip).toBeVisible();
+  const [sidebarBox, tooltipBox] = await Promise.all([
+    sidebar.boundingBox(),
+    tooltip.boundingBox(),
+  ]);
+  expect(sidebarBox).not.toBeNull();
+  expect(tooltipBox).not.toBeNull();
+  expect(tooltipBox!.x).toBeGreaterThanOrEqual(sidebarBox!.x + sidebarBox!.width);
+  expect(tooltipBox!.x + tooltipBox!.width).toBeLessThanOrEqual(768);
+  expect(tooltipBox!.y).toBeGreaterThanOrEqual(0);
+  expect(tooltipBox!.y + tooltipBox!.height).toBeLessThanOrEqual(500);
+
+  await navigation.evaluate((element) => {
+    element.scrollTop += 1;
+    element.dispatchEvent(new Event('scroll'));
+  });
+  await expect(tooltip).toHaveCount(0);
+
+  await page.mouse.move(760, 10);
+  await knowledgeGraph.scrollIntoViewIfNeeded();
+  await knowledgeGraph.hover();
+  await expect(tooltip).toBeVisible();
+  await page.setViewportSize({ height: 520, width: 800 });
+  await expect(tooltip).toHaveCount(0);
+});
