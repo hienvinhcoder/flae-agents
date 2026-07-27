@@ -87,6 +87,20 @@
     "CREATE_ERROR": "Unable to create agent.",
     "SAVE_ERROR": "Unable to save agent."
   },
+  "AGENT_APPEARANCE": {
+    "COLOR_AMBER": "Amber",
+    "COLOR_EMERALD": "Emerald",
+    "COLOR_INDIGO": "Indigo",
+    "COLOR_PURPLE": "Purple",
+    "COLOR_ROSE": "Rose",
+    "COLOR_SKY": "Sky",
+    "ICON_BOT": "Bot",
+    "ICON_BRAIN": "Brain",
+    "ICON_BRIEFCASE": "Briefcase",
+    "ICON_DATABASE": "Database",
+    "ICON_SPARKLES": "Sparkles",
+    "ICON_TERMINAL": "Terminal"
+  },
   "CHAT_UI": {
     "CONVERSATION_HISTORY": "Conversation history",
     "NEW_CONVERSATION": "New conversation",

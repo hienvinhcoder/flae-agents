@@ -139,6 +139,8 @@ describe("AgentConfigPage", () => {
     renderPage();
 
     await screen.findByRole("heading", { name: "Create AI agent" });
+    expect(screen.getByRole("option", { name: "Emerald" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Database" })).toBeInTheDocument();
     await user.selectOptions(screen.getByRole("combobox", { name: "Avatar color" }), "bg-emerald-500");
     await user.selectOptions(screen.getByRole("combobox", { name: "Avatar icon" }), "database");
 
@@ -164,6 +166,7 @@ describe("AgentConfigPage", () => {
   });
 
   it("renders the complete Vietnamese configuration vocabulary", async () => {
+    const user = userEvent.setup();
     const viI18n = await createI18n(
       { en: { translation: en }, vi: { translation: viMessages } },
       "vi",
@@ -176,6 +179,16 @@ describe("AgentConfigPage", () => {
     expect(screen.getByRole("heading", { level: 2, name: "Mô hình và phản hồi" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Quay lại trợ lý AI" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Tạo trợ lý" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Lục bảo" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Cơ sở dữ liệu" })).toBeInTheDocument();
+
+    await user.selectOptions(screen.getByRole("combobox", { name: "Màu đại diện" }), "bg-emerald-500");
+    await user.selectOptions(screen.getByRole("combobox", { name: "Biểu tượng đại diện" }), "database");
+    const preview = screen.getByRole("group", {
+      name: "Màu đại diện: Lục bảo; Biểu tượng đại diện: Cơ sở dữ liệu",
+    });
+    expect(within(preview).getByText("Lục bảo")).toBeInTheDocument();
+    expect(within(preview).getByText("Cơ sở dữ liệu")).toBeInTheDocument();
   });
 
   it("defines the exact EN and VI agent configuration dictionaries", () => {
@@ -236,6 +249,38 @@ describe("AgentConfigPage", () => {
       TEMPERATURE_HINT: "Giá trị thấp cho câu trả lời chính xác; giá trị cao tăng khả năng khám phá.",
     });
     expect(Object.keys(en.AGENT_CONFIG)).toEqual(Object.keys(viMessages.AGENT_CONFIG));
+  });
+
+  it("defines exact, parity-safe EN and VI agent appearance dictionaries", () => {
+    expect(en.AGENT_APPEARANCE).toEqual({
+      COLOR_AMBER: "Amber",
+      COLOR_EMERALD: "Emerald",
+      COLOR_INDIGO: "Indigo",
+      COLOR_PURPLE: "Purple",
+      COLOR_ROSE: "Rose",
+      COLOR_SKY: "Sky",
+      ICON_BOT: "Bot",
+      ICON_BRAIN: "Brain",
+      ICON_BRIEFCASE: "Briefcase",
+      ICON_DATABASE: "Database",
+      ICON_SPARKLES: "Sparkles",
+      ICON_TERMINAL: "Terminal",
+    });
+    expect(viMessages.AGENT_APPEARANCE).toEqual({
+      COLOR_AMBER: "Hổ phách",
+      COLOR_EMERALD: "Lục bảo",
+      COLOR_INDIGO: "Chàm",
+      COLOR_PURPLE: "Tím",
+      COLOR_ROSE: "Hồng",
+      COLOR_SKY: "Xanh da trời",
+      ICON_BOT: "Rô-bốt",
+      ICON_BRAIN: "Não",
+      ICON_BRIEFCASE: "Cặp tài liệu",
+      ICON_DATABASE: "Cơ sở dữ liệu",
+      ICON_SPARKLES: "Lấp lánh",
+      ICON_TERMINAL: "Dòng lệnh",
+    });
+    expect(Object.keys(en.AGENT_APPEARANCE)).toEqual(Object.keys(viMessages.AGENT_APPEARANCE));
   });
 
   it("redirects a member before allowing configuration", async () => {

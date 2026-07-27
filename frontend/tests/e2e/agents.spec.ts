@@ -48,6 +48,22 @@ test('keeps configuration actions sticky and contained on mobile', async ({ page
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
 });
 
+test('localizes appearance options and preview in Vietnamese', async ({ page }) => {
+  await page.getByRole('combobox', { name: 'Language' }).selectOption('vi');
+  await expect(page.getByRole('heading', { name: 'Trợ lý AI' })).toBeVisible();
+  await page.getByRole('link', { name: 'Tạo trợ lý' }).first().click();
+
+  await expect(page.getByRole('option', { name: 'Lục bảo' })).toBeAttached();
+  await expect(page.getByRole('option', { name: 'Cơ sở dữ liệu' })).toBeAttached();
+  await page.getByLabel('Màu đại diện', { exact: true }).selectOption('bg-emerald-500');
+  await page.getByLabel('Biểu tượng đại diện', { exact: true }).selectOption('database');
+  const preview = page.getByRole('group', {
+    name: 'Màu đại diện: Lục bảo; Biểu tượng đại diện: Cơ sở dữ liệu',
+  });
+  await expect(preview.getByText('Lục bảo')).toBeVisible();
+  await expect(preview.getByText('Cơ sở dữ liệu')).toBeVisible();
+});
+
 test('opens an agent conversation in the chat workbench', async ({ page }) => {
   await page.getByRole('link', { name: /Start conversation.*Chat with Research assistant/ }).click();
 

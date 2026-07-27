@@ -27,18 +27,22 @@ const DEFAULT_VALUES: AgentCreatePayload = {
   temperature: 0.2,
 };
 
-const COLOR_OPTIONS = [
-  { label: "Indigo", value: "bg-indigo-500" },
-  { label: "Emerald", value: "bg-emerald-500" },
-  { label: "Rose", value: "bg-rose-500" },
-  { label: "Amber", value: "bg-amber-500" },
-  { label: "Sky", value: "bg-sky-500" },
-  { label: "Purple", value: "bg-purple-500" },
-];
-const ICON_OPTIONS = ["bot", "brain", "sparkles", "database", "terminal", "briefcase"].map((value) => ({
-  label: value.charAt(0).toUpperCase() + value.slice(1),
-  value,
-}));
+const COLOR_OPTION_DEFINITIONS = [
+  { labelKey: "AGENT_APPEARANCE.COLOR_INDIGO", value: "bg-indigo-500" },
+  { labelKey: "AGENT_APPEARANCE.COLOR_EMERALD", value: "bg-emerald-500" },
+  { labelKey: "AGENT_APPEARANCE.COLOR_ROSE", value: "bg-rose-500" },
+  { labelKey: "AGENT_APPEARANCE.COLOR_AMBER", value: "bg-amber-500" },
+  { labelKey: "AGENT_APPEARANCE.COLOR_SKY", value: "bg-sky-500" },
+  { labelKey: "AGENT_APPEARANCE.COLOR_PURPLE", value: "bg-purple-500" },
+] as const;
+const ICON_OPTION_DEFINITIONS = [
+  { labelKey: "AGENT_APPEARANCE.ICON_BOT", value: "bot" },
+  { labelKey: "AGENT_APPEARANCE.ICON_BRAIN", value: "brain" },
+  { labelKey: "AGENT_APPEARANCE.ICON_SPARKLES", value: "sparkles" },
+  { labelKey: "AGENT_APPEARANCE.ICON_DATABASE", value: "database" },
+  { labelKey: "AGENT_APPEARANCE.ICON_TERMINAL", value: "terminal" },
+  { labelKey: "AGENT_APPEARANCE.ICON_BRIEFCASE", value: "briefcase" },
+] as const;
 const MODEL_OPTIONS = [
   { label: "Gemini 2.5 Flash", value: "gemini-2.5-flash" },
   { label: "Gemini 1.5 Pro", value: "gemini-1.5-pro" },
@@ -47,6 +51,8 @@ const MODEL_OPTIONS = [
 
 export function AgentConfigPage() {
   const { t } = useTranslation();
+  const colorOptions = COLOR_OPTION_DEFINITIONS.map(({ labelKey, value }) => ({ label: t(labelKey), value }));
+  const iconOptions = ICON_OPTION_DEFINITIONS.map(({ labelKey, value }) => ({ label: t(labelKey), value }));
   const { agentId } = useParams();
   const navigate = useNavigate();
   const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId);
@@ -63,8 +69,8 @@ export function AgentConfigPage() {
   const temperature = useWatch({ control: form.control, name: "temperature" });
   const avatarColor = useWatch({ control: form.control, name: "avatar_color" });
   const avatarIcon = useWatch({ control: form.control, name: "avatar_icon" });
-  const avatarColorLabel = COLOR_OPTIONS.find((option) => option.value === avatarColor)?.label ?? avatarColor;
-  const avatarIconLabel = ICON_OPTIONS.find((option) => option.value === avatarIcon)?.label ?? avatarIcon;
+  const avatarColorLabel = colorOptions.find((option) => option.value === avatarColor)?.label ?? avatarColor;
+  const avatarIconLabel = iconOptions.find((option) => option.value === avatarIcon)?.label ?? avatarIcon;
 
   useEffect(() => {
     if (!workspaceId || !userUid || roleQuery.isError) {
@@ -157,13 +163,13 @@ export function AgentConfigPage() {
                 <Select
                   error={form.formState.errors.avatar_color?.message}
                   label={t("AGENT_CONFIG.AVATAR_COLOR")}
-                  options={COLOR_OPTIONS}
+                  options={colorOptions}
                   {...form.register("avatar_color")}
                 />
                 <Select
                   error={form.formState.errors.avatar_icon?.message}
                   label={t("AGENT_CONFIG.AVATAR_ICON")}
-                  options={ICON_OPTIONS}
+                  options={iconOptions}
                   {...form.register("avatar_icon")}
                 />
               </div>

@@ -87,6 +87,20 @@
     "CREATE_ERROR": "Không thể tạo trợ lý.",
     "SAVE_ERROR": "Không thể lưu trợ lý."
   },
+  "AGENT_APPEARANCE": {
+    "COLOR_AMBER": "Hổ phách",
+    "COLOR_EMERALD": "Lục bảo",
+    "COLOR_INDIGO": "Chàm",
+    "COLOR_PURPLE": "Tím",
+    "COLOR_ROSE": "Hồng",
+    "COLOR_SKY": "Xanh da trời",
+    "ICON_BOT": "Rô-bốt",
+    "ICON_BRAIN": "Não",
+    "ICON_BRIEFCASE": "Cặp tài liệu",
+    "ICON_DATABASE": "Cơ sở dữ liệu",
+    "ICON_SPARKLES": "Lấp lánh",
+    "ICON_TERMINAL": "Dòng lệnh"
+  },
   "CHAT_UI": {
     "CONVERSATION_HISTORY": "Lịch sử hội thoại",
     "NEW_CONVERSATION": "Hội thoại mới",
