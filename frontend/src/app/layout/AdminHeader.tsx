@@ -125,9 +125,7 @@ export function AdminHeader({
 
       {logoutController ? (
         <Button
-          aria-label={t(
-            logoutController.isLoading ? "SHELL.LOGGING_OUT" : "COMMON.LOGOUT",
-          )}
+          aria-label={t("COMMON.LOGOUT")}
           className="min-h-11 min-w-11 shrink-0 px-3 motion-reduce:transition-none"
           isLoading={logoutController.isLoading}
           loadingText={t("SHELL.LOGGING_OUT")}

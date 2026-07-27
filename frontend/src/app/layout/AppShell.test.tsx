@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import type { PropsWithChildren } from 'react';
 import { I18nextProvider } from 'react-i18next';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useAuthStore } from '../../core/stores/auth-store';
 import type { User } from '../../core/auth/user-schema';
@@ -23,14 +23,52 @@ const resources = {
   en: { translation: { SHELL: {} } },
 };
 
+type MediaQueryChangeListener = (event: MediaQueryListEvent) => void;
+
+function installMatchMedia(initialMatches = false) {
+  const listeners = new Set<MediaQueryChangeListener>();
+  let matches = initialMatches;
+  const media = '(min-width: 48rem)';
+  const mediaQueryList = {
+    addEventListener: vi.fn((_type: string, listener: MediaQueryChangeListener) => {
+      listeners.add(listener);
+    }),
+    dispatchEvent: vi.fn(() => true),
+    get matches() {
+      return matches;
+    },
+    media,
+    onchange: null,
+    removeEventListener: vi.fn((_type: string, listener: MediaQueryChangeListener) => {
+      listeners.delete(listener);
+    }),
+  } as unknown as MediaQueryList;
+
+  vi.stubGlobal('matchMedia', vi.fn(() => mediaQueryList));
+
+  return {
+    emit(nextMatches: boolean) {
+      matches = nextMatches;
+      const event = { matches, media } as MediaQueryListEvent;
+      listeners.forEach((listener) => listener(event));
+    },
+  };
+}
+
 describe('AppShell', () => {
   beforeEach(() => {
+    installMatchMedia();
     localStorage.clear();
     useWorkspaceStore.getState().reset();
     useAuthStore.getState().setAuthenticated({
       id: 'user-1', firebase_uid: 'firebase-1', email: 'owner@example.com', full_name: 'Owner', is_active: true,
       login_providers: ['google'], avatar_url: null, current_workspace_id: null,
     });
+  });
+
+  afterEach(() => {
+    document.body.style.overflow = '';
+    vi.unstubAllGlobals();
   });
 
   it('offers responsive navigation and switches workspace without losing page context', async () => {
@@ -65,11 +103,22 @@ describe('AppShell', () => {
     expect(within(header).getByText('Tập trung')).toBeInTheDocument();
     expect(within(header).getByText('Báo cáo sáng')).toBeInTheDocument();
     expect(await screen.findByRole('combobox', { name: 'Không gian làm việc' })).toHaveValue('ws-1');
+    const main = screen.getByRole('main');
+    const contentWrapper = main.parentElement;
+    expect(contentWrapper).toHaveClass('md:pl-[72px]', 'lg:pl-72');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Mở điều hướng' }));
+    const mobileNavigation = screen.getByRole('dialog', { name: 'Điều hướng chính' });
+    expect(mobileNavigation).toBeInTheDocument();
+    await userEvent.click(within(mobileNavigation).getByRole('button', { name: 'Đóng điều hướng' }));
+    expect(screen.queryByRole('dialog', { name: 'Điều hướng chính' })).not.toBeInTheDocument();
 
     await userEvent.click(within(sidebar).getByRole('button', { name: 'Thu gọn điều hướng' }));
 
     expect(sidebar).toHaveAttribute('data-desktop-layout', 'collapsed');
     expect(localStorage.getItem('flae_admin_sidebar_layout')).toBe('collapsed');
+    expect(contentWrapper).toHaveClass('md:pl-[72px]', 'lg:pl-[72px]');
+    expect(contentWrapper).not.toHaveClass('lg:pl-72');
     expect(within(sidebar).getByRole('link', { name: 'Báo cáo sáng' })).toHaveAttribute('aria-current', 'page');
     expect(screen.getByRole('heading', { name: 'Current page' })).toBeInTheDocument();
 

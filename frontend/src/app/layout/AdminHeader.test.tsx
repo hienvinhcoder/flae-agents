@@ -151,7 +151,7 @@ describe("AdminHeader", () => {
     expect(logout).toHaveBeenCalledOnce();
   });
 
-  it("announces the loading state while logout is pending", async () => {
+  it("keeps the logout name stable while exposing its pending state", async () => {
     await renderHeader(
       createProps({
         logoutController: {
@@ -162,6 +162,9 @@ describe("AdminHeader", () => {
       }),
     );
 
-    expect(screen.getByRole("button", { name: "Signing out" })).toBeDisabled();
+    const logoutButton = screen.getByRole("button", { name: "Log out" });
+    expect(logoutButton).toBeDisabled();
+    expect(logoutButton).toHaveAttribute("aria-busy", "true");
+    expect(logoutButton).toHaveTextContent("Signing out");
   });
 });
