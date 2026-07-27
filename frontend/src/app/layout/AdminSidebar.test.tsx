@@ -116,6 +116,29 @@ describe("AdminSidebar", () => {
     ).toBeInTheDocument();
   });
 
+  it("lets desktop rail tooltips escape the navigation container", async () => {
+    await renderSidebar({ desktopLayout: "collapsed" });
+
+    const sidebar = screen.getByTestId("admin-sidebar");
+    const navigation = within(sidebar).getByRole("navigation", {
+      name: "Primary navigation",
+    });
+    expect(navigation).toHaveClass("overflow-visible");
+    expect(navigation).not.toHaveClass("overflow-y-auto");
+    expect(
+      within(sidebar).getByRole("tooltip", { name: "Knowledge Graph" }),
+    ).toBeInTheDocument();
+  });
+
+  it("gives the collapsed workspace identity valid named semantics", async () => {
+    await renderSidebar({ desktopLayout: "collapsed" });
+
+    const sidebar = screen.getByTestId("admin-sidebar");
+    expect(
+      within(sidebar).getByRole("group", { name: "Workspace: FLAE Labs" }),
+    ).toBeInTheDocument();
+  });
+
   it("mounts the mobile dialog only while open and manages focus and scroll", async () => {
     const user = userEvent.setup();
     const onCloseMobile = vi.fn();

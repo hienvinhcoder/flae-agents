@@ -77,6 +77,7 @@ function WorkspaceIdentity({
     <div
       aria-label={`${t("SHELL.WORKSPACE")}: ${workspaceName}`}
       className="flex min-h-11 min-w-0 items-center gap-3 rounded-ui-control border border-ui-divider bg-ui-raised px-3 text-ui-ink-secondary"
+      role="group"
     >
       <Building2 aria-hidden="true" className="h-5 w-5 shrink-0" />
       {expanded ? (
@@ -225,7 +226,7 @@ function SidebarContent({
 
       <nav
         aria-label={t("SHELL.PRIMARY_NAV")}
-        className="mt-4 grid min-h-0 flex-1 content-start gap-3 overflow-y-auto pb-3"
+        className={`mt-4 grid min-h-0 flex-1 content-start gap-3 pb-3 ${isMobile ? "overflow-y-auto" : "overflow-visible"}`}
       >
         <NavigationGroups
           activePath={activePath}
