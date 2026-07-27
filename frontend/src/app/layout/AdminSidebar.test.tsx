@@ -27,7 +27,7 @@ const resources = {
         TOPICS: "Topics",
       },
       SHELL: {
-        BRAND_SUBTITLE: "Company memory",
+        BRAND_SUBTITLE: "AI operations",
         CLOSE_NAV: "Close navigation",
         CLOSE_NAV_OVERLAY: "Close navigation overlay",
         COLLAPSE_NAV: "Collapse navigation",
@@ -133,6 +133,18 @@ describe("AdminSidebar", () => {
     vi.unstubAllGlobals();
   });
 
+  it("keeps the workspace identity concise in expanded navigation", async () => {
+    await renderSidebar({
+      desktopLayout: "expanded",
+      workspaceName: "Acme Workspace",
+    });
+
+    expect(
+      screen.getByRole("group", { name: /workspace: acme workspace/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("AI operations")).toBeInTheDocument();
+  });
+
   it("renders grouped expanded navigation and toggles the desktop layout", async () => {
     const onToggleDesktop = vi.fn();
     await renderSidebar({ onToggleDesktop });
@@ -141,7 +153,7 @@ describe("AdminSidebar", () => {
     expect(sidebar).toHaveAttribute("data-desktop-layout", "expanded");
     expect(sidebar).toHaveClass("lg:w-[280px]");
     expect(within(sidebar).getByText("FLAE")).toBeInTheDocument();
-    expect(within(sidebar).getByText("Company memory")).toBeInTheDocument();
+    expect(within(sidebar).getByText("AI operations")).toBeInTheDocument();
     expect(within(sidebar).getByText("FLAE Labs")).toBeInTheDocument();
     expect(within(sidebar).getByText("Focus")).toBeInTheDocument();
     expect(within(sidebar).getByText("Intelligence")).toBeInTheDocument();

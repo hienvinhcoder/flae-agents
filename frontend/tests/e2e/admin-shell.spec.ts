@@ -8,10 +8,29 @@ import {
 const sidebarLayoutKey = "flae_admin_sidebar_layout";
 
 const responsiveViewports = [
-  { expectedSidebarWidth: 0, height: 812, label: "mobile", width: 375 },
-  { expectedSidebarWidth: 72, height: 1024, label: "tablet", width: 768 },
-  { expectedSidebarWidth: 280, height: 768, label: "desktop", width: 1024 },
   {
+    expectedHeaderHeight: 64,
+    expectedSidebarWidth: 0,
+    height: 812,
+    label: "mobile",
+    width: 375,
+  },
+  {
+    expectedHeaderHeight: 76,
+    expectedSidebarWidth: 72,
+    height: 1024,
+    label: "tablet",
+    width: 768,
+  },
+  {
+    expectedHeaderHeight: 76,
+    expectedSidebarWidth: 280,
+    height: 768,
+    label: "desktop",
+    width: 1024,
+  },
+  {
+    expectedHeaderHeight: 76,
     expectedSidebarWidth: 280,
     height: 900,
     label: "wide desktop",
@@ -43,6 +62,12 @@ for (const viewport of responsiveViewports) {
 
     const sidebarBox = await page.getByTestId("admin-sidebar").boundingBox();
     expect(sidebarBox?.width ?? 0).toBe(viewport.expectedSidebarWidth);
+
+    const headerBox = await page.getByRole("banner").boundingBox();
+    expect(headerBox?.height ?? 0).toBe(viewport.expectedHeaderHeight);
+    if (viewport.width >= 1280) {
+      await expect(page.getByLabel("ET", { exact: true })).toBeVisible();
+    }
   });
 }
 

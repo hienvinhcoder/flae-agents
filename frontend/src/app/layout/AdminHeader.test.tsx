@@ -81,6 +81,23 @@ async function renderHeader(props: AdminHeaderProps) {
 }
 
 describe("AdminHeader", () => {
+  it("groups page context separately from workspace and user utilities", async () => {
+    await renderHeader(
+      createProps({
+        pageLabel: "Knowledge base",
+        sectionLabel: "Intelligence",
+        user: { ...user, full_name: "Nguyen Vinh" },
+      }),
+    );
+
+    expect(screen.getByText("Intelligence")).toBeInTheDocument();
+    expect(screen.getByText("Knowledge base")).toBeInTheDocument();
+    expect(screen.getByLabelText("NV")).toHaveTextContent("NV");
+    expect(
+      screen.getByRole("combobox", { name: /workspace/i }),
+    ).toBeInTheDocument();
+  });
+
   it("shows the page context and opens mobile navigation", async () => {
     const onOpenNavigation = vi.fn();
     await renderHeader(createProps({ onOpenNavigation }));

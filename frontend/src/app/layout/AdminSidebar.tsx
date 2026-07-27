@@ -49,14 +49,16 @@ function BrandIdentity({
     <div className="flex min-w-0 items-center gap-3 text-ui-ink">
       <span
         aria-hidden="true"
-        className="grid h-10 w-10 shrink-0 place-items-center rounded-ui-control bg-brand font-bold text-brand-foreground shadow-ui-panel"
+        className="grid h-10 w-10 shrink-0 place-items-center rounded-ui-control bg-brand text-sm font-bold text-brand-foreground"
       >
         F
       </span>
       {expanded ? (
         <span className={`min-w-0 ${responsive ? "hidden lg:block" : ""}`}>
-          <strong className="block truncate tracking-[0.16em]">FLAE</strong>
-          <small className="block truncate text-ui-ink-muted">
+          <strong className="block truncate text-sm font-semibold tracking-[0.18em]">
+            FLAE
+          </strong>
+          <small className="block truncate font-code text-xs uppercase tracking-[0.08em] text-ui-ink-muted">
             {t("SHELL.BRAND_SUBTITLE")}
           </small>
         </span>
@@ -79,7 +81,7 @@ function WorkspaceIdentity({
   return (
     <div
       aria-label={`${t("SHELL.WORKSPACE")}: ${workspaceName}`}
-      className="flex min-h-11 min-w-0 items-center gap-3 rounded-ui-control border border-ui-divider bg-ui-raised px-3 text-ui-ink-secondary"
+      className="flex min-h-14 min-w-0 items-center gap-3 border-y border-ui-divider bg-ui-raised/55 px-3 text-ui-ink-secondary"
       role="group"
     >
       <Building2 aria-hidden="true" className="h-5 w-5 shrink-0" />
@@ -116,10 +118,10 @@ function NavigationGroups({
   const { t } = useTranslation();
 
   return navigationGroups.map((group) => (
-    <section className="grid gap-1" key={group.id}>
+    <section className="grid gap-0.5" key={group.id}>
       {expanded ? (
         <h2
-          className={`px-3 pb-1 pt-3 font-code text-label-md uppercase tracking-[0.12em] text-ui-ink-muted ${presentation === "desktop" ? "hidden lg:block" : ""}`}
+          className={`px-3 pb-1 pt-4 font-code text-label-md uppercase tracking-[0.12em] text-ui-ink-muted ${presentation === "desktop" ? "hidden lg:block" : ""}`}
         >
           {t(group.key)}
         </h2>
@@ -150,7 +152,7 @@ function NavigationGroups({
               } ${
                 isActive
                   ? "bg-brand-soft font-semibold text-ui-ink"
-                  : "text-ui-ink-secondary hover:bg-ui-interactive hover:text-ui-ink"
+                  : "bg-transparent text-ui-ink-secondary hover:bg-ui-interactive hover:text-ui-ink"
               }`}
               end
               onBlur={(event) => hideTooltip?.(event.currentTarget, "focus")}
@@ -213,7 +215,7 @@ function SidebarContent({
   });
 
   return (
-    <div className="flex h-full min-h-0 flex-col p-3">
+    <div className="flex h-full min-h-0 flex-col px-3 py-4">
       <div className="flex min-h-12 items-center justify-between gap-2">
         <BrandIdentity expanded={expanded} responsive={responsiveExpansion} />
         {isMobile ? (
@@ -229,7 +231,7 @@ function SidebarContent({
         ) : null}
       </div>
 
-      <div className="mt-5">
+      <div className="mt-4">
         <WorkspaceIdentity
           expanded={expanded}
           responsive={responsiveExpansion}
@@ -239,7 +241,7 @@ function SidebarContent({
 
       <nav
         aria-label={t("SHELL.PRIMARY_NAV")}
-        className="mt-4 grid min-h-0 flex-1 content-start gap-3 overflow-y-auto pb-3"
+        className="mt-3 grid min-h-0 flex-1 content-start gap-2 overflow-y-auto pb-3"
         onScroll={!isMobile ? clearTooltip : undefined}
       >
         <NavigationGroups
@@ -259,7 +261,7 @@ function SidebarContent({
               ? t("SHELL.COLLAPSE_NAV")
               : t("SHELL.EXPAND_NAV")
           }
-          className="mt-2 hidden min-h-11 min-w-11 items-center justify-center gap-2 rounded-ui-control border border-ui-divider bg-ui-raised px-3 font-medium text-ui-ink-secondary transition-colors duration-200 hover:bg-ui-interactive hover:text-ui-ink motion-reduce:transition-none lg:flex"
+          className="mt-2 hidden min-h-11 min-w-11 items-center justify-center gap-2 rounded-ui-control border border-transparent bg-transparent px-3 font-medium text-ui-ink-secondary transition-colors duration-200 hover:border-ui-divider hover:bg-ui-interactive hover:text-ui-ink motion-reduce:transition-none lg:flex"
           onClick={onToggleDesktop}
           type="button"
         >
