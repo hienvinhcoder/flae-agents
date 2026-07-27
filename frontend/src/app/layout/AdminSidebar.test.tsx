@@ -200,7 +200,8 @@ describe("AdminSidebar", () => {
     const hoveredTooltip = screen.getByTestId("admin-sidebar-tooltip");
     expect(hoveredTooltip).toHaveTextContent("Knowledge Graph");
     expect(hoveredTooltip).toHaveAttribute("aria-hidden", "true");
-    expect(hoveredTooltip).toHaveClass("admin-shell-theme", "fixed");
+    expect(hoveredTooltip).toHaveClass("fixed");
+    expect(hoveredTooltip).not.toHaveClass("admin-shell-theme");
     expect(hoveredTooltip).toHaveStyle({ left: "85px", top: "122px" });
     expect(sidebar).not.toContainElement(hoveredTooltip);
 

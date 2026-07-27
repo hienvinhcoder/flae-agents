@@ -16,7 +16,7 @@ export function RailTooltipPortal({
   return createPortal(
     <span
       aria-hidden="true"
-      className={`admin-shell-theme pointer-events-none fixed z-50 -translate-y-1/2 whitespace-nowrap rounded-ui-control border border-ui-divider bg-ui-raised px-3 py-2 text-sm font-medium text-ui-ink shadow-ui-panel ${hiddenAtLarge ? "lg:hidden" : ""}`}
+      className={`pointer-events-none fixed z-50 -translate-y-1/2 whitespace-nowrap rounded-ui-control border border-ui-divider bg-ui-raised px-3 py-2 text-sm font-medium text-ui-ink shadow-ui-panel ${hiddenAtLarge ? "lg:hidden" : ""}`}
       data-testid="admin-sidebar-tooltip"
       style={{ left: tooltip.left, top: tooltip.top }}
     >

@@ -11,11 +11,11 @@ import type { User } from '../../core/auth/user-schema';
 import { useWorkspaceStore } from '../../core/stores/workspace-store';
 import type { Workspace } from '../../features/settings/types/workspace';
 import { createI18n } from '../../shared/i18n';
+import sharedStylesheet from '../../styles.css?raw';
 import { AppShell } from './AppShell';
 import appShellSource from './AppShell.tsx?raw';
 
 const adminShellThemeStylesheets = import.meta.glob<string>('./admin-shell-theme.css', { eager: true, import: 'default', query: '?raw' });
-const adminShellThemeStylesheet = Object.values(adminShellThemeStylesheets)[0] ?? '';
 
 const resources = {
   vi: { translation: {
@@ -80,18 +80,17 @@ describe('AppShell', () => {
     vi.unstubAllGlobals();
   });
 
-  it('owns the approved light admin-shell theme contract', () => {
-    expect(appShellSource).toMatch(/import\s+['"]\.\/admin-shell-theme\.css['"];?/);
-    expect(appShellSource).toMatch(/className=["'][^"']*admin-shell-theme[^"']*["']/);
-    expect(adminShellThemeStylesheet).not.toBe('');
-    expect(adminShellThemeStylesheet).toMatch(/\.admin-shell-theme\s*\{[^}]*color-scheme:\s*light;/s);
-    expect(adminShellThemeStylesheet).toMatch(/--color-primary:\s*#f97316;/);
-    expect(adminShellThemeStylesheet).toMatch(/--color-canvas:\s*#f4f2ec;/);
-    expect(adminShellThemeStylesheet).toMatch(/--color-surface:\s*#eae6db;/);
-    expect(adminShellThemeStylesheet).toMatch(/--radius-md:\s*1\.125rem;/);
-    expect(adminShellThemeStylesheet).toMatch(/--radius-control:\s*1\.125rem;/);
-    expect(adminShellThemeStylesheet).toMatch(/--radius-lg:\s*2\.5rem;/);
-    expect(adminShellThemeStylesheet).toMatch(/--radius-card:\s*2\.5rem;/);
+  it('uses the shared approved light theme without a feature-local token cascade', () => {
+    expect(appShellSource).not.toMatch(/admin-shell-theme/);
+    expect(Object.keys(adminShellThemeStylesheets)).toHaveLength(0);
+    expect(sharedStylesheet).toMatch(/:root\s*\{[^}]*color-scheme:\s*light;/s);
+    expect(sharedStylesheet).toMatch(/--color-primary:\s*#f97316;/);
+    expect(sharedStylesheet).toMatch(/--color-canvas:\s*#f4f2ec;/);
+    expect(sharedStylesheet).toMatch(/--color-surface:\s*#eae6db;/);
+    expect(sharedStylesheet).toMatch(/--font-sans:\s*Inter,/);
+    expect(sharedStylesheet).toMatch(/--font-mono:\s*"JetBrains Mono",/);
+    expect(sharedStylesheet).toMatch(/--radius-control:\s*1\.125rem;/);
+    expect(sharedStylesheet).toMatch(/--radius-card:\s*2\.5rem;/);
   });
 
   it('offers responsive navigation and switches workspace without losing page context', async () => {

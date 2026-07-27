@@ -1,41 +1,51 @@
 @import "tailwindcss";
 
 :root {
-  --color-primary: #f28c45;
-  --color-primary-hover: #e77e37;
-  --color-primary-active: #d96f26;
-  --color-primary-soft: rgba(242, 140, 69, 0.1);
-}
+  color-scheme: light;
 
-:root {
-  color-scheme: dark;
-
-  --color-canvas: #0d0f12;
-  --color-surface: #15181d;
-  --color-surface-raised: #1c2026;
-  --color-surface-interactive: #252a32;
-  --color-divider: #303640;
-  --color-border: #697584;
-  --color-border-strong: #7e8b9d;
-  --color-text: #f4f2ee;
-  --color-text-secondary: #c5c7cb;
-  --color-text-muted: #969ba4;
-  --color-text-disabled: #686e78;
-  --color-on-primary: #251309;
-  --color-ai: #ad91ff;
-  --color-ai-soft: rgba(173, 145, 255, 0.12);
-  --color-success: #64d892;
-  --color-success-soft: rgba(100, 216, 146, 0.12);
-  --color-warning: #efbd62;
-  --color-warning-soft: rgba(239, 189, 98, 0.12);
-  --color-danger: #f07b7d;
-  --color-danger-soft: rgba(240, 123, 125, 0.12);
-  --color-info: #75adf7;
-  --color-info-soft: rgba(117, 173, 247, 0.12);
+  --color-primary: #f97316;
+  --color-primary-hover: #ea580c;
+  --color-primary-active: #ea580c;
+  --color-primary-soft: rgba(249, 115, 22, 0.12);
+  --color-canvas: #f4f2ec;
+  --color-surface: #eae6db;
+  --color-surface-raised: #fbfaf7;
+  --color-surface-interactive: #f0ece3;
+  --color-divider: #dfd9ce;
+  --color-border: #dfd9ce;
+  --color-border-control: #776f64;
+  --color-border-strong: #4b5563;
+  --color-text: #111827;
+  --color-text-secondary: #4b5563;
+  --color-text-muted: #5f6672;
+  --color-text-disabled: #7a8089;
+  --color-on-primary: #111827;
+  --color-link: #9a3412;
+  --color-focus: #9a3412;
+  --color-ai: #9a3412;
+  --color-ai-soft: rgba(234, 88, 12, 0.12);
+  --color-success: #0f6b3d;
+  --color-success-soft: #e1f2e8;
+  --color-warning: #8a5a00;
+  --color-warning-soft: #fff0c2;
+  --color-danger: #b42318;
+  --color-danger-soft: #fee4e2;
+  --color-info: #1d5e91;
+  --color-info-soft: #e0effa;
 
   --font-sans: Inter, Geist, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
     "Segoe UI", sans-serif;
-  --font-mono: "Geist Mono", "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  --font-mono: "JetBrains Mono", "Geist Mono", "SFMono-Regular", Consolas, monospace;
+
+  --text-display: 4rem;
+  --text-display-line-height: 1.04;
+  --text-display-font-weight: 500;
+  --text-body: 1rem;
+  --text-body-line-height: 1.6;
+  --text-body-font-weight: 400;
+  --text-label: 0.75rem;
+  --text-label-line-height: 1.2;
+  --text-label-font-weight: 600;
 
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -47,20 +57,23 @@
   --space-10: 2.5rem;
   --space-12: 3rem;
   --space-16: 4rem;
+  --space-20: 5rem;
 
-  --radius-sm: 0.25rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
-  --radius-pill: 999px;
+  --radius-sm: 0.75rem;
+  --radius-md: 1.125rem;
+  --radius-control: 1.125rem;
+  --radius-lg: 2.5rem;
+  --radius-xl: 2.5rem;
+  --radius-card: 2.5rem;
+  --radius-pill: 9999px;
 
-  --shadow-panel: 0 1px 0 rgba(255, 255, 255, 0.035), 0 16px 48px rgba(0, 0, 0, 0.28);
-  --shadow-overlay: 0 24px 80px rgba(0, 0, 0, 0.48);
-  --focus-ring: 0 0 0 3px rgba(242, 140, 69, 0.34);
+  --shadow-panel: 0 1px 0 rgba(255, 255, 255, 0.5), 0 18px 50px rgba(99, 78, 55, 0.12);
+  --shadow-overlay: 0 28px 90px rgba(99, 78, 55, 0.2);
+  --focus-ring: 0 0 0 4px rgba(234, 88, 12, 0.22);
 
-  --motion-fast: 120ms;
-  --motion-normal: 180ms;
-  --motion-slow: 280ms;
+  --motion-fast: 150ms;
+  --motion-normal: 200ms;
+  --motion-slow: 300ms;
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
 }
 
@@ -70,13 +83,16 @@
   --color-brand-active: var(--color-primary-active);
   --color-brand-soft: var(--color-primary-soft);
   --color-brand-foreground: var(--color-on-primary);
+  --color-brand-text: var(--color-link);
   --color-ui-canvas: var(--color-canvas);
   --color-ui-panel: var(--color-surface);
   --color-ui-raised: var(--color-surface-raised);
   --color-ui-interactive: var(--color-surface-interactive);
   --color-ui-divider: var(--color-divider);
-  --color-ui-line: var(--color-border);
+  --color-ui-line: var(--color-border-control);
   --color-ui-line-strong: var(--color-border-strong);
+  --color-ui-link: var(--color-link);
+  --color-ui-focus: var(--color-focus);
   --color-ui-ink: var(--color-text);
   --color-ui-ink-secondary: var(--color-text-secondary);
   --color-ui-ink-muted: var(--color-text-muted);
@@ -93,8 +109,21 @@
   --color-state-info-soft: var(--color-info-soft);
   --font-ui: var(--font-sans);
   --font-code: var(--font-mono);
-  --radius-ui-control: var(--radius-md);
-  --radius-ui-panel: var(--radius-lg);
+  --spacing-ui-base: var(--space-2);
+  --spacing-ui-gap: var(--space-4);
+  --spacing-ui-card: var(--space-6);
+  --spacing-ui-section: var(--space-20);
+  --text-display-lg: var(--text-display);
+  --text-display-lg--line-height: var(--text-display-line-height);
+  --text-display-lg--font-weight: var(--text-display-font-weight);
+  --text-body-md: var(--text-body);
+  --text-body-md--line-height: var(--text-body-line-height);
+  --text-body-md--font-weight: var(--text-body-font-weight);
+  --text-label-md: var(--text-label);
+  --text-label-md--line-height: var(--text-label-line-height);
+  --text-label-md--font-weight: var(--text-label-font-weight);
+  --radius-ui-control: var(--radius-control);
+  --radius-ui-panel: var(--radius-card);
   --radius-ui-dialog: var(--radius-xl);
   --radius-ui-status: var(--radius-pill);
   --shadow-ui-panel: var(--shadow-panel);
@@ -128,8 +157,8 @@
     margin: 0;
     background: var(--color-canvas);
     color: var(--color-text);
-    font-size: 0.875rem;
-    line-height: 1.5;
+    font-size: 1rem;
+    line-height: 1.6;
   }
 
   button,
@@ -160,7 +189,7 @@
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-primary);
+    outline: 2px solid var(--color-focus);
     outline-offset: 3px;
     box-shadow: var(--focus-ring);
   }
@@ -175,7 +204,7 @@
     gap: var(--space-2);
     padding: var(--space-2) var(--space-4);
     border: 1px solid transparent;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-control);
     background: var(--color-primary);
     color: var(--color-on-primary);
     font-weight: 650;
@@ -202,7 +231,7 @@
 @layer utilities {
   .surface-panel {
     border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-card);
     background: var(--color-surface);
     box-shadow: var(--shadow-panel);
   }
@@ -210,12 +239,13 @@
   .text-metadata {
     color: var(--color-text-muted);
     font-family: var(--font-mono);
-    font-size: 0.75rem;
-    line-height: 1.5;
+    font-size: var(--text-label);
+    font-weight: var(--text-label-font-weight);
+    line-height: var(--text-label-line-height);
   }
 
   .focus-ring {
-    outline: 2px solid var(--color-primary);
+    outline: 2px solid var(--color-focus);
     outline-offset: 3px;
     box-shadow: var(--focus-ring);
   }
