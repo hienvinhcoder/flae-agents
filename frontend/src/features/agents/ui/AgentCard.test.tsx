@@ -36,7 +36,7 @@ describe("AgentCard", () => {
     );
 
     expect(screen.getByText(`Ready on ${agent.model_name}`)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /chat with research guide/i })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /start conversation.*chat with research guide/i })).toHaveAttribute(
       "href",
       `/dashboard/agents/${agent.id}/chat`,
     );
@@ -59,6 +59,6 @@ describe("AgentCard", () => {
 
     expect(screen.queryByRole("link", { name: /edit research guide/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /delete research guide/i })).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /chat with research guide/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /start conversation.*chat with research guide/i })).toBeInTheDocument();
   });
 });

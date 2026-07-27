@@ -32,7 +32,7 @@ test('keeps management actions permission-scoped', async ({ api, page }) => {
   await expect(page.getByRole('link', { name: 'Create agent' })).toHaveCount(0);
   await expect(page.getByRole('link', { name: 'Edit Research assistant' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Delete Research assistant' })).toHaveCount(0);
-  await expect(page.getByRole('link', { name: 'Chat with Research assistant' })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Start conversation.*Chat with Research assistant/ })).toBeVisible();
 });
 
 test('deletes an agent and shows the manager empty state', async ({ api, page }) => {
@@ -65,7 +65,7 @@ test('shows one retry surface and recovers from an agent query failure', async (
   await page.reload();
 
   await expect(page.getByRole('heading', { name: 'Unable to load agents' })).toBeVisible();
-  await page.getByRole('button', { name: 'Try again' }).click();
+  await page.getByRole('button', { name: 'Reload page' }).click();
   await expect(page.getByRole('heading', { name: 'Research assistant' })).toBeVisible();
 });
 

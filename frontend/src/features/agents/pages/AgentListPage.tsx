@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 
+import { AppError } from "../../../core/api/errors";
 import { useAuthStore } from "../../../core/stores/auth-store";
 import { useWorkspaceStore } from "../../../core/stores/workspace-store";
 import { EmptyState } from "../../../shared/ui/EmptyState";
@@ -16,8 +17,13 @@ import { AgentCard } from "../ui/AgentCard";
 
 const EMPTY_AGENTS: readonly AgentDetail[] = [];
 
-function errorMessage(error: unknown, fallback: string) {
+function publicErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof AppError) return fallback;
   return error instanceof Error ? error.message : fallback;
+}
+
+function isGloballyAnnouncedServerError(error: unknown) {
+  return error instanceof AppError && error.kind === "server" && (error.status ?? 0) >= 500;
 }
 
 interface ManagedAgentCardProps {
@@ -37,7 +43,7 @@ function ManagedAgentCard({ agent, canManage, onError, workspaceId }: ManagedAge
       const deleted = await actions.remove.mutateAsync();
       if (!deleted) onError(t("AGENTS_UI.DELETE_FAILED"));
     } catch (error) {
-      onError(errorMessage(error, t("AGENTS_UI.DELETE_FAILED")));
+      onError(publicErrorMessage(error, t("AGENTS_UI.DELETE_FAILED")));
     }
   };
 
@@ -83,8 +89,10 @@ export function AgentListPage() {
       <div>
         {agentsQuery.isError ? (
           <ErrorState
-            message={errorMessage(agentsQuery.error, t("AGENTS_UI.LOAD_ERROR_FALLBACK"))}
+            announce={!isGloballyAnnouncedServerError(agentsQuery.error)}
+            message={publicErrorMessage(agentsQuery.error, t("AGENTS_UI.LOAD_ERROR_FALLBACK"))}
             onRetry={() => void agentsQuery.refetch()}
+            retryLabel={t("ERROR_PAGE.RETRY")}
             title={t("AGENTS_UI.LOAD_ERROR_TITLE")}
           />
         ) : agentsQuery.isPending ? (

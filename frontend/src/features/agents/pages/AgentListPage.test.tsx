@@ -1,9 +1,13 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { PropsWithChildren } from "react";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { AppProviders } from "../../../app/providers/AppProviders";
+import { AppError } from "../../../core/api/errors";
+import { apiFailureLifecycle } from "../../../core/api/failure-lifecycle";
 import { useAuthStore } from "../../../core/stores/auth-store";
 import { useWorkspaceStore } from "../../../core/stores/workspace-store";
 import { TestI18nProvider } from "../../../../tests/TestI18nProvider";
@@ -25,6 +29,9 @@ const workspaceApi = vi.hoisted(() => ({ listWorkspaceMembers: vi.fn() }));
 
 vi.mock("../api/agents-runtime-api", () => agentsApi);
 vi.mock("../../settings/api/workspace-runtime-api", () => workspaceApi);
+vi.mock("../../../core/auth/AuthBootstrap", () => ({
+  AuthBootstrap: ({ children }: PropsWithChildren) => children,
+}));
 
 const workspaceId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const nextWorkspaceId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
@@ -64,8 +71,23 @@ function renderPage() {
   return { queryClient, router };
 }
 
+function renderPageWithAppProviders() {
+  const router = createMemoryRouter(
+    [{ path: "/dashboard/agents", element: <AgentListPage /> }],
+    { initialEntries: ["/dashboard/agents"] },
+  );
+  render(
+    <TestI18nProvider>
+      <AppProviders>
+        <RouterProvider router={router} />
+      </AppProviders>
+    </TestI18nProvider>,
+  );
+}
+
 describe("AgentListPage", () => {
   beforeEach(() => {
+    apiFailureLifecycle.reset();
     vi.restoreAllMocks();
     Object.values(agentsApi).forEach((mock) => mock.mockReset());
     workspaceApi.listWorkspaceMembers.mockReset();
@@ -97,6 +119,8 @@ describe("AgentListPage", () => {
     });
   });
 
+  afterEach(() => apiFailureLifecycle.reset());
+
   it("shows management actions only after an owner role resolves", async () => {
     renderPage();
 
@@ -121,7 +145,37 @@ describe("AgentListPage", () => {
 
     expect(await screen.findAllByRole("alert")).toHaveLength(1);
     expect(screen.getAllByText("Agents are temporarily unavailable.")).toHaveLength(1);
-    expect(screen.getByRole("button", { name: /try again/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reload page" })).toBeInTheDocument();
+  });
+
+  it("uses localized public copy instead of a raw AppError message", async () => {
+    agentsApi.listAgents.mockRejectedValueOnce(new AppError({
+      kind: "validation",
+      message: "Raw upstream validation details",
+      retryable: false,
+      status: 422,
+    }));
+    renderPage();
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Agents are temporarily unavailable.");
+    expect(screen.queryByText("Raw upstream validation details")).not.toBeInTheDocument();
+  });
+
+  it("lets the global provider own announcements for retryable 5xx failures", async () => {
+    const serverError = new AppError({
+      kind: "server",
+      message: "Raw service outage details",
+      retryable: true,
+      status: 503,
+    });
+    agentsApi.listAgents.mockRejectedValue(serverError);
+    renderPageWithAppProviders();
+
+    act(() => apiFailureLifecycle.reportServerFailure());
+    expect(await screen.findByRole("heading", { name: "Unable to load agents" }, { timeout: 5_000 })).toBeInTheDocument();
+    expect(screen.getAllByRole("alert")).toHaveLength(1);
+    expect(screen.queryByText("Raw service outage details")).not.toBeInTheDocument();
+    expect(screen.getByText("Agents are temporarily unavailable.")).toBeInTheDocument();
   });
 
   it("explains that a workspace selection is required", () => {

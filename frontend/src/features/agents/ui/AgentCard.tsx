@@ -59,12 +59,12 @@ export function AgentCard({ agent, canManage, deleteDisabled = false, onDelete }
       </div>
 
       <Link
-        aria-label={t("AGENTS_UI.CHAT_WITH", { name: agent.name })}
         className="mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-ui-control border border-state-info bg-state-info-soft px-4 py-2 font-semibold text-state-info transition-colors hover:bg-ui-interactive motion-reduce:transition-none"
         to={`/dashboard/agents/${agent.id}/chat`}
       >
         <MessageSquare aria-hidden className="h-4 w-4" />
         {t("AGENTS_UI.START_CONVERSATION")}
+        <span className="sr-only">{t("AGENTS_UI.CHAT_WITH", { name: agent.name })}</span>
       </Link>
     </article>
   );
