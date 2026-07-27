@@ -49,7 +49,7 @@ export function ConversationSidebar({
   }, [search, sessions]);
 
   return (
-    <aside className="flex max-h-[18rem] min-h-72 flex-col overflow-y-auto border-b border-ui-divider bg-ui-raised lg:max-h-none lg:border-b-0 lg:border-r" aria-label={t("CHAT_UI.CONVERSATION_HISTORY")}>
+    <aside className="flex max-h-[18rem] min-h-72 flex-col overflow-y-auto border-b border-ui-divider bg-ui-raised lg:max-h-none lg:min-h-0 lg:border-b-0 lg:border-r" aria-label={t("CHAT_UI.CONVERSATION_HISTORY")}>
       <div className="border-b border-ui-divider p-4">
         {backHref && backLabel ? (
           <Link className="inline-flex items-center gap-2 text-xs font-semibold text-ui-ink-secondary hover:text-ui-ink" to={backHref}>

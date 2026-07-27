@@ -143,11 +143,12 @@ describe("AgentChatPage", () => {
   it("renders a retryable conversation-history error", async () => {
     const user = userEvent.setup();
     agentsApi.listSessions
-      .mockRejectedValueOnce(new Error("Conversation history is unavailable."))
+      .mockRejectedValueOnce(new Error("Raw conversation-history service details"))
       .mockResolvedValueOnce([]);
     renderPage();
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("Conversation history is unavailable.");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Unable to load conversations.");
+    expect(screen.queryByText("Raw conversation-history service details")).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /try again/i }));
     expect(await screen.findByText("No conversations yet.")).toBeInTheDocument();
   });
@@ -228,8 +229,9 @@ describe("AgentChatPage", () => {
     await user.type(screen.getByRole("textbox", { name: /message research guide/i }), "Retry question");
     await user.click(screen.getByRole("button", { name: /send message/i }));
 
-    expect(await screen.findByText(/response was interrupted by a connection error/i)).toBeInTheDocument();
-    expect(screen.getByRole("alert")).toHaveTextContent("Invalid stream event.");
+    expect(await screen.findAllByText("Unable to load messages.")).toHaveLength(2);
+    expect(screen.getByRole("alert")).toHaveTextContent("Unable to load messages.");
+    expect(screen.queryByText("Invalid stream event.")).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /retry message/i }));
     await waitFor(() => expect(chatApi.streamChat).toHaveBeenCalledTimes(2));
     expect(screen.queryByRole("button", { name: /retry message/i })).not.toBeInTheDocument();

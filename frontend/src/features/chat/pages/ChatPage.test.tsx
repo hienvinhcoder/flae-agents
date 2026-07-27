@@ -2,9 +2,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
+import { I18nextProvider } from "react-i18next";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useWorkspaceStore } from "../../../core/stores/workspace-store";
+import { createI18n } from "../../../shared/i18n";
 import { TestI18nProvider } from "../../../../tests/TestI18nProvider";
 import en from "../../../../public/assets/i18n/en.json";
 import viLocale from "../../../../public/assets/i18n/vi.json";
@@ -32,13 +34,19 @@ const sessions = [
   { agent_id: agentId, created_at: "2026-07-24T07:00:00Z", created_by: "user-1", id: "44444444-4444-4444-8444-444444444444", title: "Second chat", updated_at: "2026-07-24T07:00:00Z", workspace_id: workspaceId },
 ];
 const createdSession = { ...sessions[0], id: "55555555-5555-4555-8555-555555555555", title: "New conversation" };
+const viI18n = await createI18n({ en: { translation: en }, vi: { translation: viLocale } }, "vi");
 
-function renderPage() {
+function renderPage(language: "en" | "vi" = "en") {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const router = createMemoryRouter([{ path: "/dashboard/chat", element: <ChatPage /> }], { initialEntries: ["/dashboard/chat"] });
-  return render(
+  const page = (
+    <QueryClientProvider client={queryClient}><RouterProvider router={router} /></QueryClientProvider>
+  );
+  return language === "vi" ? render(
+    <I18nextProvider i18n={viI18n}>{page}</I18nextProvider>,
+  ) : render(
     <TestI18nProvider>
-      <QueryClientProvider client={queryClient}><RouterProvider router={router} /></QueryClientProvider>
+      {page}
     </TestI18nProvider>,
   );
 }
@@ -68,6 +76,10 @@ describe("ChatPage", () => {
 
     expect(Object.keys(en.CHAT_UI).sort()).toEqual(approvedKeys);
     expect(Object.keys(viLocale.CHAT_UI).sort()).toEqual(approvedKeys);
+    expect(en.NAV.CHAT).toBe("AI Chat");
+    expect(viLocale.NAV.CHAT).toBe("AI Chat");
+    expect(en.SHELL.CHAT_WORKBENCH_ARIA).toBe("Workspace assistant chat");
+    expect(viLocale.SHELL.CHAT_WORKBENCH_ARIA).toBe("Trò chuyện với trợ lý không gian làm việc");
   });
 
   it("loads the default agent, then opens its first session", async () => {
@@ -85,6 +97,14 @@ describe("ChatPage", () => {
     expect(await screen.findByRole("region", { name: "Workspace assistant chat" })).toBeInTheDocument();
     expect(screen.getByRole("complementary", { name: "Conversation history" })).toBeInTheDocument();
     expect(screen.getByTestId("message-viewport")).toHaveAccessibleName("Conversation messages");
+  });
+
+  it("uses localized safe copy for a default-agent failure", async () => {
+    agentsApi.getDefaultAgent.mockRejectedValueOnce(new Error("Raw default-agent service details"));
+    renderPage("vi");
+
+    expect(await screen.findByText("Không thể tải trợ lý mặc định của không gian làm việc.")).toBeInTheDocument();
+    expect(screen.queryByText("Raw default-agent service details")).not.toBeInTheDocument();
   });
 
   it("creates, prepends, and selects a new conversation", async () => {

@@ -29,6 +29,7 @@ interface CapturedStream {
 
 function renderStreamHook(overrides: Partial<{
   agentId: string | null;
+  failureMessage: string;
   persistedMessages: ChatMessage[];
   reloadMessages: () => Promise<unknown>;
   sessionId: string | null;
@@ -37,6 +38,7 @@ function renderStreamHook(overrides: Partial<{
   const reloadMessages = vi.fn().mockResolvedValue(undefined);
   const values = {
     agentId,
+    failureMessage: "Unable to load messages.",
     persistedMessages: persisted,
     reloadMessages,
     sessionId,
@@ -164,8 +166,8 @@ describe("useChatStream", () => {
     await act(() => result.current.send(" Retry this "));
 
     expect(result.current.status).toBe("failed");
-    expect(result.current.error).toMatch(/unable to connect/i);
-    expect(result.current.messages.at(-1)?.content).toMatch(/connection/i);
+    expect(result.current.error).toBe("Unable to load messages.");
+    expect(result.current.messages.at(-1)?.content).toBe("Unable to load messages.");
     expect(result.current.canRetry).toBe(true);
 
     act(() => { void result.current.retry(); });
@@ -283,6 +285,7 @@ describe("useChatStream", () => {
 
     rerender({
       agentId: "44444444-4444-4444-8444-444444444444",
+      failureMessage: "Unable to load messages.",
       persistedMessages: nextMessages,
       reloadMessages: vi.fn().mockResolvedValue(undefined),
       sessionId: "55555555-5555-4555-8555-555555555555",

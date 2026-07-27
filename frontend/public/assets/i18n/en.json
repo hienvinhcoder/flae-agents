@@ -15,7 +15,7 @@
     "PROFILE": "My Profile"
   },
   "NAV": {
-    "CHAT": "Workspace assistant chat",
+    "CHAT": "AI Chat",
     "BRIEFING": "Morning briefing",
 
     "INBOX": "Omnichannel inbox",
@@ -300,6 +300,7 @@
     "NAV_GROUP_INTELLIGENCE": "Intelligence",
     "NAV_GROUP_WORKSPACE": "Workspace",
     "WORKSPACE": "Workspace",
+    "CHAT_WORKBENCH_ARIA": "Workspace assistant chat",
     "CHAT_WORKSPACE_REQUIRED": "Select a workspace to start chatting.",
     "LOADING_WORKSPACES": "Loading workspaces",
     "INITIALIZING": "Loading and synchronizing workspace",

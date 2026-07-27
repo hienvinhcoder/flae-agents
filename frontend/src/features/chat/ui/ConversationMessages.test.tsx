@@ -62,6 +62,8 @@ describe("ConversationMessages reading position", () => {
   it("names the explicit message scroll owner", () => {
     render(<TestI18nProvider><ConversationMessages {...baseProps} /></TestI18nProvider>);
 
-    expect(screen.getByTestId("message-viewport")).toHaveAccessibleName("Conversation messages");
+    const viewport = screen.getByTestId("message-viewport");
+    expect(viewport).toHaveAccessibleName("Conversation messages");
+    expect(viewport).toHaveClass("min-h-0", "overflow-y-auto");
   });
 });

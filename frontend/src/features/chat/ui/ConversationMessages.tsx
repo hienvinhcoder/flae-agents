@@ -57,7 +57,7 @@ export function ConversationMessages({
   return (
     <div
       aria-label={t("CHAT_UI.MESSAGES_ARIA")}
-      className="flex flex-1 flex-col overflow-y-auto px-4 py-5 sm:px-6 sm:py-7"
+      className="flex flex-1 flex-col overflow-y-auto px-4 py-5 sm:px-6 sm:py-7 min-h-0"
       data-testid="message-viewport"
       onScroll={(event) => {
         const element = event.currentTarget;

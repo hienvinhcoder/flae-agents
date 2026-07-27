@@ -5,11 +5,9 @@ import type { ChatMessage, Citation } from "../../agents/types/agent";
 import { streamChat } from "../api/chat-api";
 import type { StreamCitation, StreamEvent, StreamStatus } from "../types/stream";
 
-const CONNECTION_ERROR_TEXT =
-  "The response was interrupted by a connection error. Please try again.";
-
 interface UseChatStreamOptions {
   agentId: string | null;
+  failureMessage: string;
   persistedMessages: ChatMessage[];
   reloadMessages: () => Promise<unknown>;
   sessionId: string | null;
@@ -66,12 +64,9 @@ function isAbort(error: unknown) {
   return error instanceof AppError && error.code === "SSE_ABORTED";
 }
 
-function errorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "Unable to continue the conversation.";
-}
-
 export function useChatStream({
   agentId,
+  failureMessage,
   persistedMessages,
   reloadMessages,
   sessionId,
@@ -190,10 +185,10 @@ export function useChatStream({
         });
         return false;
       }
-      updateAssistant((item) => ({ ...item, content: CONNECTION_ERROR_TEXT }));
+      updateAssistant((item) => ({ ...item, content: failureMessage }));
       setStreamState((current) => current.contextKey !== contextKey ? current : {
         ...current,
-        error: errorMessage(cause),
+        error: failureMessage,
         lastFailedInput: isRetry ? null : message,
         status: "failed",
       });
@@ -201,7 +196,7 @@ export function useChatStream({
     } finally {
       if (controllerRef.current === controller) controllerRef.current = null;
     }
-  }, [agentId, contextKey, messages, reloadMessages, retryBaseMessages, sessionId, workspaceId]);
+  }, [agentId, contextKey, failureMessage, messages, reloadMessages, retryBaseMessages, sessionId, workspaceId]);
 
   const send = useCallback(
     (input: string) => sendInternal(input, { isRetry: false }),

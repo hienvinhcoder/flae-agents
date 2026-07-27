@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { AppError } from "../../../core/api/errors";
@@ -29,19 +29,29 @@ interface ChatExperienceProps {
 
 interface ActionError {
   announce: boolean;
+  contextKey: string;
   message: string;
 }
 
-function publicErrorMessage(error: unknown, fallback: string) {
-  if (error instanceof AppError) return fallback;
-  return error instanceof Error ? error.message : fallback;
+interface SelectionState {
+  contextKey: string;
+  sessionId: string | null;
+}
+
+function publicErrorMessage(_error: unknown, fallback: string) {
+  return fallback;
 }
 
 function isGloballyAnnouncedServerError(error: unknown) {
   return error instanceof AppError && error.kind === "server" && (error.status ?? 0) >= 500;
 }
 
-export function ChatExperience({
+export function ChatExperience(props: ChatExperienceProps) {
+  const contextKey = `${props.workspaceId}:${props.agentId ?? ""}`;
+  return <ContextualChatExperience key={contextKey} {...props} />;
+}
+
+function ContextualChatExperience({
   agent,
   agentId,
   agentLoading,
@@ -51,14 +61,36 @@ export function ChatExperience({
   workspaceId,
 }: ChatExperienceProps) {
   const { t } = useTranslation();
+  const contextKey = `${workspaceId}:${agentId ?? ""}`;
   const sessionsQuery = useSessions(workspaceId, agentId);
   const actions = useSessionActions(workspaceId, agentId);
-  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
-  const [actionError, setActionError] = useState<ActionError | null>(null);
+  const [selection, setSelection] = useState<SelectionState>({ contextKey, sessionId: null });
+  const [actionErrorState, setActionError] = useState<ActionError | null>(null);
+  const selectedSessionId = selection.contextKey === contextKey ? selection.sessionId : null;
+  const actionError = actionErrorState?.contextKey === contextKey ? actionErrorState : null;
   const sessions = sessionsQuery.data ?? EMPTY_SESSIONS;
   const activeSessionId = selectedSessionId && sessions.some((session) => session.id === selectedSessionId)
     ? selectedSessionId
     : sessions.at(0)?.id ?? null;
+  const selectedSessionRef = useRef(selectedSessionId);
+  const activeSessionRef = useRef(activeSessionId);
+  const sessionsRef = useRef(sessions);
+  const mountedRef = useRef(true);
+  const createRequestRef = useRef(0);
+  const deleteRequestRef = useRef(0);
+
+  useLayoutEffect(() => {
+    selectedSessionRef.current = selectedSessionId;
+    activeSessionRef.current = activeSessionId;
+    sessionsRef.current = sessions;
+  }, [activeSessionId, selectedSessionId, sessions]);
+
+  useEffect(() => () => {
+    mountedRef.current = false;
+    createRequestRef.current += 1;
+    deleteRequestRef.current += 1;
+  }, []);
+
   const messagesQuery = useMessages(workspaceId, agentId, activeSessionId);
   const refetchMessages = messagesQuery.refetch;
   const reloadMessages = useCallback(async () => {
@@ -67,45 +99,61 @@ export function ChatExperience({
   const stream = useChatStream({
     agentId,
     persistedMessages: messagesQuery.data ?? EMPTY_MESSAGES,
+    failureMessage: t("CHAT_UI.MESSAGE_LOAD_ERROR"),
     reloadMessages,
     sessionId: activeSessionId,
     workspaceId,
   });
 
   const createSession = async () => {
+    const requestContext = contextKey;
+    const requestToken = createRequestRef.current + 1;
+    createRequestRef.current = requestToken;
     setActionError(null);
     try {
       const created = await actions.create.mutateAsync({});
-      setSelectedSessionId(created.id);
+      if (!mountedRef.current || createRequestRef.current !== requestToken) return;
+      setSelection({ contextKey: requestContext, sessionId: created.id });
     } catch (error) {
+      if (!mountedRef.current || createRequestRef.current !== requestToken) return;
       setActionError({
         announce: !isGloballyAnnouncedServerError(error),
+        contextKey: requestContext,
         message: publicErrorMessage(error, t("CHAT_UI.CREATE_FAILED")),
       });
     }
   };
   const deleteSession = async (session: ChatSession) => {
     if (!window.confirm(t("CHAT_UI.DELETE_CONFIRM", { title: session.title }))) return;
+    const requestContext = contextKey;
+    const requestToken = deleteRequestRef.current + 1;
+    deleteRequestRef.current = requestToken;
     setActionError(null);
-    const index = sessions.findIndex((item) => item.id === session.id);
-    const nextId = sessions[index + 1]?.id ?? sessions[index - 1]?.id ?? null;
     try {
       const deleted = await actions.remove.mutateAsync(session.id);
+      if (!mountedRef.current || deleteRequestRef.current !== requestToken) return;
       if (!deleted) {
-        setActionError({ announce: true, message: t("CHAT_UI.DELETE_FAILED") });
-      } else if (activeSessionId === session.id) {
-        setSelectedSessionId(nextId);
+        setActionError({ announce: true, contextKey: requestContext, message: t("CHAT_UI.DELETE_FAILED") });
+      } else if (activeSessionRef.current === session.id
+        && (selectedSessionRef.current === null || selectedSessionRef.current === session.id)) {
+        const latestSessions = sessionsRef.current;
+        const deletedIndex = latestSessions.findIndex((item) => item.id === session.id);
+        const remaining = latestSessions.filter((item) => item.id !== session.id);
+        const nextSessionId = remaining[deletedIndex] ?? remaining[deletedIndex - 1] ?? remaining.at(0) ?? null;
+        setSelection({ contextKey: requestContext, sessionId: nextSessionId?.id ?? null });
       }
     } catch (error) {
+      if (!mountedRef.current || deleteRequestRef.current !== requestToken) return;
       setActionError({
         announce: !isGloballyAnnouncedServerError(error),
+        contextKey: requestContext,
         message: publicErrorMessage(error, t("CHAT_UI.DELETE_FAILED")),
       });
     }
   };
 
   return (
-    <section aria-label={ariaLabel} className="mx-auto grid min-h-[calc(100vh-10rem)] w-full max-w-[96rem] overflow-hidden border-y border-ui-divider bg-ui-raised/35 lg:grid-cols-[19rem_minmax(0,1fr)]" role="region">
+    <section aria-label={ariaLabel} className="mx-auto grid min-h-[calc(100vh-10rem)] w-full max-w-[96rem] overflow-hidden border-y border-ui-divider bg-ui-raised/35 lg:h-[calc(100dvh-8rem)] lg:min-h-[36rem] lg:grid-cols-[19rem_minmax(0,1fr)]" role="region">
       <ConversationSidebar
         activeSessionId={activeSessionId}
         backHref={backHref}
@@ -118,11 +166,11 @@ export function ChatExperience({
         onCreate={() => void createSession()}
         onDelete={(session) => void deleteSession(session)}
         onRetry={() => void sessionsQuery.refetch()}
-        onSelect={setSelectedSessionId}
+        onSelect={(sessionId) => setSelection({ contextKey, sessionId })}
         sessions={sessions}
       />
 
-      <div className="flex min-h-[36rem] min-w-0 flex-col bg-ui-canvas">
+      <div className="flex min-h-[36rem] min-w-0 flex-col bg-ui-canvas h-[calc(100dvh-8rem)] lg:h-full lg:min-h-0">
         <header className="flex min-h-16 items-center border-b border-ui-divider bg-ui-raised px-5">
           {agentLoading ? <div className="w-52"><Skeleton label={t("AGENTS_UI.LOADING_CARD")} lines={2} /></div> : agent ? (
             <div className="flex items-center gap-3">

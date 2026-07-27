@@ -25,11 +25,7 @@ export function ChatPage() {
     return (
       <ErrorState
         announce={!globallyAnnounced}
-        message={defaultAgentQuery.error instanceof AppError
-          ? t("CHAT_UI.DEFAULT_AGENT_ERROR")
-          : defaultAgentQuery.error instanceof Error
-            ? defaultAgentQuery.error.message
-            : t("CHAT_UI.DEFAULT_AGENT_ERROR")}
+        message={t("CHAT_UI.DEFAULT_AGENT_ERROR")}
         onRetry={() => void defaultAgentQuery.refetch()}
         retryLabel={t("AGENTS_UI.RETRY")}
         title={t("AGENTS_UI.LOAD_ERROR_TITLE")}
@@ -43,7 +39,7 @@ export function ChatPage() {
     <ChatExperience
       agent={defaultAgentQuery.data}
       agentId={defaultAgentQuery.data.id}
-      ariaLabel={t("NAV.CHAT")}
+      ariaLabel={t("SHELL.CHAT_WORKBENCH_ARIA")}
       workspaceId={workspaceId}
     />
   );
