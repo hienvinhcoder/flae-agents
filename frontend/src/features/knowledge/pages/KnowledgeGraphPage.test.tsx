@@ -1,19 +1,27 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { I18nextProvider } from "react-i18next";
 import { MemoryRouter } from "react-router-dom";
 import type { PropsWithChildren } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import en from "../../../../public/assets/i18n/en.json";
+import viTranslations from "../../../../public/assets/i18n/vi.json";
 import { AppProviders } from "../../../app/providers/AppProviders";
 import { AppError } from "../../../core/api/errors";
 import { apiFailureLifecycle } from "../../../core/api/failure-lifecycle";
 import { useWorkspaceStore } from "../../../core/stores/workspace-store";
+import { createI18n } from "../../../shared/i18n";
 import { TestI18nProvider } from "../../../../tests/TestI18nProvider";
 import type { KnowledgeGraphData } from "../graph/types";
 import { KnowledgeGraphPage } from "./KnowledgeGraphPage";
 
 const runtimeApi = vi.hoisted(() => ({ getKnowledgeGraph: vi.fn() }));
+const viI18n = await createI18n(
+  { en: { translation: en }, vi: { translation: viTranslations } },
+  "vi",
+);
 vi.mock("../api/knowledge-runtime-api", () => runtimeApi);
 vi.mock("../../../core/auth/AuthBootstrap", () => ({
   AuthBootstrap: ({ children }: PropsWithChildren) => children,
@@ -77,6 +85,19 @@ function renderPageWithAppProviders() {
   );
 }
 
+function renderPageInVietnamese() {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  render(
+    <I18nextProvider i18n={viI18n}>
+      <QueryClientProvider client={client}>
+        <MemoryRouter>
+          <KnowledgeGraphPage />
+        </MemoryRouter>
+      </QueryClientProvider>
+    </I18nextProvider>,
+  );
+}
+
 describe("KnowledgeGraphPage", () => {
   beforeEach(() => {
     apiFailureLifecycle.reset();
@@ -98,6 +119,16 @@ describe("KnowledgeGraphPage", () => {
     expect(
       screen.getByLabelText(/interactive knowledge graph/i),
     ).toBeInTheDocument();
+  });
+
+  it("fills the available dashboard viewport while retaining its minimum height", async () => {
+    renderPage();
+
+    const workSurface = (await screen.findByLabelText(
+      /interactive knowledge graph/i,
+    )).parentElement;
+
+    expect(workSurface).toHaveClass("h-[calc(100dvh-18rem)]", "min-h-[32rem]");
   });
 
   it("GRAPH-01 shows a full-canvas loader and initializes the graph", async () => {
@@ -145,7 +176,10 @@ describe("KnowledgeGraphPage", () => {
     runtimeApi.getKnowledgeGraph.mockRejectedValueOnce(new Error("Graph unavailable"));
     act(() => useWorkspaceStore.getState().setCurrentWorkspaceId("ws-2"));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("Graph unavailable");
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Unable to load the knowledge graph.",
+    );
+    expect(screen.queryByText("Graph unavailable")).not.toBeInTheDocument();
     expect(screen.getByText("0 nodes / 0 edges / ws-2")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Ada" })).not.toBeInTheDocument();
   });
@@ -164,6 +198,19 @@ describe("KnowledgeGraphPage", () => {
       "Unable to load the knowledge graph.",
     );
     expect(screen.queryByText("Raw upstream graph details")).not.toBeInTheDocument();
+  });
+
+  it("uses localized Vietnamese copy for unknown graph failures", async () => {
+    runtimeApi.getKnowledgeGraph.mockRejectedValue(
+      new Error("Raw graph failure details"),
+    );
+
+    renderPageInVietnamese();
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Không thể tải đồ thị tri thức.",
+    );
+    expect(screen.queryByText("Raw graph failure details")).not.toBeInTheDocument();
   });
 
   it("lets the global provider own retryable 5xx announcements", async () => {

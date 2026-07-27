@@ -15,8 +15,8 @@ import { GraphSelectionPanel } from "../graph/ui/GraphSelectionPanel";
 import { GraphToolbar } from "../graph/ui/GraphToolbar";
 
 function publicErrorMessage(error: unknown, fallback: string) {
-  if (error instanceof AppError) return fallback;
-  return error instanceof Error ? error.message : fallback;
+  void error;
+  return fallback;
 }
 
 function isGloballyAnnouncedServerError(error: unknown) {
@@ -81,7 +81,7 @@ export function KnowledgeGraphPage() {
         </PageToolbar>
 
         <div
-          className="relative min-h-[32rem] overflow-hidden bg-ui-canvas"
+          className="relative h-[calc(100dvh-18rem)] min-h-[32rem] overflow-hidden bg-ui-canvas"
           style={{
             backgroundImage:
               "linear-gradient(rgba(105,117,132,.08) 1px, transparent 1px), linear-gradient(90deg, rgba(105,117,132,.08) 1px, transparent 1px), radial-gradient(circle at 50% 35%, rgba(242,140,69,.08), transparent 45%)",

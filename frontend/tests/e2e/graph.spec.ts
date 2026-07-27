@@ -26,3 +26,16 @@ test('filters, selects, and navigates the graph with accessible controls', async
   await page.getByRole('link', { name: 'Back to knowledge base' }).click();
   await expect(page).toHaveURL(/\/dashboard\/knowledge$/);
 });
+
+test('fills a tall dashboard viewport without horizontal overflow', async ({ page }) => {
+  await page.setViewportSize({ height: 1000, width: 1440 });
+
+  const graphSurface = page.getByLabel('Interactive knowledge graph').locator('..');
+  const surfaceBox = await graphSurface.boundingBox();
+  expect(surfaceBox?.height).toBeGreaterThanOrEqual(700);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+    ),
+  ).toBe(true);
+});
