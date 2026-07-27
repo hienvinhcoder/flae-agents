@@ -1,10 +1,15 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { i18n as I18nInstance } from "i18next";
+import { I18nextProvider } from "react-i18next";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import en from "../../../../public/assets/i18n/en.json";
+import viMessages from "../../../../public/assets/i18n/vi.json";
 import { useWorkspaceStore } from "../../../core/stores/workspace-store";
+import { createI18n } from "../../../shared/i18n";
 import { queryKeys } from "../../../shared/lib/query-keys";
 import { TestI18nProvider } from "../../../../tests/TestI18nProvider";
 import type { TopicDetail } from "../types/topic";
@@ -55,7 +60,10 @@ const detail: TopicDetail = {
   workspace_id: workspaceId,
 };
 
-function renderDetail(path = `/dashboard/topics/${topicId}`) {
+function renderDetail(
+  path = `/dashboard/topics/${topicId}`,
+  i18n?: I18nInstance,
+) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
@@ -66,12 +74,17 @@ function renderDetail(path = `/dashboard/topics/${topicId}`) {
     ],
     { initialEntries: [path] },
   );
-  render(
-    <TestI18nProvider>
+  const page = (
       <QueryClientProvider client={queryClient}>
         <RouterProvider router={router} />
       </QueryClientProvider>
-    </TestI18nProvider>,
+  );
+  render(
+    i18n ? (
+      <I18nextProvider i18n={i18n}>{page}</I18nextProvider>
+    ) : (
+      <TestI18nProvider>{page}</TestI18nProvider>
+    ),
   );
   return { queryClient, router };
 }
@@ -235,6 +248,88 @@ describe("TopicDetailPage", () => {
     await waitFor(() => expect(runtimeApi.getTopic).toHaveBeenCalledTimes(2));
 
     expect(name).toHaveValue("Working draft");
+  });
+
+  it("resets edit state when the same route component opens another topic", async () => {
+    const user = userEvent.setup();
+    const nextTopic = {
+      ...detail,
+      name: "Market signals",
+      slug: "market-signals",
+      status: "archived" as const,
+      topic_id: "topic-22222222-2222-4222-8222-222222222222",
+    };
+    runtimeApi.getTopic.mockImplementation(
+      (_workspace: string, requestedId: string) =>
+        Promise.resolve(requestedId === nextTopic.topic_id ? nextTopic : detail),
+    );
+    const { router } = renderDetail();
+    await screen.findByRole("heading", { name: "Product strategy" });
+    await user.click(screen.getByRole("button", { name: "Edit topic" }));
+    const name = screen.getByRole("textbox", { name: "Topic name" });
+    await user.clear(name);
+    await user.type(name, "Draft for topic A");
+
+    await act(async () => router.navigate(`/dashboard/topics/${nextTopic.topic_id}`));
+
+    expect(await screen.findByRole("heading", { name: "Market signals" })).toBeInTheDocument();
+    expect(screen.queryByRole("form", { name: "Edit topic" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Edit topic" }));
+    expect(screen.getByRole("textbox", { name: "Topic name" })).toHaveValue(
+      "Market signals",
+    );
+  });
+
+  it("does not let repeated Edit activation erase an active draft", async () => {
+    const user = userEvent.setup();
+    renderDetail();
+    await screen.findByRole("heading", { name: "Product strategy" });
+    const editButton = screen.getByRole("button", { name: "Edit topic" });
+    await user.click(editButton);
+    const name = screen.getByRole("textbox", { name: "Topic name" });
+    await user.clear(name);
+    await user.type(name, "Protected draft");
+
+    expect(editButton).toBeDisabled();
+    await user.click(editButton);
+    expect(name).toHaveValue("Protected draft");
+  });
+
+  it("translates a visible validation error when the locale changes", async () => {
+    const user = userEvent.setup();
+    const liveI18n = await createI18n(
+      { en: { translation: en }, vi: { translation: viMessages } },
+      "en",
+    );
+    renderDetail(`/dashboard/topics/${topicId}`, liveI18n);
+    await screen.findByRole("heading", { name: "Product strategy" });
+    await user.click(screen.getByRole("button", { name: "Edit topic" }));
+    await user.clear(screen.getByRole("textbox", { name: "Topic name" }));
+    await user.click(screen.getByRole("button", { name: "Save changes" }));
+    expect(await screen.findByText("Enter a topic name.")).toBeInTheDocument();
+
+    await act(async () => liveI18n.changeLanguage("vi"));
+    expect(screen.getByText("Tên chủ đề không được để trống.")).toBeInTheDocument();
+  });
+
+  it("translates visible summary feedback when the locale changes", async () => {
+    const user = userEvent.setup();
+    const liveI18n = await createI18n(
+      { en: { translation: en }, vi: { translation: viMessages } },
+      "en",
+    );
+    runtimeApi.reSummarizeTopic.mockResolvedValue(true);
+    renderDetail(`/dashboard/topics/${topicId}`, liveI18n);
+    await screen.findByRole("heading", { name: "Product strategy" });
+    await user.click(screen.getByRole("button", { name: "Re-summarize" }));
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Summary refresh requested.",
+    );
+
+    await act(async () => liveI18n.changeLanguage("vi"));
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Đã gửi yêu cầu tóm tắt lại chủ đề.",
+    );
   });
 
   it("disables conflicting actions while re-summarization is pending", async () => {
