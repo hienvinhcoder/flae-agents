@@ -101,6 +101,16 @@
     "ICON_SPARKLES": "Lấp lánh",
     "ICON_TERMINAL": "Dòng lệnh"
   },
+  "AGENT_VALIDATION": {
+    "AVATAR_COLOR_REQUIRED": "Chọn màu đại diện.",
+    "AVATAR_ICON_REQUIRED": "Chọn biểu tượng đại diện.",
+    "MODEL_REQUIRED": "Chọn mô hình AI.",
+    "NAME_MAX": "Tên trợ lý không được vượt quá 255 ký tự.",
+    "NAME_REQUIRED": "Nhập tên trợ lý.",
+    "SYSTEM_PROMPT_REQUIRED": "Nhập hướng dẫn hệ thống.",
+    "TEMPERATURE_MAX": "Độ sáng tạo không được lớn hơn 2.",
+    "TEMPERATURE_MIN": "Độ sáng tạo không được nhỏ hơn 0."
+  },
   "CHAT_UI": {
     "CONVERSATION_HISTORY": "Lịch sử hội thoại",
     "NEW_CONVERSATION": "Hội thoại mới",

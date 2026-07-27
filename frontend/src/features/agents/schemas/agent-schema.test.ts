@@ -4,6 +4,7 @@ import {
   agentCreateSchema,
   agentDetailSchema,
   chatMessageSchema,
+  createAgentCreateSchema,
 } from "./agent-schema";
 
 const agent = {
@@ -53,6 +54,49 @@ describe("agent schemas", () => {
         temperature: 3,
       }).success,
     ).toBe(false);
+  });
+
+  it("supports localized required, maximum, and temperature range messages", () => {
+    const schema = createAgentCreateSchema({
+      avatarColorRequired: "color required",
+      avatarIconRequired: "icon required",
+      modelRequired: "model required",
+      nameMax: "name max",
+      nameRequired: "name required",
+      systemPromptRequired: "prompt required",
+      temperatureMax: "temperature max",
+      temperatureMin: "temperature min",
+    });
+    const result = schema.safeParse({
+      avatar_color: "",
+      avatar_icon: "",
+      model_name: "",
+      name: "x".repeat(256),
+      system_prompt: "",
+      temperature: 3,
+    });
+
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    expect(result.error.issues.map((issue) => issue.message)).toEqual([
+      "color required",
+      "icon required",
+      "name max",
+      "prompt required",
+      "model required",
+      "temperature max",
+    ]);
+    const belowRange = schema.safeParse({
+      avatar_color: "bg-blue-500",
+      avatar_icon: "bot",
+      name: "Research assistant",
+      system_prompt: "Use workspace sources.",
+      temperature: -1,
+    });
+    expect(belowRange.success).toBe(false);
+    if (!belowRange.success) {
+      expect(belowRange.error.issues.map((issue) => issue.message)).toContain("temperature min");
+    }
   });
 
   it("normalizes nullable citations to an empty typed array", () => {

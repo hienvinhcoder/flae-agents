@@ -1,4 +1,4 @@
-import { expect, fulfillJson, ids, installAuthSession, test } from './fixtures';
+import { expect, expectNoA11yViolations, fulfillJson, ids, installAuthSession, test } from './fixtures';
 
 const agentsPath = `http://127.0.0.1:8000/api/v1/workspaces/${ids.workspace}/agents`;
 
@@ -16,6 +16,7 @@ test('creates and edits an agent through the production forms', async ({ page })
   await expect(page.getByRole('heading', { level: 2, name: 'Identity' })).toBeVisible();
   await expect(page.getByRole('heading', { level: 2, name: 'Instructions' })).toBeVisible();
   await expect(page.getByRole('heading', { level: 2, name: 'Model and response' })).toBeVisible();
+  await expectNoA11yViolations(page);
   await expect(page.getByLabel('AI model')).toHaveAccessibleDescription(
     "Choose the model that best matches the agent's latency and reasoning needs.",
   );
@@ -43,15 +44,21 @@ test('keeps configuration actions sticky and contained on mobile', async ({ page
   const actionBar = createButton.locator('..');
   await expect(createButton).toBeVisible();
   await expect(page.getByRole('link', { name: 'Cancel' })).toBeVisible();
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  const actionBounds = await actionBar.boundingBox();
+  expect(actionBounds).not.toBeNull();
+  expect(actionBounds?.y ?? -1).toBeGreaterThanOrEqual(0);
+  expect((actionBounds?.y ?? 0) + (actionBounds?.height ?? 0)).toBeLessThanOrEqual(812);
   expect(await actionBar.evaluate((element) => getComputedStyle(element).position)).toBe('sticky');
   expect(await createButton.evaluate((element) => element.getBoundingClientRect().height)).toBeGreaterThanOrEqual(44);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
 });
 
 test('localizes appearance options and preview in Vietnamese', async ({ page }) => {
+  await page.getByRole('link', { name: 'Create agent' }).first().click();
+  await expect(page.getByRole('heading', { name: 'Create AI agent' })).toBeVisible();
   await page.getByRole('combobox', { name: 'Language' }).selectOption('vi');
-  await expect(page.getByRole('heading', { name: 'Trợ lý AI' })).toBeVisible();
-  await page.getByRole('link', { name: 'Tạo trợ lý' }).first().click();
+  await expect(page.getByRole('heading', { name: 'Tạo trợ lý AI' })).toBeVisible();
 
   await expect(page.getByRole('option', { name: 'Lục bảo' })).toBeAttached();
   await expect(page.getByRole('option', { name: 'Cơ sở dữ liệu' })).toBeAttached();
@@ -62,6 +69,7 @@ test('localizes appearance options and preview in Vietnamese', async ({ page }) 
   });
   await expect(preview.getByText('Lục bảo')).toBeVisible();
   await expect(preview.getByText('Cơ sở dữ liệu')).toBeVisible();
+  await expectNoA11yViolations(page);
 });
 
 test('opens an agent conversation in the chat workbench', async ({ page }) => {

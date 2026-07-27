@@ -101,6 +101,16 @@
     "ICON_SPARKLES": "Sparkles",
     "ICON_TERMINAL": "Terminal"
   },
+  "AGENT_VALIDATION": {
+    "AVATAR_COLOR_REQUIRED": "Select an avatar color.",
+    "AVATAR_ICON_REQUIRED": "Select an avatar icon.",
+    "MODEL_REQUIRED": "Select an AI model.",
+    "NAME_MAX": "Agent name must be 255 characters or fewer.",
+    "NAME_REQUIRED": "Enter an agent name.",
+    "SYSTEM_PROMPT_REQUIRED": "Enter a system prompt.",
+    "TEMPERATURE_MAX": "Temperature must be 2 or lower.",
+    "TEMPERATURE_MIN": "Temperature must be 0 or higher."
+  },
   "CHAT_UI": {
     "CONVERSATION_HISTORY": "Conversation history",
     "NEW_CONVERSATION": "New conversation",
