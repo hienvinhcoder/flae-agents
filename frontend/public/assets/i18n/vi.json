@@ -28,6 +28,16 @@
     "GROUP_KNOWLEDGE": "Knowledge",
     "GROUP_ADMIN": "Admin"
   },
+  "OVERVIEW": {
+    "FOCUS_EYEBROW": "Trọng tâm",
+    "COMING_SOON": "Sắp ra mắt",
+    "BRIEFING_DESCRIPTION": "Tổng quan ngắn gọn về quyết định, rủi ro và cập nhật trong bộ nhớ doanh nghiệp.",
+    "BRIEFING_PREVIEW_DESCRIPTION": "Tín hiệu doanh nghiệp hằng ngày hiện chưa khả dụng.",
+    "INBOX_DESCRIPTION": "Theo dõi các hội thoại cần thêm ngữ cảnh, người phụ trách hoặc hành động tiếp theo.",
+    "INBOX_PREVIEW_DESCRIPTION": "Quản lý hội thoại hợp nhất hiện chưa khả dụng.",
+    "REPORTS_DESCRIPTION": "Chuyển tri thức doanh nghiệp được kết nối thành báo cáo phân tích có thể lặp lại.",
+    "REPORTS_PREVIEW_DESCRIPTION": "Báo cáo phân tích được tạo tự động hiện chưa khả dụng."
+  },
   "TOPICS": {
     "TITLE": "Chủ đề Tri thức",
     "DESC": "Các cụm tri thức ngữ nghĩa tự động gom cụm từ tài liệu của bạn.",

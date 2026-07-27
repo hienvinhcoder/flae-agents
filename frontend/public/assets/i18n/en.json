@@ -28,6 +28,16 @@
     "GROUP_KNOWLEDGE": "Knowledge",
     "GROUP_ADMIN": "Admin"
   },
+  "OVERVIEW": {
+    "FOCUS_EYEBROW": "Focus",
+    "COMING_SOON": "Coming soon",
+    "BRIEFING_DESCRIPTION": "A concise view of decisions, risks, and updates across your company memory.",
+    "BRIEFING_PREVIEW_DESCRIPTION": "Daily company signals are not available yet.",
+    "INBOX_DESCRIPTION": "Review conversations that need context, ownership, or follow-up.",
+    "INBOX_PREVIEW_DESCRIPTION": "Unified conversation management is not available yet.",
+    "REPORTS_DESCRIPTION": "Turn connected company knowledge into repeatable analyst outputs.",
+    "REPORTS_PREVIEW_DESCRIPTION": "Generated analyst reports are not available yet."
+  },
   "TOPICS": {
     "TITLE": "Knowledge Topics",
     "DESC": "Semantic clusters automatically generated from your ingested documentation.",
