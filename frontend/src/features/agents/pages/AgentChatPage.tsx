@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { useWorkspaceStore } from "../../../core/stores/workspace-store";
@@ -6,6 +7,7 @@ import { ChatExperience } from "../../chat/ui/ChatExperience";
 import { useAgentDetail } from "../hooks/use-agents";
 
 export function AgentChatPage() {
+  const { t } = useTranslation();
   const { agentId } = useParams();
   const navigate = useNavigate();
   const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId);
@@ -24,9 +26,9 @@ export function AgentChatPage() {
       agent={detailQuery.data}
       agentId={agentId}
       agentLoading={detailQuery.isPending}
-      ariaLabel="Agent conversation"
+      ariaLabel={t("CHAT_UI.MESSAGE_AGENT", { name: detailQuery.data?.name ?? t("AGENTS_UI.TITLE") })}
       backHref="/dashboard/agents"
-      backLabel="AI agents"
+      backLabel={t("CHAT_UI.BACK_TO_AGENTS")}
       workspaceId={workspaceId}
     />
   );

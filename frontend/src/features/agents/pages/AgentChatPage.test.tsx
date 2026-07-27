@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AppError } from "../../../core/api/errors";
 import { useWorkspaceStore } from "../../../core/stores/workspace-store";
+import { TestI18nProvider } from "../../../../tests/TestI18nProvider";
 import { AgentChatPage } from "./AgentChatPage";
 
 const agentsApi = vi.hoisted(() => ({
@@ -28,7 +29,11 @@ function renderPage() {
     [{ path: "/dashboard/agents/:agentId/chat", element: <AgentChatPage /> }],
     { initialEntries: [`/dashboard/agents/${agentId}/chat`] },
   );
-  return render(<QueryClientProvider client={queryClient}><RouterProvider router={router} /></QueryClientProvider>);
+  return render(
+    <TestI18nProvider>
+      <QueryClientProvider client={queryClient}><RouterProvider router={router} /></QueryClientProvider>
+    </TestI18nProvider>,
+  );
 }
 
 describe("AgentChatPage", () => {
@@ -64,6 +69,14 @@ describe("AgentChatPage", () => {
     expect(screen.getByText("Benefits.pdf")).toBeInTheDocument();
   });
 
+  it("exposes the agent chat workbench landmarks", async () => {
+    renderPage();
+
+    expect(await screen.findByRole("region", { name: "Message Research guide" })).toBeInTheDocument();
+    expect(screen.getByRole("complementary", { name: "Conversation history" })).toBeInTheDocument();
+    expect(screen.getByTestId("message-viewport")).toHaveAccessibleName("Conversation messages");
+  });
+
   it("creates and selects a new session", async () => {
     const user = userEvent.setup();
     agentsApi.listSessions
@@ -92,6 +105,25 @@ describe("AgentChatPage", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(/could not be deleted/i);
     expect(screen.getByText("Benefits question")).toBeInTheDocument();
     expect(screen.getByText("Permanent employees are eligible.")).toBeInTheDocument();
+  });
+
+  it("uses safe copy without duplicating the global alert for a server mutation failure", async () => {
+    const user = userEvent.setup();
+    agentsApi.deleteSession.mockRejectedValueOnce(new AppError({
+      kind: "server",
+      message: "Raw service outage details",
+      retryable: true,
+      status: 503,
+    }));
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    renderPage();
+    await screen.findByText("Benefits question");
+
+    await user.click(screen.getByRole("button", { name: /delete benefits question/i }));
+
+    expect(await screen.findByText("The conversation could not be deleted.")).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.queryByText("Raw service outage details")).not.toBeInTheDocument();
   });
 
   it("selects the remaining state after a successful session deletion", async () => {

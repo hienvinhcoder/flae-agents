@@ -1,5 +1,7 @@
 import { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 
+import { AppError } from "../../../core/api/errors";
 import { Button } from "../../../shared/ui/Button";
 import { Skeleton } from "../../../shared/ui/Skeleton";
 import { Toast, ToastViewport } from "../../../shared/ui/Toast";
@@ -25,8 +27,18 @@ interface ChatExperienceProps {
   workspaceId: string;
 }
 
-function readableError(error: unknown, fallback: string) {
+interface ActionError {
+  announce: boolean;
+  message: string;
+}
+
+function publicErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof AppError) return fallback;
   return error instanceof Error ? error.message : fallback;
+}
+
+function isGloballyAnnouncedServerError(error: unknown) {
+  return error instanceof AppError && error.kind === "server" && (error.status ?? 0) >= 500;
 }
 
 export function ChatExperience({
@@ -38,10 +50,11 @@ export function ChatExperience({
   backLabel,
   workspaceId,
 }: ChatExperienceProps) {
+  const { t } = useTranslation();
   const sessionsQuery = useSessions(workspaceId, agentId);
   const actions = useSessionActions(workspaceId, agentId);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<ActionError | null>(null);
   const sessions = sessionsQuery.data ?? EMPTY_SESSIONS;
   const activeSessionId = selectedSessionId && sessions.some((session) => session.id === selectedSessionId)
     ? selectedSessionId
@@ -65,35 +78,42 @@ export function ChatExperience({
       const created = await actions.create.mutateAsync({});
       setSelectedSessionId(created.id);
     } catch (error) {
-      setActionError(readableError(error, "The conversation could not be created."));
+      setActionError({
+        announce: !isGloballyAnnouncedServerError(error),
+        message: publicErrorMessage(error, t("CHAT_UI.CREATE_FAILED")),
+      });
     }
   };
   const deleteSession = async (session: ChatSession) => {
-    if (!window.confirm(`Delete conversation "${session.title}"?`)) return;
+    if (!window.confirm(t("CHAT_UI.DELETE_CONFIRM", { title: session.title }))) return;
     setActionError(null);
     const index = sessions.findIndex((item) => item.id === session.id);
     const nextId = sessions[index + 1]?.id ?? sessions[index - 1]?.id ?? null;
     try {
       const deleted = await actions.remove.mutateAsync(session.id);
       if (!deleted) {
-        setActionError("The conversation could not be deleted.");
+        setActionError({ announce: true, message: t("CHAT_UI.DELETE_FAILED") });
       } else if (activeSessionId === session.id) {
         setSelectedSessionId(nextId);
       }
     } catch (error) {
-      setActionError(readableError(error, "The conversation could not be deleted."));
+      setActionError({
+        announce: !isGloballyAnnouncedServerError(error),
+        message: publicErrorMessage(error, t("CHAT_UI.DELETE_FAILED")),
+      });
     }
   };
 
   return (
-    <section aria-label={ariaLabel} className="mx-auto grid min-h-[calc(100vh-8.5rem)] w-full max-w-7xl overflow-hidden rounded-ui-panel border border-ui-line bg-ui-surface lg:grid-cols-[19rem_minmax(0,1fr)]">
+    <section aria-label={ariaLabel} className="mx-auto grid min-h-[calc(100vh-10rem)] w-full max-w-[96rem] overflow-hidden border-y border-ui-divider bg-ui-raised/35 lg:grid-cols-[19rem_minmax(0,1fr)]" role="region">
       <ConversationSidebar
         activeSessionId={activeSessionId}
         backHref={backHref}
         backLabel={backLabel}
         creating={actions.create.isPending}
         deleting={actions.remove.isPending}
-        error={sessionsQuery.isError ? readableError(sessionsQuery.error, "Unable to load conversations.") : null}
+        error={sessionsQuery.isError ? publicErrorMessage(sessionsQuery.error, t("CHAT_UI.HISTORY_LOAD_ERROR")) : null}
+        errorAnnounce={!isGloballyAnnouncedServerError(sessionsQuery.error)}
         loading={sessionsQuery.isPending}
         onCreate={() => void createSession()}
         onDelete={(session) => void deleteSession(session)}
@@ -102,26 +122,27 @@ export function ChatExperience({
         sessions={sessions}
       />
 
-      <div className="flex min-h-[36rem] min-w-0 flex-col">
-        <header className="flex min-h-16 items-center border-b border-ui-line bg-ui-raised px-5">
-          {agentLoading ? <div className="w-52"><Skeleton label="Loading agent" lines={2} /></div> : agent ? (
+      <div className="flex min-h-[36rem] min-w-0 flex-col bg-ui-canvas">
+        <header className="flex min-h-16 items-center border-b border-ui-divider bg-ui-raised px-5">
+          {agentLoading ? <div className="w-52"><Skeleton label={t("AGENTS_UI.LOADING_CARD")} lines={2} /></div> : agent ? (
             <div className="flex items-center gap-3">
               <div aria-hidden className={`flex h-10 w-10 items-center justify-center rounded-xl text-white ${getAgentAvatarColor(agent.avatar_color)}`}>
                 <AgentAvatarIcon className="h-5 w-5" icon={agent.avatar_icon} />
               </div>
               <div>
                 <h1 className="text-sm font-bold text-ui-ink">{agent.name}</h1>
-                <p className="mt-0.5 text-xs text-ui-ink-muted">Ready on {agent.model_name}</p>
+                <p className="mt-0.5 text-xs text-ui-ink-muted">{t("CHAT_UI.READY_ON_MODEL", { model: agent.model_name })}</p>
               </div>
             </div>
           ) : null}
         </header>
 
-        {actionError ? <p className="m-4 rounded-ui-control border border-state-danger bg-state-danger-soft p-3 text-sm text-state-danger" role="alert">{actionError}</p> : null}
+        {actionError ? <p className="m-4 rounded-ui-control border border-state-danger bg-state-danger-soft p-3 text-sm text-state-danger" role={actionError.announce ? "alert" : undefined}>{actionError.message}</p> : null}
         <ConversationMessages
           activeSessionId={activeSessionId}
           agent={agent}
-          error={messagesQuery.isError ? readableError(messagesQuery.error, "Unable to load messages.") : null}
+          error={messagesQuery.isError ? publicErrorMessage(messagesQuery.error, t("CHAT_UI.MESSAGE_LOAD_ERROR")) : null}
+          errorAnnounce={!isGloballyAnnouncedServerError(messagesQuery.error)}
           loading={messagesQuery.isPending}
           messages={stream.messages}
           onRetry={() => void messagesQuery.refetch()}
@@ -131,7 +152,7 @@ export function ChatExperience({
           <>
             {stream.error && stream.canRetry ? (
               <div className="border-t border-ui-line bg-state-danger-soft px-4 py-2 text-center">
-                <Button aria-label="Retry message" onClick={() => void stream.retry()} variant="secondary">Retry message</Button>
+                <Button aria-label={t("CHAT_UI.RETRY_MESSAGE")} onClick={() => void stream.retry()} variant="secondary">{t("CHAT_UI.RETRY_MESSAGE")}</Button>
               </div>
             ) : null}
             <ChatComposer agentName={agent.name} onSend={(message) => void stream.send(message)} onStop={stream.stop} status={stream.status} />

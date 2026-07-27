@@ -7,6 +7,9 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('stops a connecting stream, retries a failure, and exposes citations', async ({ page }) => {
+  await expect(page.getByRole('region', { name: 'Workspace assistant chat' })).toBeVisible();
+  await expect(page.getByRole('complementary', { name: 'Conversation history' })).toBeVisible();
+  await expect(page.getByTestId('message-viewport')).toHaveAccessibleName('Conversation messages');
   await expectNoA11yViolations(page);
   const composer = page.getByPlaceholder('Ask Research assistant...');
   await composer.fill('Stop this response');

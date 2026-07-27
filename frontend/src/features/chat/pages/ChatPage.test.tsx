@@ -5,6 +5,7 @@ import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useWorkspaceStore } from "../../../core/stores/workspace-store";
+import { TestI18nProvider } from "../../../../tests/TestI18nProvider";
 import { ChatPage } from "./ChatPage";
 
 const agentsApi = vi.hoisted(() => ({
@@ -33,7 +34,11 @@ const createdSession = { ...sessions[0], id: "55555555-5555-4555-8555-5555555555
 function renderPage() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const router = createMemoryRouter([{ path: "/dashboard/chat", element: <ChatPage /> }], { initialEntries: ["/dashboard/chat"] });
-  return render(<QueryClientProvider client={queryClient}><RouterProvider router={router} /></QueryClientProvider>);
+  return render(
+    <TestI18nProvider>
+      <QueryClientProvider client={queryClient}><RouterProvider router={router} /></QueryClientProvider>
+    </TestI18nProvider>,
+  );
 }
 
 describe("ChatPage", () => {
@@ -57,6 +62,14 @@ describe("ChatPage", () => {
     expect(await screen.findByRole("button", { name: /^first chat$/i })).toHaveAttribute("aria-current", "true");
     expect(agentsApi.listSessions).toHaveBeenCalledWith(workspaceId, agentId, expect.any(AbortSignal));
     expect(agentsApi.listMessages).toHaveBeenCalledWith(workspaceId, agentId, sessionId, expect.any(AbortSignal));
+  });
+
+  it("exposes the chat workbench landmarks and named message viewport", async () => {
+    renderPage();
+
+    expect(await screen.findByRole("region", { name: "Workspace assistant chat" })).toBeInTheDocument();
+    expect(screen.getByRole("complementary", { name: "Conversation history" })).toBeInTheDocument();
+    expect(screen.getByTestId("message-viewport")).toHaveAccessibleName("Conversation messages");
   });
 
   it("creates, prepends, and selects a new conversation", async () => {
