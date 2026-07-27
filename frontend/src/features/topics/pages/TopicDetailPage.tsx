@@ -1,30 +1,39 @@
 import { ArrowLeft, FileText, Pencil, RefreshCw, Save, X } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { useWorkspaceStore } from "../../../core/stores/workspace-store";
 import { Button } from "../../../shared/ui/Button";
 import { ErrorState } from "../../../shared/ui/ErrorState";
 import { Input } from "../../../shared/ui/Input";
+import { PageHeader } from "../../../shared/ui/PageHeader";
 import { Select } from "../../../shared/ui/Select";
 import { Skeleton } from "../../../shared/ui/Skeleton";
 import { Tabs, type TabItem } from "../../../shared/ui/Tabs";
 import { useTopicActions, useTopicDetail } from "../hooks/use-topics";
 import { topicEditSchema } from "../schemas/topic-schema";
-import type { TopicMember, TopicStatus } from "../types/topic";
+import type { TopicMember, TopicStatus, TopicType } from "../types/topic";
 
-const topicStatusLabels: Record<TopicStatus, string> = {
-  active: "Active",
-  archived: "Archived",
-  needs_review: "Needs review",
+const topicStatusLabelKeys: Record<TopicStatus, string> = {
+  active: "TOPICS.STATUS_ACTIVE",
+  archived: "TOPICS.STATUS_ARCHIVED",
+  needs_review: "TOPICS.STATUS_NEEDS_REVIEW",
 };
 
-function errorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "Unable to load topic details.";
+const topicTypeLabelKeys: Record<TopicType, string> = {
+  domain: "TOPICS.TYPE_DOMAIN",
+  subtopic: "TOPICS.TYPE_SUBTOPIC",
+  topic: "TOPICS.TYPE_TOPIC",
+};
+
+function errorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
 }
 
-function optionalErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : undefined;
+function optionalErrorMessage(error: unknown, fallback: string) {
+  if (!error) return undefined;
+  return error instanceof Error ? error.message : fallback;
 }
 
 function metadataText(member: TopicMember, key: string) {
@@ -32,7 +41,17 @@ function metadataText(member: TopicMember, key: string) {
   return typeof value === "string" && value.trim() ? value : undefined;
 }
 
-function EvidenceList({ empty, members }: { empty: string; members: readonly TopicMember[] }) {
+function EvidenceList({
+  empty,
+  evidenceLabel,
+  members,
+  relevanceLabel,
+}: {
+  empty: string;
+  evidenceLabel: (count: number) => string;
+  members: readonly TopicMember[];
+  relevanceLabel: (value: number) => string;
+}) {
   if (members.length === 0) {
     return <p className="text-ui-ink-muted">{empty}</p>;
   }
@@ -48,8 +67,8 @@ function EvidenceList({ empty, members }: { empty: string; members: readonly Top
           <>
             <p className="font-semibold text-ui-ink">{title}</p>
             <p className="mt-1 text-sm text-ui-ink-muted">
-              {Math.round(member.relevance_score * 100)}% relevance
-              {member.evidence_count ? ` - ${member.evidence_count} evidence` : ""}
+              {relevanceLabel(Math.round(member.relevance_score * 100))}
+              {member.evidence_count ? ` - ${evidenceLabel(member.evidence_count)}` : ""}
             </p>
           </>
         );
@@ -68,6 +87,7 @@ function EvidenceList({ empty, members }: { empty: string; members: readonly Top
 }
 
 export function TopicDetailPage() {
+  const { i18n, t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId);
@@ -87,47 +107,70 @@ export function TopicDetailPage() {
     tone: "error" | "success";
   }>();
   const busy = actions.update.isPending || actions.reSummarize.isPending;
+  const updateError = optionalErrorMessage(
+    actions.update.error,
+    t("TOPICS.SAVE_ERROR"),
+  );
+  const reSummarizeError = optionalErrorMessage(
+    actions.reSummarize.error,
+    t("TOPICS.RE_SUMMARY_ERROR"),
+  );
 
   const tabItems = useMemo<readonly TabItem[]>(() => {
     const members = topic?.members ?? [];
+    const evidenceLabel = (count: number) => t("TOPICS.EVIDENCE_COUNT", { count });
+    const relevanceLabel = (value: number) => t("TOPICS.MEMBER_RELEVANCE", { value });
     return [
       {
         content: (
           <EvidenceList
-            empty="No evidence excerpts are linked to this topic."
+            empty={t("TOPICS.NO_CHUNKS")}
+            evidenceLabel={evidenceLabel}
             members={members.filter((member) => member.member_type === "chunk")}
+            relevanceLabel={relevanceLabel}
           />
         ),
         id: "evidence",
-        label: "Evidence excerpts",
+        label: t("TOPICS.TAB_CHUNKS"),
       },
       {
         content: (
           <EvidenceList
-            empty="No source documents are linked to this topic."
+            empty={t("TOPICS.NO_DOCS")}
+            evidenceLabel={evidenceLabel}
             members={members.filter((member) => member.member_type === "document")}
+            relevanceLabel={relevanceLabel}
           />
         ),
         id: "documents",
-        label: "Source documents",
+        label: t("TOPICS.TAB_DOCUMENTS"),
       },
       {
         content: (
           <EvidenceList
-            empty="No entities are linked to this topic."
+            empty={t("TOPICS.NO_ENTITIES")}
+            evidenceLabel={evidenceLabel}
             members={members.filter((member) => member.member_type === "entity")}
+            relevanceLabel={relevanceLabel}
           />
         ),
         id: "entities",
-        label: "Related entities",
+        label: t("TOPICS.TAB_ENTITIES"),
       },
     ];
-  }, [topic?.members]);
+  }, [t, topic?.members]);
 
   const save = async () => {
     const result = topicEditSchema.safeParse({ name, status });
     if (!result.success) {
-      setValidationError(result.error.issues[0]?.message ?? "Review the topic details.");
+      const issue = result.error.issues[0];
+      setValidationError(
+        issue?.code === "too_big"
+          ? t("TOPICS.NAME_MAX")
+          : issue?.code === "too_small"
+            ? t("TOPICS.NAME_REQUIRED")
+            : t("TOPICS.REVIEW_DETAILS"),
+      );
       return;
     }
     setValidationError(undefined);
@@ -148,9 +191,9 @@ export function TopicDetailPage() {
       const requested = await actions.reSummarize.mutateAsync();
       setSummaryFeedback(
         requested
-          ? { message: "Summary refresh requested.", tone: "success" }
+          ? { message: t("TOPICS.RE_SUMMARY_SUCCESS"), tone: "success" }
           : {
-              message: "Unable to request a summary refresh.",
+              message: t("TOPICS.RE_SUMMARY_ERROR"),
               tone: "error",
             },
       );
@@ -162,10 +205,10 @@ export function TopicDetailPage() {
   if (!workspaceId) {
     return (
       <section className="surface-panel mx-auto max-w-4xl p-6">
-        <h1 className="text-2xl font-bold text-ui-ink">Topic detail</h1>
-        <p className="mt-2 text-ui-ink-secondary">
-          Select a workspace before opening a knowledge topic.
-        </p>
+        <PageHeader
+          description={t("TOPICS.WORKSPACE_REQUIRED")}
+          title={t("TOPICS.DETAIL_TITLE")}
+        />
       </section>
     );
   }
@@ -173,9 +216,10 @@ export function TopicDetailPage() {
   if (topicQuery.isError) {
     return (
       <ErrorState
-        message={errorMessage(topicQuery.error)}
+        message={errorMessage(topicQuery.error, t("TOPICS.FETCH_DETAIL_ERROR"))}
         onRetry={() => void topicQuery.refetch()}
-        title="Unable to load topic"
+        retryLabel={t("TOPICS.RETRY_LIST")}
+        title={t("TOPICS.FETCH_DETAIL_TITLE")}
       />
     );
   }
@@ -183,61 +227,80 @@ export function TopicDetailPage() {
   if (topicQuery.isPending || !topic) {
     return (
       <section className="surface-panel mx-auto max-w-5xl p-6">
-        <Skeleton label="Loading topic details" lines={7} />
+        <Skeleton label={t("TOPICS.LOADING_DETAIL")} lines={7} />
       </section>
     );
   }
 
+  const updatedDate = new Intl.DateTimeFormat(
+    i18n.resolvedLanguage ?? i18n.language,
+  ).format(new Date(topic.updated_at));
+
   return (
-    <section aria-labelledby="topic-title" className="mx-auto w-full max-w-6xl">
+    <section
+      aria-labelledby="topic-title"
+      className="mx-auto grid w-full max-w-7xl gap-6"
+    >
       <Link
-        className="inline-flex min-h-10 items-center gap-2 rounded-ui-control font-semibold text-ui-ink-secondary transition-colors duration-200 hover:text-ui-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+        className="inline-flex min-h-11 items-center gap-2 self-start rounded-ui-control font-semibold text-ui-ink-secondary transition-colors duration-200 motion-reduce:transition-none hover:text-ui-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
         to="/dashboard/topics"
       >
         <ArrowLeft aria-hidden className="h-4 w-4" />
-        Back to topics
+        {t("TOPICS.BACK_TO_LIST")}
       </Link>
 
-      <header className="mt-4 flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-        <div className="min-w-0">
-          <p className="text-metadata">{topic.type.replace("_", " ")} topic</p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-ui-ink" id="topic-title">
-            {topic.name}
-          </h1>
-          <p className="mt-2 text-sm text-ui-ink-muted">Updated {new Date(topic.updated_at).toLocaleDateString()}</p>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <Button
-            disabled={busy}
-            onClick={() => {
-              setName(topic.name);
-              setStatus(topic.status);
-              setValidationError(undefined);
-              setEditing(true);
-            }}
-            variant="secondary"
-          >
-            <Pencil aria-hidden className="h-4 w-4" />
-            Edit
-          </Button>
-          <Button
-            disabled={actions.update.isPending}
-            isLoading={actions.reSummarize.isPending}
-            loadingText="Requesting summary"
-            onClick={() => void requestSummary()}
-          >
-            <RefreshCw aria-hidden className="h-4 w-4" />
-            Re-summarize
-          </Button>
-        </div>
-      </header>
+      <PageHeader
+        actions={(
+          <>
+            <Button
+              aria-label={t("TOPICS.EDIT_TOPIC")}
+              disabled={busy}
+              onClick={() => {
+                actions.update.reset();
+                setName(topic.name);
+                setStatus(topic.status);
+                setValidationError(undefined);
+                setEditing(true);
+              }}
+              type="button"
+              variant="secondary"
+            >
+              <Pencil aria-hidden className="h-4 w-4" />
+              {t("TOPICS.EDIT")}
+            </Button>
+            <Button
+              disabled={actions.update.isPending}
+              isLoading={actions.reSummarize.isPending}
+              loadingText={t("TOPICS.REQUESTING_SUMMARY")}
+              onClick={() => void requestSummary()}
+              type="button"
+            >
+              <RefreshCw aria-hidden className="h-4 w-4" />
+              {t("TOPICS.RE_SUMMARY_BTN")}
+            </Button>
+          </>
+        )}
+        description={topic.summary || t("TOPICS.NO_SUMMARY")}
+        eyebrow={`${t(topicTypeLabelKeys[topic.type])} ${t("TOPICS.TOPIC_LABEL")}`}
+        metadata={t("TOPICS.UPDATED_DATE", { date: updatedDate })}
+        title={topic.name}
+        titleId="topic-title"
+      />
 
       {editing ? (
-        <div className="surface-panel mt-6 grid gap-4 p-5 md:grid-cols-[minmax(0,1fr)_14rem_auto] md:items-end">
+        <form
+          aria-describedby={updateError ? "topic-update-error" : undefined}
+          aria-label={t("TOPICS.EDIT_TOPIC")}
+          className="surface-panel grid gap-4 p-5 md:grid-cols-[minmax(0,1fr)_14rem_auto] md:items-end"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void save();
+          }}
+        >
           <Input
             disabled={busy}
             error={validationError}
-            label="Topic name"
+            label={t("TOPICS.TOPIC_NAME")}
             onChange={(event) => {
               setName(event.target.value);
               setValidationError(undefined);
@@ -246,12 +309,12 @@ export function TopicDetailPage() {
           />
           <Select
             disabled={busy}
-            label="Topic status"
+            label={t("TOPICS.TOPIC_STATUS")}
             onChange={(event) => setStatus(event.target.value as TopicStatus)}
             options={[
-              { label: "Active", value: "active" },
-              { label: "Needs review", value: "needs_review" },
-              { label: "Archived", value: "archived" },
+              { label: t("TOPICS.STATUS_ACTIVE"), value: "active" },
+              { label: t("TOPICS.STATUS_NEEDS_REVIEW"), value: "needs_review" },
+              { label: t("TOPICS.STATUS_ARCHIVED"), value: "archived" },
             ]}
             value={status}
           />
@@ -259,37 +322,51 @@ export function TopicDetailPage() {
             <Button
               disabled={actions.reSummarize.isPending}
               isLoading={actions.update.isPending}
-              loadingText="Saving"
-              onClick={() => void save()}
+              loadingText={t("TOPICS.SAVING")}
+              type="submit"
             >
               <Save aria-hidden className="h-4 w-4" />
-              Save changes
+              {t("TOPICS.SAVE_CHANGES")}
             </Button>
             <Button
               disabled={busy}
               onClick={() => {
+                actions.update.reset();
                 setEditing(false);
                 setName(topic.name);
                 setStatus(topic.status);
                 setValidationError(undefined);
               }}
+              type="button"
               variant="ghost"
             >
               <X aria-hidden className="h-4 w-4" />
-              Cancel
+              {t("TOPICS.CANCEL")}
             </Button>
           </div>
-        </div>
+          {updateError ? (
+            <p
+              className="rounded-ui-control border border-state-danger bg-state-danger-soft p-3 text-state-danger md:col-span-3"
+              id="topic-update-error"
+              role="alert"
+            >
+              {updateError}
+            </p>
+          ) : null}
+        </form>
       ) : null}
 
-      {optionalErrorMessage(actions.update.error) || optionalErrorMessage(actions.reSummarize.error) ? (
-        <p className="mt-5 rounded-ui-control border border-state-danger bg-state-danger-soft p-3 text-state-danger" role="alert">
-          {optionalErrorMessage(actions.update.error) ?? optionalErrorMessage(actions.reSummarize.error)}
+      {reSummarizeError ? (
+        <p
+          className="rounded-ui-control border border-state-danger bg-state-danger-soft p-3 text-state-danger"
+          role="alert"
+        >
+          {reSummarizeError}
         </p>
       ) : null}
       {summaryFeedback ? (
         <p
-          className={`mt-5 rounded-ui-control border p-3 ${
+          className={`rounded-ui-control border p-3 ${
             summaryFeedback.tone === "success"
               ? "border-state-success bg-state-success-soft text-state-success"
               : "border-state-danger bg-state-danger-soft text-state-danger"
@@ -300,44 +377,60 @@ export function TopicDetailPage() {
         </p>
       ) : null}
 
-      <div className="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1fr)_18rem]">
-        <div className="grid gap-5">
-          <section className="surface-panel p-6" aria-labelledby="topic-summary-title">
-            <h2 className="text-lg font-semibold text-ui-ink" id="topic-summary-title">Summary</h2>
-            <p className="mt-3 leading-7 text-ui-ink-secondary">
-              {topic.summary ?? "No summary is available yet."}
-            </p>
-          </section>
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
+        <div className="min-w-0">
           {topic.current_state ? (
             <section className="surface-panel p-6" aria-labelledby="topic-state-title">
-              <h2 className="text-lg font-semibold text-ui-ink" id="topic-state-title">Current state</h2>
-              <p className="mt-3 leading-7 text-ui-ink-secondary">{topic.current_state}</p>
+              <h2
+                className="text-lg font-semibold text-ui-ink"
+                id="topic-state-title"
+              >
+                {t("TOPICS.CURRENT_STATE")}
+              </h2>
+              <p className="mt-3 break-words leading-7 text-ui-ink-secondary">
+                {topic.current_state}
+              </p>
             </section>
           ) : null}
-          <section className="surface-panel p-6" aria-labelledby="topic-evidence-title">
-            <h2 className="text-lg font-semibold text-ui-ink" id="topic-evidence-title">Linked knowledge</h2>
+          <section
+            aria-labelledby="topic-evidence-title"
+            className={`${topic.current_state ? "mt-6" : ""} border-t border-ui-divider pt-6`}
+          >
+            <h2
+              className="text-lg font-semibold text-ui-ink"
+              id="topic-evidence-title"
+            >
+              {t("TOPICS.KNOWLEDGE_LINKS")}
+            </h2>
             <div className="mt-4">
-              <Tabs ariaLabel="Topic evidence" items={tabItems} />
+              <Tabs ariaLabel={t("TOPICS.EVIDENCE_TABS_ARIA")} items={tabItems} />
             </div>
           </section>
         </div>
 
-        <aside className="surface-panel h-fit p-5" aria-label="Topic metadata">
+        <aside
+          aria-label={t("TOPICS.TOPIC_METADATA")}
+          className="surface-panel h-fit p-5"
+        >
           <div className="flex items-center gap-2 text-ui-ink">
             <FileText aria-hidden className="h-5 w-5 text-accent-ai" />
-            <h2 className="font-semibold">Topic signals</h2>
+            <h2 className="font-semibold">{t("TOPICS.TOPIC_SIGNALS")}</h2>
           </div>
           <dl className="mt-4 grid gap-4 text-sm">
             <div>
-              <dt className="text-ui-ink-muted">Status</dt>
-              <dd className="mt-1 font-semibold text-ui-ink">{topicStatusLabels[topic.status]}</dd>
+              <dt className="text-ui-ink-muted">{t("TOPICS.STATUS_LABEL")}</dt>
+              <dd className="mt-1 font-semibold text-ui-ink">
+                {t(topicStatusLabelKeys[topic.status])}
+              </dd>
             </div>
             <div>
-              <dt className="text-ui-ink-muted">Confidence</dt>
-              <dd className="mt-1 font-semibold text-ui-ink">{Math.round(topic.confidence * 100)}%</dd>
+              <dt className="text-ui-ink-muted">{t("TOPICS.CONFIDENCE_LABEL")}</dt>
+              <dd className="mt-1 font-semibold text-ui-ink">
+                {Math.round(topic.confidence * 100)}%
+              </dd>
             </div>
             <div>
-              <dt className="text-ui-ink-muted">Linked members</dt>
+              <dt className="text-ui-ink-muted">{t("TOPICS.LINKED_MEMBERS")}</dt>
               <dd className="mt-1 font-semibold text-ui-ink">{topic.members.length}</dd>
             </div>
           </dl>

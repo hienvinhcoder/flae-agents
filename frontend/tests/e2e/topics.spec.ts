@@ -1,4 +1,4 @@
-import { expect, fulfillJson, ids, installAuthSession, test } from './fixtures';
+import { expect, expectNoA11yViolations, fulfillJson, ids, installAuthSession, test } from './fixtures';
 
 test.beforeEach(async ({ page }) => {
   await installAuthSession(page);
@@ -98,8 +98,25 @@ test('merges a duplicate topic and archives the retained topic', async ({ page }
   await expect(page.getByRole('heading', { name: 'Market research' })).toBeHidden();
 
   await page.getByRole('heading', { name: 'Product strategy' }).click();
-  await page.getByRole('button', { name: 'Edit' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Product strategy' })).toHaveCount(1);
+  await expect(page.getByRole('link', { name: 'Back to list' })).toBeVisible();
+  await page.getByRole('button', { name: 'Edit topic' }).click();
   await page.getByLabel('Topic status').selectOption('archived');
   await page.getByRole('button', { name: 'Save changes' }).click();
   await expect(page.getByLabel('Topic metadata')).toContainText('Archived');
+});
+
+test('keeps the topic detail workbench contained and accessible on mobile', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(`/dashboard/topics/${ids.topic}`);
+
+  await expect(page.getByRole('heading', { level: 1, name: 'Product strategy' })).toHaveCount(1);
+  await expect(page.getByRole('button', { name: 'Edit topic' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Re-summarize' })).toBeVisible();
+  await expect(page.getByRole('tablist', { name: 'Topic evidence' })).toBeVisible();
+  await expect(page.getByLabel('Topic metadata')).toBeVisible();
+  expect(await page.evaluate(
+    () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+  )).toBe(true);
+  await expectNoA11yViolations(page);
 });

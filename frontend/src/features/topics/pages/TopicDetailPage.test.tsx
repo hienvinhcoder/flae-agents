@@ -1,11 +1,12 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useWorkspaceStore } from "../../../core/stores/workspace-store";
 import { queryKeys } from "../../../shared/lib/query-keys";
+import { TestI18nProvider } from "../../../../tests/TestI18nProvider";
 import type { TopicDetail } from "../types/topic";
 import { TopicDetailPage } from "./TopicDetailPage";
 
@@ -66,9 +67,11 @@ function renderDetail(path = `/dashboard/topics/${topicId}`) {
     { initialEntries: [path] },
   );
   render(
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>,
+    <TestI18nProvider>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </TestI18nProvider>,
   );
   return { queryClient, router };
 }
@@ -85,8 +88,18 @@ describe("TopicDetailPage", () => {
     const user = userEvent.setup();
     renderDetail("/dashboard/topics/product-strategy");
 
+    const heading = await screen.findByRole("heading", {
+      level: 1,
+      name: "Product strategy",
+    });
+    expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+    const header = heading.closest("header");
+    expect(header).not.toBeNull();
     expect(
-      await screen.findByRole("heading", { name: "Product strategy" }),
+      within(header as HTMLElement).getByRole("button", { name: "Edit topic" }),
+    ).toBeInTheDocument();
+    expect(
+      within(header as HTMLElement).getByRole("button", { name: "Re-summarize" }),
     ).toBeInTheDocument();
     expect(runtimeApi.getTopic).toHaveBeenCalledWith(
       workspaceId,
@@ -98,8 +111,45 @@ describe("TopicDetailPage", () => {
     await user.click(screen.getByRole("tab", { name: /source documents/i }));
     expect(screen.getByText("Roadmap")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("link", { name: /back to topics/i }));
+    await user.click(screen.getByRole("link", { name: "Back to list" }));
     expect(await screen.findByText("Topics list destination")).toBeInTheDocument();
+  });
+
+  it("keeps the edit form available with stable localized controls", async () => {
+    const user = userEvent.setup();
+    renderDetail();
+    await screen.findByRole("heading", { level: 1, name: "Product strategy" });
+
+    await user.click(screen.getByRole("button", { name: "Edit topic" }));
+
+    const form = screen.getByRole("form", { name: "Edit topic" });
+    expect(within(form).getByRole("textbox", { name: "Topic name" })).toHaveValue(
+      "Product strategy",
+    );
+    expect(within(form).getByRole("combobox", { name: "Topic status" })).toHaveValue(
+      "active",
+    );
+    expect(within(form).getByRole("button", { name: "Save changes" })).toBeEnabled();
+    expect(within(form).getByRole("button", { name: "Cancel" })).toBeEnabled();
+  });
+
+  it("preserves the edited topic name and associates a failed save with the form", async () => {
+    const user = userEvent.setup();
+    runtimeApi.updateTopic.mockRejectedValue(new Error("Save failed"));
+    renderDetail();
+    await screen.findByRole("heading", { level: 1, name: "Product strategy" });
+
+    await user.click(screen.getByRole("button", { name: "Edit topic" }));
+    const nameInput = screen.getByRole("textbox", { name: "Topic name" });
+    await user.clear(nameInput);
+    await user.type(nameInput, "New name");
+    await user.click(screen.getByRole("button", { name: "Save changes" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Save failed");
+    expect(nameInput).toHaveValue("New name");
+    expect(screen.getByRole("form", { name: "Edit topic" })).toHaveAccessibleDescription(
+      "Save failed",
+    );
   });
 
   it("validates inline edits and archives a topic through the typed update", async () => {
@@ -114,7 +164,7 @@ describe("TopicDetailPage", () => {
     renderDetail();
     await screen.findByRole("heading", { name: "Product strategy" });
 
-    await user.click(screen.getByRole("button", { name: /^edit$/i }));
+    await user.click(screen.getByRole("button", { name: "Edit topic" }));
     const name = screen.getByRole("textbox", { name: /topic name/i });
     await user.clear(name);
     await user.click(screen.getByRole("button", { name: /save changes/i }));
@@ -154,7 +204,7 @@ describe("TopicDetailPage", () => {
     renderDetail("/dashboard/topics/product-strategy");
     await screen.findByRole("heading", { name: "Product strategy" });
 
-    await user.click(screen.getByRole("button", { name: /^edit$/i }));
+    await user.click(screen.getByRole("button", { name: "Edit topic" }));
     const name = screen.getByRole("textbox", { name: /topic name/i });
     await user.clear(name);
     await user.type(name, "Market strategy");
@@ -173,7 +223,7 @@ describe("TopicDetailPage", () => {
     const { queryClient } = renderDetail();
     await screen.findByRole("heading", { name: "Product strategy" });
 
-    await user.click(screen.getByRole("button", { name: /^edit$/i }));
+    await user.click(screen.getByRole("button", { name: "Edit topic" }));
     const name = screen.getByRole("textbox", { name: /topic name/i });
     await user.clear(name);
     await user.type(name, "Working draft");
@@ -203,7 +253,7 @@ describe("TopicDetailPage", () => {
     expect(
       await screen.findByRole("button", { name: /requesting summary/i }),
     ).toBeDisabled();
-    expect(screen.getByRole("button", { name: /^edit$/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Edit topic" })).toBeDisabled();
     expect(runtimeApi.reSummarizeTopic).toHaveBeenCalledWith(
       workspaceId,
       topicId,
