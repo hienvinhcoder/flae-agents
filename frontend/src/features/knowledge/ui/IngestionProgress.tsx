@@ -34,8 +34,8 @@ export function IngestionProgress({ document }: { document: IngestionDocument })
       </div>
       <p className="mt-3 text-sm text-ui-ink-secondary">
         {document.chunk_count ?? 0} {t("KNOWLEDGE.CHUNKS_SHORT")},{" "}
-        {document.entity_count ?? 0} entities,{" "}
-        {document.relation_count ?? 0} relations
+        {document.entity_count ?? 0} {t("KNOWLEDGE.ENTITIES_SHORT")},{" "}
+        {document.relation_count ?? 0} {t("KNOWLEDGE.RELATIONS_SHORT")}
       </p>
       {processingTime !== null ? (
         <p className="mt-1 text-sm text-ui-ink-muted">

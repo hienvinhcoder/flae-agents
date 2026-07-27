@@ -9,12 +9,12 @@ import { StatusBadge } from "./StatusBadge";
 
 interface DocumentTableProps {
   documents: readonly KnowledgeDocument[];
+  emptyMessage: string;
   isLoading: boolean;
-  isRetrying: boolean;
   onDelete: (document: KnowledgeDocument) => void;
   onRetry: (document: KnowledgeDocument) => void;
   onView: (document: KnowledgeDocument) => void;
-  retryingDocumentId?: string;
+  retryingDocumentIds: ReadonlySet<string>;
 }
 
 interface DocumentActionsProps {
@@ -79,19 +79,19 @@ function DocumentActions({
 
 export function DocumentTable({
   documents,
+  emptyMessage,
   isLoading,
-  isRetrying,
   onDelete,
   onRetry,
   onView,
-  retryingDocumentId,
+  retryingDocumentIds,
 }: DocumentTableProps) {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
 
   if (isLoading) {
     return (
       <div className="border-y border-ui-divider bg-ui-raised/45 p-6">
-        <Skeleton label="Loading knowledge documents" lines={5} />
+        <Skeleton label={t("KNOWLEDGE.LOADING_DOCUMENTS")} lines={5} />
       </div>
     );
   }
@@ -131,7 +131,9 @@ export function DocumentTable({
       header: t("KNOWLEDGE.TABLE_DATE"),
       key: "created",
       render: (document) =>
-        new Date(document.created_at).toLocaleDateString(),
+        new Intl.DateTimeFormat(
+          i18n.resolvedLanguage ?? i18n.language,
+        ).format(new Date(document.created_at)),
     },
     {
       header: t("KNOWLEDGE.TABLE_ACTIONS"),
@@ -139,9 +141,7 @@ export function DocumentTable({
       render: (document) => (
         <DocumentActions
           document={document}
-          isRetrying={
-            isRetrying && retryingDocumentId === document.id
-          }
+          isRetrying={retryingDocumentIds.has(document.id)}
           onDelete={onDelete}
           onRetry={onRetry}
           onView={onView}
@@ -154,7 +154,7 @@ export function DocumentTable({
     <Table
       caption={t("KNOWLEDGE.TABLE_CAPTION")}
       columns={columns}
-      emptyMessage={t("KNOWLEDGE.EMPTY_STATE_DESC")}
+      emptyMessage={emptyMessage}
       getRowKey={(document) => document.id}
       renderMobileRow={(document) => (
         <article
@@ -171,9 +171,7 @@ export function DocumentTable({
           <div className="mt-3">
             <DocumentActions
               document={document}
-              isRetrying={
-                isRetrying && retryingDocumentId === document.id
-              }
+              isRetrying={retryingDocumentIds.has(document.id)}
               onDelete={onDelete}
               onRetry={onRetry}
               onView={onView}

@@ -1,5 +1,5 @@
 import { Database, FilePlus2, PencilLine, Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
@@ -27,6 +27,10 @@ export function KnowledgeListPage() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
+  const pendingRetryIdsRef = useRef<Set<string>>(new Set());
+  const [pendingRetryIds, setPendingRetryIds] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
   const [uploadOpen, setUploadOpen] = useState(false);
   const [textOpen, setTextOpen] = useState(false);
   const knowledge = useKnowledge(workspaceId, selectedDocumentId);
@@ -44,8 +48,24 @@ export function KnowledgeListPage() {
     });
   }, [documents, search, status]);
 
+  const retryDocument = async (documentId: string) => {
+    if (pendingRetryIdsRef.current.has(documentId)) return;
+    const pending = new Set(pendingRetryIdsRef.current).add(documentId);
+    pendingRetryIdsRef.current = pending;
+    setPendingRetryIds(pending);
+    try {
+      await knowledge.retry.mutateAsync(documentId);
+    } catch {
+      /* Mutation state exposes the retry error while keeping the action safe. */
+    } finally {
+      const remaining = new Set(pendingRetryIdsRef.current);
+      remaining.delete(documentId);
+      pendingRetryIdsRef.current = remaining;
+      setPendingRetryIds(remaining);
+    }
+  };
   const retry = (document: KnowledgeDocument) => {
-    knowledge.retry.mutate(document.id);
+    void retryDocument(document.id);
   };
   const remove = async (documentId: string, title: string) => {
     if (!window.confirm(t("KNOWLEDGE.DELETE_CONFIRM", { title }))) return;
@@ -160,12 +180,16 @@ export function KnowledgeListPage() {
           ) : (
             <DocumentTable
               documents={filteredDocuments}
+              emptyMessage={t(
+                documents.length === 0
+                  ? "KNOWLEDGE.EMPTY_STATE_DESC"
+                  : "KNOWLEDGE.FILTER_EMPTY_DESCRIPTION",
+              )}
               isLoading={knowledge.documents.isPending}
-              isRetrying={knowledge.retry.isPending}
               onDelete={(document) => void remove(document.id, document.title)}
               onRetry={retry}
               onView={(document) => setSelectedDocumentId(document.id)}
-              retryingDocumentId={knowledge.retry.variables}
+              retryingDocumentIds={pendingRetryIds}
             />
           )}
         </div>
@@ -202,13 +226,16 @@ export function KnowledgeListPage() {
         error={errorMessage(knowledge.document.error)}
         isDeleting={knowledge.remove.isPending}
         isLoading={knowledge.document.isPending}
-        isRetrying={knowledge.retry.isPending}
+        isRetrying={Boolean(
+          selectedDocumentId && pendingRetryIds.has(selectedDocumentId),
+        )}
         onClose={() => setSelectedDocumentId(null)}
         onDelete={(documentId) => {
-          const title = knowledge.selectedDocument?.title ?? "this document";
+          const title =
+            knowledge.selectedDocument?.title ?? t("KNOWLEDGE.THIS_DOCUMENT");
           void remove(documentId, title);
         }}
-        onRetry={(documentId) => knowledge.retry.mutate(documentId)}
+        onRetry={(documentId) => void retryDocument(documentId)}
         open={Boolean(selectedDocumentId && knowledge.selectedDocumentExists)}
       />
     </section>

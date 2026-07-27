@@ -35,5 +35,11 @@ test('renders document summaries on a mobile viewport', async ({ page }) => {
   await expect(productGuide).toBeVisible();
   await expect(productGuide).toContainText('Completed');
   await expect(productGuide).toContainText('4 chunks');
+
+  await productGuide.getByRole('button', { name: 'Open Product guide' }).click();
+  const detailDialog = page.getByRole('dialog', { name: 'Product guide' });
+  await expect(detailDialog).toBeVisible();
+  await detailDialog.getByRole('button', { name: 'Close dialog' }).click();
+  await expect(detailDialog).toBeHidden();
   await expectNoA11yViolations(page);
 });

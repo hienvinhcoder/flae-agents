@@ -35,9 +35,18 @@ export function DocumentDetailPanel({
   const { t } = useTranslation();
 
   return (
-    <Dialog onClose={onClose} open={open} title={document?.title ?? "Document details"}>
-      {isLoading ? <Skeleton label="Loading document details" lines={5} /> : null}
-      {error ? <ErrorState message={error} title="Unable to load document" /> : null}
+    <Dialog
+      closeLabel={t("SHELL.CLOSE_DIALOG")}
+      onClose={onClose}
+      open={open}
+      title={document?.title ?? t("KNOWLEDGE.DOCUMENT_DETAILS")}
+    >
+      {isLoading ? (
+        <Skeleton label={t("KNOWLEDGE.LOADING_DOCUMENT_DETAILS")} lines={5} />
+      ) : null}
+      {error ? (
+        <ErrorState message={error} title={t("KNOWLEDGE.DOCUMENT_LOAD_ERROR")} />
+      ) : null}
       {document ? (
         <div className="grid max-h-[70vh] gap-5 overflow-y-auto pr-1">
           <div className="flex flex-wrap items-center gap-3">
@@ -58,7 +67,7 @@ export function DocumentDetailPanel({
           {document.content_text ? (
             <section aria-labelledby="document-content-title">
               <h3 className="font-semibold text-ui-ink" id="document-content-title">
-                Extracted content
+                {t("KNOWLEDGE.EXTRACTED_CONTENT")}
               </h3>
               <p className="mt-2 max-h-48 overflow-y-auto whitespace-pre-wrap rounded-ui-control border border-ui-divider bg-ui-raised p-3 text-sm text-ui-ink-secondary">
                 {document.content_text}
@@ -69,22 +78,22 @@ export function DocumentDetailPanel({
             {document.status === "failed" ? (
               <Button
                 isLoading={isRetrying}
-                loadingText="Retrying"
+                loadingText={t("KNOWLEDGE.RETRYING")}
                 onClick={() => onRetry(document.id)}
                 variant="secondary"
               >
                 <RotateCcw aria-hidden className="h-4 w-4" />
-                Retry ingestion
+                {t("KNOWLEDGE.RETRY_INGESTION")}
               </Button>
             ) : null}
             <Button
               isLoading={isDeleting}
-              loadingText="Deleting"
+              loadingText={t("KNOWLEDGE.DELETING")}
               onClick={() => onDelete(document.id)}
               variant="danger"
             >
               <Trash2 aria-hidden className="h-4 w-4" />
-              Delete document
+              {t("KNOWLEDGE.DELETE_DOCUMENT_ACTION")}
             </Button>
           </div>
         </div>

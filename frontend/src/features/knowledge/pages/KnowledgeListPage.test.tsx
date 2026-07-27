@@ -53,6 +53,12 @@ const incident: KnowledgeDocument = {
   title: "Incident handbook",
 };
 
+const policy: KnowledgeDocument = {
+  ...incident,
+  id: "33333333-3333-4333-8333-333333333333",
+  title: "Security policy",
+};
+
 const roadmapDetail: KnowledgeDocumentDetail = {
   ...roadmap,
   content_text: "Roadmap content",
@@ -110,6 +116,23 @@ describe("KnowledgeListPage", () => {
     );
     expect(table.queryByText("Product roadmap")).not.toBeInTheDocument();
     expect(table.getByText("Incident handbook")).toBeInTheDocument();
+  });
+
+  it("distinguishes filtered results from an empty knowledge base", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByRole("table", { name: /knowledge documents/i });
+
+    await user.type(
+      screen.getByRole("searchbox", { name: /search documents/i }),
+      "no matching document",
+    );
+
+    expect(
+      screen.getAllByText(
+        "No documents match the current search and status filters.",
+      ),
+    ).toHaveLength(2);
   });
 
   it("groups knowledge actions in the page header and keeps the table caption", async () => {
@@ -300,5 +323,56 @@ describe("KnowledgeListPage", () => {
       temporal_workflow_id: "workflow-retry",
       title: incident.title,
     });
+  });
+
+  it("tracks concurrent retries per document and blocks duplicate requests", async () => {
+    const user = userEvent.setup();
+    const resolvers = new Map<string, (value: unknown) => void>();
+    runtimeApi.listDocuments.mockResolvedValue([incident, policy]);
+    runtimeApi.retryIngestion.mockImplementation(
+      (_workspaceId: string, documentId: string) =>
+        new Promise((resolve) => {
+          resolvers.set(documentId, resolve);
+        }),
+    );
+    renderPage();
+    const table = within(
+      await screen.findByRole("table", { name: /knowledge documents/i }),
+    );
+
+    await user.click(
+      table.getByRole("button", { name: /retry incident handbook/i }),
+    );
+    await user.click(
+      table.getByRole("button", { name: /retry security policy/i }),
+    );
+
+    const incidentRetry = table.getByRole("button", {
+      name: /retry incident handbook/i,
+    });
+    const policyRetry = table.getByRole("button", {
+      name: /retry security policy/i,
+    });
+    expect(incidentRetry).toBeDisabled();
+    expect(policyRetry).toBeDisabled();
+    await user.click(incidentRetry);
+    expect(runtimeApi.retryIngestion).toHaveBeenCalledTimes(2);
+
+    resolvers.get(policy.id)?.({
+      id: policy.id,
+      status: "pending",
+      temporal_workflow_id: "workflow-policy",
+      title: policy.title,
+    });
+    await waitFor(() => expect(policyRetry).not.toBeDisabled());
+    expect(incidentRetry).toBeDisabled();
+
+    resolvers.get(incident.id)?.({
+      id: incident.id,
+      status: "pending",
+      temporal_workflow_id: "workflow-incident",
+      title: incident.title,
+    });
+    await waitFor(() => expect(incidentRetry).not.toBeDisabled());
   });
 });
