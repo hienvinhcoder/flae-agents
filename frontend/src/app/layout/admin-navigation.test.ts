@@ -30,20 +30,20 @@ describe("admin navigation", () => {
     expect(groups).toEqual([
       {
         id: "focus",
-        labelKey: "SHELL.NAV_GROUP_FOCUS",
+        key: "SHELL.NAV_GROUP_FOCUS",
         items: [
           {
-            labelKey: "NAV.BRIEFING",
+            key: "NAV.BRIEFING",
             to: "/dashboard/briefing",
             icon: Sparkles,
           },
           {
-            labelKey: "NAV.CHAT",
+            key: "NAV.CHAT",
             to: "/dashboard/chat",
             icon: MessageSquare,
           },
           {
-            labelKey: "NAV.INBOX",
+            key: "NAV.INBOX",
             to: "/dashboard/inbox",
             icon: Inbox,
           },
@@ -51,30 +51,30 @@ describe("admin navigation", () => {
       },
       {
         id: "intelligence",
-        labelKey: "SHELL.NAV_GROUP_INTELLIGENCE",
+        key: "SHELL.NAV_GROUP_INTELLIGENCE",
         items: [
           {
-            labelKey: "NAV.AGENTS",
+            key: "NAV.AGENTS",
             to: "/dashboard/agents",
             icon: Bot,
           },
           {
-            labelKey: "NAV.KNOWLEDGE",
+            key: "NAV.KNOWLEDGE",
             to: "/dashboard/knowledge",
             icon: BookOpen,
           },
           {
-            labelKey: "SHELL.KNOWLEDGE_GRAPH",
+            key: "SHELL.KNOWLEDGE_GRAPH",
             to: "/dashboard/knowledge/graph",
             icon: Network,
           },
           {
-            labelKey: "NAV.TOPICS",
+            key: "NAV.TOPICS",
             to: "/dashboard/topics",
             icon: Tags,
           },
           {
-            labelKey: "NAV.REPORTS",
+            key: "NAV.REPORTS",
             to: "/dashboard/reports",
             icon: FileText,
           },
@@ -82,10 +82,10 @@ describe("admin navigation", () => {
       },
       {
         id: "workspace",
-        labelKey: "SHELL.NAV_GROUP_WORKSPACE",
+        key: "SHELL.NAV_GROUP_WORKSPACE",
         items: [
           {
-            labelKey: "NAV.SETTINGS",
+            key: "NAV.SETTINGS",
             to: "/dashboard/settings",
             icon: Settings,
           },
@@ -105,8 +105,8 @@ describe("admin navigation", () => {
       "SHELL.KNOWLEDGE_GRAPH",
     ],
     ["/dashboard/topics/topic-1#activity", "NAV.TOPICS"],
-  ])("finds the most-specific item for %s", (pathname, labelKey) => {
-    expect(findActiveNavigationItem(pathname)?.labelKey).toBe(labelKey);
+  ])("finds the most-specific item for %s", (pathname, key) => {
+    expect(findActiveNavigationItem(pathname)?.key).toBe(key);
   });
 
   it.each(["/", "/login", "/dashboard", "/dashboarding/chat"])(
@@ -124,5 +124,17 @@ describe("admin navigation", () => {
     }
 
     expect(findNavigationGroup(undefined)).toBeUndefined();
+  });
+
+  it("finds an item's owning group by stable route identity", () => {
+    const item = navigationGroups[1]?.items[1];
+    if (!item) {
+      throw new Error("Expected the Knowledge navigation item");
+    }
+
+    const copiedItem = { ...item };
+
+    expect(copiedItem).not.toBe(item);
+    expect(findNavigationGroup(copiedItem)).toBe(navigationGroups[1]);
   });
 });
