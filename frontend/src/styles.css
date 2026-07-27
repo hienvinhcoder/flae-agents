@@ -179,7 +179,7 @@
   }
 
   a {
-    color: var(--color-primary);
+    color: var(--color-link);
     text-underline-offset: 0.2em;
   }
 
