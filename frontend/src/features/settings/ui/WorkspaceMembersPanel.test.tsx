@@ -1,8 +1,13 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { i18n as I18nInstance } from "i18next";
+import { I18nextProvider } from "react-i18next";
 import { describe, expect, it, vi } from "vitest";
 
+import en from "../../../../public/assets/i18n/en.json";
+import viMessages from "../../../../public/assets/i18n/vi.json";
 import { TestI18nProvider } from "../../../../tests/TestI18nProvider";
+import { createI18n } from "../../../shared/i18n";
 import type { WorkspaceMember } from "../types/workspace";
 import { WorkspaceMembersPanel } from "./WorkspaceMembersPanel";
 
@@ -22,27 +27,38 @@ function member(
   };
 }
 
-function renderPanel(members: readonly WorkspaceMember[], currentUserUid: string) {
+function renderPanel(
+  members: readonly WorkspaceMember[],
+  currentUserUid: string,
+  options: { i18n?: I18nInstance; membersError?: string } = {},
+) {
   const onRemove = vi.fn().mockResolvedValue(undefined);
+  const onRetryMembers = vi.fn();
   const onUpdate = vi.fn().mockResolvedValue(undefined);
-  render(
-    <TestI18nProvider>
-      <WorkspaceMembersPanel
-        currentUserUid={currentUserUid}
-        invitations={[]}
-        isInvitationsLoading={false}
-        isInviting={false}
-        isLoading={false}
-        members={members}
-        onInvite={vi.fn().mockResolvedValue(undefined)}
-        onRemove={onRemove}
-        onRetryInvitations={vi.fn()}
-        onRetryMembers={vi.fn()}
-        onUpdate={onUpdate}
-      />
-    </TestI18nProvider>,
+  const panel = (
+    <WorkspaceMembersPanel
+      currentUserUid={currentUserUid}
+      invitations={[]}
+      isInvitationsLoading={false}
+      isInviting={false}
+      isLoading={false}
+      members={members}
+      membersError={options.membersError}
+      onInvite={vi.fn().mockResolvedValue(undefined)}
+      onRemove={onRemove}
+      onRetryInvitations={vi.fn()}
+      onRetryMembers={onRetryMembers}
+      onUpdate={onUpdate}
+    />
   );
-  return { onRemove, onUpdate };
+  render(
+    options.i18n ? (
+      <I18nextProvider i18n={options.i18n}>{panel}</I18nextProvider>
+    ) : (
+      <TestI18nProvider>{panel}</TestI18nProvider>
+    ),
+  );
+  return { onRemove, onRetryMembers, onUpdate };
 }
 
 describe("WorkspaceMembersPanel", () => {
@@ -100,5 +116,45 @@ describe("WorkspaceMembersPanel", () => {
     expect(
       screen.getByRole("button", { name: "Invite member" }),
     ).toBeInTheDocument();
+  });
+
+  it("localizes the fallback identity and accessible member controls", async () => {
+    const i18n = await createI18n(
+      { en: { translation: en }, vi: { translation: viMessages } },
+      "vi",
+    );
+    const owner = member("Current Owner", "owner");
+    const anonymous = {
+      ...member("anonymous", "member"),
+      email: null,
+      full_name: null,
+    };
+    renderPanel([owner, anonymous], owner.user_uid, { i18n });
+
+    const summary = screen.getByRole("article", { name: "Thành viên" });
+    expect(summary).toHaveTextContent("Thành viên");
+    expect(
+      within(summary).getByRole("combobox", {
+        name: "Vai trò của Thành viên",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(summary).getByRole("button", { name: "Xóa Thành viên" }),
+    ).toBeInTheDocument();
+  });
+
+  it("localizes the members retry action", async () => {
+    const i18n = await createI18n(
+      { en: { translation: en }, vi: { translation: viMessages } },
+      "vi",
+    );
+    const { onRetryMembers } = renderPanel([], "owner-1", {
+      i18n,
+      membersError: "Không thể tải thành viên không gian làm việc",
+    });
+
+    const retry = screen.getByRole("button", { name: "Thử lại" });
+    await userEvent.click(retry);
+    expect(onRetryMembers).toHaveBeenCalledOnce();
   });
 });

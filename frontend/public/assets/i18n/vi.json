@@ -12,7 +12,8 @@
     "CONFIRM": "Xác nhận",
     "CREATE": "Tạo",
     "LOGOUT": "Đăng xuất",
-    "PROFILE": "Hồ sơ cá nhân"
+    "PROFILE": "Hồ sơ cá nhân",
+    "RETRY": "Thử lại"
   },
   "NAV": {
     "CHAT": "AI Chat",

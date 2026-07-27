@@ -12,7 +12,8 @@
     "CONFIRM": "Confirm",
     "CREATE": "Create",
     "LOGOUT": "Log out",
-    "PROFILE": "My Profile"
+    "PROFILE": "My Profile",
+    "RETRY": "Try again"
   },
   "NAV": {
     "CHAT": "AI Chat",

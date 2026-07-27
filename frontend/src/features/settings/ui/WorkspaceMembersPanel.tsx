@@ -43,6 +43,7 @@ interface WorkspaceMembersPanelProps {
 
 interface MemberControlsProps {
   canManage: boolean;
+  fallbackName: string;
   member: WorkspaceMember;
   onRemove: (userUid: string) => Promise<void>;
   onUpdate: (
@@ -53,8 +54,8 @@ interface MemberControlsProps {
   roles: readonly WorkspaceRole[];
 }
 
-function displayName(member: WorkspaceMember) {
-  return member.full_name?.trim() || member.email || "Workspace member";
+function displayName(member: WorkspaceMember, fallbackName: string) {
+  return member.full_name?.trim() || member.email || fallbackName;
 }
 
 function roleKey(role: WorkspaceRole) {
@@ -65,11 +66,17 @@ function statusKey(status: WorkspaceMemberStatus) {
   return `SETTINGS_UI.STATUS_${status.toUpperCase()}`;
 }
 
-function MemberIdentity({ member }: { member: WorkspaceMember }) {
+function MemberIdentity({
+  fallbackName,
+  member,
+}: {
+  fallbackName: string;
+  member: WorkspaceMember;
+}) {
   return (
     <div className="min-w-0">
       <p className="truncate font-semibold text-ui-ink">
-        {displayName(member)}
+        {displayName(member, fallbackName)}
       </p>
       <p className="truncate text-sm text-ui-ink-muted">{member.email}</p>
     </div>
@@ -78,13 +85,14 @@ function MemberIdentity({ member }: { member: WorkspaceMember }) {
 
 function MemberControls({
   canManage,
+  fallbackName,
   member,
   onRemove,
   onUpdate,
   roles,
 }: MemberControlsProps) {
   const { t } = useTranslation();
-  const name = displayName(member);
+  const name = displayName(member, fallbackName);
 
   return (
     <div className="flex flex-wrap items-center gap-3">
@@ -151,11 +159,14 @@ export function WorkspaceMembersPanel(props: WorkspaceMembersPanelProps) {
     currentRole === "owner"
       ? (["admin", "member", "viewer"] as const)
       : (["member", "viewer"] as const);
+  const memberFallback = t("SETTINGS_UI.MEMBER");
   const memberColumns: readonly TableColumn<WorkspaceMember>[] = [
     {
       header: t("SETTINGS_UI.MEMBER"),
       key: "member",
-      render: (member) => <MemberIdentity member={member} />,
+      render: (member) => (
+        <MemberIdentity fallbackName={memberFallback} member={member} />
+      ),
     },
     {
       header: t("SETTINGS_UI.ROLE"),
@@ -163,6 +174,7 @@ export function WorkspaceMembersPanel(props: WorkspaceMembersPanelProps) {
       render: (member) => (
         <MemberControls
           canManage={canManage(member)}
+          fallbackName={memberFallback}
           member={member}
           onRemove={props.onRemove}
           onUpdate={props.onUpdate}
@@ -189,6 +201,7 @@ export function WorkspaceMembersPanel(props: WorkspaceMembersPanelProps) {
         announce={props.announceMembersError}
         message={props.membersError}
         onRetry={props.onRetryMembers}
+        retryLabel={t("COMMON.RETRY")}
         title={t("SETTINGS_UI.LOAD_MEMBERS_ERROR")}
       />
     );
@@ -235,16 +248,20 @@ export function WorkspaceMembersPanel(props: WorkspaceMembersPanelProps) {
             getRowKey={(member) => member.user_uid}
             renderMobileRow={(member) => (
               <article
-                aria-label={displayName(member)}
+                aria-label={displayName(member, memberFallback)}
                 className="rounded-ui-control border border-ui-divider bg-ui-raised p-4"
               >
-                <MemberIdentity member={member} />
+                <MemberIdentity
+                  fallbackName={memberFallback}
+                  member={member}
+                />
                 <p className="mt-2 text-sm text-ui-ink-muted">
                   {t(statusKey(member.status))}
                 </p>
                 <div className="mt-4">
                   <MemberControls
                     canManage={canManage(member)}
+                    fallbackName={memberFallback}
                     member={member}
                     onRemove={props.onRemove}
                     onUpdate={props.onUpdate}
