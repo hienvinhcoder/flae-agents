@@ -157,6 +157,89 @@ describe("ChatExperience mutation ownership", () => {
     expect(screen.getByRole("button", { name: "Session B" })).toHaveAttribute("aria-current", "true");
   });
 
+  it("keeps a newer created session selected when an older delete completes", async () => {
+    const user = userEvent.setup();
+    const pendingCreate = deferred<ChatSession>();
+    const pendingDelete = deferred<boolean>();
+    const sessionA = createSession("35000000-0000-4000-8000-000000000001", workspaceOne, agentOne.id, "Session A");
+    const sessionB = createSession("35000000-0000-4000-8000-000000000002", workspaceOne, agentOne.id, "Session B");
+    const created = createSession("35000000-0000-4000-8000-000000000003", workspaceOne, agentOne.id, "Session C");
+    sessionsByContext.set(`${workspaceOne}:${agentOne.id}`, [sessionA, sessionB]);
+    agentsApi.createSession.mockReturnValue(pendingCreate.promise);
+    agentsApi.deleteSession.mockReturnValue(pendingDelete.promise);
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(experience(queryClient, workspaceOne, agentOne));
+    await screen.findByRole("button", { name: "Session A" });
+    await user.click(screen.getByRole("button", { name: "Delete Session A" }));
+    await user.click(screen.getByRole("button", { name: "New conversation" }));
+
+    sessionsByContext.set(`${workspaceOne}:${agentOne.id}`, [created, sessionA, sessionB]);
+    act(() => pendingCreate.resolve(created));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Session C" })).toHaveAttribute("aria-current", "true"));
+
+    sessionsByContext.set(`${workspaceOne}:${agentOne.id}`, [created, sessionB]);
+    act(() => pendingDelete.resolve(true));
+
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Session A" })).not.toBeInTheDocument());
+    expect(screen.getByRole("button", { name: "Session C" })).toHaveAttribute("aria-current", "true");
+  });
+
+  it("keeps a newer delete fallback selected when an older create completes", async () => {
+    const user = userEvent.setup();
+    const pendingCreate = deferred<ChatSession>();
+    const pendingDelete = deferred<boolean>();
+    const sessionA = createSession("36000000-0000-4000-8000-000000000001", workspaceOne, agentOne.id, "Session A");
+    const sessionB = createSession("36000000-0000-4000-8000-000000000002", workspaceOne, agentOne.id, "Session B");
+    const created = createSession("36000000-0000-4000-8000-000000000003", workspaceOne, agentOne.id, "Session C");
+    sessionsByContext.set(`${workspaceOne}:${agentOne.id}`, [sessionA, sessionB]);
+    agentsApi.createSession.mockReturnValue(pendingCreate.promise);
+    agentsApi.deleteSession.mockReturnValue(pendingDelete.promise);
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(experience(queryClient, workspaceOne, agentOne));
+    await screen.findByRole("button", { name: "Session A" });
+    await user.click(screen.getByRole("button", { name: "New conversation" }));
+    await user.click(screen.getByRole("button", { name: "Delete Session A" }));
+
+    sessionsByContext.set(`${workspaceOne}:${agentOne.id}`, [sessionB]);
+    act(() => pendingDelete.resolve(true));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Session B" })).toHaveAttribute("aria-current", "true"));
+
+    sessionsByContext.set(`${workspaceOne}:${agentOne.id}`, [created, sessionB]);
+    act(() => pendingCreate.resolve(created));
+
+    await waitFor(() => expect(screen.getByRole("button", { name: "New conversation" })).not.toHaveAttribute("aria-busy"));
+    expect(screen.getByRole("button", { name: "Session B" })).toHaveAttribute("aria-current", "true");
+  });
+
+  it("ignores an older mutation error after a newer interaction succeeds", async () => {
+    const user = userEvent.setup();
+    const pendingCreate = deferred<ChatSession>();
+    const pendingDelete = deferred<boolean>();
+    const sessionA = createSession("37000000-0000-4000-8000-000000000001", workspaceOne, agentOne.id, "Session A");
+    const created = createSession("37000000-0000-4000-8000-000000000002", workspaceOne, agentOne.id, "Session C");
+    sessionsByContext.set(`${workspaceOne}:${agentOne.id}`, [sessionA]);
+    agentsApi.createSession.mockReturnValue(pendingCreate.promise);
+    agentsApi.deleteSession.mockReturnValue(pendingDelete.promise);
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(experience(queryClient, workspaceOne, agentOne));
+    await screen.findByRole("button", { name: "Session A" });
+    await user.click(screen.getByRole("button", { name: "Delete Session A" }));
+    await user.click(screen.getByRole("button", { name: "New conversation" }));
+
+    sessionsByContext.set(`${workspaceOne}:${agentOne.id}`, [created, sessionA]);
+    act(() => pendingCreate.resolve(created));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Session C" })).toHaveAttribute("aria-current", "true"));
+
+    act(() => pendingDelete.reject(new Error("Raw stale deletion details")));
+
+    await waitFor(() => expect(screen.getByRole("button", { name: "Delete Session A" })).not.toBeDisabled());
+    expect(screen.queryByText("The conversation could not be deleted.")).not.toBeInTheDocument();
+    expect(screen.queryByText("Raw stale deletion details")).not.toBeInTheDocument();
+  });
+
   it("accepts deferred mutation completion after StrictMode effect replay", async () => {
     const user = userEvent.setup();
     const pendingCreate = deferred<ChatSession>();

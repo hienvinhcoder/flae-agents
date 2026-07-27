@@ -75,7 +75,7 @@ function ContextualChatExperience({
   const mountedRef = useRef(true);
   const createRequestRef = useRef(0);
   const deleteRequestRef = useRef(0);
-  const selectionVersionRef = useRef(0);
+  const interactionGenerationRef = useRef(0);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -101,19 +101,22 @@ function ContextualChatExperience({
   });
 
   const createSession = async () => {
+    const interactionGeneration = interactionGenerationRef.current + 1;
+    interactionGenerationRef.current = interactionGeneration;
     const requestContext = contextKey;
     const requestToken = createRequestRef.current + 1;
-    const selectionVersion = selectionVersionRef.current;
     createRequestRef.current = requestToken;
     setActionError(null);
     try {
       const created = await actions.create.mutateAsync({});
       if (!mountedRef.current
         || createRequestRef.current !== requestToken
-        || selectionVersionRef.current !== selectionVersion) return;
+        || interactionGenerationRef.current !== interactionGeneration) return;
       setSelection({ contextKey: requestContext, sessionId: created.id });
     } catch (error) {
-      if (!mountedRef.current || createRequestRef.current !== requestToken) return;
+      if (!mountedRef.current
+        || createRequestRef.current !== requestToken
+        || interactionGenerationRef.current !== interactionGeneration) return;
       setActionError({
         announce: !isGloballyAnnouncedServerError(error),
         contextKey: requestContext,
@@ -123,9 +126,10 @@ function ContextualChatExperience({
   };
   const deleteSession = async (session: ChatSession) => {
     if (!window.confirm(t("CHAT_UI.DELETE_CONFIRM", { title: session.title }))) return;
+    const interactionGeneration = interactionGenerationRef.current + 1;
+    interactionGenerationRef.current = interactionGeneration;
     const requestContext = contextKey;
     const requestToken = deleteRequestRef.current + 1;
-    const selectionVersion = selectionVersionRef.current;
     const deletingActiveSession = activeSessionId === session.id;
     const deletedIndex = sessions.findIndex((item) => item.id === session.id);
     const fallbackSessionId = deletedIndex < 0
@@ -135,14 +139,18 @@ function ContextualChatExperience({
     setActionError(null);
     try {
       const deleted = await actions.remove.mutateAsync(session.id);
-      if (!mountedRef.current || deleteRequestRef.current !== requestToken) return;
+      if (!mountedRef.current
+        || deleteRequestRef.current !== requestToken
+        || interactionGenerationRef.current !== interactionGeneration) return;
       if (!deleted) {
         setActionError({ announce: true, contextKey: requestContext, message: t("CHAT_UI.DELETE_FAILED") });
-      } else if (deletingActiveSession && selectionVersionRef.current === selectionVersion) {
+      } else if (deletingActiveSession) {
         setSelection({ contextKey: requestContext, sessionId: fallbackSessionId });
       }
     } catch (error) {
-      if (!mountedRef.current || deleteRequestRef.current !== requestToken) return;
+      if (!mountedRef.current
+        || deleteRequestRef.current !== requestToken
+        || interactionGenerationRef.current !== interactionGeneration) return;
       setActionError({
         announce: !isGloballyAnnouncedServerError(error),
         contextKey: requestContext,
@@ -166,7 +174,7 @@ function ContextualChatExperience({
         onDelete={(session) => void deleteSession(session)}
         onRetry={() => void sessionsQuery.refetch()}
         onSelect={(sessionId) => {
-          selectionVersionRef.current += 1;
+          interactionGenerationRef.current += 1;
           setSelection({ contextKey, sessionId });
         }}
         sessions={sessions}
