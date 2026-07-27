@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { AppError } from "../../../core/api/errors";
@@ -72,23 +72,18 @@ function ContextualChatExperience({
   const activeSessionId = selectedSessionId && sessions.some((session) => session.id === selectedSessionId)
     ? selectedSessionId
     : sessions.at(0)?.id ?? null;
-  const selectedSessionRef = useRef(selectedSessionId);
-  const activeSessionRef = useRef(activeSessionId);
-  const sessionsRef = useRef(sessions);
   const mountedRef = useRef(true);
   const createRequestRef = useRef(0);
   const deleteRequestRef = useRef(0);
+  const selectionVersionRef = useRef(0);
 
-  useLayoutEffect(() => {
-    selectedSessionRef.current = selectedSessionId;
-    activeSessionRef.current = activeSessionId;
-    sessionsRef.current = sessions;
-  }, [activeSessionId, selectedSessionId, sessions]);
-
-  useEffect(() => () => {
-    mountedRef.current = false;
-    createRequestRef.current += 1;
-    deleteRequestRef.current += 1;
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      createRequestRef.current += 1;
+      deleteRequestRef.current += 1;
+    };
   }, []);
 
   const messagesQuery = useMessages(workspaceId, agentId, activeSessionId);
@@ -108,11 +103,14 @@ function ContextualChatExperience({
   const createSession = async () => {
     const requestContext = contextKey;
     const requestToken = createRequestRef.current + 1;
+    const selectionVersion = selectionVersionRef.current;
     createRequestRef.current = requestToken;
     setActionError(null);
     try {
       const created = await actions.create.mutateAsync({});
-      if (!mountedRef.current || createRequestRef.current !== requestToken) return;
+      if (!mountedRef.current
+        || createRequestRef.current !== requestToken
+        || selectionVersionRef.current !== selectionVersion) return;
       setSelection({ contextKey: requestContext, sessionId: created.id });
     } catch (error) {
       if (!mountedRef.current || createRequestRef.current !== requestToken) return;
@@ -127,6 +125,12 @@ function ContextualChatExperience({
     if (!window.confirm(t("CHAT_UI.DELETE_CONFIRM", { title: session.title }))) return;
     const requestContext = contextKey;
     const requestToken = deleteRequestRef.current + 1;
+    const selectionVersion = selectionVersionRef.current;
+    const deletingActiveSession = activeSessionId === session.id;
+    const deletedIndex = sessions.findIndex((item) => item.id === session.id);
+    const fallbackSessionId = deletedIndex < 0
+      ? null
+      : sessions[deletedIndex + 1]?.id ?? sessions[deletedIndex - 1]?.id ?? null;
     deleteRequestRef.current = requestToken;
     setActionError(null);
     try {
@@ -134,13 +138,8 @@ function ContextualChatExperience({
       if (!mountedRef.current || deleteRequestRef.current !== requestToken) return;
       if (!deleted) {
         setActionError({ announce: true, contextKey: requestContext, message: t("CHAT_UI.DELETE_FAILED") });
-      } else if (activeSessionRef.current === session.id
-        && (selectedSessionRef.current === null || selectedSessionRef.current === session.id)) {
-        const latestSessions = sessionsRef.current;
-        const deletedIndex = latestSessions.findIndex((item) => item.id === session.id);
-        const remaining = latestSessions.filter((item) => item.id !== session.id);
-        const nextSessionId = remaining[deletedIndex] ?? remaining[deletedIndex - 1] ?? remaining.at(0) ?? null;
-        setSelection({ contextKey: requestContext, sessionId: nextSessionId?.id ?? null });
+      } else if (deletingActiveSession && selectionVersionRef.current === selectionVersion) {
+        setSelection({ contextKey: requestContext, sessionId: fallbackSessionId });
       }
     } catch (error) {
       if (!mountedRef.current || deleteRequestRef.current !== requestToken) return;
@@ -166,7 +165,10 @@ function ContextualChatExperience({
         onCreate={() => void createSession()}
         onDelete={(session) => void deleteSession(session)}
         onRetry={() => void sessionsQuery.refetch()}
-        onSelect={(sessionId) => setSelection({ contextKey, sessionId })}
+        onSelect={(sessionId) => {
+          selectionVersionRef.current += 1;
+          setSelection({ contextKey, sessionId });
+        }}
         sessions={sessions}
       />
 
