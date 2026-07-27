@@ -15,7 +15,7 @@
     "PROFILE": "My Profile"
   },
   "NAV": {
-    "CHAT": "AI Chat",
+    "CHAT": "Workspace assistant chat",
     "BRIEFING": "Morning briefing",
 
     "INBOX": "Omnichannel inbox",
@@ -60,8 +60,6 @@
     "RETRY": "Try again"
   },
   "CHAT_UI": {
-    "WORKSPACE_ASSISTANT_CHAT": "Workspace assistant chat",
-    "WORKSPACE_REQUIRED_DESCRIPTION": "Select a workspace to start chatting.",
     "CONVERSATION_HISTORY": "Conversation history",
     "NEW_CONVERSATION": "New conversation",
     "CREATING_CONVERSATION": "Creating conversation",

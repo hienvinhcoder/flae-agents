@@ -15,7 +15,7 @@
     "PROFILE": "Hồ sơ cá nhân"
   },
   "NAV": {
-    "CHAT": "AI Chat",
+    "CHAT": "Trò chuyện với trợ lý không gian làm việc",
     "BRIEFING": "Báo cáo sáng",
 
     "INBOX": "Hộp thư đa kênh",
@@ -60,8 +60,6 @@
     "RETRY": "Thử lại"
   },
   "CHAT_UI": {
-    "WORKSPACE_ASSISTANT_CHAT": "Trò chuyện với trợ lý không gian làm việc",
-    "WORKSPACE_REQUIRED_DESCRIPTION": "Chọn một không gian làm việc để bắt đầu trò chuyện.",
     "CONVERSATION_HISTORY": "Lịch sử hội thoại",
     "NEW_CONVERSATION": "Hội thoại mới",
     "CREATING_CONVERSATION": "Đang tạo hội thoại",

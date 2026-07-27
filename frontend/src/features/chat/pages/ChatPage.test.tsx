@@ -6,6 +6,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useWorkspaceStore } from "../../../core/stores/workspace-store";
 import { TestI18nProvider } from "../../../../tests/TestI18nProvider";
+import en from "../../../../public/assets/i18n/en.json";
+import viLocale from "../../../../public/assets/i18n/vi.json";
 import { ChatPage } from "./ChatPage";
 
 const agentsApi = vi.hoisted(() => ({
@@ -53,6 +55,19 @@ describe("ChatPage", () => {
     useWorkspaceStore.getState().reset();
     useWorkspaceStore.getState().setCurrentWorkspaceId(workspaceId);
     useWorkspaceStore.getState().setSelectionInitialized(true);
+  });
+
+  it("keeps the chat translation namespace limited to the approved keys", () => {
+    const approvedKeys = [
+      "ASK_AGENT", "BACK_TO_AGENTS", "CHOOSE_CONVERSATION", "CHOOSE_DESCRIPTION", "CONVERSATION_HISTORY",
+      "CREATE_FAILED", "CREATING_CONVERSATION", "DEFAULT_AGENT_ERROR", "DELETE_CONFIRM", "DELETE_CONVERSATION",
+      "DELETE_FAILED", "HISTORY_LOAD_ERROR", "HISTORY_UNAVAILABLE", "MESSAGES_ARIA", "MESSAGE_AGENT",
+      "MESSAGE_HISTORY_UNAVAILABLE", "MESSAGE_LOAD_ERROR", "NEW_CONVERSATION", "NO_CONVERSATIONS", "NO_MESSAGES",
+      "READY_ON_MODEL", "RETRY_MESSAGE", "SEARCH_CONVERSATIONS", "SEND_MESSAGE", "START_WITH_AGENT", "STOP_RESPONSE",
+    ];
+
+    expect(Object.keys(en.CHAT_UI).sort()).toEqual(approvedKeys);
+    expect(Object.keys(viLocale.CHAT_UI).sort()).toEqual(approvedKeys);
   });
 
   it("loads the default agent, then opens its first session", async () => {
@@ -115,7 +130,7 @@ describe("ChatPage", () => {
 
     act(() => useWorkspaceStore.getState().setCurrentWorkspaceId(null));
 
-    expect(await screen.findByText(/select a workspace to start chatting/i)).toBeInTheDocument();
+    expect(await screen.findByText("Unable to load the workspace assistant.")).toBeInTheDocument();
     expect(signal?.aborted).toBe(true);
     expect(agentsApi.getDefaultAgent).toHaveBeenCalledTimes(1);
   });
