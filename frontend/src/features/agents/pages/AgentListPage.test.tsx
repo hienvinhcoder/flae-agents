@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useAuthStore } from "../../../core/stores/auth-store";
 import { useWorkspaceStore } from "../../../core/stores/workspace-store";
+import { TestI18nProvider } from "../../../../tests/TestI18nProvider";
 import type { AgentDetail } from "../types/agent";
 import { AgentListPage } from "./AgentListPage";
 
@@ -54,9 +55,11 @@ function renderPage() {
     { initialEntries: ["/dashboard/agents"] },
   );
   render(
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>,
+    <TestI18nProvider>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </TestI18nProvider>,
   );
   return { queryClient, router };
 }
@@ -102,13 +105,31 @@ describe("AgentListPage", () => {
     expect(screen.getByRole("link", { name: /edit research guide/i })).toBeInTheDocument();
   });
 
-  it("shows a toast as well as retry UI when loading fails", async () => {
+  it("uses the Explorer heading and feature-owned empty state", async () => {
+    agentsApi.listAgents.mockResolvedValueOnce([]);
+    renderPage();
+
+    expect(await screen.findByRole("heading", { level: 1, name: "AI agents" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 2, name: "No agents yet" })).toBeInTheDocument();
+    expect(screen.getByText("Build focused assistants that answer with workspace knowledge and operating context.")).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: /create agent/i })).toHaveLength(2);
+  });
+
+  it("announces a query failure once and keeps retry available", async () => {
     agentsApi.listAgents.mockRejectedValueOnce(new Error("Agents are temporarily unavailable."));
     renderPage();
 
-    const alerts = await screen.findAllByRole("alert");
-    expect(alerts).toHaveLength(1);
-    expect(screen.getAllByText("Agents are temporarily unavailable.")).toHaveLength(2);
+    expect(await screen.findAllByRole("alert")).toHaveLength(1);
+    expect(screen.getAllByText("Agents are temporarily unavailable.")).toHaveLength(1);
+    expect(screen.getByRole("button", { name: /try again/i })).toBeInTheDocument();
+  });
+
+  it("explains that a workspace selection is required", () => {
+    useWorkspaceStore.getState().reset();
+    renderPage();
+
+    expect(screen.getByRole("heading", { level: 1, name: "Select a workspace" })).toBeInTheDocument();
+    expect(screen.getByText("Select a workspace before managing agents.")).toBeInTheDocument();
   });
 
   it("falls back to member permissions when role lookup fails", async () => {

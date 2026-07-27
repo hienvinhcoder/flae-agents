@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
+import { TestI18nProvider } from "../../../../tests/TestI18nProvider";
 import type { AgentDetail } from "../types/agent";
 import { AgentCard } from "./AgentCard";
 
@@ -27,11 +28,14 @@ describe("AgentCard", () => {
     const user = userEvent.setup();
     const onDelete = vi.fn();
     render(
-      <MemoryRouter>
-        <AgentCard agent={agent} canManage onDelete={onDelete} />
-      </MemoryRouter>,
+      <TestI18nProvider>
+        <MemoryRouter>
+          <AgentCard agent={agent} canManage onDelete={onDelete} />
+        </MemoryRouter>
+      </TestI18nProvider>,
     );
 
+    expect(screen.getByText(`Ready on ${agent.model_name}`)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /chat with research guide/i })).toHaveAttribute(
       "href",
       `/dashboard/agents/${agent.id}/chat`,
@@ -46,9 +50,11 @@ describe("AgentCard", () => {
 
   it("hides management actions from members while preserving chat", () => {
     render(
-      <MemoryRouter>
-        <AgentCard agent={agent} canManage={false} onDelete={vi.fn()} />
-      </MemoryRouter>,
+      <TestI18nProvider>
+        <MemoryRouter>
+          <AgentCard agent={agent} canManage={false} onDelete={vi.fn()} />
+        </MemoryRouter>
+      </TestI18nProvider>,
     );
 
     expect(screen.queryByRole("link", { name: /edit research guide/i })).not.toBeInTheDocument();

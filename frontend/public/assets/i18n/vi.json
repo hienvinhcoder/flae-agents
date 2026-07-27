@@ -38,6 +38,26 @@
     "REPORTS_DESCRIPTION": "Chuyển tri thức doanh nghiệp được kết nối thành báo cáo phân tích có thể lặp lại.",
     "REPORTS_PREVIEW_DESCRIPTION": "Báo cáo phân tích được tạo tự động hiện chưa khả dụng."
   },
+  "AGENTS_UI": {
+    "TITLE": "Trợ lý AI",
+    "EYEBROW": "Hỗ trợ chuyên biệt",
+    "DESCRIPTION": "Xây dựng các trợ lý chuyên biệt trả lời dựa trên tri thức và bối cảnh vận hành của không gian làm việc.",
+    "CREATE": "Tạo trợ lý",
+    "EMPTY_TITLE": "Chưa có trợ lý nào",
+    "EMPTY_DESCRIPTION": "Tạo một trợ lý chuyên biệt với hướng dẫn rõ ràng, mô hình và mục tiêu gắn với không gian làm việc.",
+    "WORKSPACE_REQUIRED_TITLE": "Chọn không gian làm việc",
+    "WORKSPACE_REQUIRED_DESCRIPTION": "Chọn một không gian làm việc trước khi quản lý trợ lý.",
+    "LOAD_ERROR_TITLE": "Không thể tải trợ lý",
+    "LOAD_ERROR_FALLBACK": "Danh sách trợ lý tạm thời không khả dụng.",
+    "LOADING_CARD": "Đang tải trợ lý",
+    "MODEL_STATUS": "Sẵn sàng với {{model}}",
+    "EDIT_AGENT": "Chỉnh sửa {{name}}",
+    "DELETE_AGENT": "Xóa {{name}}",
+    "DELETE_CONFIRM": "Xóa trợ lý \"{{name}}\" và toàn bộ lịch sử hội thoại?",
+    "DELETE_FAILED": "Không thể xóa trợ lý.",
+    "CHAT_WITH": "Trò chuyện với {{name}}",
+    "START_CONVERSATION": "Bắt đầu hội thoại"
+  },
   "TOPICS": {
     "TITLE": "Chủ đề Tri thức",
     "DESC": "Các cụm tri thức ngữ nghĩa tự động gom cụm từ tài liệu của bạn.",

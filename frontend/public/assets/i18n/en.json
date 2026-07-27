@@ -38,6 +38,26 @@
     "REPORTS_DESCRIPTION": "Turn connected company knowledge into repeatable analyst outputs.",
     "REPORTS_PREVIEW_DESCRIPTION": "Generated analyst reports are not available yet."
   },
+  "AGENTS_UI": {
+    "TITLE": "AI agents",
+    "EYEBROW": "Specialized assistance",
+    "DESCRIPTION": "Build focused assistants that answer with workspace knowledge and operating context.",
+    "CREATE": "Create agent",
+    "EMPTY_TITLE": "No agents yet",
+    "EMPTY_DESCRIPTION": "Create a specialist with clear instructions, a model, and a workspace-grounded purpose.",
+    "WORKSPACE_REQUIRED_TITLE": "Select a workspace",
+    "WORKSPACE_REQUIRED_DESCRIPTION": "Select a workspace before managing agents.",
+    "LOAD_ERROR_TITLE": "Unable to load agents",
+    "LOAD_ERROR_FALLBACK": "Agents are temporarily unavailable.",
+    "LOADING_CARD": "Loading agent",
+    "MODEL_STATUS": "Ready on {{model}}",
+    "EDIT_AGENT": "Edit {{name}}",
+    "DELETE_AGENT": "Delete {{name}}",
+    "DELETE_CONFIRM": "Delete agent \"{{name}}\" and its conversation history?",
+    "DELETE_FAILED": "The agent could not be deleted.",
+    "CHAT_WITH": "Chat with {{name}}",
+    "START_CONVERSATION": "Start conversation"
+  },
   "TOPICS": {
     "TITLE": "Knowledge Topics",
     "DESC": "Semantic clusters automatically generated from your ingested documentation.",
