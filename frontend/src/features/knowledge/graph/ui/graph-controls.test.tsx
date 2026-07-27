@@ -1,7 +1,11 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { ReactElement } from "react";
 import { describe, expect, it, vi } from "vitest";
 
+import en from "../../../../../public/assets/i18n/en.json";
+import viTranslations from "../../../../../public/assets/i18n/vi.json";
+import { TestI18nProvider } from "../../../../../tests/TestI18nProvider";
 import type { RendererEdge, RendererNode } from "../types";
 import { GraphFilters } from "./GraphFilters";
 import { GraphSelectionPanel } from "./GraphSelectionPanel";
@@ -42,9 +46,92 @@ const edge: RendererEdge = {
   weight: 2,
 };
 
+function renderControl(ui: ReactElement) {
+  return render(ui, { wrapper: TestI18nProvider });
+}
+
 describe("graph controls", () => {
+  it("uses 44px targets for graph view controls", () => {
+    renderControl(
+      <GraphToolbar
+        onCommand={vi.fn()}
+        onFocusNode={vi.fn()}
+        onSearchChange={vi.fn()}
+        search=""
+        suggestions={[]}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: /zoom in/i }).className).toContain(
+      "min-h-11",
+    );
+    expect(screen.getByRole("button", { name: /zoom in/i }).className).toContain(
+      "min-w-11",
+    );
+    expect(screen.getByRole("searchbox", { name: /search entities/i })).toHaveClass(
+      "min-h-11",
+      "min-w-11",
+    );
+  });
+
+  it("uses 44px targets across filters and graph details", () => {
+    renderControl(
+      <>
+        <GraphFilters
+          nodeType="all"
+          nodeTypes={["person"]}
+          onNodeTypeChange={vi.fn()}
+          onPhysicsChange={vi.fn()}
+          physicsEnabled
+        />
+        <GraphSelectionPanel
+          neighbors={[neighbor]}
+          onClose={vi.fn()}
+          onFocusNode={vi.fn()}
+          selectedEdge={null}
+          selectedNode={node}
+        />
+      </>,
+    );
+
+    expect(screen.getByRole("combobox", { name: /entity type/i })).toHaveClass(
+      "min-h-11",
+      "min-w-11",
+    );
+    expect(screen.getByRole("button", { name: /physics on/i })).toHaveClass(
+      "min-h-11",
+      "min-w-11",
+    );
+    expect(screen.getByRole("button", { name: /close details/i })).toHaveClass(
+      "min-h-11",
+      "min-w-11",
+    );
+    expect(screen.getByRole("button", { name: /focus flae/i })).toHaveClass(
+      "min-h-11",
+    );
+  });
+
+  it("keeps the exact localized graph namespace in parity", () => {
+    const expectedKeys = [
+      "EYEBROW", "DESCRIPTION", "VISIBLE_COUNTS", "TOOLS_ARIA",
+      "BACK_TO_KNOWLEDGE", "SEARCH_LABEL", "SEARCH_PLACEHOLDER",
+      "VIEW_CONTROLS", "ZOOM_IN", "ZOOM_OUT", "FIT_GRAPH", "ENTITY_TYPE",
+      "ALL_ENTITY_TYPES", "PHYSICS_ON", "PHYSICS_OFF", "LOADING",
+      "SELECT_WORKSPACE", "SELECT_WORKSPACE_DESCRIPTION", "EMPTY_TITLE",
+      "EMPTY_DESCRIPTION", "OPEN_KNOWLEDGE", "GESTURE_HINT", "ENTITY_DETAILS",
+      "RELATIONSHIP_DETAILS", "CLOSE_DETAILS", "CONNECTED_ENTITIES",
+      "NO_CONNECTIONS", "FREQUENCY", "DEGREE", "WEIGHT", "LOAD_ERROR",
+    ];
+    const enGraph = (en as Record<string, unknown>).GRAPH as Record<string, string>;
+    const viGraph = (viTranslations as Record<string, unknown>).GRAPH as Record<string, string>;
+
+    expect(Object.keys(enGraph)).toEqual(expectedKeys);
+    expect(Object.keys(viGraph)).toEqual(expectedKeys);
+    expect(viGraph.ZOOM_IN).toBe("Phóng to");
+  });
+
   it("only references the search result list while suggestions are rendered", () => {
-    const { rerender } = render(
+    const { rerender } = renderControl(
       <GraphToolbar
         onCommand={vi.fn()}
         onFocusNode={vi.fn()}
@@ -79,7 +166,7 @@ describe("graph controls", () => {
     const onFocusNode = vi.fn();
     const onSearchChange = vi.fn();
     const onCommand = vi.fn();
-    render(
+    renderControl(
       <GraphToolbar
         onCommand={onCommand}
         onFocusNode={onFocusNode}
@@ -105,7 +192,7 @@ describe("graph controls", () => {
     const user = userEvent.setup();
     const onNodeTypeChange = vi.fn();
     const onPhysicsChange = vi.fn();
-    render(
+    renderControl(
       <GraphFilters
         nodeType="all"
         nodeTypes={["company", "person"]}
@@ -124,7 +211,7 @@ describe("graph controls", () => {
   it("GRAPH-02A renders node details and focuses neighboring nodes", async () => {
     const user = userEvent.setup();
     const onFocusNode = vi.fn();
-    render(
+    renderControl(
       <GraphSelectionPanel
         neighbors={[neighbor]}
         onClose={vi.fn()}
@@ -144,7 +231,7 @@ describe("graph controls", () => {
   it("GRAPH-02A renders edge details and navigates to either endpoint", async () => {
     const user = userEvent.setup();
     const onFocusNode = vi.fn();
-    render(
+    renderControl(
       <GraphSelectionPanel
         neighbors={[]}
         onClose={vi.fn()}

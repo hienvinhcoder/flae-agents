@@ -1,4 +1,5 @@
 import { Minus, RefreshCw, Search, Plus } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import type { GraphCommandType, RendererNode } from "../types";
 
@@ -11,7 +12,7 @@ interface GraphToolbarProps {
 }
 
 const iconButton =
-  "grid min-h-10 min-w-10 place-items-center rounded-ui-control border border-ui-line bg-ui-raised text-ui-ink-secondary transition-colors hover:bg-ui-interactive hover:text-ui-ink";
+  "grid min-h-11 min-w-11 place-items-center rounded-ui-control border border-ui-line bg-ui-raised text-ui-ink-secondary transition-colors hover:bg-ui-interactive hover:text-ui-ink motion-reduce:transition-none";
 
 export function GraphToolbar({
   onCommand,
@@ -20,18 +21,19 @@ export function GraphToolbar({
   search,
   suggestions,
 }: GraphToolbarProps) {
+  const { t } = useTranslation();
   return (
     <div className="flex min-w-0 flex-1 flex-wrap items-end gap-2">
       <div className="relative min-w-[15rem] flex-1 sm:max-w-md">
-        <label className="sr-only" htmlFor="graph-search">Search entities</label>
-        <Search aria-hidden className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-ui-ink-muted" />
+        <label className="sr-only" htmlFor="graph-search">{t("GRAPH.SEARCH_LABEL")}</label>
+        <Search aria-hidden className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-ui-ink-muted" />
         <input
           aria-autocomplete="list"
           aria-controls={suggestions.length ? "graph-search-results" : undefined}
-          className="min-h-10 w-full rounded-ui-control border border-ui-line bg-ui-canvas/80 pl-9 pr-3 text-ui-ink placeholder:text-ui-ink-muted"
+          className="min-h-11 min-w-11 w-full rounded-ui-control border border-ui-line bg-ui-canvas/80 pl-9 pr-3 text-ui-ink transition-colors placeholder:text-ui-ink-muted hover:border-ui-line-strong motion-reduce:transition-none"
           id="graph-search"
           onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Search entities"
+          placeholder={t("GRAPH.SEARCH_PLACEHOLDER")}
           type="search"
           value={search}
         />
@@ -51,20 +53,20 @@ export function GraphToolbar({
                 type="button"
               >
                 <span className="truncate font-semibold">{node.name}</span>
-                <span className="shrink-0 font-code text-[0.68rem] uppercase text-ui-ink-muted">{node.type || "other"}</span>
+                <span className="shrink-0 font-code text-[0.68rem] uppercase text-ui-ink-muted">{node.type || "-"}</span>
               </button>
             ))}
           </div>
         ) : null}
       </div>
-      <div aria-label="Graph view controls" className="flex gap-2" role="group">
-        <button aria-label="Zoom in" className={iconButton} onClick={() => onCommand("zoom-in")} type="button">
+      <div aria-label={t("GRAPH.VIEW_CONTROLS")} className="flex gap-2" role="group">
+        <button aria-label={t("GRAPH.ZOOM_IN")} className={iconButton} onClick={() => onCommand("zoom-in")} type="button">
           <Plus aria-hidden className="h-4 w-4" />
         </button>
-        <button aria-label="Zoom out" className={iconButton} onClick={() => onCommand("zoom-out")} type="button">
+        <button aria-label={t("GRAPH.ZOOM_OUT")} className={iconButton} onClick={() => onCommand("zoom-out")} type="button">
           <Minus aria-hidden className="h-4 w-4" />
         </button>
-        <button aria-label="Fit graph" className={iconButton} onClick={() => onCommand("reset")} type="button">
+        <button aria-label={t("GRAPH.FIT_GRAPH")} className={iconButton} onClick={() => onCommand("reset")} type="button">
           <RefreshCw aria-hidden className="h-4 w-4" />
         </button>
       </div>

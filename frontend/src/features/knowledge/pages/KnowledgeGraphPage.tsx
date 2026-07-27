@@ -1,7 +1,11 @@
 import { ArrowLeft, Database, LoaderCircle, Network } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
+import { AppError } from "../../../core/api/errors";
 import { useWorkspaceStore } from "../../../core/stores/workspace-store";
+import { PageHeader } from "../../../shared/ui/PageHeader";
+import { PageToolbar } from "../../../shared/ui/PageToolbar";
 import { Toast } from "../../../shared/ui/Toast";
 import { useGraphController } from "../graph/hooks/use-graph-controller";
 import type { GraphSelection } from "../graph/types";
@@ -10,11 +14,19 @@ import { GraphFilters } from "../graph/ui/GraphFilters";
 import { GraphSelectionPanel } from "../graph/ui/GraphSelectionPanel";
 import { GraphToolbar } from "../graph/ui/GraphToolbar";
 
-function errorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "Unable to load the knowledge graph.";
+function publicErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof AppError) return fallback;
+  return error instanceof Error ? error.message : fallback;
+}
+
+function isGloballyAnnouncedServerError(error: unknown) {
+  return error instanceof AppError
+    && error.kind === "server"
+    && (error.status ?? 0) >= 500;
 }
 
 export function KnowledgeGraphPage() {
+  const { t } = useTranslation();
   const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId);
   const controller = useGraphController(workspaceId);
   const onSelectionChange = (selection: GraphSelection | null) => {
@@ -25,27 +37,33 @@ export function KnowledgeGraphPage() {
 
   return (
     <section aria-labelledby="knowledge-graph-title" className="mx-auto w-full max-w-[96rem]">
-      <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div className="flex min-w-0 items-start gap-3">
-          <Link aria-label="Back to knowledge base" className="mt-1 grid min-h-10 min-w-10 place-items-center rounded-ui-control border border-ui-line bg-ui-raised text-ui-ink-secondary no-underline hover:bg-ui-interactive hover:text-ui-ink" to="/dashboard/knowledge">
+      <PageHeader
+        actions={(
+          <Link
+            className="inline-flex min-h-11 items-center gap-2 rounded-ui-control border border-ui-line bg-ui-raised px-4 py-2 font-semibold text-ui-ink-secondary no-underline transition-colors duration-200 hover:bg-ui-interactive hover:text-ui-ink motion-reduce:transition-none"
+            to="/dashboard/knowledge"
+          >
             <ArrowLeft aria-hidden className="h-4 w-4" />
+            {t("GRAPH.BACK_TO_KNOWLEDGE")}
           </Link>
-          <div>
-            <p className="text-metadata">Workspace intelligence / entity topology</p>
-            <h1 className="mt-1 flex items-center gap-2 text-[1.75rem] font-bold text-ui-ink" id="knowledge-graph-title">
-              <Network aria-hidden className="h-6 w-6 text-brand" />
-              Knowledge graph
-            </h1>
-            <p className="mt-1 max-w-2xl text-ui-ink-secondary">Trace extracted entities, relationships, and evidence across workspace knowledge.</p>
-          </div>
-        </div>
-        <div className="font-code text-xs text-ui-ink-muted">
-          {controller.graph.nodes.length} visible nodes / {controller.graph.edges.length} visible edges
-        </div>
-      </header>
+        )}
+        description={t("GRAPH.DESCRIPTION")}
+        eyebrow={t("GRAPH.EYEBROW")}
+        metadata={t("GRAPH.VISIBLE_COUNTS", {
+          edges: controller.graph.edges.length,
+          nodes: controller.graph.nodes.length,
+        })}
+        title={(
+          <span className="flex items-center gap-2">
+            <Network aria-hidden className="h-6 w-6 text-brand" />
+            {t("SHELL.KNOWLEDGE_GRAPH")}
+          </span>
+        )}
+        titleId="knowledge-graph-title"
+      />
 
-      <div className="surface-panel mt-5 overflow-hidden bg-ui-canvas">
-        <div className="relative z-30 flex flex-col gap-3 border-b border-ui-divider bg-ui-panel/90 p-3 backdrop-blur xl:flex-row xl:items-end xl:justify-between">
+      <div className="mt-5 overflow-hidden border-y border-ui-divider bg-ui-canvas">
+        <PageToolbar ariaLabel={t("GRAPH.TOOLS_ARIA")} className="relative z-30">
           <GraphToolbar
             onCommand={(type) => controller.issueCommand(type)}
             onFocusNode={controller.focusNode}
@@ -60,7 +78,7 @@ export function KnowledgeGraphPage() {
             onPhysicsChange={controller.setPhysicsEnabled}
             physicsEnabled={controller.physicsEnabled}
           />
-        </div>
+        </PageToolbar>
 
         <div
           className="relative min-h-[32rem] overflow-hidden bg-ui-canvas"
@@ -80,10 +98,10 @@ export function KnowledgeGraphPage() {
           />
 
           {workspaceId && controller.query.isPending ? (
-            <div aria-label="Loading knowledge graph" className="absolute inset-0 z-20 grid place-items-center bg-ui-canvas/85 backdrop-blur" role="status">
+            <div aria-label={t("GRAPH.LOADING")} className="absolute inset-0 z-20 grid place-items-center bg-ui-canvas/85 backdrop-blur" role="status">
               <div className="text-center text-ui-ink-secondary">
                 <LoaderCircle aria-hidden className="mx-auto h-9 w-9 animate-spin text-brand motion-reduce:animate-none" />
-                <p className="mt-3 font-semibold">Loading knowledge graph</p>
+                <p className="mt-3 font-semibold">{t("GRAPH.LOADING")}</p>
               </div>
             </div>
           ) : null}
@@ -92,23 +110,23 @@ export function KnowledgeGraphPage() {
             <div className="absolute inset-0 grid place-items-center p-6 text-center">
               <div className="max-w-md">
                 <Database aria-hidden className="mx-auto h-10 w-10 text-ui-ink-disabled" />
-                <h2 className="mt-4 text-lg font-bold text-ui-ink">Select a workspace</h2>
-                <p className="mt-2 text-ui-ink-secondary">Select a workspace to explore its graph.</p>
+                <h2 className="mt-4 text-lg font-bold text-ui-ink">{t("GRAPH.SELECT_WORKSPACE")}</h2>
+                <p className="mt-2 text-ui-ink-secondary">{t("GRAPH.SELECT_WORKSPACE_DESCRIPTION")}</p>
               </div>
             </div>
           ) : controller.query.isSuccess && controller.graph.nodes.length === 0 ? (
             <div className="absolute inset-0 grid place-items-center p-6 text-center">
               <div className="max-w-md">
                 <Database aria-hidden className="mx-auto h-10 w-10 text-ui-ink-disabled" />
-                <h2 className="mt-4 text-lg font-bold text-ui-ink">No graph data yet</h2>
-                <p className="mt-2 text-ui-ink-secondary">Upload documents and wait for entity extraction to complete.</p>
-                <Link className="button-primary mt-5 no-underline" to="/dashboard/knowledge">Open knowledge base</Link>
+                <h2 className="mt-4 text-lg font-bold text-ui-ink">{t("GRAPH.EMPTY_TITLE")}</h2>
+                <p className="mt-2 text-ui-ink-secondary">{t("GRAPH.EMPTY_DESCRIPTION")}</p>
+                <Link className="button-primary mt-5 no-underline" to="/dashboard/knowledge">{t("GRAPH.OPEN_KNOWLEDGE")}</Link>
               </div>
             </div>
           ) : null}
 
-          <div className="pointer-events-none absolute bottom-3 left-3 hidden rounded-ui-control border border-ui-divider bg-ui-panel/75 px-3 py-2 font-code text-[0.65rem] text-ui-ink-muted backdrop-blur sm:block">
-            Wheel to zoom / drag canvas to pan / drag nodes to reposition
+          <div className="pointer-events-none absolute bottom-3 left-3 hidden rounded-ui-control border border-ui-divider bg-ui-panel/90 px-3 py-2 font-code text-[0.65rem] text-ui-ink-muted sm:block">
+            {t("GRAPH.GESTURE_HINT")}
           </div>
           <GraphSelectionPanel
             neighbors={controller.neighbors}
@@ -120,9 +138,12 @@ export function KnowledgeGraphPage() {
         </div>
       </div>
 
-      {controller.query.isError ? (
+      {controller.query.isError && !isGloballyAnnouncedServerError(controller.query.error) ? (
         <div className="fixed bottom-4 right-4 z-50 w-[min(24rem,calc(100vw-2rem))]">
-          <Toast message={errorMessage(controller.query.error)} tone="error" />
+          <Toast
+            message={publicErrorMessage(controller.query.error, t("GRAPH.LOAD_ERROR"))}
+            tone="error"
+          />
         </div>
       ) : null}
     </section>

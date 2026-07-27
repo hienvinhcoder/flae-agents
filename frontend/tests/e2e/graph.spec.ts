@@ -8,6 +8,12 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('filters, selects, and navigates the graph with accessible controls', async ({ page }) => {
+  await expect(page.getByRole('toolbar', { name: 'Graph tools' })).toBeVisible();
+  await expect(page.getByLabel('Interactive knowledge graph')).toBeVisible();
+  const zoomIn = page.getByRole('button', { name: 'Zoom in' });
+  const zoomInBox = await zoomIn.boundingBox();
+  expect(zoomInBox?.height).toBeGreaterThanOrEqual(44);
+  expect(zoomInBox?.width).toBeGreaterThanOrEqual(44);
   await expectNoA11yViolations(page);
   await page.getByLabel('Search entities').fill('FLAE');
   await page.getByRole('option', { name: 'FLAE platform product' }).click();

@@ -2,14 +2,22 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
+import type { PropsWithChildren } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { AppProviders } from "../../../app/providers/AppProviders";
+import { AppError } from "../../../core/api/errors";
+import { apiFailureLifecycle } from "../../../core/api/failure-lifecycle";
 import { useWorkspaceStore } from "../../../core/stores/workspace-store";
+import { TestI18nProvider } from "../../../../tests/TestI18nProvider";
 import type { KnowledgeGraphData } from "../graph/types";
 import { KnowledgeGraphPage } from "./KnowledgeGraphPage";
 
 const runtimeApi = vi.hoisted(() => ({ getKnowledgeGraph: vi.fn() }));
 vi.mock("../api/knowledge-runtime-api", () => runtimeApi);
+vi.mock("../../../core/auth/AuthBootstrap", () => ({
+  AuthBootstrap: ({ children }: PropsWithChildren) => children,
+}));
 vi.mock("../graph/ui/GraphCanvas", () => ({
   GraphCanvas: ({ graph, onSelectionChange, workspaceKey }: {
     graph: KnowledgeGraphData;
@@ -46,21 +54,50 @@ const graph: KnowledgeGraphData = {
 function renderPage() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
-    <QueryClientProvider client={client}>
-      <MemoryRouter>
-        <KnowledgeGraphPage />
-      </MemoryRouter>
-    </QueryClientProvider>,
+    <TestI18nProvider>
+      <QueryClientProvider client={client}>
+        <MemoryRouter>
+          <KnowledgeGraphPage />
+        </MemoryRouter>
+      </QueryClientProvider>
+    </TestI18nProvider>,
   );
   return client;
 }
 
+function renderPageWithAppProviders() {
+  render(
+    <TestI18nProvider>
+      <AppProviders>
+        <MemoryRouter>
+          <KnowledgeGraphPage />
+        </MemoryRouter>
+      </AppProviders>
+    </TestI18nProvider>,
+  );
+}
+
 describe("KnowledgeGraphPage", () => {
   beforeEach(() => {
+    apiFailureLifecycle.reset();
     runtimeApi.getKnowledgeGraph.mockReset();
     runtimeApi.getKnowledgeGraph.mockResolvedValue(graph);
     useWorkspaceStore.getState().reset();
     useWorkspaceStore.getState().setCurrentWorkspaceId("ws-1");
+  });
+
+  it("renders graph context and controls above the full-height work surface", async () => {
+    renderPage();
+
+    expect(
+      await screen.findByRole("heading", { level: 1, name: /knowledge graph/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("toolbar", { name: /graph tools/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText(/interactive knowledge graph/i),
+    ).toBeInTheDocument();
   });
 
   it("GRAPH-01 shows a full-canvas loader and initializes the graph", async () => {
@@ -112,6 +149,41 @@ describe("KnowledgeGraphPage", () => {
     expect(screen.getByText("0 nodes / 0 edges / ws-2")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Ada" })).not.toBeInTheDocument();
   });
+
+  it("uses localized public copy instead of a raw AppError message", async () => {
+    runtimeApi.getKnowledgeGraph.mockRejectedValue(new AppError({
+      kind: "validation",
+      message: "Raw upstream graph details",
+      retryable: false,
+      status: 422,
+    }));
+
+    renderPage();
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Unable to load the knowledge graph.",
+    );
+    expect(screen.queryByText("Raw upstream graph details")).not.toBeInTheDocument();
+  });
+
+  it("lets the global provider own retryable 5xx announcements", async () => {
+    runtimeApi.getKnowledgeGraph.mockRejectedValue(new AppError({
+      kind: "server",
+      message: "Raw graph outage details",
+      retryable: true,
+      status: 503,
+    }));
+
+    renderPageWithAppProviders();
+    act(() => apiFailureLifecycle.reportServerFailure());
+
+    await waitFor(
+      () => expect(runtimeApi.getKnowledgeGraph).toHaveBeenCalledTimes(3),
+      { timeout: 6_000 },
+    );
+    expect(screen.getAllByRole("alert")).toHaveLength(1);
+    expect(screen.queryByText("Raw graph outage details")).not.toBeInTheDocument();
+  }, 7_000);
 
   it("GRAPH-05 reloads for workspace changes and immediately clears a removed workspace", async () => {
     runtimeApi.getKnowledgeGraph
