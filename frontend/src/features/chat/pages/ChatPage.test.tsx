@@ -130,7 +130,7 @@ describe("ChatPage", () => {
 
     act(() => useWorkspaceStore.getState().setCurrentWorkspaceId(null));
 
-    expect(await screen.findByText("Unable to load the workspace assistant.")).toBeInTheDocument();
+    expect(await screen.findByText("Select a workspace to start chatting.")).toBeInTheDocument();
     expect(signal?.aborted).toBe(true);
     expect(agentsApi.getDefaultAgent).toHaveBeenCalledTimes(1);
   });

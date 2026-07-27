@@ -13,7 +13,7 @@ export function ChatPage() {
   const defaultAgentQuery = useDefaultAgent(workspaceId);
 
   if (!workspaceId) {
-    return <ErrorState announce={false} message={t("CHAT_UI.DEFAULT_AGENT_ERROR")} title={t("AGENTS_UI.WORKSPACE_REQUIRED_TITLE")} />;
+    return <ErrorState announce={false} message={t("SHELL.CHAT_WORKSPACE_REQUIRED")} title={t("AGENTS_UI.WORKSPACE_REQUIRED_TITLE")} />;
   }
   if (defaultAgentQuery.isPending) {
     return <div className="mx-auto max-w-7xl border-y border-ui-divider bg-ui-raised/35 p-8"><Skeleton label={t("AGENTS_UI.LOADING_CARD")} lines={7} /></div>;

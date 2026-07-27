@@ -300,6 +300,7 @@
     "NAV_GROUP_INTELLIGENCE": "Intelligence",
     "NAV_GROUP_WORKSPACE": "Workspace",
     "WORKSPACE": "Workspace",
+    "CHAT_WORKSPACE_REQUIRED": "Select a workspace to start chatting.",
     "LOADING_WORKSPACES": "Loading workspaces",
     "INITIALIZING": "Loading and synchronizing workspace",
     "NO_WORKSPACE": "No workspace",

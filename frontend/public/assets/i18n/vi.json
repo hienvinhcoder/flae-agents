@@ -300,6 +300,7 @@
     "NAV_GROUP_INTELLIGENCE": "Tri thức AI",
     "NAV_GROUP_WORKSPACE": "Không gian làm việc",
     "WORKSPACE": "Không gian làm việc",
+    "CHAT_WORKSPACE_REQUIRED": "Chọn một không gian làm việc để bắt đầu trò chuyện.",
     "LOADING_WORKSPACES": "Đang tải không gian làm việc",
     "INITIALIZING": "Đang tải và đồng bộ không gian làm việc",
     "NO_WORKSPACE": "Không có không gian làm việc",
