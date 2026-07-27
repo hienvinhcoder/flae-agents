@@ -37,21 +37,38 @@ test('creates and edits an agent through the production forms', async ({ page })
 });
 
 test('keeps configuration actions sticky and contained on mobile', async ({ page }) => {
-  await page.setViewportSize({ height: 812, width: 375 });
+  const viewport = { height: 812, width: 375 };
+  await page.setViewportSize(viewport);
   await page.getByRole('link', { name: 'Create agent' }).first().click();
 
   const createButton = page.getByRole('button', { name: 'Create agent' });
   const actionBar = createButton.locator('..');
   await expect(createButton).toBeVisible();
   await expect(page.getByRole('link', { name: 'Cancel' })).toBeVisible();
-  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  await page.getByLabel('System prompt').evaluate((element) => element.setAttribute('rows', '50'));
+  const naturalActionTop = await actionBar.evaluate((element) => {
+    const actionElement = element as HTMLElement;
+    const inlinePosition = actionElement.style.position;
+    actionElement.style.position = 'static';
+    const top = actionElement.getBoundingClientRect().top + window.scrollY;
+    actionElement.style.position = inlinePosition;
+    return top;
+  });
+  const intermediateScrollTop = naturalActionTop - viewport.height - 120;
+  expect(intermediateScrollTop).toBeGreaterThan(0);
+  await page.evaluate((scrollTop) => window.scrollTo(0, scrollTop), intermediateScrollTop);
+  const scrollTop = await page.evaluate(() => window.scrollY);
+  expect(naturalActionTop - scrollTop).toBeGreaterThan(viewport.height);
+
   const actionBounds = await actionBar.boundingBox();
   expect(actionBounds).not.toBeNull();
   expect(actionBounds?.y ?? -1).toBeGreaterThanOrEqual(0);
-  expect((actionBounds?.y ?? 0) + (actionBounds?.height ?? 0)).toBeLessThanOrEqual(812);
+  const actionBottom = (actionBounds?.y ?? 0) + (actionBounds?.height ?? 0);
+  expect(actionBottom).toBeGreaterThanOrEqual(viewport.height - 16);
+  expect(actionBottom).toBeLessThanOrEqual(viewport.height);
   expect(await actionBar.evaluate((element) => getComputedStyle(element).position)).toBe('sticky');
   expect(await createButton.evaluate((element) => element.getBoundingClientRect().height)).toBeGreaterThanOrEqual(44);
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(viewport.width);
 });
 
 test('localizes appearance options and preview in Vietnamese', async ({ page }) => {

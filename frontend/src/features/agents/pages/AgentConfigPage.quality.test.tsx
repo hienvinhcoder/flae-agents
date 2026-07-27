@@ -43,10 +43,12 @@ function member(workspaceId: string, role: "admin" | "member" | "owner" | "viewe
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
-  const promise = new Promise<T>((next) => {
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((next, fail) => {
     resolve = next;
+    reject = fail;
   });
-  return { promise, resolve };
+  return { promise, reject, resolve };
 }
 
 async function renderPage({
@@ -176,6 +178,70 @@ describe("AgentConfigPage quality regressions", () => {
     ));
   });
 
+  it("does not navigate or replace the new workspace draft after a stale create succeeds", async () => {
+    const user = userEvent.setup();
+    const createRequest = deferred<{ id: string }>();
+    agentsApi.createAgent.mockReturnValueOnce(createRequest.promise);
+    workspaceApi.listWorkspaceMembers.mockImplementation((workspaceId: string) =>
+      Promise.resolve([member(workspaceId)]));
+    const { router } = await renderPage();
+    await screen.findByRole("heading", { name: "Create AI agent" });
+    await fillRequiredFields(user);
+    await user.click(screen.getByRole("button", { name: "Create agent" }));
+    await waitFor(() => expect(agentsApi.createAgent).toHaveBeenCalledWith(
+      workspaceA,
+      expect.objectContaining({ name: "Operations guide" }),
+    ));
+
+    act(() => useWorkspaceStore.getState().setCurrentWorkspaceId(workspaceB));
+    const name = await screen.findByRole("textbox", { name: "Agent name" });
+    await waitFor(() => expect(name).toHaveValue(""));
+    await user.type(name, "Workspace B draft");
+    await user.type(screen.getByRole("textbox", { name: "System prompt" }), "Keep the workspace B draft intact.");
+
+    await act(async () => {
+      createRequest.resolve({ id: agentId });
+      await createRequest.promise;
+    });
+
+    expect(router.state.location.pathname).toBe("/dashboard/agents/new");
+    expect(screen.getByRole("textbox", { name: "Agent name" })).toHaveValue("Workspace B draft");
+    expect(screen.getByRole("textbox", { name: "System prompt" })).toHaveValue("Keep the workspace B draft intact.");
+    expect(screen.queryByText("Unable to create agent.")).not.toBeInTheDocument();
+  });
+
+  it("does not show a stale create failure over the new workspace draft", async () => {
+    const user = userEvent.setup();
+    const createRequest = deferred<{ id: string }>();
+    agentsApi.createAgent.mockReturnValueOnce(createRequest.promise);
+    workspaceApi.listWorkspaceMembers.mockImplementation((workspaceId: string) =>
+      Promise.resolve([member(workspaceId)]));
+    const { router } = await renderPage();
+    await screen.findByRole("heading", { name: "Create AI agent" });
+    await fillRequiredFields(user);
+    await user.click(screen.getByRole("button", { name: "Create agent" }));
+    await waitFor(() => expect(agentsApi.createAgent).toHaveBeenCalledWith(
+      workspaceA,
+      expect.objectContaining({ name: "Operations guide" }),
+    ));
+
+    act(() => useWorkspaceStore.getState().setCurrentWorkspaceId(workspaceB));
+    const name = await screen.findByRole("textbox", { name: "Agent name" });
+    await waitFor(() => expect(name).toHaveValue(""));
+    await user.type(name, "Workspace B draft");
+    await user.type(screen.getByRole("textbox", { name: "System prompt" }), "Keep the workspace B draft intact.");
+
+    await act(async () => {
+      createRequest.reject(appError("validation", 422));
+      await createRequest.promise.catch(() => undefined);
+    });
+
+    expect(router.state.location.pathname).toBe("/dashboard/agents/new");
+    expect(screen.getByRole("textbox", { name: "Agent name" })).toHaveValue("Workspace B draft");
+    expect(screen.getByRole("textbox", { name: "System prompt" })).toHaveValue("Keep the workspace B draft intact.");
+    expect(screen.queryByText("Unable to create agent.")).not.toBeInTheDocument();
+  });
+
   it("lets AppProviders own a create 503 alert while keeping safe visible copy", async () => {
     const user = userEvent.setup();
     agentsApi.createAgent.mockRejectedValueOnce(appError("server", 503));
@@ -210,13 +276,25 @@ describe("AgentConfigPage quality regressions", () => {
   it("keeps globally owned 401 failures out of the local live region", async () => {
     const user = userEvent.setup();
     agentsApi.createAgent.mockRejectedValueOnce(appError("auth", 401));
-    await renderPage();
+    await renderPage({ appProviders: true });
     await screen.findByRole("heading", { name: "Create AI agent" });
     await fillRequiredFields(user);
     await user.click(screen.getByRole("button", { name: "Create agent" }));
 
     expect(await screen.findByText("Unable to create agent.")).not.toHaveAttribute("role");
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("keeps a status-less auth failure in the local live region", async () => {
+    const user = userEvent.setup();
+    agentsApi.createAgent.mockRejectedValueOnce(appError("auth"));
+    await renderPage({ appProviders: true });
+    await screen.findByRole("heading", { name: "Create AI agent" });
+    await fillRequiredFields(user);
+    await user.click(screen.getByRole("button", { name: "Create agent" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Unable to create agent.");
+    expect(screen.queryByText("Raw infrastructure details")).not.toBeInTheDocument();
   });
 
   it("updates a locally owned submit error when the language changes", async () => {

@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeft, Save } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
@@ -62,8 +62,7 @@ interface AgentConfigFormProps {
 
 function isGloballyOwnedSubmitError(error: unknown) {
   return error instanceof AppError && (
-    error.kind === "auth"
-    || error.kind === "network"
+    error.kind === "network"
     || error.status === 401
     || (error.kind === "server" && (error.status ?? 0) >= 500)
   );
@@ -76,6 +75,7 @@ export function AgentConfigForm({ agentId, workspaceId }: AgentConfigFormProps) 
   const detailQuery = useAgentDetail(workspaceId, agentId);
   const actions = useAgentActions(workspaceId, agentId);
   const [submitError, setSubmitError] = useState<SubmitErrorState | null>(null);
+  const isActiveRef = useRef(true);
   const locale = i18n.resolvedLanguage ?? i18n.language;
   const validationSchema = useMemo(
     () => createAgentCreateSchema({
@@ -105,6 +105,13 @@ export function AgentConfigForm({ agentId, workspaceId }: AgentConfigFormProps) 
   const isSaving = actions.create.isPending || actions.update.isPending;
 
   useEffect(() => {
+    isActiveRef.current = true;
+    return () => {
+      isActiveRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
     if (detailQuery.isError) void navigate("/dashboard/agents", { replace: true });
   }, [detailQuery.isError, navigate]);
 
@@ -125,31 +132,35 @@ export function AgentConfigForm({ agentId, workspaceId }: AgentConfigFormProps) 
     if (Object.keys(form.formState.errors).length > 0) void form.trigger();
   }, [form, locale]);
 
-  const submit = form.handleSubmit(async (values) => {
-    if (isEdit && !form.formState.isDirty) return;
-    setSubmitError(null);
-    try {
-      if (isEdit) {
-        const dirty = form.formState.dirtyFields;
-        const payload: AgentUpdatePayload = {};
-        if (dirty.avatar_color) payload.avatar_color = values.avatar_color;
-        if (dirty.avatar_icon) payload.avatar_icon = values.avatar_icon;
-        if (dirty.model_name) payload.model_name = values.model_name;
-        if (dirty.name) payload.name = values.name;
-        if (dirty.system_prompt) payload.system_prompt = values.system_prompt;
-        if (dirty.temperature) payload.temperature = values.temperature;
-        await actions.update.mutateAsync(payload);
-      } else {
-        await actions.create.mutateAsync(values);
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    void form.handleSubmit(async (values) => {
+      if (isEdit && !form.formState.isDirty) return;
+      setSubmitError(null);
+      try {
+        if (isEdit) {
+          const dirty = form.formState.dirtyFields;
+          const payload: AgentUpdatePayload = {};
+          if (dirty.avatar_color) payload.avatar_color = values.avatar_color;
+          if (dirty.avatar_icon) payload.avatar_icon = values.avatar_icon;
+          if (dirty.model_name) payload.model_name = values.model_name;
+          if (dirty.name) payload.name = values.name;
+          if (dirty.system_prompt) payload.system_prompt = values.system_prompt;
+          if (dirty.temperature) payload.temperature = values.temperature;
+          await actions.update.mutateAsync(payload);
+        } else {
+          await actions.create.mutateAsync(values);
+        }
+        if (!isActiveRef.current) return;
+        void navigate("/dashboard/agents");
+      } catch (error) {
+        if (!isActiveRef.current) return;
+        setSubmitError({
+          error,
+          fallbackKey: isEdit ? "AGENT_CONFIG.SAVE_ERROR" : "AGENT_CONFIG.CREATE_ERROR",
+        });
       }
-      void navigate("/dashboard/agents");
-    } catch (error) {
-      setSubmitError({
-        error,
-        fallbackKey: isEdit ? "AGENT_CONFIG.SAVE_ERROR" : "AGENT_CONFIG.CREATE_ERROR",
-      });
-    }
-  });
+    })(event);
+  };
 
   if (isEdit && (detailQuery.isPending || detailQuery.isError)) {
     return (
@@ -175,7 +186,7 @@ export function AgentConfigForm({ agentId, workspaceId }: AgentConfigFormProps) 
         titleId="agent-config-title"
       />
 
-      <form className="grid gap-6" noValidate onSubmit={(event) => void submit(event)}>
+      <form className="grid gap-6" noValidate onSubmit={submit}>
         <section aria-labelledby="agent-identity-title" className="border-t border-ui-divider pt-6">
           <h2 className="text-xl font-semibold text-ui-ink" id="agent-identity-title">
             {t("AGENT_CONFIG.IDENTITY_SECTION")}
