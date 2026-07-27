@@ -42,6 +42,21 @@ const policy: KnowledgeDocument = {
   title: "Security policy",
 };
 
+const workspaceTwoIncident: KnowledgeDocument = {
+  ...incident,
+  title: "Workspace two handbook",
+};
+
+function deferred<T>() {
+  let reject!: (reason?: unknown) => void;
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    reject = rejectPromise;
+    resolve = resolvePromise;
+  });
+  return { promise, reject, resolve };
+}
+
 function renderPage() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -156,5 +171,96 @@ describe("KnowledgeListPage retry errors", () => {
         screen.queryByText("Could not retry Incident handbook."),
       ).not.toBeInTheDocument(),
     );
+  });
+
+  it("keeps a current workspace retry pending when an old retry completes", async () => {
+    const user = userEvent.setup();
+    const requests = new Map<string, ReturnType<typeof deferred<unknown>>>();
+    runtimeApi.listDocuments.mockImplementation((workspaceId: string) =>
+      Promise.resolve(
+        workspaceId === "ws-2" ? [workspaceTwoIncident] : [incident],
+      ),
+    );
+    runtimeApi.retryIngestion.mockImplementation((workspaceId: string) => {
+      const request = deferred<unknown>();
+      requests.set(workspaceId, request);
+      return request.promise;
+    });
+    renderPage();
+
+    const table = within(
+      await screen.findByRole("table", { name: /knowledge documents/i }),
+    );
+    await user.click(
+      table.getByRole("button", { name: "Retry Incident handbook" }),
+    );
+    act(() => useWorkspaceStore.getState().setCurrentWorkspaceId("ws-2"));
+    expect(await screen.findAllByText("Workspace two handbook")).toHaveLength(2);
+    const workspaceTwoTable = within(
+      screen.getByRole("table", { name: /knowledge documents/i }),
+    );
+    const workspaceTwoRetry = workspaceTwoTable.getByRole("button", {
+      name: "Retry Workspace two handbook",
+    });
+
+    expect(workspaceTwoRetry).not.toBeDisabled();
+    await user.click(workspaceTwoRetry);
+    expect(runtimeApi.retryIngestion).toHaveBeenCalledWith("ws-2", incident.id);
+    expect(workspaceTwoRetry).toBeDisabled();
+
+    requests.get("ws-1")?.resolve({});
+    await act(async () => Promise.resolve());
+    expect(workspaceTwoRetry).toBeDisabled();
+
+    requests.get("ws-2")?.resolve({});
+    await waitFor(() => expect(workspaceTwoRetry).not.toBeDisabled());
+  });
+
+  it("preserves a current workspace error when an old retry rejects", async () => {
+    const user = userEvent.setup();
+    const requests = new Map<string, ReturnType<typeof deferred<unknown>>>();
+    runtimeApi.listDocuments.mockImplementation((workspaceId: string) =>
+      Promise.resolve(
+        workspaceId === "ws-2" ? [workspaceTwoIncident] : [incident],
+      ),
+    );
+    runtimeApi.retryIngestion.mockImplementation((workspaceId: string) => {
+      const request = deferred<unknown>();
+      requests.set(workspaceId, request);
+      return request.promise;
+    });
+    renderPage();
+
+    const table = within(
+      await screen.findByRole("table", { name: /knowledge documents/i }),
+    );
+    await user.click(
+      table.getByRole("button", { name: "Retry Incident handbook" }),
+    );
+    act(() => useWorkspaceStore.getState().setCurrentWorkspaceId("ws-2"));
+    expect(await screen.findAllByText("Workspace two handbook")).toHaveLength(2);
+    const workspaceTwoTable = within(
+      screen.getByRole("table", { name: /knowledge documents/i }),
+    );
+    const workspaceTwoRetry = workspaceTwoTable.getByRole("button", {
+      name: "Retry Workspace two handbook",
+    });
+    await user.click(workspaceTwoRetry);
+
+    requests.get("ws-2")?.reject(new Error("Current workspace failure"));
+    expect(
+      await screen.findByText("Could not retry Workspace two handbook."),
+    ).toBeInTheDocument();
+    expect(workspaceTwoRetry).not.toBeDisabled();
+
+    await act(async () => {
+      requests.get("ws-1")?.reject(new Error("Old workspace failure"));
+      await Promise.resolve();
+    });
+    expect(
+      screen.getByText("Could not retry Workspace two handbook."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Old workspace failure")).not.toBeInTheDocument();
+    expect(workspaceTwoRetry).not.toBeDisabled();
   });
 });

@@ -20,11 +20,21 @@ function errorMessage(error: unknown) {
 }
 
 const EMPTY_DOCUMENTS: readonly KnowledgeDocument[] = [];
+const EMPTY_PENDING_RETRY_IDS: ReadonlySet<string> = new Set();
 const EMPTY_RETRY_ERRORS: ReadonlyMap<string, string> = new Map();
+
+interface PendingRetryState {
+  documentIds: ReadonlySet<string>;
+  workspaceId: string | null;
+}
 
 interface RetryErrorState {
   errors: ReadonlyMap<string, string>;
   workspaceId: string | null;
+}
+
+function retryOperationKey(workspaceId: string, documentId: string) {
+  return JSON.stringify([workspaceId, documentId]);
 }
 
 export function KnowledgeListPage() {
@@ -33,9 +43,9 @@ export function KnowledgeListPage() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
-  const pendingRetryIdsRef = useRef<Set<string>>(new Set());
-  const [pendingRetryIds, setPendingRetryIds] = useState<ReadonlySet<string>>(
-    () => new Set(),
+  const pendingRetryKeysRef = useRef<Set<string>>(new Set());
+  const [pendingRetryState, setPendingRetryState] = useState<PendingRetryState>(
+    () => ({ documentIds: new Set(), workspaceId }),
   );
   const [retryErrorState, setRetryErrorState] = useState<RetryErrorState>(() => ({
     errors: new Map(),
@@ -45,6 +55,10 @@ export function KnowledgeListPage() {
   const [textOpen, setTextOpen] = useState(false);
   const knowledge = useKnowledge(workspaceId, selectedDocumentId);
   const documents = knowledge.documents.data ?? EMPTY_DOCUMENTS;
+  const pendingRetryIds =
+    pendingRetryState.workspaceId === workspaceId
+      ? pendingRetryState.documentIds
+      : EMPTY_PENDING_RETRY_IDS;
   const retryErrors =
     retryErrorState.workspaceId === workspaceId
       ? retryErrorState.errors
@@ -62,46 +76,70 @@ export function KnowledgeListPage() {
     });
   }, [documents, search, status]);
 
-  const clearRetryError = (documentId: string) => {
+  const beginRetryErrorScope = (
+    documentId: string,
+    retryWorkspaceId: string,
+  ) => {
     setRetryErrorState((current) => {
-      const currentErrors =
-        current.workspaceId === workspaceId
+      const errors = new Map(
+        current.workspaceId === retryWorkspaceId
           ? current.errors
-          : EMPTY_RETRY_ERRORS;
-      if (!currentErrors.has(documentId)) {
-        return current.workspaceId === workspaceId
-          ? current
-          : { errors: new Map(), workspaceId };
+          : EMPTY_RETRY_ERRORS,
+      );
+      errors.delete(documentId);
+      return { errors, workspaceId: retryWorkspaceId };
+    });
+  };
+  const clearRetryError = (
+    documentId: string,
+    retryWorkspaceId: string,
+  ) => {
+    setRetryErrorState((current) => {
+      if (
+        current.workspaceId !== retryWorkspaceId ||
+        !current.errors.has(documentId)
+      ) {
+        return current;
       }
-      const remaining = new Map(currentErrors);
-      remaining.delete(documentId);
-      return { errors: remaining, workspaceId };
+      const errors = new Map(current.errors);
+      errors.delete(documentId);
+      return { errors, workspaceId: retryWorkspaceId };
     });
   };
   const retryDocument = async (documentId: string, title: string) => {
-    if (pendingRetryIdsRef.current.has(documentId)) return;
-    clearRetryError(documentId);
-    const pending = new Set(pendingRetryIdsRef.current).add(documentId);
-    pendingRetryIdsRef.current = pending;
-    setPendingRetryIds(pending);
+    const retryWorkspaceId = workspaceId;
+    if (!retryWorkspaceId) return;
+    const operationKey = retryOperationKey(retryWorkspaceId, documentId);
+    if (pendingRetryKeysRef.current.has(operationKey)) return;
+    beginRetryErrorScope(documentId, retryWorkspaceId);
+    pendingRetryKeysRef.current.add(operationKey);
+    setPendingRetryState((current) => {
+      const documentIds = new Set(
+        current.workspaceId === retryWorkspaceId
+          ? current.documentIds
+          : EMPTY_PENDING_RETRY_IDS,
+      );
+      documentIds.add(documentId);
+      return { documentIds, workspaceId: retryWorkspaceId };
+    });
     try {
       await knowledge.retry.mutateAsync(documentId);
-      clearRetryError(documentId);
+      clearRetryError(documentId, retryWorkspaceId);
     } catch {
       setRetryErrorState((current) => {
-        const errors = new Map(
-          current.workspaceId === workspaceId
-            ? current.errors
-            : EMPTY_RETRY_ERRORS,
-        );
+        if (current.workspaceId !== retryWorkspaceId) return current;
+        const errors = new Map(current.errors);
         errors.set(documentId, t("KNOWLEDGE.RETRY_FAILED", { title }));
-        return { errors, workspaceId };
+        return { errors, workspaceId: retryWorkspaceId };
       });
     } finally {
-      const remaining = new Set(pendingRetryIdsRef.current);
-      remaining.delete(documentId);
-      pendingRetryIdsRef.current = remaining;
-      setPendingRetryIds(remaining);
+      pendingRetryKeysRef.current.delete(operationKey);
+      setPendingRetryState((current) => {
+        if (current.workspaceId !== retryWorkspaceId) return current;
+        const documentIds = new Set(current.documentIds);
+        documentIds.delete(documentId);
+        return { documentIds, workspaceId: retryWorkspaceId };
+      });
     }
   };
   const retry = (document: KnowledgeDocument) => {
