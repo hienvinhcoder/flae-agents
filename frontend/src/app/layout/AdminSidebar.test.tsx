@@ -1,8 +1,14 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { I18nextProvider } from "react-i18next";
 import { MemoryRouter } from "react-router-dom";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createI18n } from "../../shared/i18n";
 import { AdminSidebar, type AdminSidebarProps } from "./AdminSidebar";
@@ -45,6 +51,45 @@ const defaultProps: AdminSidebarProps = {
   workspaceName: "FLAE Labs",
 };
 
+type MediaQueryChangeListener = (event: MediaQueryListEvent) => void;
+
+function installMatchMedia(initialMatches = false) {
+  const listeners = new Set<MediaQueryChangeListener>();
+  let matches = initialMatches;
+  const media = "(min-width: 48rem)";
+  const mediaQueryList = {
+    addEventListener: vi.fn(
+      (_type: string, listener: MediaQueryChangeListener) => {
+        listeners.add(listener);
+      },
+    ),
+    dispatchEvent: vi.fn(() => true),
+    get matches() {
+      return matches;
+    },
+    media,
+    onchange: null,
+    removeEventListener: vi.fn(
+      (_type: string, listener: MediaQueryChangeListener) => {
+        listeners.delete(listener);
+      },
+    ),
+  } as unknown as MediaQueryList;
+
+  vi.stubGlobal(
+    "matchMedia",
+    vi.fn(() => mediaQueryList),
+  );
+
+  return {
+    emit(nextMatches: boolean) {
+      matches = nextMatches;
+      const event = { matches, media } as MediaQueryListEvent;
+      listeners.forEach((listener) => listener(event));
+    },
+  };
+}
+
 async function renderSidebar(
   props: Partial<AdminSidebarProps> = {},
   initialPath = "/dashboard/briefing",
@@ -77,8 +122,15 @@ async function renderSidebar(
 }
 
 describe("AdminSidebar", () => {
+  let mediaQuery: ReturnType<typeof installMatchMedia>;
+
+  beforeEach(() => {
+    mediaQuery = installMatchMedia();
+  });
+
   afterEach(() => {
     document.body.style.overflow = "";
+    vi.unstubAllGlobals();
   });
 
   it("renders grouped expanded navigation and toggles the desktop layout", async () => {
@@ -116,18 +168,47 @@ describe("AdminSidebar", () => {
     ).toBeInTheDocument();
   });
 
-  it("lets desktop rail tooltips escape the navigation container", async () => {
+  it("portals visual rail tooltips outside the scrolling navigation", async () => {
+    const user = userEvent.setup();
     await renderSidebar({ desktopLayout: "collapsed" });
 
     const sidebar = screen.getByTestId("admin-sidebar");
     const navigation = within(sidebar).getByRole("navigation", {
       name: "Primary navigation",
     });
-    expect(navigation).toHaveClass("overflow-visible");
-    expect(navigation).not.toHaveClass("overflow-y-auto");
-    expect(
-      within(sidebar).getByRole("tooltip", { name: "Knowledge Graph" }),
-    ).toBeInTheDocument();
+    const link = within(sidebar).getByRole("link", {
+      name: "Knowledge Graph",
+    });
+    vi.spyOn(link, "getBoundingClientRect").mockReturnValue({
+      bottom: 144,
+      height: 44,
+      left: 28,
+      right: 72,
+      top: 100,
+      width: 44,
+      x: 28,
+      y: 100,
+      toJSON: () => ({}),
+    });
+
+    expect(navigation).toHaveClass("overflow-y-auto");
+    expect(link).not.toHaveAttribute("aria-describedby");
+    expect(screen.queryByText("Knowledge Graph")).not.toBeInTheDocument();
+
+    await user.hover(link);
+    const hoveredTooltip = screen.getByText("Knowledge Graph");
+    expect(hoveredTooltip).toHaveAttribute("aria-hidden", "true");
+    expect(hoveredTooltip).toHaveClass("fixed");
+    expect(hoveredTooltip).toHaveStyle({ left: "84px", top: "122px" });
+    expect(sidebar).not.toContainElement(hoveredTooltip);
+
+    await user.unhover(link);
+    expect(screen.queryByText("Knowledge Graph")).not.toBeInTheDocument();
+
+    fireEvent.focus(link);
+    expect(screen.getByText("Knowledge Graph")).toBeInTheDocument();
+    fireEvent.blur(link);
+    expect(screen.queryByText("Knowledge Graph")).not.toBeInTheDocument();
   });
 
   it("gives the collapsed workspace identity valid named semantics", async () => {
@@ -170,6 +251,41 @@ describe("AdminSidebar", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(trigger).toHaveFocus();
     expect(document.body.style.overflow).toBe("clip");
+  });
+
+  it("closes and restores the mobile drawer lifecycle at the tablet breakpoint", async () => {
+    const onCloseMobile = vi.fn();
+    document.body.style.overflow = "clip";
+    const view = await renderSidebar({ onCloseMobile });
+    const trigger = screen.getByRole("button", { name: "Open navigation" });
+    trigger.focus();
+    view.rerenderSidebar({ mobileOpen: true, onCloseMobile });
+
+    await waitFor(() =>
+      expect(
+        within(screen.getByRole("dialog")).getByRole("button", {
+          name: "Close navigation",
+        }),
+      ).toHaveFocus(),
+    );
+    expect(document.body.style.overflow).toBe("hidden");
+
+    mediaQuery.emit(true);
+    expect(onCloseMobile).toHaveBeenCalledOnce();
+    view.rerenderSidebar({ mobileOpen: false, onCloseMobile });
+    expect(document.body.style.overflow).toBe("clip");
+    expect(trigger).toHaveFocus();
+  });
+
+  it("closes the mobile drawer from the backdrop", async () => {
+    const onCloseMobile = vi.fn();
+    await renderSidebar({ mobileOpen: true, onCloseMobile });
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Close navigation overlay" }),
+    );
+
+    expect(onCloseMobile).toHaveBeenCalledOnce();
   });
 
   it("closes the mobile drawer when a destination is selected", async () => {

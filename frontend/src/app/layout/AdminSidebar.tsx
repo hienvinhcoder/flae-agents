@@ -1,5 +1,12 @@
 import { Building2, ChevronLeft, ChevronRight, X } from "lucide-react";
-import { type KeyboardEvent, type RefObject, useEffect, useRef } from "react";
+import {
+  type KeyboardEvent,
+  type RefObject,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { NavLink, useLocation } from "react-router-dom";
 
@@ -22,6 +29,12 @@ interface SidebarContentProps {
   onToggleDesktop?: () => void;
   presentation: "desktop" | "mobile";
   workspaceName: string;
+}
+
+interface RailTooltip {
+  label: string;
+  left: number;
+  top: number;
 }
 
 const focusableSelector = [
@@ -94,13 +107,17 @@ function WorkspaceIdentity({
 function NavigationGroups({
   activePath,
   expanded,
+  hideTooltip,
   onSelect,
   presentation,
+  showTooltip,
 }: {
   activePath: string | undefined;
   expanded: boolean;
+  hideTooltip?: () => void;
   onSelect?: () => void;
   presentation: "desktop" | "mobile";
+  showTooltip?: (target: HTMLElement, label: string) => void;
 }) {
   const { t } = useTranslation();
 
@@ -124,15 +141,11 @@ function NavigationGroups({
       {group.items.map((item) => {
         const label = t(item.key);
         const isActive = activePath === item.to;
-        const tooltipId = `admin-nav-${group.id}-${item.to.replaceAll("/", "-")}`;
         const Icon = item.icon;
 
         return (
           <div className="group relative" key={item.to}>
             <NavLink
-              aria-describedby={
-                presentation === "desktop" ? tooltipId : undefined
-              }
               aria-label={label}
               className={`relative flex min-h-11 min-w-0 items-center rounded-ui-control py-2 no-underline transition-colors duration-200 motion-reduce:transition-none ${
                 expanded && presentation === "desktop"
@@ -146,7 +159,13 @@ function NavigationGroups({
                   : "text-ui-ink-secondary hover:bg-ui-interactive hover:text-ui-ink"
               }`}
               end
+              onBlur={hideTooltip}
               onClick={onSelect}
+              onFocus={(event) => showTooltip?.(event.currentTarget, label)}
+              onMouseEnter={(event) =>
+                showTooltip?.(event.currentTarget, label)
+              }
+              onMouseLeave={hideTooltip}
               ref={(element) => {
                 // NavLink owns aria-current, so reapply the longest-prefix result.
                 if (isActive) element?.setAttribute("aria-current", "page");
@@ -169,15 +188,6 @@ function NavigationGroups({
                 </span>
               ) : null}
             </NavLink>
-            {presentation === "desktop" ? (
-              <span
-                className={`pointer-events-none absolute left-full top-1/2 z-50 ml-3 -translate-y-1/2 whitespace-nowrap rounded-ui-control border border-ui-divider bg-ui-raised px-3 py-2 text-sm font-medium text-ui-ink opacity-0 shadow-ui-panel transition-opacity duration-200 group-focus-within:opacity-100 group-hover:opacity-100 motion-reduce:transition-none ${expanded ? "lg:hidden" : ""}`}
-                id={tooltipId}
-                role="tooltip"
-              >
-                {label}
-              </span>
-            ) : null}
           </div>
         );
       })}
@@ -198,6 +208,16 @@ function SidebarContent({
   const isMobile = presentation === "mobile";
   const expanded = isMobile || desktopLayout === "expanded";
   const responsiveExpansion = !isMobile && expanded;
+  const [tooltip, setTooltip] = useState<RailTooltip | null>(null);
+
+  function showTooltip(target: HTMLElement, label: string) {
+    const rect = target.getBoundingClientRect();
+    setTooltip({
+      label,
+      left: rect.right + 12,
+      top: rect.top + rect.height / 2,
+    });
+  }
 
   return (
     <div className="flex h-full min-h-0 flex-col p-3">
@@ -226,13 +246,15 @@ function SidebarContent({
 
       <nav
         aria-label={t("SHELL.PRIMARY_NAV")}
-        className={`mt-4 grid min-h-0 flex-1 content-start gap-3 pb-3 ${isMobile ? "overflow-y-auto" : "overflow-visible"}`}
+        className="mt-4 grid min-h-0 flex-1 content-start gap-3 overflow-y-auto pb-3"
       >
         <NavigationGroups
           activePath={activePath}
           expanded={expanded}
+          hideTooltip={!isMobile ? () => setTooltip(null) : undefined}
           onSelect={isMobile ? onCloseMobile : undefined}
           presentation={presentation}
+          showTooltip={!isMobile ? showTooltip : undefined}
         />
       </nav>
 
@@ -257,6 +279,18 @@ function SidebarContent({
           ) : null}
         </button>
       ) : null}
+      {!isMobile && tooltip
+        ? createPortal(
+            <span
+              aria-hidden="true"
+              className={`pointer-events-none fixed z-50 -translate-y-1/2 whitespace-nowrap rounded-ui-control border border-ui-divider bg-ui-raised px-3 py-2 text-sm font-medium text-ui-ink shadow-ui-panel ${expanded ? "lg:hidden" : ""}`}
+              style={{ left: tooltip.left, top: tooltip.top }}
+            >
+              {tooltip.label}
+            </span>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }
@@ -292,6 +326,21 @@ export function AdminSidebar({
       priorFocusRef.current = null;
     };
   }, [mobileOpen]);
+
+  useEffect(() => {
+    if (!mobileOpen) return undefined;
+
+    const mediaQuery = window.matchMedia("(min-width: 48rem)");
+    const handleBreakpointChange = (event: MediaQueryListEvent) => {
+      if (event.matches) onCloseMobile();
+    };
+    mediaQuery.addEventListener("change", handleBreakpointChange);
+    if (mediaQuery.matches) onCloseMobile();
+
+    return () => {
+      mediaQuery.removeEventListener("change", handleBreakpointChange);
+    };
+  }, [mobileOpen, onCloseMobile]);
 
   function handleDialogKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     if (event.key === "Escape") {
