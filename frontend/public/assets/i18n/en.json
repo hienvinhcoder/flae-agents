@@ -16,13 +16,13 @@
   },
   "NAV": {
     "CHAT": "AI Chat",
-    "BRIEFING": "Morning Briefing",
+    "BRIEFING": "Morning briefing",
 
-    "INBOX": "Omnichannel Inbox",
+    "INBOX": "Omnichannel inbox",
     "AGENTS": "My Agent Team",
     "KNOWLEDGE": "Knowledge Base",
     "TOPICS": "Topics",
-    "REPORTS": "Analyst Reports",
+    "REPORTS": "Analyst reports",
     "SETTINGS": "Settings",
     "GROUP_MAIN": "Main",
     "GROUP_KNOWLEDGE": "Knowledge",

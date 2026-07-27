@@ -8,7 +8,7 @@ export function ReportsPage() {
   const { t } = useTranslation();
 
   return (
-    <div className="mx-auto grid w-full max-w-7xl gap-8">
+    <section className="mx-auto grid w-full max-w-7xl gap-8">
       <PageHeader
         description={t("OVERVIEW.REPORTS_DESCRIPTION")}
         eyebrow={t("OVERVIEW.FOCUS_EYEBROW")}
@@ -21,6 +21,6 @@ export function ReportsPage() {
           title={t("OVERVIEW.COMING_SOON")}
         />
       </div>
-    </div>
+    </section>
   );
 }
