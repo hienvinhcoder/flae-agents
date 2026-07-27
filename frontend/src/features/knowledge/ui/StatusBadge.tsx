@@ -1,10 +1,12 @@
+import { useTranslation } from "react-i18next";
+
 import type { DocumentStatus } from "../types/knowledge";
 
 const labels: Record<DocumentStatus, string> = {
-  completed: "Completed",
-  failed: "Failed",
-  pending: "Pending",
-  processing: "Processing",
+  completed: "KNOWLEDGE.STATUS_COMPLETED",
+  failed: "KNOWLEDGE.STATUS_FAILED",
+  pending: "KNOWLEDGE.STATUS_PENDING",
+  processing: "KNOWLEDGE.STATUS_PROCESSING",
 };
 
 const tones: Record<DocumentStatus, string> = {
@@ -15,11 +17,13 @@ const tones: Record<DocumentStatus, string> = {
 };
 
 export function StatusBadge({ status }: { status: DocumentStatus }) {
+  const { t } = useTranslation();
+
   return (
     <span
       className={`inline-flex rounded-ui-status border px-2.5 py-1 text-xs font-semibold ${tones[status]}`}
     >
-      {labels[status]}
+      {t(labels[status])}
     </span>
   );
 }
