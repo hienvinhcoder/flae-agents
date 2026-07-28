@@ -10,14 +10,47 @@ const typescriptSources = import.meta.glob<string>('../../**/*.{ts,tsx}', {
   import: 'default',
   query: '?raw',
 });
-const primarySoftValue = ['rgba(', ['242', '140', '69', '0.1'].join(', '), ')'].join('');
 
-const immutableBrandTokens = [
-  ['--color-primary', `#${['f2', '8c', '45'].join('')}`],
-  ['--color-primary-hover', `#${['e7', '7e', '37'].join('')}`],
-  ['--color-primary-active', `#${['d9', '6f', '26'].join('')}`],
-  ['--color-primary-soft', primarySoftValue],
+const referenceTokens = [
+  ['--color-primary', 'oklch(70.5% 0.187 45)'],
+  ['--color-primary-hover', 'oklch(66.5% 0.187 45)'],
+  ['--color-primary-active', 'oklch(62.5% 0.187 45)'],
+  ['--color-primary-soft', 'oklch(93% 0.06 60)'],
+  ['--color-canvas', 'oklch(98.5% 0.006 85)'],
+  ['--color-surface', 'oklch(100% 0 0)'],
+  ['--color-surface-raised', 'oklch(100% 0 0)'],
+  ['--color-surface-interactive', 'oklch(94% 0.012 85)'],
+  ['--color-divider', 'oklch(90% 0.015 80)'],
+  ['--color-border', 'oklch(90% 0.015 80)'],
+  ['--color-border-control', '#776f64'],
+  ['--color-border-strong', '#4b443b'],
+  ['--color-text', 'oklch(18% 0.02 60)'],
+  ['--color-text-secondary', 'oklch(25% 0.02 60)'],
+  ['--color-text-muted', 'oklch(48% 0.02 60)'],
+  ['--color-text-disabled', '#7a746b'],
+  ['--color-on-primary', '#2a241c'],
+  ['--color-link', '#9a3412'],
+  ['--color-focus', '#9a3412'],
+  ['--color-ai', '#9a3412'],
+  ['--color-ai-soft', 'oklch(93% 0.06 60)'],
+  ['--sidebar', 'oklch(22% 0.02 60)'],
+  ['--sidebar-foreground', 'oklch(94% 0.012 85)'],
+  ['--sidebar-accent', 'oklch(28% 0.02 60)'],
+  ['--sidebar-border', 'oklch(30% 0.02 60)'],
+  ['--radius-control', '0.5rem'],
+  ['--radius-card', '0.625rem'],
+  ['--radius-dialog', '0.875rem'],
+  ['--radius-pill', '9999px'],
+  ['--shadow-panel', '0 1px 2px oklch(20% 0.03 60 / 0.04)'],
+  ['--shadow-overlay', '0 18px 48px -16px oklch(20% 0.03 60 / 0.28)'],
+  ['--focus-ring', '0 0 0 4px rgba(154, 52, 18, 0.18)'],
 ] as const;
+
+function expectToken(token: string, value: string): void {
+  const escapedValue = value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  expect(stylesheet).toMatch(new RegExp(`${token}:\\s*${escapedValue};`));
+}
 
 function collectProcessedCssRules(rules: CSSRuleList): string[] {
   return Array.from(rules).flatMap((rule) => {
@@ -27,14 +60,6 @@ function collectProcessedCssRules(rules: CSSRuleList): string[] {
       ? [rule.cssText, ...collectProcessedCssRules(nestedRules)]
       : [rule.cssText];
   });
-}
-
-function readHexToken(token: string): string {
-  const match = stylesheet.match(new RegExp(`${token}:\\s*(#[\\da-f]{6});`, 'i'));
-
-  expect(match, `${token} must be a six-digit hex color`).not.toBeNull();
-
-  return match?.[1] ?? '#000000';
 }
 
 function relativeLuminance(hex: string): number {
@@ -58,11 +83,11 @@ function contrastRatio(foreground: string, background: string): number {
 }
 
 describe('theme contract', () => {
-  it('defines the immutable primary palette as design tokens', () => {
+  it('defines the approved dashboard reference tokens', () => {
     expect(stylesheet, 'src/styles.css must define the global theme').not.toBe('');
 
-    for (const [token, value] of immutableBrandTokens) {
-      expect(stylesheet).toMatch(new RegExp(`${token}:\\s*${value.replace(/[().]/g, '\\$&')};`));
+    for (const [token, value] of referenceTokens) {
+      expectToken(token, value);
     }
   });
 
@@ -88,23 +113,38 @@ describe('theme contract', () => {
     );
   });
 
+  it('keeps primary-button state changes free of layout movement', () => {
+    const buttonRule = stylesheet.match(/\.button-primary\s*\{(?<declarations>[^}]*)\}/s)?.groups
+      ?.declarations ?? '';
+    const activeRule = stylesheet.match(
+      /\.button-primary:active:not\(:disabled\)\s*\{(?<declarations>[^}]*)\}/s,
+    )?.groups?.declarations ?? '';
+
+    expect(buttonRule).not.toMatch(/\btransform\b/);
+    expect(activeRule).not.toMatch(/\btransform\s*:/);
+  });
+
+  it('uses a border-first raised surface without a panel shadow', () => {
+    const panelRule = stylesheet.match(/\.surface-panel\s*\{(?<declarations>[^}]*)\}/s)?.groups
+      ?.declarations ?? '';
+
+    expect(panelRule).toMatch(/border:\s*1px solid var\(--color-border\);/);
+    expect(panelRule).toMatch(/border-radius:\s*var\(--radius-card\);/);
+    expect(panelRule).toMatch(/background:\s*var\(--color-surface-raised\);/);
+    expect(panelRule).not.toMatch(/box-shadow\s*:/);
+  });
+
   it('meets contrast requirements for documented text and control pairings', () => {
     const pairings = [
-      ['default control boundary', '--color-border', '--color-surface-interactive', 3],
-      ['panel boundary', '--color-border', '--color-surface', 3],
-      ['strong raised boundary', '--color-border-strong', '--color-surface-raised', 3],
-      ['primary button label', '--color-on-primary', '--color-primary', 4.5],
-      ['muted panel text', '--color-text-muted', '--color-surface', 4.5],
-      ['AI panel text', '--color-ai', '--color-surface', 4.5],
-      ['success panel text', '--color-success', '--color-surface', 4.5],
-      ['warning panel text', '--color-warning', '--color-surface', 4.5],
-      ['danger panel text', '--color-danger', '--color-surface', 4.5],
-      ['info panel text', '--color-info', '--color-surface', 4.5],
-      ['focus indicator', '--color-primary', '--color-canvas', 3],
+      ['small primary button label', '#2a241c', '#f97316', 4.5],
+      ['primary text on canvas', '#1f1b15', '#faf8f3', 4.5],
+      ['muted text on surface', '#6e6558', '#ffffff', 4.5],
+      ['link text on canvas', '#9a3412', '#faf8f3', 4.5],
+      ['sidebar text on sidebar', '#eae6db', '#2a241c', 4.5],
     ] as const;
 
-    for (const [name, foregroundToken, backgroundToken, minimumRatio] of pairings) {
-      const ratio = contrastRatio(readHexToken(foregroundToken), readHexToken(backgroundToken));
+    for (const [name, foreground, background, minimumRatio] of pairings) {
+      const ratio = contrastRatio(foreground, background);
 
       expect(ratio, `${name} must meet ${minimumRatio}:1 contrast`).toBeGreaterThanOrEqual(
         minimumRatio,
@@ -141,11 +181,15 @@ describe('theme contract', () => {
       ['--color-state-danger-soft', '--color-danger-soft'],
       ['--color-state-info', '--color-info'],
       ['--color-state-info-soft', '--color-info-soft'],
+      ['--color-sidebar', '--sidebar'],
+      ['--color-sidebar-foreground', '--sidebar-foreground'],
+      ['--color-sidebar-accent', '--sidebar-accent'],
+      ['--color-sidebar-border', '--sidebar-border'],
       ['--font-ui', '--font-sans'],
       ['--font-code', '--font-mono'],
-      ['--radius-ui-control', '--radius-md'],
-      ['--radius-ui-panel', '--radius-lg'],
-      ['--radius-ui-dialog', '--radius-xl'],
+      ['--radius-ui-control', '--radius-control'],
+      ['--radius-ui-panel', '--radius-card'],
+      ['--radius-ui-dialog', '--radius-dialog'],
       ['--radius-ui-status', '--radius-pill'],
       ['--shadow-ui-panel', '--shadow-panel'],
       ['--shadow-ui-overlay', '--shadow-overlay'],
@@ -162,13 +206,13 @@ describe('theme contract', () => {
   });
 
   it('keeps brand color literals out of TypeScript source', () => {
-    const primarySoftPattern = [
-      'rgba\\(',
-      ['242', '140', '69', '0\\.1'].join(',\\s*'),
-      '\\)',
-    ].join('');
+    const referenceHexColors = [
+      ['f9', '73', '16'].join(''),
+      ['9a', '34', '12'].join(''),
+      ['2a', '24', '1c'].join(''),
+    ];
     const brandLiteral = new RegExp(
-      [`#(?:${['f28c45', 'e77e37', 'd96f26'].join('|')})`, primarySoftPattern].join('|'),
+      `#(?:${referenceHexColors.join('|')})`,
       'i',
     );
     const violations = Object.entries(typescriptSources)
