@@ -67,7 +67,7 @@ export function AppShell({ fetchWorkspaces, logoutController, syncSelection }: A
         workspaceName={selectedWorkspaceName}
       />
 
-      <div className={`md:pl-[72px] transition-[padding] duration-200 motion-reduce:transition-none ${sidebarLayout === 'expanded' ? 'lg:pl-[280px]' : 'lg:pl-[72px]'}`}>
+      <div className={`transition-[padding] duration-200 motion-reduce:transition-none md:pl-[72px] ${sidebarLayout === 'expanded' ? 'lg:pl-64' : 'lg:pl-[72px]'}`}>
         <AdminHeader
           currentWorkspaceId={currentWorkspaceId}
           language={i18n.resolvedLanguage ?? 'vi'}

@@ -1,10 +1,4 @@
-import {
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-  within,
-} from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { I18nextProvider } from "react-i18next";
 import { MemoryRouter } from "react-router-dom";
@@ -22,6 +16,7 @@ const resources = {
         CHAT: "Chat",
         INBOX: "Inbox",
         KNOWLEDGE: "Knowledge",
+        OVERVIEW: "Overview",
         REPORTS: "Reports",
         SETTINGS: "Settings",
         TOPICS: "Topics",
@@ -32,6 +27,9 @@ const resources = {
         CLOSE_NAV_OVERLAY: "Close navigation overlay",
         COLLAPSE_NAV: "Collapse navigation",
         EXPAND_NAV: "Expand navigation",
+        INDEXING_FRESHNESS: "Live · 2s ago",
+        INDEXING_PROGRESS: "Indexing progress",
+        INDEXING_STATUS: "Indexing status",
         KNOWLEDGE_GRAPH: "Knowledge Graph",
         NAV_GROUP_FOCUS: "Focus",
         NAV_GROUP_INTELLIGENCE: "Intelligence",
@@ -151,16 +149,26 @@ describe("AdminSidebar", () => {
 
     const sidebar = screen.getByTestId("admin-sidebar");
     expect(sidebar).toHaveAttribute("data-desktop-layout", "expanded");
-    expect(sidebar).toHaveClass("lg:w-[280px]");
+    expect(sidebar).toHaveClass(
+      "lg:w-64",
+      "border-sidebar-border",
+      "bg-sidebar",
+      "text-sidebar-foreground",
+    );
     expect(within(sidebar).getByText("FLAE")).toBeInTheDocument();
     expect(within(sidebar).getByText("AI operations")).toBeInTheDocument();
     expect(within(sidebar).getByText("FLAE Labs")).toBeInTheDocument();
     expect(within(sidebar).getByText("Focus")).toBeInTheDocument();
     expect(within(sidebar).getByText("Intelligence")).toBeInTheDocument();
     expect(within(sidebar).getByText("Workspace")).toBeInTheDocument();
-    expect(
-      within(sidebar).getByRole("link", { name: "Briefing" }),
-    ).toHaveAttribute("aria-current", "page");
+    const statusCard = within(sidebar).getByRole("region", {
+      name: "Indexing status",
+    });
+    expect(statusCard.parentElement).toHaveClass("hidden", "lg:block");
+    const activeLink = within(sidebar).getByRole("link", { name: "Briefing" });
+    expect(activeLink).toHaveAttribute("aria-current", "page");
+    expect(activeLink).toHaveClass("bg-brand", "text-brand-foreground");
+    expect(activeLink.querySelector(".absolute")).toBeNull();
 
     await userEvent.click(
       within(sidebar).getByRole("button", { name: "Collapse navigation" }),
@@ -179,6 +187,19 @@ describe("AdminSidebar", () => {
     expect(
       within(sidebar).getByRole("button", { name: "Expand navigation" }),
     ).toBeInTheDocument();
+    expect(within(sidebar).queryByText("Indexing status")).not.toBeInTheDocument();
+  });
+
+  it("marks Overview as current only at the dashboard index", async () => {
+    await renderSidebar({}, "/dashboard");
+
+    const sidebar = screen.getByTestId("admin-sidebar");
+    expect(
+      within(sidebar).getByRole("link", { name: "Overview" }),
+    ).toHaveAttribute("aria-current", "page");
+    expect(
+      within(sidebar).getByRole("link", { name: "Briefing" }),
+    ).not.toHaveAttribute("aria-current");
   });
 
   it("portals visual rail tooltips outside the scrolling navigation", async () => {
@@ -342,7 +363,8 @@ describe("AdminSidebar", () => {
     view.rerenderSidebar({ mobileOpen: true, onCloseMobile });
 
     const dialog = screen.getByRole("dialog", { name: "Primary navigation" });
-    expect(dialog).toHaveClass("w-[280px]");
+    expect(dialog).toHaveClass("w-64", "bg-sidebar", "text-sidebar-foreground");
+    expect(within(dialog).queryByText("Indexing status")).not.toBeInTheDocument();
     const closeButton = within(dialog).getByRole("button", {
       name: "Close navigation",
     });
