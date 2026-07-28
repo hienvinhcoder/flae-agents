@@ -76,7 +76,7 @@ The reference values become the canonical light theme:
 | Muted text | `oklch(48% 0.02 60)` |
 | Border / input | `oklch(90% 0.015 80)` |
 | Primary orange | `oklch(70.5% 0.187 45)` |
-| Primary foreground | `oklch(99% 0.01 85)` |
+| Primary foreground | `#2A241C` |
 | Primary soft | `oklch(93% 0.06 60)` |
 | Sidebar | `oklch(22% 0.02 60)` |
 | Sidebar foreground | `oklch(94% 0.012 85)` |
@@ -84,6 +84,8 @@ The reference values become the canonical light theme:
 | Sidebar border | `oklch(30% 0.02 60)` |
 
 Existing readable status colors remain semantic: green for success or connected, amber for warning or stale, and destructive red for risk or failure. Status presentation always pairs color with text or iconography.
+
+The saved reference uses a near-white foreground on the orange primary surface. That pairing measures approximately 2.72:1 and does not meet WCAG AA for the small navigation and button text used by the design. FLAE therefore uses the approved dark warm foreground `#2A241C`, which measures approximately 5.48:1 on `#F97316`. This is the only intentional color deviation from the reference.
 
 ### Typography, spacing, and shape
 
