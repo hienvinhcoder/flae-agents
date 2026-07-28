@@ -48,7 +48,7 @@ function DocumentActions({
       {document.status === "failed" ? (
         <Button
           aria-label={t("KNOWLEDGE.RETRY_DOCUMENT", { title: document.title })}
-          className="min-w-11 px-3"
+          className="min-w-11 px-3 hover:bg-brand-soft hover:text-brand-text transition-all duration-200 active:scale-95"
           isLoading={isRetrying}
           loadingText={t("KNOWLEDGE.STATUS_PROCESSING")}
           onClick={() => onRetry(document)}
@@ -59,7 +59,7 @@ function DocumentActions({
       ) : null}
       <Button
         aria-label={t("KNOWLEDGE.OPEN_DOCUMENT", { title: document.title })}
-        className="min-w-11 px-3"
+        className="min-w-11 px-3 hover:bg-brand-soft hover:text-brand-text transition-all duration-200 active:scale-95"
         onClick={() => onView(document)}
         variant="ghost"
       >
@@ -67,7 +67,7 @@ function DocumentActions({
       </Button>
       <Button
         aria-label={t("KNOWLEDGE.DELETE_DOCUMENT", { title: document.title })}
-        className="min-w-11 px-3"
+        className="min-w-11 px-3 hover:bg-state-danger-soft hover:text-state-danger transition-all duration-200 active:scale-95"
         onClick={() => onDelete(document)}
         variant="ghost"
       >
@@ -102,7 +102,7 @@ export function DocumentTable({
       key: "document",
       render: (document) => (
         <div>
-          <strong className="block text-ui-ink">{document.title}</strong>
+          <strong className="block font-semibold text-ui-ink">{document.title}</strong>
           <span className="block max-w-xs truncate text-sm text-ui-ink-muted">
             {document.description ||
               document.file_name ||
@@ -133,7 +133,7 @@ export function DocumentTable({
       render: (document) =>
         new Intl.DateTimeFormat(
           i18n.resolvedLanguage ?? i18n.language,
-        ).format(new Date(document.created_at)),
+        ).format(new Date(document.updated_at)),
     },
     {
       header: t("KNOWLEDGE.TABLE_ACTIONS"),

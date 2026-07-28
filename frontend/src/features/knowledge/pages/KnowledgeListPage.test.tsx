@@ -135,7 +135,9 @@ describe("KnowledgeListPage", () => {
   it("distinguishes filtered results from an empty knowledge base", async () => {
     const user = userEvent.setup();
     renderPage();
-    await screen.findByRole("table", { name: /knowledge documents/i });
+    const table = within(
+      await screen.findByRole("table", { name: /knowledge documents/i }),
+    );
 
     await user.type(
       screen.getByRole("searchbox", { name: /search documents/i }),
@@ -147,13 +149,21 @@ describe("KnowledgeListPage", () => {
         "No documents match the current search and status filters.",
       ),
     ).toHaveLength(2);
+
+    await user.click(screen.getByRole("button", { name: "Clear filters" }));
+
+    expect(
+      screen.getByRole("searchbox", { name: /search documents/i }),
+    ).toHaveValue("");
+    expect(table.getByText("Product roadmap")).toBeInTheDocument();
+    expect(table.getByText("Incident handbook")).toBeInTheDocument();
   });
 
   it("groups knowledge actions in the page header and keeps the table caption", async () => {
     renderPage();
 
     expect(
-      await screen.findByRole("heading", { level: 1, name: "Knowledge base" }),
+      await screen.findByRole("heading", { level: 1, name: "Company memory" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /upload document/i }),
@@ -164,6 +174,52 @@ describe("KnowledgeListPage", () => {
     expect(
       await screen.findByRole("table", { name: /knowledge documents/i }),
     ).toBeInTheDocument();
+  });
+
+  it("renders one Vietnamese page title and one empty-readiness card", async () => {
+    runtimeApi.listDocuments.mockResolvedValue([]);
+    renderPage("vi");
+
+    expect(
+      await screen.findAllByRole("heading", {
+        level: 1,
+        name: "Bộ nhớ doanh nghiệp",
+      }),
+    ).toHaveLength(1);
+    expect(
+      screen.getAllByRole("heading", {
+        level: 2,
+        name: "Bắt đầu xây bộ nhớ doanh nghiệp",
+      }),
+    ).toHaveLength(1);
+  });
+
+  it("summarizes memory readiness and lets users review failed sources", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    expect(
+      await screen.findByRole("heading", {
+        level: 2,
+        name: "1 of 2 sources ready",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("progressbar", { name: "Memory readiness" }),
+    ).toHaveAttribute("aria-valuenow", "1");
+
+    await user.click(
+      screen.getByRole("button", { name: "Review 1 failed source" }),
+    );
+
+    expect(screen.getByRole("combobox", { name: /status/i })).toHaveValue(
+      "failed",
+    );
+    const table = within(
+      screen.getByRole("table", { name: /knowledge documents/i }),
+    );
+    expect(table.queryByText("Product roadmap")).not.toBeInTheDocument();
+    expect(table.getByText("Incident handbook")).toBeInTheDocument();
   });
 
   it("loads a selected document detail and exposes processing metrics", async () => {

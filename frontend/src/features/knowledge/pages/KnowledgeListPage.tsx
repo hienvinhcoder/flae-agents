@@ -1,4 +1,4 @@
-import { Database, FilePlus2, PencilLine, Search } from "lucide-react";
+import { Database, FilePlus2, PencilLine } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
@@ -7,11 +7,13 @@ import { useWorkspaceStore } from "../../../core/stores/workspace-store";
 import { Button } from "../../../shared/ui/Button";
 import { ErrorState } from "../../../shared/ui/ErrorState";
 import { PageHeader } from "../../../shared/ui/PageHeader";
-import { Select } from "../../../shared/ui/Select";
 import { useKnowledge } from "../hooks/use-knowledge";
 import type { KnowledgeDocument } from "../types/knowledge";
 import { DocumentDetailPanel } from "../ui/DocumentDetailPanel";
+import { DocumentGrid } from "../ui/DocumentGrid";
 import { DocumentTable } from "../ui/DocumentTable";
+import { KnowledgeLibraryToolbar } from "../ui/KnowledgeLibraryToolbar";
+import { KnowledgeReadiness } from "../ui/KnowledgeReadiness";
 import { TextInputDialog } from "../ui/TextInputDialog";
 import { UploadDialog } from "../ui/UploadDialog";
 
@@ -22,6 +24,18 @@ function errorMessage(error: unknown) {
 const EMPTY_DOCUMENTS: readonly KnowledgeDocument[] = [];
 const EMPTY_PENDING_RETRY_IDS: ReadonlySet<string> = new Set();
 const EMPTY_RETRY_ERRORS: ReadonlyMap<string, string> = new Map();
+
+const VIEW_MODE_STORAGE_KEY = "flae_knowledge_view_mode";
+const DEFAULT_VIEW_MODE: "grid" | "list" = "list";
+
+function readViewMode(): "grid" | "list" {
+  try {
+    const stored = localStorage.getItem(VIEW_MODE_STORAGE_KEY);
+    return stored === "grid" || stored === "list" ? stored : DEFAULT_VIEW_MODE;
+  } catch {
+    return DEFAULT_VIEW_MODE;
+  }
+}
 
 interface RetryErrorState {
   errors: ReadonlyMap<string, string>;
@@ -37,7 +51,17 @@ export function KnowledgeListPage() {
   const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
+  const [viewMode, setViewMode] = useState<"grid" | "list">(readViewMode);
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
+
+  const handleSetViewMode = (mode: "grid" | "list") => {
+    setViewMode(mode);
+    try {
+      localStorage.setItem(VIEW_MODE_STORAGE_KEY, mode);
+    } catch {
+      // Ignore storage errors in test environment
+    }
+  };
   const pendingRetryKeysRef = useRef<Set<string>>(new Set());
   const [pendingRetryIdsByWorkspace, setPendingRetryIdsByWorkspace] = useState<
     ReadonlyMap<string, ReadonlySet<string>>
@@ -52,6 +76,17 @@ export function KnowledgeListPage() {
   const [textOpen, setTextOpen] = useState(false);
   const knowledge = useKnowledge(workspaceId, selectedDocumentId);
   const documents = knowledge.documents.data ?? EMPTY_DOCUMENTS;
+
+  const stats = useMemo(() => {
+    const total = documents.length;
+    const totalChunks = documents.reduce((sum, doc) => sum + (doc.chunk_count ?? 0), 0);
+    const completed = documents.filter((doc) => doc.status === "completed").length;
+    const processing = documents.filter(
+      (doc) => doc.status === "processing" || doc.status === "pending",
+    ).length;
+    const failed = documents.filter((doc) => doc.status === "failed").length;
+    return { completed, failed, processing, total, totalChunks };
+  }, [documents]);
   const pendingRetryIds = workspaceId
     ? (pendingRetryIdsByWorkspace.get(workspaceId) ?? EMPTY_PENDING_RETRY_IDS)
     : EMPTY_PENDING_RETRY_IDS;
@@ -170,15 +205,15 @@ export function KnowledgeListPage() {
   }
 
   return (
-    <section className="mx-auto grid w-full max-w-7xl gap-8">
+    <section className="mx-auto grid w-full max-w-7xl gap-6 md:gap-8">
       <PageHeader
         actions={
           <>
             <Link
-              className="inline-flex min-h-11 items-center gap-2 rounded-ui-control border border-ui-line bg-ui-raised px-4 py-2 font-semibold text-ui-ink transition-colors duration-200 hover:bg-ui-interactive motion-reduce:transition-none"
+              className="inline-flex min-h-10 items-center gap-2 rounded-ui-control border border-ui-line bg-ui-raised px-4 py-2 font-semibold text-ui-ink no-underline transition-colors duration-150 hover:border-ui-line-strong hover:bg-ui-interactive motion-reduce:transition-none"
               to="graph"
             >
-              <Database aria-hidden className="h-4 w-4 text-accent-ai" />
+              <Database aria-hidden className="h-4 w-4" strokeWidth={1.75} />
               {t("KNOWLEDGE.OPEN_GRAPH")}
             </Link>
             <Button onClick={() => setTextOpen(true)} variant="secondary">
@@ -196,57 +231,56 @@ export function KnowledgeListPage() {
         title={t("KNOWLEDGE.TITLE")}
       />
 
-      <section aria-labelledby="knowledge-documents-title">
-        <div className="grid gap-4 border-y border-ui-divider bg-ui-raised/45 px-4 py-4 lg:grid-cols-[minmax(12rem,0.55fr)_minmax(0,1fr)] lg:items-end">
-          <div>
+      <KnowledgeReadiness
+        completed={stats.completed}
+        failed={stats.failed}
+        onReviewFailed={() => setStatus("failed")}
+        processing={stats.processing}
+        total={stats.total}
+        totalChunks={stats.totalChunks}
+      />
+
+      <section
+        aria-labelledby="knowledge-documents-title"
+        className="overflow-hidden rounded-ui-panel border border-ui-divider bg-ui-raised"
+      >
+        <div className="flex flex-col gap-2 p-5 sm:flex-row sm:items-end sm:justify-between sm:p-6">
+          <div className="min-w-0">
             <h2
-              className="text-lg font-semibold text-ui-ink"
+              className="text-xl font-semibold tracking-[-0.01em] text-ui-ink"
               id="knowledge-documents-title"
             >
-              {t("KNOWLEDGE.TABLE_CAPTION")}
+              {t("KNOWLEDGE.LIBRARY_TITLE")}
             </h2>
+            <p className="mt-1 max-w-2xl text-sm text-ui-ink-secondary">
+              {t("KNOWLEDGE.TABLE_DESCRIPTION")}
+            </p>
           </div>
-          <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_14rem]">
-            <div className="relative">
-              <Search
-                aria-hidden
-                className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-ui-ink-muted"
-              />
-              <label className="sr-only" htmlFor="knowledge-search">
-                {t("KNOWLEDGE.SEARCH_LABEL")}
-              </label>
-              <input
-                className="min-h-11 w-full rounded-ui-control border border-ui-line bg-ui-raised pl-10 pr-3 text-ui-ink transition-colors duration-200 placeholder:text-ui-ink-muted hover:border-ui-line-strong motion-reduce:transition-none"
-                id="knowledge-search"
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder={t("KNOWLEDGE.SEARCH_PLACEHOLDER")}
-                type="search"
-                value={search}
-              />
-            </div>
-            <Select
-              className="w-full"
-              label={t("KNOWLEDGE.STATUS_FILTER")}
-              onChange={(event) => setStatus(event.target.value)}
-              options={[
-                { label: t("KNOWLEDGE.ALL_STATUSES"), value: "all" },
-                { label: t("KNOWLEDGE.STATUS_PENDING"), value: "pending" },
-                {
-                  label: t("KNOWLEDGE.STATUS_PROCESSING"),
-                  value: "processing",
-                },
-                {
-                  label: t("KNOWLEDGE.STATUS_COMPLETED"),
-                  value: "completed",
-                },
-                { label: t("KNOWLEDGE.STATUS_FAILED"), value: "failed" },
-              ]}
-              value={status}
-            />
-          </div>
+          <p className="shrink-0 text-sm font-medium tabular-nums text-ui-ink-muted">
+            {t("KNOWLEDGE.RESULT_COUNT", {
+              count: filteredDocuments.length,
+              total: documents.length,
+            })}
+          </p>
         </div>
 
-        <div className="mt-4">
+        {documents.length > 0 ? (
+          <KnowledgeLibraryToolbar
+            hasActiveFilters={Boolean(search.trim()) || status !== "all"}
+            onClearFilters={() => {
+              setSearch("");
+              setStatus("all");
+            }}
+            onSearchChange={setSearch}
+            onStatusChange={setStatus}
+            onViewModeChange={handleSetViewMode}
+            search={search}
+            status={status}
+            viewMode={viewMode}
+          />
+        ) : null}
+
+        <div className={viewMode === "grid" ? "p-5 sm:p-6" : ""}>
           {knowledge.documents.isError ? (
             <ErrorState
               message={
@@ -256,6 +290,20 @@ export function KnowledgeListPage() {
               onRetry={() => void knowledge.documents.refetch()}
               retryLabel={t("KNOWLEDGE.RETRY_LIST")}
               title={t("KNOWLEDGE.LOAD_ERROR")}
+            />
+          ) : viewMode === "grid" ? (
+            <DocumentGrid
+              documents={filteredDocuments}
+              emptyMessage={t(
+                documents.length === 0
+                  ? "KNOWLEDGE.EMPTY_STATE_DESC"
+                  : "KNOWLEDGE.FILTER_EMPTY_DESCRIPTION",
+              )}
+              isLoading={knowledge.documents.isPending}
+              onDelete={(document) => void remove(document.id, document.title)}
+              onRetry={retry}
+              onView={(document) => setSelectedDocumentId(document.id)}
+              retryingDocumentIds={pendingRetryIds}
             />
           ) : (
             <DocumentTable

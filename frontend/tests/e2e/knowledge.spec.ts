@@ -3,7 +3,16 @@ import { expect, expectNoA11yViolations, installAuthSession, test } from './fixt
 test.beforeEach(async ({ page }) => {
   await installAuthSession(page);
   await page.goto('/dashboard/knowledge');
-  await expect(page.getByRole('heading', { name: 'Knowledge base' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Company memory' })).toBeVisible();
+});
+
+test('renders the upload action with a visible high-contrast palette', async ({ page }) => {
+  const upload = page.getByRole('button', { name: 'Upload document' });
+
+  await expect(upload).toBeVisible();
+  await expect(upload).toHaveCSS('background-color', 'rgb(194, 65, 12)');
+  await expect(upload).toHaveCSS('color', 'rgb(255, 251, 245)');
+  await expectNoA11yViolations(page);
 });
 
 test('uploads, retries, and deletes knowledge through route components', async ({ page }) => {
