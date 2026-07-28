@@ -30,7 +30,14 @@ export function createRouteObjects(appShell: ReactElement = runtimeAppShell): Ro
             path: 'dashboard',
             element: appShell,
             children: [
-              { index: true, element: <Navigate replace to="briefing" /> },
+              {
+                index: true,
+                element: createLazyElement(() =>
+                  import('../../features/dashboard/pages/DashboardHomePage').then(
+                    ({ DashboardHomePage }) => ({ default: DashboardHomePage }),
+                  ),
+                ),
+              },
               { path: 'briefing', element: createLazyElement(() => import('../../features/briefing/pages/BriefingPage').then(({ BriefingPage }) => ({ default: BriefingPage }))) },
               { path: 'inbox', element: createLazyElement(() => import('../../features/inbox/pages/InboxPage').then(({ InboxPage }) => ({ default: InboxPage }))) },
               { path: 'chat', element: createLazyElement(() => import('../../features/chat/pages/ChatPage').then(({ ChatPage }) => ({ default: ChatPage }))) },

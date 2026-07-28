@@ -16,6 +16,7 @@
     "RETRY": "Try again"
   },
   "NAV": {
+    "OVERVIEW": "Overview",
     "CHAT": "AI Chat",
     "BRIEFING": "Morning briefing",
 
@@ -38,6 +39,41 @@
     "INBOX_PREVIEW_DESCRIPTION": "Unified conversation management is not available yet.",
     "REPORTS_DESCRIPTION": "Turn connected company knowledge into repeatable analyst outputs.",
     "REPORTS_PREVIEW_DESCRIPTION": "Generated analyst reports are not available yet."
+  },
+  "DASHBOARD_HOME": {
+    "TITLE": "Overview",
+    "SYNC_STATUS": "Memory synced across 8 sources",
+    "WELCOME": "Welcome back, Amelia",
+    "DESCRIPTION": "Your company memory has ingested",
+    "EMPHASIS": "2,341 new items in the last 24 hours",
+    "PROMPT_PRICING": "What did we decide about Q3 pricing?",
+    "PROMPT_OWNER": "Who owns the payments migration?",
+    "PROMPT_RISKS": "Summarize risks flagged this week",
+    "DOCUMENTS": "Documents",
+    "REPOSITORIES": "Repositories",
+    "PEOPLE": "People",
+    "MEMORY_NODES": "Memory nodes",
+    "KNOWLEDGE_GRAPH": "Knowledge graph",
+    "KNOWLEDGE_GRAPH_DESCRIPTION": "Live relationships across people, projects, decisions, documents, and risks.",
+    "RECENT_MEMORY": "Recent memory updates",
+    "EXPLORE": "Explore",
+    "VIEW_ALL": "View all",
+    "AGENT_CONTEXT": "Give your AI agents context",
+    "AGENT_CONTEXT_DESCRIPTION": "Connect Codex, Claude, Cursor, and OpenClaw to accurate company memory through MCP.",
+    "CONNECTED_AGENTS": "Connected agents",
+    "RISKS": "Risks & gaps",
+    "CONNECTED_SOURCES": "Connected sources",
+    "CONNECTED_SOURCES_DESCRIPTION": "Every source becomes part of your company memory in real time.",
+    "MANAGE_CONNECTORS": "Manage connectors",
+    "COPY_CONNECTION": "Copy connection",
+    "VIEW_AGENTS": "View agents",
+    "STATUS_ACTIVE": "Active",
+    "STATUS_IDLE": "Idle",
+    "STATUS_CONNECTED": "Connected",
+    "STATUS_AVAILABLE": "Add",
+    "WARNING": "Warning",
+    "NOTICE": "Notice",
+    "DEMO_ONLY": "Preview only; this action is not connected yet."
   },
   "AGENTS_UI": {
     "TITLE": "AI agents",
@@ -453,6 +489,9 @@
     "CLOSE_NAV": "Close navigation",
     "COLLAPSE_NAV": "Collapse navigation",
     "EXPAND_NAV": "Expand navigation",
+    "INDEXING_STATUS": "Indexing status",
+    "INDEXING_FRESHNESS": "Live · 2s ago",
+    "INDEXING_PROGRESS": "Indexing progress",
     "CLOSE_NAV_OVERLAY": "Close navigation overlay",
     "CLOSE_DIALOG": "Close dialog",
     "PRIMARY_NAV": "Primary navigation",
@@ -472,7 +511,11 @@
     "SYNC_ERROR": "Workspace synchronization failed; your local selection was kept",
     "LOGGING_OUT": "Signing out",
     "LOGOUT_ERROR": "Unable to sign out. Please try again.",
-    "LOADING_ROUTE": "Loading page"
+    "LOADING_ROUTE": "Loading page",
+    "SEARCH_MEMORY": "Search company memory",
+    "SEARCH_PLACEHOLDER": "Ask FLAE anything about your company…",
+    "ADD_SOURCE": "Add source",
+    "DEMO_ONLY": "Preview only; this action is not connected yet."
   },
   "APP": {
     "ARIA": "FLAE application",

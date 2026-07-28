@@ -5,6 +5,7 @@ import { NavLink, useLocation } from "react-router-dom";
 
 import { findActiveNavigationItem, navigationGroups } from "./admin-navigation";
 import { RailTooltipPortal } from "./RailTooltipPortal";
+import { SidebarStatusCard } from "./SidebarStatusCard";
 import type { SidebarLayout } from "./use-sidebar-layout";
 import { type TooltipInteraction, useRailTooltip } from "./use-rail-tooltip";
 
@@ -46,7 +47,7 @@ function BrandIdentity({
   const { t } = useTranslation();
 
   return (
-    <div className="flex min-w-0 items-center gap-3 text-ui-ink">
+    <div className="flex min-w-0 items-center gap-3 text-sidebar-foreground">
       <span
         aria-hidden="true"
         className="grid h-10 w-10 shrink-0 place-items-center rounded-ui-control bg-brand text-sm font-bold text-brand-foreground"
@@ -58,7 +59,7 @@ function BrandIdentity({
           <strong className="block truncate text-sm font-semibold tracking-[0.18em]">
             FLAE
           </strong>
-          <small className="block truncate font-code text-xs uppercase tracking-[0.08em] text-ui-ink-muted">
+          <small className="block truncate font-code text-xs uppercase tracking-[0.08em] text-sidebar-foreground/60">
             {t("SHELL.BRAND_SUBTITLE")}
           </small>
         </span>
@@ -81,13 +82,13 @@ function WorkspaceIdentity({
   return (
     <div
       aria-label={`${t("SHELL.WORKSPACE")}: ${workspaceName}`}
-      className="flex min-h-14 min-w-0 items-center gap-3 border-y border-ui-divider bg-ui-raised/55 px-3 text-ui-ink-secondary"
+      className="flex min-h-14 min-w-0 items-center gap-3 border-y border-sidebar-border bg-sidebar-accent/70 px-3 text-sidebar-foreground/70"
       role="group"
     >
       <Building2 aria-hidden="true" className="h-5 w-5 shrink-0" />
       {expanded ? (
         <span
-          className={`min-w-0 truncate font-medium text-ui-ink ${responsive ? "hidden lg:block" : ""}`}
+          className={`min-w-0 truncate font-medium text-sidebar-foreground ${responsive ? "hidden lg:block" : ""}`}
         >
           {workspaceName}
         </span>
@@ -121,17 +122,17 @@ function NavigationGroups({
     <section className="grid gap-0.5" key={group.id}>
       {expanded ? (
         <h2
-          className={`px-3 pb-1 pt-4 font-code text-label-md uppercase tracking-[0.12em] text-ui-ink-muted ${presentation === "desktop" ? "hidden lg:block" : ""}`}
+          className={`px-3 pb-1 pt-4 font-code text-label-md uppercase tracking-[0.12em] text-sidebar-foreground/50 ${presentation === "desktop" ? "hidden lg:block" : ""}`}
         >
           {t(group.key)}
         </h2>
       ) : (
-        <div aria-hidden="true" className="my-2 border-t border-ui-divider" />
+        <div aria-hidden="true" className="my-2 border-t border-sidebar-border" />
       )}
       {expanded && presentation === "desktop" ? (
         <div
           aria-hidden="true"
-          className="my-2 border-t border-ui-divider lg:hidden"
+          className="my-2 border-t border-sidebar-border lg:hidden"
         />
       ) : null}
       {group.items.map((item) => {
@@ -151,8 +152,8 @@ function NavigationGroups({
                     : "justify-center px-2"
               } ${
                 isActive
-                  ? "bg-brand-soft font-semibold text-ui-ink"
-                  : "bg-transparent text-ui-ink-secondary hover:bg-ui-interactive hover:text-ui-ink"
+                  ? "bg-brand font-semibold text-brand-foreground"
+                  : "bg-transparent text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
               }`}
               end
               onBlur={(event) => hideTooltip?.(event.currentTarget, "focus")}
@@ -173,12 +174,6 @@ function NavigationGroups({
               }}
               to={item.to}
             >
-              {isActive ? (
-                <span
-                  aria-hidden="true"
-                  className="absolute inset-y-2 left-0 w-1 rounded-r-ui-status bg-brand"
-                />
-              ) : null}
               <Icon aria-hidden="true" className="h-5 w-5 shrink-0" />
               {expanded ? (
                 <span
@@ -221,7 +216,7 @@ function SidebarContent({
         {isMobile ? (
           <button
             aria-label={t("SHELL.CLOSE_NAV")}
-            className="grid min-h-11 min-w-11 shrink-0 place-items-center rounded-ui-control text-ui-ink-secondary transition-colors duration-200 hover:bg-ui-interactive hover:text-ui-ink motion-reduce:transition-none"
+            className="grid min-h-11 min-w-11 shrink-0 place-items-center rounded-ui-control text-sidebar-foreground/70 transition-colors duration-200 hover:bg-sidebar-accent hover:text-sidebar-foreground motion-reduce:transition-none"
             onClick={onCloseMobile}
             ref={closeButtonRef}
             type="button"
@@ -254,6 +249,12 @@ function SidebarContent({
         />
       </nav>
 
+      {!isMobile && expanded ? (
+        <div className="hidden lg:block">
+          <SidebarStatusCard />
+        </div>
+      ) : null}
+
       {!isMobile ? (
         <button
           aria-label={
@@ -261,7 +262,7 @@ function SidebarContent({
               ? t("SHELL.COLLAPSE_NAV")
               : t("SHELL.EXPAND_NAV")
           }
-          className="mt-2 hidden min-h-11 min-w-11 items-center justify-center gap-2 rounded-ui-control border border-transparent bg-transparent px-3 font-medium text-ui-ink-secondary transition-colors duration-200 hover:border-ui-divider hover:bg-ui-interactive hover:text-ui-ink motion-reduce:transition-none lg:flex"
+          className="mt-2 hidden min-h-11 min-w-11 items-center justify-center gap-2 rounded-ui-control border border-transparent bg-transparent px-3 font-medium text-sidebar-foreground/70 transition-colors duration-200 hover:border-sidebar-border hover:bg-sidebar-accent hover:text-sidebar-foreground motion-reduce:transition-none lg:flex"
           onClick={onToggleDesktop}
           type="button"
         >
@@ -382,8 +383,8 @@ export function AdminSidebar({
   return (
     <>
       <aside
-        className={`fixed inset-y-0 left-0 z-40 hidden w-[72px] border-r border-ui-divider bg-ui-panel transition-[width] duration-200 motion-reduce:transition-none md:flex md:flex-col ${
-          desktopLayout === "expanded" ? "lg:w-[280px]" : "lg:w-[72px]"
+        className={`fixed inset-y-0 left-0 z-40 hidden w-[72px] border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 motion-reduce:transition-none md:flex md:flex-col ${
+          desktopLayout === "expanded" ? "lg:w-64" : "lg:w-[72px]"
         }`}
         data-desktop-layout={desktopLayout}
         data-testid="admin-sidebar"
@@ -408,7 +409,7 @@ export function AdminSidebar({
           <div
             aria-label={t("SHELL.PRIMARY_NAV")}
             aria-modal="true"
-            className="fixed inset-y-0 left-0 z-40 w-[280px] rounded-r-ui-panel border-r border-ui-divider bg-ui-panel shadow-ui-overlay md:hidden"
+            className="fixed inset-y-0 left-0 z-40 w-64 rounded-r-ui-panel border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-ui-overlay md:hidden"
             onKeyDown={handleDialogKeyDown}
             ref={dialogRef}
             role="dialog"

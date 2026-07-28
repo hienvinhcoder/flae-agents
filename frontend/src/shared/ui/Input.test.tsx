@@ -7,7 +7,14 @@ describe('Input', () => {
   it('provides a 44px target and disables transitions for reduced motion', () => {
     render(<Input label="Email" />);
 
-    expect(screen.getByRole('textbox', { name: 'Email' })).toHaveClass('min-h-11', 'motion-reduce:transition-none');
+    expect(screen.getByRole('textbox', { name: 'Email' })).toHaveClass(
+      'min-h-10',
+      'rounded-ui-control',
+      'border-ui-line',
+      'bg-ui-raised',
+      'shadow-none',
+      'motion-reduce:transition-none',
+    );
   });
 
   it('associates its label, hint, and validation error', () => {

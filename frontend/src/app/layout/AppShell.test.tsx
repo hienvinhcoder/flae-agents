@@ -84,18 +84,13 @@ describe('AppShell', () => {
     expect(appShellSource).not.toMatch(/admin-shell-theme/);
     expect(Object.keys(adminShellThemeStylesheets)).toHaveLength(0);
     expect(sharedStylesheet).toMatch(/:root\s*\{[^}]*color-scheme:\s*light;/s);
-    const expectedColors = [
-      ['--color-primary', ['f9', '73', '16']],
-      ['--color-canvas', ['f4', 'f2', 'ec']],
-      ['--color-surface', ['ea', 'e6', 'db']],
-    ] as const;
-    for (const [token, hexSegments] of expectedColors) {
-      expect(sharedStylesheet).toContain(`${token}: #${hexSegments.join('')};`);
-    }
+    expect(sharedStylesheet).toContain('--color-primary: oklch(70.5% 0.187 45);');
+    expect(sharedStylesheet).toContain('--color-canvas: oklch(98.5% 0.006 85);');
+    expect(sharedStylesheet).toContain('--color-surface: oklch(100% 0 0);');
     expect(sharedStylesheet).toMatch(/--font-sans:\s*Inter,/);
     expect(sharedStylesheet).toMatch(/--font-mono:\s*"JetBrains Mono",/);
-    expect(sharedStylesheet).toMatch(/--radius-control:\s*1\.125rem;/);
-    expect(sharedStylesheet).toMatch(/--radius-card:\s*2\.5rem;/);
+    expect(sharedStylesheet).toMatch(/--radius-control:\s*0\.5rem;/);
+    expect(sharedStylesheet).toMatch(/--radius-card:\s*0\.625rem;/);
   });
 
   it('offers responsive navigation and switches workspace without losing page context', async () => {
@@ -132,16 +127,17 @@ describe('AppShell', () => {
     expect(await screen.findByRole('combobox', { name: 'Không gian làm việc' })).toHaveValue('ws-1');
     const main = screen.getByRole('main');
     expect(main).toHaveClass(
-      'min-h-[calc(100vh-4.75rem)]',
+      'min-h-[calc(100vh-4rem)]',
       'px-4',
       'py-5',
       'sm:px-5',
       'md:px-6',
       'md:py-6',
       'xl:px-8',
+      'xl:py-8',
     );
     const contentWrapper = main.parentElement;
-    expect(contentWrapper).toHaveClass('md:pl-[72px]', 'lg:pl-[280px]');
+    expect(contentWrapper).toHaveClass('md:pl-[72px]', 'lg:pl-64');
 
     await userEvent.click(screen.getByRole('button', { name: 'Mở điều hướng' }));
     const mobileNavigation = screen.getByRole('dialog', { name: 'Điều hướng chính' });
@@ -154,7 +150,7 @@ describe('AppShell', () => {
     expect(sidebar).toHaveAttribute('data-desktop-layout', 'collapsed');
     expect(localStorage.getItem('flae_admin_sidebar_layout')).toBe('collapsed');
     expect(contentWrapper).toHaveClass('md:pl-[72px]', 'lg:pl-[72px]');
-    expect(contentWrapper).not.toHaveClass('lg:pl-[280px]');
+    expect(contentWrapper).not.toHaveClass('lg:pl-64');
     expect(within(sidebar).getByRole('link', { name: 'Báo cáo sáng' })).toHaveAttribute('aria-current', 'page');
     expect(screen.getByRole('heading', { name: 'Current page' })).toBeInTheDocument();
 

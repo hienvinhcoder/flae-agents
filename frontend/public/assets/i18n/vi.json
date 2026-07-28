@@ -16,6 +16,7 @@
     "RETRY": "Thử lại"
   },
   "NAV": {
+    "OVERVIEW": "Tổng quan",
     "CHAT": "AI Chat",
     "BRIEFING": "Báo cáo sáng",
 
@@ -38,6 +39,41 @@
     "INBOX_PREVIEW_DESCRIPTION": "Quản lý hội thoại hợp nhất hiện chưa khả dụng.",
     "REPORTS_DESCRIPTION": "Chuyển tri thức doanh nghiệp được kết nối thành báo cáo phân tích có thể lặp lại.",
     "REPORTS_PREVIEW_DESCRIPTION": "Báo cáo phân tích được tạo tự động hiện chưa khả dụng."
+  },
+  "DASHBOARD_HOME": {
+    "TITLE": "Tổng quan",
+    "SYNC_STATUS": "Bộ nhớ đã đồng bộ từ 8 nguồn",
+    "WELCOME": "Chào mừng trở lại, Amelia",
+    "DESCRIPTION": "Bộ nhớ doanh nghiệp của bạn đã tiếp nhận",
+    "EMPHASIS": "2.341 mục mới trong 24 giờ qua",
+    "PROMPT_PRICING": "Chúng ta đã quyết định gì về giá Q3?",
+    "PROMPT_OWNER": "Ai phụ trách việc chuyển đổi hệ thống thanh toán?",
+    "PROMPT_RISKS": "Tóm tắt các rủi ro được ghi nhận tuần này",
+    "DOCUMENTS": "Tài liệu",
+    "REPOSITORIES": "Kho mã nguồn",
+    "PEOPLE": "Nhân sự",
+    "MEMORY_NODES": "Nút bộ nhớ",
+    "KNOWLEDGE_GRAPH": "Đồ thị tri thức",
+    "KNOWLEDGE_GRAPH_DESCRIPTION": "Quan hệ trực tiếp giữa con người, dự án, quyết định, tài liệu và rủi ro.",
+    "RECENT_MEMORY": "Cập nhật bộ nhớ gần đây",
+    "EXPLORE": "Khám phá",
+    "VIEW_ALL": "Xem tất cả",
+    "AGENT_CONTEXT": "Cung cấp ngữ cảnh cho các trợ lý AI",
+    "AGENT_CONTEXT_DESCRIPTION": "Kết nối Codex, Claude, Cursor và OpenClaw với bộ nhớ doanh nghiệp chính xác qua MCP.",
+    "CONNECTED_AGENTS": "Trợ lý đã kết nối",
+    "RISKS": "Rủi ro và khoảng trống",
+    "CONNECTED_SOURCES": "Nguồn đã kết nối",
+    "CONNECTED_SOURCES_DESCRIPTION": "Mỗi nguồn trở thành một phần của bộ nhớ doanh nghiệp theo thời gian thực.",
+    "MANAGE_CONNECTORS": "Quản lý nguồn kết nối",
+    "COPY_CONNECTION": "Sao chép kết nối",
+    "VIEW_AGENTS": "Xem trợ lý",
+    "STATUS_ACTIVE": "Đang hoạt động",
+    "STATUS_IDLE": "Đang chờ",
+    "STATUS_CONNECTED": "Đã kết nối",
+    "STATUS_AVAILABLE": "Thêm",
+    "WARNING": "Cảnh báo",
+    "NOTICE": "Thông tin",
+    "DEMO_ONLY": "Chỉ là bản xem trước; thao tác này chưa được kết nối."
   },
   "AGENTS_UI": {
     "TITLE": "Trợ lý AI",
@@ -453,6 +489,9 @@
     "CLOSE_NAV": "Đóng điều hướng",
     "COLLAPSE_NAV": "Thu gọn điều hướng",
     "EXPAND_NAV": "Mở rộng điều hướng",
+    "INDEXING_STATUS": "Trạng thái lập chỉ mục",
+    "INDEXING_FRESHNESS": "Trực tiếp · 2 giây trước",
+    "INDEXING_PROGRESS": "Tiến độ lập chỉ mục",
     "CLOSE_NAV_OVERLAY": "Đóng lớp điều hướng",
     "CLOSE_DIALOG": "Đóng hộp thoại",
     "PRIMARY_NAV": "Điều hướng chính",
@@ -472,7 +511,11 @@
     "SYNC_ERROR": "Không thể đồng bộ; lựa chọn cục bộ vẫn được giữ",
     "LOGGING_OUT": "Đang đăng xuất",
     "LOGOUT_ERROR": "Không thể đăng xuất. Vui lòng thử lại.",
-    "LOADING_ROUTE": "Đang tải trang"
+    "LOADING_ROUTE": "Đang tải trang",
+    "SEARCH_MEMORY": "Tìm kiếm bộ nhớ doanh nghiệp",
+    "SEARCH_PLACEHOLDER": "Hỏi FLAE bất kỳ điều gì về doanh nghiệp của bạn…",
+    "ADD_SOURCE": "Thêm nguồn",
+    "DEMO_ONLY": "Chỉ là bản xem trước; thao tác này chưa được kết nối."
   },
   "APP": {
     "ARIA": "Ứng dụng FLAE",

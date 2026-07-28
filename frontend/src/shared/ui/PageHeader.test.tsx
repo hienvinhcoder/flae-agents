@@ -20,6 +20,7 @@ describe('PageHeader', () => {
     expect(screen.getByText('Build focused assistants.')).toBeInTheDocument();
     expect(screen.getByText('12 active')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Create agent' })).toBeInTheDocument();
+    expect(screen.getByRole('banner')).toHaveClass('gap-4');
   });
 
   it('renders without optional content', () => {

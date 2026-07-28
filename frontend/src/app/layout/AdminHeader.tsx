@@ -1,12 +1,12 @@
-import { ChevronDown, LogOut, Menu } from "lucide-react";
-import { useTranslation } from "react-i18next";
+import { Command, Menu, Plug, Search } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
-import type { User } from "../../core/auth/user-schema";
-import type { Workspace } from "../../features/settings/types/workspace";
-import { Button } from "../../shared/ui/Button";
-import { Skeleton } from "../../shared/ui/Skeleton";
+import type { User } from '../../core/auth/user-schema';
+import type { Workspace } from '../../features/settings/types/workspace';
+import { Button } from '../../shared/ui/Button';
+import { HeaderUtilities } from './HeaderUtilities';
 
-export type WorkspaceSyncStatus = "idle" | "syncing" | "success" | "error";
+export type WorkspaceSyncStatus = 'error' | 'idle' | 'success' | 'syncing';
 
 export interface LogoutController {
   error: string | null;
@@ -29,17 +29,6 @@ export interface AdminHeaderProps {
   workspacesPending: boolean;
 }
 
-function userInitials(name: string) {
-  return (
-    name
-      .trim()
-      .split(/\s+/)
-      .slice(0, 2)
-      .map((part) => part[0]?.toUpperCase() ?? "")
-      .join("") || "U"
-  );
-}
-
 export function AdminHeader({
   currentWorkspaceId,
   language,
@@ -55,113 +44,91 @@ export function AdminHeader({
   workspacesPending,
 }: AdminHeaderProps) {
   const { t } = useTranslation();
-  const workspaceSelectorId = "admin-header-workspace";
-  const languageSelectorId = "admin-header-language";
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center gap-2 border-b border-ui-divider bg-ui-canvas px-3 py-2 sm:gap-3 sm:px-4 md:h-[76px] md:px-6 xl:px-8">
+    <header className="sticky top-0 z-20 flex h-16 items-center gap-2 border-b border-ui-divider bg-ui-canvas/90 px-3 backdrop-blur-md sm:px-4 md:px-6 xl:px-8">
       <button
-        aria-label={t("SHELL.OPEN_NAV")}
-        className="grid min-h-11 min-w-11 shrink-0 place-items-center rounded-ui-control border border-ui-line bg-ui-raised text-ui-ink transition-colors duration-200 hover:bg-ui-interactive motion-reduce:transition-none md:hidden"
+        aria-label={t('SHELL.OPEN_NAV')}
+        className="grid min-h-10 min-w-10 place-items-center rounded-ui-control border border-ui-divider bg-ui-raised md:hidden"
         onClick={onOpenNavigation}
         type="button"
       >
-        <Menu aria-hidden="true" className="h-5 w-5" />
+        <Menu aria-hidden className="h-5 w-5" />
       </button>
-
-      <div className="hidden min-w-0 md:block md:max-w-48 xl:max-w-64">
-        <p className="truncate font-mono text-xs font-semibold uppercase tracking-[0.16em] text-ui-ink-muted">
-          {sectionLabel}
-        </p>
-        <strong className="block truncate text-base font-semibold text-ui-ink">
-          {pageLabel}
-        </strong>
+      <div className="sr-only">
+        <span>{sectionLabel}</span>
+        <strong>{pageLabel}</strong>
       </div>
-
-      <div className="ml-auto flex min-w-0 flex-1 items-center justify-end gap-2 sm:gap-3 md:flex-none">
-        <div className="relative min-w-0 flex-1 sm:max-w-xs md:w-56 md:flex-none xl:w-64">
-          <label className="sr-only" htmlFor={workspaceSelectorId}>
-            {t("SHELL.WORKSPACE")}
-          </label>
-          {workspacesPending ? (
-            <div className="flex min-h-11 items-center rounded-ui-control border border-ui-line bg-ui-raised px-3">
-              <div className="min-w-0 flex-1">
-                <Skeleton label={t("SHELL.LOADING_WORKSPACES")} lines={1} />
-              </div>
-            </div>
-          ) : (
-            <>
-              <select
-                className="min-h-11 w-full appearance-none truncate rounded-ui-control border border-ui-line bg-ui-raised px-3 pr-9 text-ui-ink transition-colors duration-200 hover:border-ui-line-strong motion-reduce:transition-none"
-                disabled={workspaces.length === 0 || syncStatus === "syncing"}
-                id={workspaceSelectorId}
-                onChange={(event) => onSelectWorkspace(event.target.value)}
-                value={currentWorkspaceId ?? ""}
-              >
-                {workspaces.length === 0 ? (
-                  <option value="">{t("SHELL.NO_WORKSPACE")}</option>
-                ) : null}
-                {workspaces.map((workspace) => (
-                  <option key={workspace.id} value={workspace.id}>
-                    {workspace.name}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown
-                aria-hidden="true"
-                className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ui-ink-muted"
-              />
-            </>
-          )}
-        </div>
-
-        <label className="sr-only" htmlFor={languageSelectorId}>
-          {t("COMMON.LANGUAGE")}
+      <Button
+        aria-label={t('SHELL.SEARCH_MEMORY')}
+        className="disabled:opacity-100 sm:hidden"
+        disabled
+        size="icon"
+        title={t('SHELL.DEMO_ONLY')}
+        variant="ghost"
+      >
+        <Search aria-hidden className="h-4 w-4" />
+      </Button>
+      <div className="relative hidden min-w-0 flex-1 sm:block sm:max-w-xl">
+        <label className="sr-only" htmlFor="admin-header-search">
+          {t('SHELL.SEARCH_MEMORY')}
         </label>
-        <select
-          className="min-h-11 shrink-0 rounded-ui-control border border-ui-line bg-ui-raised px-3 text-ui-ink transition-colors duration-200 hover:border-ui-line-strong motion-reduce:transition-none"
-          id={languageSelectorId}
-          onChange={(event) => onChangeLanguage(event.target.value)}
-          value={language}
-        >
-          <option value="vi">VI</option>
-          <option value="en">EN</option>
-        </select>
-
-        {user ? (
-          <div className="hidden min-w-0 items-center gap-3 xl:flex">
-            <span
-              aria-label={userInitials(user.full_name)}
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-ui-ink text-xs font-semibold text-ui-canvas"
-            >
-              {userInitials(user.full_name)}
-            </span>
-            <div className="min-w-0 max-w-44">
-              <p className="truncate text-sm font-semibold text-ui-ink">
-                {user.full_name}
-              </p>
-              <p className="truncate text-xs text-ui-ink-muted">
-                {user.email}
-              </p>
-            </div>
-          </div>
-        ) : null}
-
-        {logoutController ? (
+        <Search
+          aria-hidden
+          className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ui-ink-muted"
+        />
+        <input
+          aria-describedby="admin-header-demo"
+          className="h-10 w-full rounded-ui-control border border-transparent bg-ui-interactive pl-10 pr-14 text-sm placeholder:text-ui-ink-muted focus:border-brand-text focus:outline-none"
+          id="admin-header-search"
+          placeholder={t('SHELL.SEARCH_PLACEHOLDER')}
+          readOnly
+          role="searchbox"
+        />
+        <kbd className="absolute right-3 top-1/2 hidden -translate-y-1/2 rounded border border-ui-divider bg-ui-canvas px-1.5 py-0.5 text-xs text-ui-ink-muted sm:block">
+          ⌘ K
+        </kbd>
+        <span className="sr-only" id="admin-header-demo">
+          {t('SHELL.DEMO_ONLY')}
+        </span>
+      </div>
+      <div className="ml-auto flex min-w-0 items-center gap-2">
+        <div className="hidden lg:block">
           <Button
-            aria-label={t("COMMON.LOGOUT")}
-            className="min-h-11 min-w-11 shrink-0 px-3 motion-reduce:transition-none"
-            isLoading={logoutController.isLoading}
-            loadingText={t("SHELL.LOGGING_OUT")}
-            onClick={() => void logoutController.logout()}
+            aria-label="MCP"
+            className="disabled:opacity-100"
+            disabled
+            size="sm"
+            title={t('SHELL.DEMO_ONLY')}
             variant="ghost"
           >
-            <LogOut aria-hidden="true" className="h-5 w-5" />
-            <span className="sr-only sm:not-sr-only">
-              {t("COMMON.LOGOUT")}
-            </span>
+            <Command aria-hidden className="h-4 w-4" />
+            MCP
           </Button>
-        ) : null}
+        </div>
+        <div className="hidden xl:block">
+          <Button
+            aria-label={t('SHELL.ADD_SOURCE')}
+            className="disabled:opacity-100"
+            disabled
+            size="sm"
+            title={t('SHELL.DEMO_ONLY')}
+          >
+            <Plug aria-hidden className="h-4 w-4" />
+            {t('SHELL.ADD_SOURCE')}
+          </Button>
+        </div>
+        <HeaderUtilities
+          currentWorkspaceId={currentWorkspaceId}
+          language={language}
+          logoutController={logoutController}
+          onChangeLanguage={onChangeLanguage}
+          onSelectWorkspace={onSelectWorkspace}
+          syncStatus={syncStatus}
+          user={user}
+          workspaces={workspaces}
+          workspacesPending={workspacesPending}
+        />
       </div>
     </header>
   );

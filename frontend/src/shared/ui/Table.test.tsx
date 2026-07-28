@@ -43,6 +43,13 @@ describe('Table', () => {
       />,
     );
 
-    expect(screen.getByRole('row', { name: 'Ada' })).toHaveClass('motion-reduce:transition-none');
+    expect(screen.getByRole('row', { name: 'Ada' })).toHaveClass(
+      'hover:bg-ui-interactive',
+      'motion-reduce:transition-none',
+    );
+    expect(screen.getAllByRole('rowgroup')[0]).toHaveClass(
+      'border-ui-divider',
+      'bg-ui-interactive/70',
+    );
   });
 });

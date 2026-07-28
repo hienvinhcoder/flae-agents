@@ -12,6 +12,7 @@ describe('PageToolbar', () => {
     );
 
     const toolbar = screen.getByRole('toolbar', { name: 'Knowledge filters' });
+    expect(toolbar).toHaveClass('border-ui-divider', 'bg-ui-interactive/60');
     expect(within(toolbar).getByRole('textbox', { name: 'Search documents' })).toBeInTheDocument();
   });
 });

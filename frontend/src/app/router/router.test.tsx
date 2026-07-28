@@ -1,8 +1,10 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { createMemoryRouter, matchRoutes, Outlet, RouterProvider } from 'react-router-dom';
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { TestI18nProvider } from '../../../tests/TestI18nProvider';
+import type { User } from '../../core/auth/user-schema';
 import { useAuthStore } from '../../core/stores/auth-store';
 import { createLazyElement } from './lazy-route';
 import { createRouteObjects } from './router';
@@ -15,6 +17,17 @@ const parityPaths = [
   '/dashboard/topics/topic-1', '/dashboard/reports', '/dashboard/settings',
 ];
 
+const authenticatedUser: User = {
+  avatar_url: null,
+  current_workspace_id: null,
+  email: 'owner@example.com',
+  firebase_uid: 'firebase-1',
+  full_name: 'Owner',
+  id: 'user-1',
+  is_active: true,
+  login_providers: ['google'],
+};
+
 describe('application router', () => {
   beforeEach(() => useAuthStore.getState().setAnonymous());
 
@@ -22,16 +35,38 @@ describe('application router', () => {
     expect(matchRoutes(createRouteObjects(<Outlet />), path)).not.toBeNull();
   });
 
-  it('redirects authenticated /dashboard visits to the lazy briefing page', async () => {
-    useAuthStore.getState().setAuthenticated({
-      id: 'user-1', firebase_uid: 'firebase-1', email: 'owner@example.com', full_name: 'Owner', is_active: true,
-      login_providers: ['google'], avatar_url: null, current_workspace_id: null,
-    });
+  it('renders Dashboard Home at the authenticated dashboard index without redirecting', async () => {
+    useAuthStore.getState().setAuthenticated(authenticatedUser);
     const router = createMemoryRouter(createRouteObjects(<Outlet />), { initialEntries: ['/dashboard'] });
     const queryClient = new QueryClient();
-    render(<QueryClientProvider client={queryClient}><RouterProvider router={router} /></QueryClientProvider>);
+    render(
+      <TestI18nProvider>
+        <QueryClientProvider client={queryClient}>
+          <RouterProvider router={router} />
+        </QueryClientProvider>
+      </TestI18nProvider>,
+    );
 
-    await waitFor(() => expect(router.state.location.pathname).toBe('/dashboard/briefing'));
+    expect(
+      await screen.findByRole('heading', { name: 'Welcome back, Amelia' }),
+    ).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe('/dashboard');
+  });
+
+  it('keeps Briefing directly addressable', async () => {
+    useAuthStore.getState().setAuthenticated(authenticatedUser);
+    const router = createMemoryRouter(createRouteObjects(<Outlet />), {
+      initialEntries: ['/dashboard/briefing'],
+    });
+    const queryClient = new QueryClient();
+    render(
+      <TestI18nProvider>
+        <QueryClientProvider client={queryClient}>
+          <RouterProvider router={router} />
+        </QueryClientProvider>
+      </TestI18nProvider>,
+    );
+
     expect(await screen.findByRole('heading', { name: 'Morning briefing' })).toBeInTheDocument();
   });
 

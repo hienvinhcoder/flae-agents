@@ -30,7 +30,7 @@ export function Table<Row>({ caption, columns, emptyMessage, getRowKey, renderMo
       <div className={renderMobileRow ? 'hidden overflow-x-auto md:block' : 'overflow-x-auto'}>
         <table className="w-full border-collapse text-left">
           <caption className="sr-only">{caption}</caption>
-          <thead className="border-y border-ui-divider bg-ui-raised/55 text-ui-ink-secondary">
+          <thead className="border-y border-ui-divider bg-ui-interactive/70 text-ui-ink-secondary">
             <tr>
               {columns.map((column) => (
                 <th className="px-4 py-3 font-semibold" key={column.key} scope="col">{column.header}</th>

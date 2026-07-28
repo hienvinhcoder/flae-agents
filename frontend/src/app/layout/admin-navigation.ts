@@ -2,6 +2,7 @@ import {
   BookOpen,
   Bot,
   FileText,
+  House,
   Inbox,
   MessageSquare,
   Network,
@@ -14,6 +15,7 @@ import type { LucideIcon } from "lucide-react";
 export type NavigationGroupId = "focus" | "intelligence" | "workspace";
 
 export interface AdminNavigationItem {
+  readonly exact?: boolean;
   readonly key: string;
   readonly to: string;
   readonly icon: LucideIcon;
@@ -30,6 +32,12 @@ export const navigationGroups: readonly AdminNavigationGroup[] = [
     id: "focus",
     key: "SHELL.NAV_GROUP_FOCUS",
     items: [
+      {
+        exact: true,
+        key: "NAV.OVERVIEW",
+        to: "/dashboard",
+        icon: House,
+      },
       {
         key: "NAV.BRIEFING",
         to: "/dashboard/briefing",
@@ -99,8 +107,9 @@ export function findActiveNavigationItem(
 
   for (const group of navigationGroups) {
     for (const item of group.items) {
-      const matchesRoute =
-        cleanPathname === item.to || cleanPathname.startsWith(`${item.to}/`);
+      const matchesRoute = item.exact
+        ? cleanPathname === item.to
+        : cleanPathname === item.to || cleanPathname.startsWith(`${item.to}/`);
 
       if (
         matchesRoute &&

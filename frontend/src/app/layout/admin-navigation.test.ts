@@ -2,6 +2,7 @@ import {
   BookOpen,
   Bot,
   FileText,
+  House,
   Inbox,
   MessageSquare,
   Network,
@@ -32,6 +33,12 @@ describe("admin navigation", () => {
         id: "focus",
         key: "SHELL.NAV_GROUP_FOCUS",
         items: [
+          {
+            exact: true,
+            key: "NAV.OVERVIEW",
+            to: "/dashboard",
+            icon: House,
+          },
           {
             key: "NAV.BRIEFING",
             to: "/dashboard/briefing",
@@ -95,6 +102,7 @@ describe("admin navigation", () => {
   });
 
   it.each([
+    ["/dashboard", "NAV.OVERVIEW"],
     ["/dashboard/briefing", "NAV.BRIEFING"],
     ["/dashboard/chat?conversation=conversation-1#latest", "NAV.CHAT"],
     ["/dashboard/agents/agent-1", "NAV.AGENTS"],
@@ -109,7 +117,7 @@ describe("admin navigation", () => {
     expect(findActiveNavigationItem(pathname)?.key).toBe(key);
   });
 
-  it.each(["/", "/login", "/dashboard", "/dashboarding/chat"])(
+  it.each(["/", "/login", "/dashboarding", "/dashboarding/chat"])(
     "returns no active item outside known dashboard routes for %s",
     (pathname) => {
       expect(findActiveNavigationItem(pathname)).toBeUndefined();
