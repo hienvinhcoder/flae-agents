@@ -13,7 +13,11 @@ describe('Tabs', () => {
     ]} onValueChange={onValueChange} />);
 
     const members = screen.getByRole('tab', { name: 'Members' });
-    expect(members).toHaveClass('min-h-11', 'motion-reduce:transition-none');
+    expect(members).toHaveClass(
+      'min-h-10',
+      'rounded-ui-control',
+      'motion-reduce:transition-none',
+    );
     await userEvent.click(members);
     expect(members).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByRole('tabpanel')).toHaveTextContent('Members panel');

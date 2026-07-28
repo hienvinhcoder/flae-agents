@@ -46,7 +46,7 @@ export function Tabs({ ariaLabel, defaultValue, items, onValueChange }: TabsProp
           <button
             aria-controls={`${instanceId}-${item.id}-panel`}
             aria-selected={active?.id === item.id}
-            className="min-h-11 shrink-0 border-b-2 border-transparent px-4 py-2 font-semibold text-ui-ink-secondary transition-colors duration-200 motion-reduce:transition-none hover:bg-ui-interactive hover:text-ui-ink aria-selected:border-brand aria-selected:text-ui-ink disabled:text-ui-ink-disabled"
+            className="min-h-10 shrink-0 rounded-ui-control border-b-2 border-transparent px-3 py-2 text-sm font-medium text-ui-ink-secondary transition-colors duration-200 motion-reduce:transition-none hover:bg-ui-interactive hover:text-ui-ink aria-selected:border-brand aria-selected:text-ui-ink disabled:text-ui-ink-disabled"
             disabled={item.disabled}
             id={`${instanceId}-${item.id}-tab`}
             key={item.id}

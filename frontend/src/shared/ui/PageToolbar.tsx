@@ -9,7 +9,7 @@ export function PageToolbar({ ariaLabel, children, className = '' }: PageToolbar
   return (
     <div
       aria-label={ariaLabel}
-      className={`flex flex-wrap items-end gap-3 border-y border-ui-divider bg-ui-raised/55 px-3 py-3 sm:px-4 ${className}`}
+      className={`flex flex-wrap items-end gap-3 border-y border-ui-divider bg-ui-interactive/60 px-3 py-3 sm:px-4 ${className}`}
       role="toolbar"
     >
       {children}

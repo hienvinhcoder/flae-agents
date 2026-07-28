@@ -39,7 +39,7 @@ export function Dialog({ children, closeLabel = 'Close dialog', description, dis
         aria-describedby={description ? descriptionId : undefined}
         aria-labelledby={titleId}
         aria-modal="true"
-        className="w-full max-w-lg rounded-ui-dialog border border-ui-line-strong bg-ui-raised p-6 shadow-ui-overlay"
+        className="w-full max-w-lg rounded-ui-dialog border border-ui-divider bg-ui-raised p-5 text-ui-ink shadow-ui-overlay sm:p-6"
         onKeyDown={(event) => {
           if (event.key === 'Escape' && dismissible) {
             event.preventDefault();

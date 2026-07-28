@@ -20,7 +20,7 @@ export function PageHeader({ actions, description, eyebrow, metadata, title, tit
   return (
     <header
       aria-labelledby={resolvedTitleId}
-      className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between"
+      className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"
     >
       <div className="min-w-0">
         {hasRenderableContent(eyebrow) ? <p className="text-metadata">{eyebrow}</p> : null}
