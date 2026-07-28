@@ -93,27 +93,31 @@ export function AdminHeader({
         </span>
       </div>
       <div className="ml-auto flex min-w-0 items-center gap-2">
-        <Button
-          aria-label="MCP"
-          className="hidden disabled:opacity-100 lg:inline-flex"
-          disabled
-          size="sm"
-          title={t('SHELL.DEMO_ONLY')}
-          variant="ghost"
-        >
-          <Command aria-hidden className="h-4 w-4" />
-          MCP
-        </Button>
-        <Button
-          aria-label={t('SHELL.ADD_SOURCE')}
-          className="hidden disabled:opacity-100 xl:inline-flex"
-          disabled
-          size="sm"
-          title={t('SHELL.DEMO_ONLY')}
-        >
-          <Plug aria-hidden className="h-4 w-4" />
-          {t('SHELL.ADD_SOURCE')}
-        </Button>
+        <div className="hidden lg:block">
+          <Button
+            aria-label="MCP"
+            className="disabled:opacity-100"
+            disabled
+            size="sm"
+            title={t('SHELL.DEMO_ONLY')}
+            variant="ghost"
+          >
+            <Command aria-hidden className="h-4 w-4" />
+            MCP
+          </Button>
+        </div>
+        <div className="hidden xl:block">
+          <Button
+            aria-label={t('SHELL.ADD_SOURCE')}
+            className="disabled:opacity-100"
+            disabled
+            size="sm"
+            title={t('SHELL.DEMO_ONLY')}
+          >
+            <Plug aria-hidden className="h-4 w-4" />
+            {t('SHELL.ADD_SOURCE')}
+          </Button>
+        </div>
         <HeaderUtilities
           currentWorkspaceId={currentWorkspaceId}
           language={language}

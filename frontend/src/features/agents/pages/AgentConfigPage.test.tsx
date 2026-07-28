@@ -160,7 +160,7 @@ describe("AgentConfigPage", () => {
     const cancel = screen.getByRole("link", { name: "Cancel" });
     const create = screen.getByRole("button", { name: "Create agent" });
     expect(cancel).toHaveClass("min-h-11");
-    expect(create).toHaveClass("min-h-11");
+    expect(create).toHaveClass("min-h-10");
     const actions = create.parentElement;
     expect(actions).toHaveClass("sticky", "bottom-3", "flex-wrap");
   });

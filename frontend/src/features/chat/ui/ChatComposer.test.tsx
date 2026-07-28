@@ -17,14 +17,14 @@ function renderComposer(status: "idle" | "connecting" | "streaming" = "idle") {
 }
 
 describe("ChatComposer", () => {
-  it("sends the typed message with Enter using a 44px action", async () => {
+  it("sends the typed message with Enter using the approved 40px action", async () => {
     const user = userEvent.setup();
     const { onSend } = renderComposer();
 
     await user.type(screen.getByRole("textbox", { name: "Message Research guide" }), "Hello{Enter}");
 
     expect(onSend).toHaveBeenCalledWith("Hello");
-    expect(screen.getByRole("button", { name: "Send message" })).toHaveClass("min-h-11");
+    expect(screen.getByRole("button", { name: "Send message" })).toHaveClass("min-h-10");
   });
 
   it("keeps Shift+Enter as a newline", async () => {

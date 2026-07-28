@@ -16,22 +16,22 @@ const responsiveViewports = [
     width: 375,
   },
   {
-    expectedHeaderHeight: 76,
+    expectedHeaderHeight: 64,
     expectedSidebarWidth: 72,
     height: 1024,
     label: "tablet",
     width: 768,
   },
   {
-    expectedHeaderHeight: 76,
-    expectedSidebarWidth: 280,
+    expectedHeaderHeight: 64,
+    expectedSidebarWidth: 256,
     height: 768,
     label: "desktop",
     width: 1024,
   },
   {
-    expectedHeaderHeight: 76,
-    expectedSidebarWidth: 280,
+    expectedHeaderHeight: 64,
+    expectedSidebarWidth: 256,
     height: 900,
     label: "wide desktop",
     width: 1440,
@@ -107,7 +107,7 @@ test("keeps the expanded desktop preference while tablet uses the rail layout", 
   await expect(sidebar).toHaveAttribute("data-desktop-layout", "expanded");
   await expect
     .poll(async () => (await sidebar.boundingBox())?.width ?? 0)
-    .toBe(280);
+    .toBe(256);
 
   await page.setViewportSize({ height: 1024, width: 768 });
   await expect
@@ -121,7 +121,7 @@ test("keeps the expanded desktop preference while tablet uses the rail layout", 
   await expect(sidebar).toHaveAttribute("data-desktop-layout", "expanded");
   await expect
     .poll(async () => (await sidebar.boundingBox())?.width ?? 0)
-    .toBe(280);
+    .toBe(256);
 });
 
 test("supports keyboard and backdrop dismissal for the accessible mobile drawer", async ({
