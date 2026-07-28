@@ -22,7 +22,7 @@ const variantClasses: Record<ButtonVariant, string> = {
   danger: 'border-state-danger bg-state-danger-soft text-state-danger hover:bg-ui-interactive',
   ghost: 'border-transparent bg-transparent text-ui-ink-secondary hover:bg-ui-interactive hover:text-ui-ink',
   outline: 'border-ui-divider bg-ui-raised text-ui-ink hover:bg-ui-interactive',
-  primary: 'button-primary border-transparent bg-brand text-brand-foreground hover:bg-brand-hover active:bg-brand-active',
+  primary: 'button-primary border-transparent bg-brand-cta text-brand-cta-foreground hover:bg-brand-cta-hover active:bg-brand-cta-active',
   secondary: 'border-ui-line bg-ui-raised text-ui-ink hover:bg-ui-interactive',
 };
 

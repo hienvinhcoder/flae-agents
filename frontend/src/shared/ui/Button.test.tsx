@@ -5,6 +5,19 @@ import { describe, expect, it, vi } from 'vitest';
 import { Button } from './Button';
 
 describe('Button', () => {
+  it('uses the semantic high-contrast palette for primary actions', () => {
+    render(<Button>Upload document</Button>);
+
+    const button = screen.getByRole('button', { name: 'Upload document' });
+    expect(button).toHaveClass(
+      'button-primary',
+      'bg-brand-cta',
+      'text-brand-cta-foreground',
+      'hover:bg-brand-cta-hover',
+      'active:bg-brand-cta-active',
+    );
+  });
+
   it('provides a 44px target and disables transitions for reduced motion', () => {
     render(<Button>Save</Button>);
 

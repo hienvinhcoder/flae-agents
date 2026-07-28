@@ -7,6 +7,11 @@
   --color-primary-hover: oklch(66.5% 0.187 45);
   --color-primary-active: oklch(62.5% 0.187 45);
   --color-primary-soft: oklch(93% 0.06 60);
+  --color-primary-foreground: #3d1b0c;
+  --color-primary-cta: #c2410c;
+  --color-primary-cta-hover: #b53a07;
+  --color-primary-cta-active: #a83205;
+  --color-primary-cta-foreground: #fffbf5;
   --color-canvas: oklch(98.5% 0.006 85);
   --color-surface: oklch(100% 0 0);
   --color-surface-raised: oklch(100% 0 0);
@@ -89,6 +94,10 @@
   --color-brand-soft: var(--color-primary-soft);
   --color-brand-foreground: var(--color-on-primary);
   --color-brand-text: var(--color-link);
+  --color-brand-cta: var(--color-primary-cta);
+  --color-brand-cta-hover: var(--color-primary-cta-hover);
+  --color-brand-cta-active: var(--color-primary-cta-active);
+  --color-brand-cta-foreground: var(--color-primary-cta-foreground);
   --color-ui-canvas: var(--color-canvas);
   --color-ui-panel: var(--color-surface);
   --color-ui-raised: var(--color-surface-raised);
