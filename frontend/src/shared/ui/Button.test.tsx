@@ -8,7 +8,7 @@ describe('Button', () => {
   it('provides a 44px target and disables transitions for reduced motion', () => {
     render(<Button>Save</Button>);
 
-    expect(screen.getByRole('button', { name: 'Save' })).toHaveClass('min-h-11', 'motion-reduce:transition-none');
+    expect(screen.getByRole('button', { name: 'Save' })).toHaveClass('min-h-10', 'motion-reduce:transition-none');
   });
 
   it('disables interaction and announces its loading label', async () => {
@@ -20,5 +20,20 @@ describe('Button', () => {
     expect(button).toHaveAttribute('aria-busy', 'true');
     await userEvent.click(button);
     expect(onClick).not.toHaveBeenCalled();
+  });
+
+  it('supports outline and icon-only contracts without shrinking the target', () => {
+    render(
+      <Button aria-label="Add source" size="icon" variant="outline">
+        +
+      </Button>,
+    );
+
+    expect(screen.getByRole('button', { name: 'Add source' })).toHaveClass(
+      'min-h-10',
+      'min-w-10',
+      'border-ui-divider',
+      'bg-ui-raised',
+    );
   });
 });
