@@ -16,10 +16,14 @@ const resources = {
         LOGOUT: "Log out",
       },
       SHELL: {
+        ADD_SOURCE: "Add source",
+        DEMO_ONLY: "Preview only; this action is not connected yet.",
         LOADING_WORKSPACES: "Loading workspaces",
         LOGGING_OUT: "Signing out",
         NO_WORKSPACE: "No workspace",
         OPEN_NAV: "Open navigation",
+        SEARCH_MEMORY: "Search company memory",
+        SEARCH_PLACEHOLDER: "Ask FLAE anything about your company…",
         WORKSPACE: "Workspace",
       },
     },
@@ -81,6 +85,34 @@ async function renderHeader(props: AdminHeaderProps) {
 }
 
 describe("AdminHeader", () => {
+  it("renders a search-led header and marks unavailable actions as inert", async () => {
+    await renderHeader(createProps());
+
+    expect(screen.getByRole("banner")).toHaveClass("h-16");
+    expect(
+      screen.getByRole("searchbox", { name: "Search company memory" }),
+    ).toHaveAttribute("readonly");
+    expect(screen.getByRole("button", { name: "MCP" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Add source" })).toBeDisabled();
+  });
+
+  it("preserves workspace, language, user, and logout controls", async () => {
+    await renderHeader(
+      createProps({
+        logoutController: {
+          error: null,
+          isLoading: false,
+          logout: vi.fn().mockResolvedValue(undefined),
+        },
+      }),
+    );
+
+    expect(screen.getByRole("combobox", { name: "Workspace" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Language" })).toBeInTheDocument();
+    expect(screen.getByLabelText("WO")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Log out" })).toBeInTheDocument();
+  });
+
   it("groups page context separately from workspace and user utilities", async () => {
     await renderHeader(
       createProps({

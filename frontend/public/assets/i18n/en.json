@@ -511,7 +511,11 @@
     "SYNC_ERROR": "Workspace synchronization failed; your local selection was kept",
     "LOGGING_OUT": "Signing out",
     "LOGOUT_ERROR": "Unable to sign out. Please try again.",
-    "LOADING_ROUTE": "Loading page"
+    "LOADING_ROUTE": "Loading page",
+    "SEARCH_MEMORY": "Search company memory",
+    "SEARCH_PLACEHOLDER": "Ask FLAE anything about your company…",
+    "ADD_SOURCE": "Add source",
+    "DEMO_ONLY": "Preview only; this action is not connected yet."
   },
   "APP": {
     "ARIA": "FLAE application",

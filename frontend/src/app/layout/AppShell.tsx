@@ -86,7 +86,7 @@ export function AppShell({ fetchWorkspaces, logoutController, syncSelection }: A
         {syncMessage ? <div aria-live="polite" className={`border-b px-4 py-2 text-sm md:px-6 xl:px-8 ${syncStatus === 'error' ? 'border-state-danger bg-state-danger-soft text-state-danger' : 'border-ui-divider bg-ui-raised text-ui-ink-secondary'}`} role="status">{syncMessage}</div> : null}
         {logoutController?.error ? <div className="border-b border-state-danger bg-state-danger-soft px-4 py-2 text-state-danger md:px-6 xl:px-8" role="alert">{t('SHELL.LOGOUT_ERROR')}</div> : null}
 
-        <main className="min-h-[calc(100vh-4.75rem)] px-4 py-5 sm:px-5 md:px-6 md:py-6 xl:px-8" id="main-content" tabIndex={-1}>
+        <main className="min-h-[calc(100vh-4rem)] px-4 py-5 sm:px-5 md:px-6 md:py-6 xl:px-8 xl:py-8" id="main-content" tabIndex={-1}>
           {workspaces.isError ? <ErrorState message={t('SHELL.LOAD_ERROR')} onRetry={() => void workspaces.refetch()} retryLabel={t('ERROR_PAGE.RETRY')} title={t('ERROR_PAGE.TITLE')} /> : <Outlet />}
         </main>
       </div>
