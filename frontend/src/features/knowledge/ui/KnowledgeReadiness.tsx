@@ -1,5 +1,4 @@
 import {
-  BookOpenText,
   CheckCircle2,
   CircleAlert,
   Layers3,
@@ -70,31 +69,7 @@ export function KnowledgeReadiness({
   const progress = total === 0 ? 0 : Math.round((completed / total) * 100);
 
   if (total === 0) {
-    return (
-      <section
-        aria-labelledby="knowledge-readiness-title"
-        className="flex flex-col gap-4 rounded-ui-panel border border-ui-divider bg-ui-raised p-5 sm:flex-row sm:items-center sm:p-6"
-      >
-        <span
-          aria-hidden
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-ui-control bg-brand-soft text-brand-text"
-        >
-          <BookOpenText className="h-5 w-5" strokeWidth={1.75} />
-        </span>
-        <div>
-          <p className="text-metadata">{t("KNOWLEDGE.READINESS_EYEBROW")}</p>
-          <h2
-            className="mt-2 text-xl font-semibold tracking-[-0.01em] text-ui-ink sm:text-2xl"
-            id="knowledge-readiness-title"
-          >
-            {t("KNOWLEDGE.READINESS_EMPTY_TITLE")}
-          </h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-ui-ink-secondary">
-            {t("KNOWLEDGE.READINESS_EMPTY_DESCRIPTION")}
-          </p>
-        </div>
-      </section>
-    );
+    return null;
   }
 
   return (
@@ -131,7 +106,7 @@ export function KnowledgeReadiness({
               role="progressbar"
             >
               <div
-                className="h-full rounded-ui-status bg-brand transition-[width] duration-300 motion-reduce:transition-none"
+                className="h-full rounded-ui-status bg-primary transition-[width] duration-300 motion-reduce:transition-none"
                 style={{ width: `${progress}%` }}
               />
             </div>

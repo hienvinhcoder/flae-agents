@@ -77,7 +77,7 @@ export function ConversationMessages({
         <div className="m-auto w-full max-w-2xl"><Skeleton label={t("COMMON.LOADING")} lines={7} /></div>
       ) : messages.length === 0 ? (
         <div className="m-auto max-w-md text-center">
-          <div aria-hidden className={`mx-auto flex h-14 w-14 items-center justify-center rounded-2xl text-white ${getAgentAvatarColor(agent?.avatar_color ?? "")}`}>
+          <div aria-hidden className={`mx-auto flex h-14 w-14 items-center justify-center rounded-2xl ${getAgentAvatarColor(agent?.avatar_color ?? "")}`}>
             <AgentAvatarIcon className="h-7 w-7" icon={agent?.avatar_icon ?? "bot"} />
           </div>
           <h2 className="mt-4 text-lg font-bold text-ui-ink">{t("CHAT_UI.START_WITH_AGENT", { name: agent?.name ?? t("AGENTS_UI.TITLE") })}</h2>

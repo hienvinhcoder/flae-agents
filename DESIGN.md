@@ -1,107 +1,171 @@
----
-version: "1.0"
-name: "Environment Settings"
-description: "Environment Settings Dashboard Section is designed for demonstrating application workflows and interface hierarchy. Key features include clear information density, modular panels, and interface rhythm. It is suitable for product showcases, admin panels, and analytics experiences."
-colors:
-  primary: "oklch(70.5% 0.187 45)"
-  primary-hover: "oklch(66.5% 0.187 45)"
-  primary-active: "oklch(62.5% 0.187 45)"
-  primary-soft: "oklch(93% 0.06 60)"
-  background: "oklch(98.5% 0.006 85)"
-  surface: "oklch(100% 0 0)"
-  surface-raised: "oklch(100% 0 0)"
-  surface-interactive: "oklch(94% 0.012 85)"
-  text-primary: "oklch(18% 0.02 60)"
-  text-secondary: "oklch(25% 0.02 60)"
-  text-muted: "oklch(48% 0.02 60)"
-  on-primary: "#2A241C"
-  link-focus-ai: "#9A3412"
-  border: "oklch(90% 0.015 80)"
-  sidebar: "oklch(22% 0.02 60)"
-  sidebar-foreground: "oklch(94% 0.012 85)"
-  sidebar-accent: "oklch(28% 0.02 60)"
-  sidebar-border: "oklch(30% 0.02 60)"
-typography:
-  display-lg:
-    fontFamily: "Inter"
-    fontSize: "64px"
-    fontWeight: 500
-    lineHeight: "1.04"
-    letterSpacing: "0"
-  body-md:
-    fontFamily: "Inter"
-    fontSize: "16px"
-    fontWeight: 400
-    lineHeight: "1.6"
-  label-md:
-    fontFamily: "JetBrains Mono"
-    fontSize: "12px"
-    fontWeight: 600
-    lineHeight: "1.2"
-spacing:
-  base: "8px"
-  gap: "16px"
-  card-padding: "24px"
-  section-padding: "80px"
-rounded:
-  card: "10px"
-  control: "8px"
-  dialog: "14px"
-  pill: "9999px"
-components:
-  card:
-    background: "Use the raised-surface token with a 1px border and no shadow"
-    radius: "Use the 10px card radius token"
-  button:
-    background: "Use primary or accent colors for the main action"
-    radius: "Use the control or pill radius based on the source HTML"
+# FLAE Design System
+
+FLAE is an AI Company Memory platform. The design system is warm, editorial, and confident — a workspace that feels human but built for machines. It pairs a signature orange with a soft parchment neutral to communicate warmth, clarity, and trust.
+
 ---
 
-# Environment Settings
+## 1. Brand Principles
 
-Source: Neuform Featured templates from top creators. Author: Aksonvady Phomhome (@aksonvady). Views: 90; favorites: 32; remixes: 4.
-Tags: dashboard, animated, webgl, threejs, bento, charts, navigation, flow.
+- **Warm intelligence** — technology that feels alive, not sterile. Orange leads, neutrals ground.
+- **Living knowledge** — surfaces suggest motion: graphs, streams, connections.
+- **Signal over noise** — dense information, generous spacing, one accent at a time.
+- **Human + agent** — legible for people, structured for LLMs (clear hierarchy, semantic tokens).
 
-## Overview
+---
 
-Environment Settings Dashboard Section is designed for demonstrating application workflows and interface hierarchy. Key features include clear information density, modular panels, and interface rhythm. It is suitable for product showcases, admin panels, and analytics experiences.
+## 2. Color
 
-A Living Space Environment Settings 45% Ambient 65° 72° 80° Set Point 72 °F Reaching target in 12m Thermal History 19 20 21 22 23 24 25 26 27 28 29 30 31 Key Functions HVAC System Actively maintaining 72°F Router Status…
+All colors are declared as `oklch` CSS variables in `src/styles.css` and exposed as Tailwind utilities via `@theme inline`. Never hardcode hex or `text-white` / `bg-black` in components — always use semantic tokens.
 
-## Composition
+### Core palette
 
-Use the attached HTML reference as the source of truth. Preserve the visible hierarchy, first-screen composition, section rhythm, density, and interaction tone before adapting copy or content.
-Key visible headings include: Environment Settings; Thermal History; Key Functions; HVAC System; Router Status; Lighting Array.
+| Token | Hex reference | Role |
+|---|---|---|
+| `--primary` | `#F97316` | FLAE orange — CTAs, active state, highlights, focus rings |
+| `--primary-foreground` | `#FFFBF5` | Text on orange |
+| `--primary-soft` | `#FCE1C7` | Tints, badges, hover backgrounds |
+| `--secondary` | `#EAE6DB` | Parchment — cards, panels, muted surfaces |
+| `--background` | `#FAF8F3` | App canvas |
+| `--foreground` | `#1F1B15` | Primary text |
+| `--muted` | `#F1EDE3` | Subtle backgrounds |
+| `--muted-foreground` | `#6E6558` | Secondary text, meta |
+| `--border` | `#E4DFD1` | Hairlines, dividers |
+| `--sidebar` | `#2A241C` | Dark rail nav |
+| `--sidebar-foreground` | `#EAE6DB` | Sidebar text |
+| `--destructive` | `oklch(0.577 0.245 27)` | Errors, risks |
 
-## Colors
+### Usage rules
 
-Anchor the reference palette in orange #F97316, canvas #FAF8F3, white #FFFFFF, primary ink #1F1B15, dark sidebar #2A241C, soft sidebar text #EAE6DB, muted text #6E6558, and deep-orange links and focus indicators #9A3412. The executable CSS uses the OKLCH role tokens declared above: primary `oklch(70.5% 0.187 45)`, primary-soft `oklch(93% 0.06 60)`, canvas `oklch(98.5% 0.006 85)`, white surfaces `oklch(100% 0 0)`, interactive surfaces `oklch(94% 0.012 85)`, dividers `oklch(90% 0.015 80)`, primary text `oklch(18% 0.02 60)`, secondary text `oklch(25% 0.02 60)`, and muted text `oklch(48% 0.02 60)`. Keep background, surface, text, and border roles distinct.
+- **One accent per view.** Orange is reserved for the primary action and the single most important status per section.
+- **Neutrals do the heavy lifting.** Parchment + off-white surfaces layer with 1px borders instead of shadows.
+- **Never combine orange with red** except in destructive confirmation flows.
+- **Dark surfaces** (sidebar, inverse cards) use the sidebar token family, not `bg-black`.
 
-Narrow contrast deviation: near-white text on orange is approximately 2.72:1 and is not used for small labels. Use #2A241C on #F97316, approximately 5.48:1, for small button and active-navigation text.
+### Semantic status
 
-## Typography
+| Meaning | Token |
+|---|---|
+| Success / synced | `chart-2` (teal-green) |
+| Warning / stale | `chart-4` (amber) |
+| Risk / error | `destructive` |
+| Info / neutral | `muted-foreground` |
 
-Use Inter for display moments and Inter for body copy unless the HTML clearly demands a compatible fallback. Labels and technical metadata should use JetBrains Mono or an equivalent mono face.
+---
 
-## Layout
+## 3. Typography
 
-Use a 256px expanded sidebar, a 72px collapsed rail, a 64px header, and a 1600px maximum content width. Keep spacing deliberate and stable. Favor the same grid direction, card density, and responsive stacking seen in the HTML. Do not replace distinctive source structures with generic SaaS sections.
+**Display / headings:** Inter (or system-ui fallback), tight tracking, medium-to-semibold weight. Never bold + uppercase together.
+**Body:** Inter, 15–16px base, 1.55 line-height.
+**Mono (data, IDs, MCP payloads):** JetBrains Mono or ui-monospace.
 
-## Components
+### Scale
 
-Use a 10px base card radius and border-first cards: a 1px divider-colored border on the raised white surface, without a default shadow. Dashboard, chart, and data panels should preserve their compact operational hierarchy, nested surfaces, and metric emphasis.
+| Role | Size | Weight | Tracking |
+|---|---|---|---|
+| Display (hero) | 44–56px | 600 | -0.02em |
+| H1 | 32px | 600 | -0.015em |
+| H2 | 24px | 600 | -0.01em |
+| H3 | 18px | 600 | 0 |
+| Body | 15px | 400 | 0 |
+| Small / meta | 13px | 500 | 0 |
+| Label / eyebrow | 12px | 600 uppercase | 0.08em |
 
-## Motion
+---
 
-Preserve existing motion cues such as masked reveals, staggered entrance, color transitions, scroll-triggered transitions, and ambient movement. Pressed controls must not move layout. Keep easing smooth and restrained, and honor reduced-motion preferences.
+## 4. Spacing & Layout
 
-## WebGL & Effects
+- **4px base grid.** Common steps: 4, 8, 12, 16, 24, 32, 48, 64.
+- **Content max-width:** 1280px. Sidebar 240–260px. Right rail (context) 320px.
+- **Card padding:** 20–24px. Section spacing: 48–64px vertical.
+- **Density:** dashboard tables use 12px row padding, marketing surfaces use 24px+.
 
-If the source includes canvas, WebGL, Three.js, gradients, particles, or atmospheric effects, rebuild them as supporting layers behind the content. Keep effects performant, responsive, and secondary to the interface.
+---
 
-## Guardrails
+## 5. Radius, Border, Elevation
 
-- Do not flatten the source into a generic card grid.
-- Do not swap the color mode unless the source clearly supports it.
-- Preserve the first viewport signal, focal object, and visual density.
-- Keep buttons, cards, and badges aligned to the same radius and border language.
+- **Radius:** base `--radius: 0.625rem` (10px). Buttons/inputs `md` (8px), cards `lg` (10px), modals/hero panels `xl` (14px), pill badges fully rounded.
+- **Borders before shadows.** Default surface = `1px solid var(--border)` on a card token background.
+- **Shadows** reserved for popovers, dropdowns, and floating toasts. Use soft, warm shadows:
+  - `shadow-sm`: `0 1px 2px oklch(0 0 0 / 0.04)`
+  - `shadow-md`: `0 8px 24px -12px oklch(0.2 0.03 60 / 0.15)`
+
+---
+
+## 6. Components
+
+Built on shadcn/ui (`new-york` style). Extend via variants — never fork.
+
+- **Button:** `default` (orange), `secondary` (parchment), `ghost`, `outline`, `destructive`. Icon-only buttons use `size="icon"` and always carry `aria-label`.
+- **Card:** parchment or white surface, 1px border, optional 12px eyebrow label.
+- **Badge:** pill, `primary-soft` bg + `primary` text, or muted variants for status.
+- **Input / Textarea:** white surface, 1px border, orange focus ring (2px offset).
+- **Sidebar:** dark rail, icon + label, active item uses `primary-soft` background with `primary` text.
+- **Graph / node viz:** nodes in parchment with orange highlight for the active entity; edges in `border`, animated in `primary` when live.
+- **Table:** zebra-free, 1px row divider, hoverable rows in `muted`.
+
+### States
+
+- **Hover:** background steps one token darker (e.g. `muted` → `secondary`).
+- **Focus:** 2px `--ring` orange outline, 2px offset.
+- **Disabled:** 50% opacity, no pointer events.
+- **Loading:** skeletons in `muted`, shimmer via `tw-animate-css`.
+
+---
+
+## 7. Iconography
+
+- **Library:** `lucide-react` only. Stroke 1.75, size 16 (inline), 18 (buttons), 20 (nav), 24 (hero).
+- **No emoji** in product surfaces.
+- Icons inherit `currentColor` — never hardcode fill.
+
+---
+
+## 8. Motion
+
+- **Duration:** 150ms (micro), 220ms (default), 400ms (enter/exit).
+- **Easing:** `cubic-bezier(0.2, 0.8, 0.2, 1)` for UI; `ease-out` for entrances.
+- **Graph pulses** and **live activity dots** animate at 1.6s ease-in-out infinite.
+- Respect `prefers-reduced-motion`; disable non-essential motion.
+
+---
+
+## 9. Data Visualization
+
+- Sequential: orange → parchment ramp.
+- Categorical: `chart-1`…`chart-5` tokens.
+- Always label axes; never rely on color alone (add shape/label for accessibility).
+
+---
+
+## 10. Accessibility
+
+- Minimum contrast **4.5:1** for body, **3:1** for large text and icons.
+- Every interactive element has a visible focus state and an accessible name.
+- Hit target ≥ 40×40px on touch.
+- Motion, color, and iconography each carry meaning independently.
+
+---
+
+## 11. Voice & Microcopy
+
+- Direct, calm, technically literate. No hype, no exclamation marks.
+- Verbs first in buttons: "Connect Notion", "Ask FLAE", "Open memory".
+- Empty states describe what will appear here, not just "No data".
+- Numbers get units and freshness ("2,431 memories · updated 3m ago").
+
+---
+
+## 12. Do / Don't
+
+**Do**
+- Use `bg-primary` for the single primary action per view.
+- Layer parchment surfaces with 1px borders.
+- Keep dashboards dense; keep marketing pages airy.
+
+**Don't**
+- Don't introduce a second accent color.
+- Don't use pure white (`#FFF`) as the page background — use `--background`.
+- Don't apply shadows to inline cards; use borders.
+- Don't hardcode colors in components — extend tokens in `src/styles.css`.
+
+---

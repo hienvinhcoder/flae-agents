@@ -20,6 +20,12 @@ describe('Tabs', () => {
     );
     await userEvent.click(members);
     expect(members).toHaveAttribute('aria-selected', 'true');
+    expect(members).toHaveClass(
+      'aria-selected:bg-primary-control',
+      'aria-selected:text-primary-control-foreground',
+      'aria-selected:hover:bg-primary-control-hover',
+      'aria-selected:hover:text-primary-control-foreground',
+    );
     expect(screen.getByRole('tabpanel')).toHaveTextContent('Members panel');
     expect(onValueChange).toHaveBeenCalledOnce();
     expect(onValueChange).toHaveBeenCalledWith('members');

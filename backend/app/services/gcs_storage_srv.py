@@ -12,6 +12,7 @@ from google.oauth2.credentials import Credentials
 
 from app.core.config import settings
 from app.core.logger import get_logger
+from app.core.exceptions import ExternalServiceError
 
 logger = get_logger(__name__)
 
@@ -75,22 +76,20 @@ class GCSStorageService:
                     blob.upload_from_string(file_content, content_type=content_type)
                 except google_exceptions.Forbidden as e:
                     logger.error(f"Permission denied when creating GCS bucket {settings.GCS_BUCKET_NAME}: {e}")
-                    raise ValueError(
-                        f"Không tìm thấy bucket lưu trữ '{settings.GCS_BUCKET_NAME}' và không có quyền tự tạo mới. "
-                        "Vui lòng liên hệ quản trị viên để cấu hình GCS."
+                    raise ExternalServiceError(
+                        "Vùng lưu trữ tài liệu chưa được cấu hình đúng."
                     ) from e
                 except Exception as create_exc:
                     logger.error(f"Failed to auto-create GCS bucket {settings.GCS_BUCKET_NAME}: {create_exc}")
-                    raise ValueError(
-                        f"Không tìm thấy bucket lưu trữ '{settings.GCS_BUCKET_NAME}' và không thể tự động tạo mới: {str(create_exc)}. "
-                        "Vui lòng kiểm tra lại cấu hình GCS."
+                    raise ExternalServiceError(
+                        "Không thể khởi tạo vùng lưu trữ tài liệu."
                     ) from create_exc
             except google_exceptions.GoogleAPICallError as e:
                 logger.error(f"Google API error during GCS upload: {e}")
-                raise ValueError(f"Lỗi dịch vụ lưu trữ đám mây Google Cloud: {e.message}") from e
+                raise ExternalServiceError("Dịch vụ lưu trữ tạm thời không khả dụng.") from e
             except Exception as e:
                 logger.error(f"GCS upload error: {e}")
-                raise ValueError(f"Lỗi tải file lên GCS: {str(e)}") from e
+                raise ExternalServiceError("Không thể tải tài liệu lên vùng lưu trữ.") from e
 
             logger.info(
                 f"Uploaded file to GCS: gs://{settings.GCS_BUCKET_NAME}/{gcs_path}"

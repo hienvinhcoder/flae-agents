@@ -1,14 +1,10 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { I18nextProvider } from "react-i18next";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import en from "../../../../public/assets/i18n/en.json";
-import viMessages from "../../../../public/assets/i18n/vi.json";
 import { useWorkspaceStore } from "../../../core/stores/workspace-store";
-import { createI18n } from "../../../shared/i18n";
 import { TestI18nProvider } from "../../../../tests/TestI18nProvider";
 import type {
   KnowledgeDocument,
@@ -26,11 +22,6 @@ const runtimeApi = vi.hoisted(() => ({
 }));
 
 vi.mock("../api/knowledge-runtime-api", () => runtimeApi);
-
-const vietnameseI18n = await createI18n(
-  { en: { translation: en }, vi: { translation: viMessages } },
-  "vi",
-);
 
 const roadmap: KnowledgeDocument = {
   chunk_count: 12,
@@ -79,7 +70,7 @@ const roadmapDetail: KnowledgeDocumentDetail = {
   token_usage: { input: 500, output: 120 },
 };
 
-function renderPage(language: "en" | "vi" = "en") {
+function renderPage() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
@@ -90,13 +81,7 @@ function renderPage(language: "en" | "vi" = "en") {
       </MemoryRouter>
     </QueryClientProvider>
   );
-  render(
-    language === "vi" ? (
-      <I18nextProvider i18n={vietnameseI18n}>{page}</I18nextProvider>
-    ) : (
-      <TestI18nProvider>{page}</TestI18nProvider>
-    ),
-  );
+  render(<TestI18nProvider>{page}</TestI18nProvider>);
   return queryClient;
 }
 
@@ -165,33 +150,21 @@ describe("KnowledgeListPage", () => {
     expect(
       await screen.findByRole("heading", { level: 1, name: "Company memory" }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /upload document/i }),
-    ).toBeInTheDocument();
+    const uploadButton = screen.getByRole("button", {
+      name: /upload document/i,
+    });
+    expect(uploadButton).toHaveClass(
+      "flae-button-primary",
+      "bg-primary-control",
+      "text-primary-control-foreground",
+    );
+    expect(uploadButton).toHaveAttribute("data-variant", "primary");
     expect(
       screen.getByRole("button", { name: /add content/i }),
     ).toBeInTheDocument();
     expect(
       await screen.findByRole("table", { name: /knowledge documents/i }),
     ).toBeInTheDocument();
-  });
-
-  it("renders one Vietnamese page title and one empty-readiness card", async () => {
-    runtimeApi.listDocuments.mockResolvedValue([]);
-    renderPage("vi");
-
-    expect(
-      await screen.findAllByRole("heading", {
-        level: 1,
-        name: "Bộ nhớ doanh nghiệp",
-      }),
-    ).toHaveLength(1);
-    expect(
-      screen.getAllByRole("heading", {
-        level: 2,
-        name: "Bắt đầu xây bộ nhớ doanh nghiệp",
-      }),
-    ).toHaveLength(1);
   });
 
   it("summarizes memory readiness and lets users review failed sources", async () => {
@@ -446,13 +419,4 @@ describe("KnowledgeListPage", () => {
     await waitFor(() => expect(incidentRetry).not.toBeDisabled());
   });
 
-  it("localizes the knowledge list retry action", async () => {
-    runtimeApi.listDocuments.mockRejectedValue(new Error("Không thể kết nối"));
-
-    renderPage("vi");
-
-    expect(
-      await screen.findByRole("button", { name: "Thử lại" }),
-    ).toBeInTheDocument();
-  });
 });

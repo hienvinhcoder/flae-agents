@@ -1,6 +1,7 @@
 from datetime import datetime
-from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field, ConfigDict
+from typing import Dict, List, Optional
+
+from pydantic import BaseModel, ConfigDict, Field, JsonValue
 
 
 class TopicBase(BaseModel):
@@ -49,7 +50,15 @@ class MemberDetail(BaseModel):
     relevance_score: float
     evidence_count: int
     created_at: datetime
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: Dict[str, JsonValue] = Field(default_factory=dict)
+
+
+class TopicUpdateResponse(BaseModel):
+    workspace_id: str
+    topic_id: str
+    name: str
+    slug: str
+    status: str
 
 
 class TopicDetailResponse(BaseModel):

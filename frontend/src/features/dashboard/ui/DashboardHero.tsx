@@ -38,11 +38,11 @@ export function DashboardHero({ demoLabel, hero, metrics }: DashboardHeroProps) 
       className="relative overflow-hidden p-6 sm:p-8"
       variant="inverse"
     >
-      <div aria-hidden className="pointer-events-none absolute -right-16 -top-20 h-72 w-72 rounded-full bg-brand/15 blur-3xl" />
+      <div aria-hidden className="pointer-events-none absolute -right-16 -top-20 h-72 w-72 rounded-full bg-primary/15 blur-3xl" />
       <div className="relative z-10 grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start">
         <div className="min-w-0">
           <div className="inline-flex items-center gap-2 rounded-ui-status bg-sidebar-accent px-3 py-1 text-xs">
-            <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-brand" />
+            <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-primary" />
             {hero.syncStatus}
           </div>
           <h1
@@ -53,7 +53,7 @@ export function DashboardHero({ demoLabel, hero, metrics }: DashboardHeroProps) 
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-sidebar-foreground/70 sm:text-base">
             {hero.description}{' '}
-            <strong className="font-medium text-brand">{hero.emphasis}</strong>.
+            <strong className="font-medium text-brand-text">{hero.emphasis}</strong>.
           </p>
           <div className="mt-6 flex flex-wrap gap-2">
             {hero.prompts.map((prompt) => (
@@ -77,7 +77,7 @@ export function DashboardHero({ demoLabel, hero, metrics }: DashboardHeroProps) 
                 className="rounded-ui-panel border border-sidebar-border bg-sidebar-accent/60 p-3"
                 key={metric.id}
               >
-                <Icon aria-hidden className="h-4 w-4 text-brand" />
+                <Icon aria-hidden className="h-4 w-4 text-primary" />
                 <strong className="mt-2 block text-lg">{metric.value}</strong>
                 <span className="text-xs text-sidebar-foreground/60">{metric.label}</span>
               </div>

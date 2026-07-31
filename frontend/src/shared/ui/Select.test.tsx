@@ -10,8 +10,8 @@ describe('Select', () => {
     expect(screen.getByRole('combobox', { name: 'Role' })).toHaveClass(
       'min-h-10',
       'rounded-ui-control',
-      'border-ui-line',
-      'bg-ui-raised',
+      'border-input',
+      'bg-card',
       'shadow-none',
       'motion-reduce:transition-none',
     );

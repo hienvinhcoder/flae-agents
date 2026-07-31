@@ -164,6 +164,40 @@ services:
     networks:
       - app-network
 
+  flae-ingestion-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: uv run watchfiles flae-ingestion-worker app workers
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/flae_db
+      - RAG_DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/rag_db
+      - AGENT_STATE_DATABASE_URL=postgresql://postgres:postgres@postgres:5432/flae_agent_state_db
+      - REDIS_URL=redis://redis:6379/0
+      - TEMPORAL_HOST=temporal:7233
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/firebaseadmin.json
+      - GOOGLE_CLOUD_PROJECT=flae-agents
+      - FIREBASE_AUTH_EMULATOR_HOST=firebase-emulator:9099
+      - STORAGE_EMULATOR_HOST=http://firebase-emulator:9199
+      - GCS_BUCKET_NAME=flae-agents.appspot.com
+      - UV_LINK_MODE=copy
+    volumes:
+      - ./backend:/app
+      - /app/.venv
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      temporal:
+        condition: service_started
+      firebase-emulator:
+        condition: service_healthy
+    networks:
+      - app-network
+
 networks:
   app-network:
     driver: bridge

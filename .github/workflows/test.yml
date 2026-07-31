@@ -54,6 +54,16 @@ jobs:
         cd backend
         uv sync --frozen
 
+    - name: Check Backend File Size
+      run: |
+        cd backend
+        uv run python -m scripts.check_file_size
+
+    - name: Typecheck Backend
+      run: |
+        cd backend
+        uv run pyrefly check app
+
     - name: Run Backend Tests
       env:
         ENVIRONMENT: testing
@@ -62,7 +72,7 @@ jobs:
         REDIS_URL: redis://localhost:6379/1
       run: |
         cd backend
-        uv run pytest --cov=app tests/
+        uv run pytest --cov=app --cov-fail-under=75 tests/
 
   frontend-tests:
     runs-on: ubuntu-latest

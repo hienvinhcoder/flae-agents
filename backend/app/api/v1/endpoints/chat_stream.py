@@ -7,7 +7,9 @@ from firebase_admin import auth
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import get_logger
+from app.core.exceptions import ApplicationError
 from app.core.config import settings
+from app.core.security import ensure_firebase_initialized
 from app.db.database import get_db
 from app.services.workspace_srv import WorkspaceService
 from app.services.chat_srv import ChatService
@@ -42,6 +44,7 @@ async def verify_token_stream(
         )
 
     try:
+        ensure_firebase_initialized()
         decoded_token = auth.verify_id_token(raw_token, clock_skew_seconds=settings.FIREBASE_CLOCK_SKEW_SECONDS)
         uid = decoded_token.get("uid")
         if not uid:
@@ -106,7 +109,8 @@ async def stream_chat(
         )
     except Exception as e:
         logger.error(f"Lỗi khởi chạy stream SSE: {e}", exc_info=True)
-        raise HTTPException(
+        raise ApplicationError(
             status_code=500,
-            detail=f"Không thể khởi động luồng stream: {str(e)}"
-        )
+            code="INTERNAL_ERROR",
+            message="Không thể khởi động luồng stream.",
+        ) from e

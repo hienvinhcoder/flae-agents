@@ -34,12 +34,12 @@ export function Dialog({ children, closeLabel = 'Close dialog', description, dis
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-ui-canvas/85 p-4" role="presentation">
+    <div className="fixed inset-0 z-50 grid place-items-center bg-background/85 p-4" role="presentation">
       <div
         aria-describedby={description ? descriptionId : undefined}
         aria-labelledby={titleId}
         aria-modal="true"
-        className="w-full max-w-lg rounded-ui-dialog border border-ui-divider bg-ui-raised p-5 text-ui-ink shadow-ui-overlay sm:p-6"
+        className="w-full max-w-lg rounded-ui-dialog border border-border bg-popover p-5 text-popover-foreground shadow-ui-overlay sm:p-6"
         onKeyDown={(event) => {
           if (event.key === 'Escape' && dismissible) {
             event.preventDefault();
@@ -69,11 +69,11 @@ export function Dialog({ children, closeLabel = 'Close dialog', description, dis
       >
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-semibold text-ui-ink" id={titleId}>{title}</h2>
-            {description ? <p className="mt-2 text-ui-ink-secondary" id={descriptionId}>{description}</p> : null}
+            <h2 className="text-lg font-semibold text-foreground" id={titleId}>{title}</h2>
+            {description ? <p className="mt-2 text-secondary-foreground" id={descriptionId}>{description}</p> : null}
           </div>
           {dismissible ? (
-            <button aria-label={closeLabel} className="grid min-h-10 min-w-10 place-items-center rounded-ui-control text-ui-ink-secondary transition-colors duration-200 hover:bg-ui-interactive hover:text-ui-ink" data-dialog-close onClick={onClose} type="button">
+            <button aria-label={closeLabel} className="grid min-h-10 min-w-10 place-items-center rounded-ui-control text-muted-foreground transition-colors duration-200 hover:bg-accent hover:text-accent-foreground" data-dialog-close onClick={onClose} type="button">
               <X aria-hidden className="h-5 w-5" />
             </button>
           ) : null}

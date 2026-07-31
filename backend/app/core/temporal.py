@@ -1,4 +1,5 @@
 from temporalio.client import Client
+from temporalio.contrib.pydantic import pydantic_data_converter
 from app.core.config import settings
 from app.core.logger import get_logger
 
@@ -21,6 +22,7 @@ async def _connect_client() -> Client:
     return await Client.connect(
         settings.TEMPORAL_HOST,
         namespace=settings.TEMPORAL_NAMESPACE,
+        data_converter=pydantic_data_converter,
     )
 
 

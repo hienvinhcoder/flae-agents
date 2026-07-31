@@ -66,12 +66,34 @@ class Settings(BaseSettings):
     # Database
     POSTGRES_URL: str = os.getenv('POSTGRES_URL', 'postgresql+asyncpg://postgres:postgres@localhost:5432/flae_db')
     RAG_DATABASE_URL: str = os.getenv('RAG_DATABASE_URL', 'postgresql+asyncpg://postgres:postgres@postgres:5432/rag_db')
+    RAG_DATABASE_APP_ROLE: str = os.getenv('RAG_DATABASE_APP_ROLE', 'flae_rag_app')
+    RAG_DATABASE_INGESTION_ROLE: str = os.getenv(
+        'RAG_DATABASE_INGESTION_ROLE', 'flae_rag_ingestion'
+    )
     AGENT_STATE_DATABASE_URL: str = os.getenv('AGENT_STATE_DATABASE_URL', 'postgresql://postgres:postgres@localhost:5432/flae_agent_state_db')
     REDIS_URL: str = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
 
     # Temporal
     TEMPORAL_HOST: str = os.getenv('TEMPORAL_HOST', 'localhost:7233')
     TEMPORAL_NAMESPACE: str = os.getenv('TEMPORAL_NAMESPACE', 'default')
+    TEMPORAL_INGESTION_TASK_QUEUE: str = os.getenv(
+        'TEMPORAL_INGESTION_TASK_QUEUE', 'flae-ingestion-v2-queue'
+    )
+    INGESTION_V2_ENABLED: bool = os.getenv(
+        'INGESTION_V2_ENABLED', 'false'
+    ).lower() == 'true'
+    INGESTION_V2_MAX_PARALLEL_BATCHES: int = int(
+        os.getenv('INGESTION_V2_MAX_PARALLEL_BATCHES', '4')
+    )
+    INGESTION_V2_MAX_CONCURRENT_WORKFLOWS: int = int(
+        os.getenv('INGESTION_V2_MAX_CONCURRENT_WORKFLOWS', '20')
+    )
+    INGESTION_V2_MAX_CONCURRENT_ACTIVITIES: int = int(
+        os.getenv('INGESTION_V2_MAX_CONCURRENT_ACTIVITIES', '8')
+    )
+    INGESTION_V2_TASK_QUEUE_ACTIVITIES_PER_SECOND: float = float(
+        os.getenv('INGESTION_V2_TASK_QUEUE_ACTIVITIES_PER_SECOND', '10')
+    )
 
     # Firebase / GCP configuration
     GOOGLE_APPLICATION_CREDENTIALS: str = os.getenv('GOOGLE_APPLICATION_CREDENTIALS', '')
@@ -133,5 +155,23 @@ class Settings(BaseSettings):
         env_file_encoding='utf-8',
         extra='ignore'
     )
+
+    @field_validator(
+        'INGESTION_V2_MAX_PARALLEL_BATCHES',
+        'INGESTION_V2_MAX_CONCURRENT_WORKFLOWS',
+        'INGESTION_V2_MAX_CONCURRENT_ACTIVITIES',
+    )
+    @classmethod
+    def validate_positive_ingestion_capacity(cls, value: int) -> int:
+        if value < 1:
+            raise ValueError('ingestion capacity settings must be positive')
+        return value
+
+    @field_validator('INGESTION_V2_TASK_QUEUE_ACTIVITIES_PER_SECOND')
+    @classmethod
+    def validate_positive_ingestion_rate(cls, value: float) -> float:
+        if value <= 0:
+            raise ValueError('ingestion activity rate must be positive')
+        return value
 
 settings = Settings()

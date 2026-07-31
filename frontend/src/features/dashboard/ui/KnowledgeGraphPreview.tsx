@@ -43,7 +43,7 @@ export function KnowledgeGraphPreview({ exploreLabel, graph }: KnowledgeGraphPre
             <li
               className={
                 node.kind === 'memory'
-                  ? 'rounded-ui-panel border border-brand bg-brand px-3 py-2 text-center text-sm font-semibold text-brand-foreground'
+                  ? 'rounded-ui-panel border border-primary-control bg-primary-control px-3 py-2 text-center text-sm font-semibold text-primary-control-foreground'
                   : 'rounded-ui-panel border border-ui-divider bg-ui-raised px-3 py-2 text-center text-sm'
               }
               key={node.id}

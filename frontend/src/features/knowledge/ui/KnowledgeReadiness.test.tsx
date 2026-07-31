@@ -5,8 +5,8 @@ import { TestI18nProvider } from "../../../../tests/TestI18nProvider";
 import { KnowledgeReadiness } from "./KnowledgeReadiness";
 
 describe("KnowledgeReadiness", () => {
-  it("explains how an empty workspace becomes company memory", () => {
-    render(
+  it("does not render a readiness card for an empty workspace", () => {
+    const { container } = render(
       <TestI18nProvider>
         <KnowledgeReadiness
           completed={0}
@@ -19,17 +19,7 @@ describe("KnowledgeReadiness", () => {
       </TestI18nProvider>,
     );
 
-    expect(
-      screen.getByRole("heading", {
-        level: 2,
-        name: "Build your company memory",
-      }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "Add durable sources so FLAE can retrieve trusted context for people and agents.",
-      ),
-    ).toBeInTheDocument();
+    expect(container).toBeEmptyDOMElement();
     expect(
       screen.queryByRole("progressbar", { name: "Memory readiness" }),
     ).not.toBeInTheDocument();

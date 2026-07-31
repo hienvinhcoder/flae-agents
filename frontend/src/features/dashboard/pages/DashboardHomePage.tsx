@@ -15,7 +15,7 @@ export function DashboardHomePage() {
   const demoLabel = t('DASHBOARD_HOME.DEMO_ONLY');
 
   return (
-    <div className="mx-auto grid w-full max-w-[1600px] gap-6 sm:gap-8">
+    <div className="mx-auto grid w-full max-w-[1440px] gap-6">
       <DashboardHero demoLabel={demoLabel} hero={fixture.hero} metrics={fixture.metrics} />
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(300px,0.75fr)]">
         <KnowledgeGraphPreview

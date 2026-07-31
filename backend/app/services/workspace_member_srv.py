@@ -1,8 +1,12 @@
 import uuid
-from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 from app.core.logger import get_logger
+from app.core.exceptions import (
+    AuthorizationError,
+    InvalidArgumentError,
+    ResourceNotFoundError,
+)
 from app.db.database import redis_client
 from app.models.workspace import (
     Workspace,
@@ -57,10 +61,7 @@ class WorkspaceMemberService:
         )
         actor_member = actor_member_result.scalar_one_or_none()
         if not actor_member:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Actor is not a member of this workspace"
-            )
+            raise AuthorizationError("Actor is not a member of this workspace")
             
         # 2. Lấy thông tin thành viên bị tác động (target)
         target_member_result = await db.execute(
@@ -73,20 +74,14 @@ class WorkspaceMemberService:
         )
         target_member = target_member_result.scalar_one_or_none()
         if not target_member:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Member not found in this workspace"
-            )
+            raise ResourceNotFoundError("Member not found in this workspace")
             
         # 3. Phân quyền thao tác (RBAC Rules)
         # - Chỉ có owner mới được thay đổi quyền của một admin hoặc owner khác.
         # - Admin chỉ được thay đổi quyền của member hoặc viewer.
         # - Không được tự thay đổi quyền của chính mình.
         if actor_uid == member_uid:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="You cannot modify your own role or status"
-            )
+            raise InvalidArgumentError("You cannot modify your own role or status")
             
         if actor_member.role == WorkspaceRole.owner:
             # Owner có toàn quyền, nhưng nếu set target thành owner, actor phải từ chức owner thành admin/member
@@ -104,21 +99,18 @@ class WorkspaceMemberService:
                 target_member.status = new_status
         elif actor_member.role == WorkspaceRole.admin:
             if target_member.role in [WorkspaceRole.owner, WorkspaceRole.admin]:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Admin cannot modify role/status of owners or other admins"
+                raise AuthorizationError(
+                    "Admin cannot modify role/status of owners or other admins"
                 )
             if new_role in [WorkspaceRole.owner, WorkspaceRole.admin]:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Admin cannot promote members to owner or admin"
+                raise AuthorizationError(
+                    "Admin cannot promote members to owner or admin"
                 )
             target_member.role = new_role
             target_member.status = new_status
         else:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only owners and admins can modify member roles"
+            raise AuthorizationError(
+                "Only owners and admins can modify member roles"
             )
             
         await db.commit()
@@ -145,10 +137,7 @@ class WorkspaceMemberService:
         )
         actor_member = actor_member_result.scalar_one_or_none()
         if not actor_member:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Actor is not a member of this workspace"
-            )
+            raise AuthorizationError("Actor is not a member of this workspace")
             
         # 2. Lấy thông tin thành viên bị xóa (target)
         target_member_result = await db.execute(
@@ -161,20 +150,14 @@ class WorkspaceMemberService:
         )
         target_member = target_member_result.scalar_one_or_none()
         if not target_member:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Member not found in this workspace"
-            )
+            raise ResourceNotFoundError("Member not found in this workspace")
             
         # 3. Phân quyền xóa
         # - Không được xóa owner.
         # - Admin chỉ được xóa member/viewer.
         # - Owner được xóa bất kỳ ai trừ chính mình (phải chuyển giao owner trước khi rời).
         if target_member.role == WorkspaceRole.owner:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Cannot remove the owner of the workspace"
-            )
+            raise InvalidArgumentError("Cannot remove the owner of the workspace")
             
         if actor_uid == member_uid:
             # Tự rời workspace
@@ -183,15 +166,9 @@ class WorkspaceMemberService:
             pass
         elif actor_member.role == WorkspaceRole.admin:
             if target_member.role == WorkspaceRole.admin:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Admin cannot remove other admins"
-                )
+                raise AuthorizationError("Admin cannot remove other admins")
         else:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only owners and admins can remove members"
-            )
+            raise AuthorizationError("Only owners and admins can remove members")
             
         # Thực hiện xóa
         await db.delete(target_member)

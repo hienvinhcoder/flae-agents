@@ -1,11 +1,15 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { I18nextProvider } from "react-i18next";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { TestI18nProvider } from "../../../../tests/TestI18nProvider";
+import en from "../../../../public/assets/i18n/en.json";
+import viMessages from "../../../../public/assets/i18n/vi.json";
 import { useWorkspaceStore } from "../../../core/stores/workspace-store";
+import { createI18n } from "../../../shared/i18n";
 import type { KnowledgeDocument } from "../types/knowledge";
 import { KnowledgeListPage } from "./KnowledgeListPage";
 
@@ -19,6 +23,11 @@ const runtimeApi = vi.hoisted(() => ({
 }));
 
 vi.mock("../api/knowledge-runtime-api", () => runtimeApi);
+
+const vietnameseI18n = await createI18n(
+  { en: { translation: en }, vi: { translation: viMessages } },
+  "vi",
+);
 
 const incident: KnowledgeDocument = {
   chunk_count: null,
@@ -57,18 +66,23 @@ function deferred<T>() {
   return { promise, reject, resolve };
 }
 
-function renderPage() {
+function renderPage(language: "en" | "vi" = "en") {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  render(
-    <TestI18nProvider>
+  const page = (
       <QueryClientProvider client={queryClient}>
         <MemoryRouter>
           <KnowledgeListPage />
         </MemoryRouter>
       </QueryClientProvider>
-    </TestI18nProvider>,
+  );
+  render(
+    language === "vi" ? (
+      <I18nextProvider i18n={vietnameseI18n}>{page}</I18nextProvider>
+    ) : (
+      <TestI18nProvider>{page}</TestI18nProvider>
+    ),
   );
 }
 
@@ -326,5 +340,33 @@ describe("KnowledgeListPage retry errors", () => {
 
     workspaceTwoRequest?.resolve({});
     await waitFor(() => expect(revisitedWorkspaceTwoRetry).not.toBeDisabled());
+  });
+
+  it("localizes the knowledge list retry action", async () => {
+    runtimeApi.listDocuments.mockRejectedValue(new Error("Không thể kết nối"));
+
+    renderPage("vi");
+
+    expect(
+      await screen.findByRole("button", { name: "Thử lại" }),
+    ).toBeInTheDocument();
+  });
+
+  it("renders the Vietnamese page title without an empty-readiness card", async () => {
+    runtimeApi.listDocuments.mockResolvedValue([]);
+    renderPage("vi");
+
+    expect(
+      await screen.findAllByRole("heading", {
+        level: 1,
+        name: "Bộ nhớ doanh nghiệp",
+      }),
+    ).toHaveLength(1);
+    expect(
+      screen.queryByRole("heading", {
+        level: 2,
+        name: "Bắt đầu xây bộ nhớ doanh nghiệp",
+      }),
+    ).not.toBeInTheDocument();
   });
 });

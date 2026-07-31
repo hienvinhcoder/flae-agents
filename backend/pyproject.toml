@@ -46,6 +46,7 @@ dependencies = [
 [project.scripts]
 migrate = "scripts.migrate:run_migrations"
 flae-worker = "workers.flae_worker:main"
+flae-ingestion-worker = "workers.flae_ingestion_worker:main"
 
 [tool.uv]
 package = true
@@ -59,6 +60,7 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
+    "pyrefly>=1.1.1",
     "pytest-asyncio>=1.3.0",
     "pytest-cov>=4.0.0",
     "types-psycopg2>=2.9.21.20260518",

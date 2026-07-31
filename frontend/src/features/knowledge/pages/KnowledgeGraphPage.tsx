@@ -45,11 +45,11 @@ export function KnowledgeGraphPage() {
   };
 
   return (
-    <section aria-labelledby="knowledge-graph-title" className="mx-auto w-full max-w-[96rem]">
+    <section aria-labelledby="knowledge-graph-title" className="mx-auto w-full max-w-[96rem] px-4 sm:px-6 lg:px-8 py-6">
       <PageHeader
         actions={(
           <Link
-            className="inline-flex min-h-11 items-center gap-2 rounded-ui-control border border-ui-line bg-ui-raised px-4 py-2 font-semibold text-ui-ink-secondary no-underline transition-colors duration-200 hover:bg-ui-interactive hover:text-ui-ink motion-reduce:transition-none"
+            className="inline-flex min-h-11 items-center gap-2 rounded-ui-control border border-ui-line bg-ui-raised px-4.5 py-2 font-semibold text-ui-ink-secondary no-underline transition-colors duration-200 hover:bg-ui-interactive hover:text-ui-ink motion-reduce:transition-none"
             to="/dashboard/knowledge"
           >
             <ArrowLeft aria-hidden className="h-4 w-4" />
@@ -64,15 +64,15 @@ export function KnowledgeGraphPage() {
         })}
         title={(
           <span className="flex items-center gap-2">
-            <Network aria-hidden className="h-6 w-6 text-brand" />
+            <Network aria-hidden className="h-6 w-6 text-brand-text" />
             {t("SHELL.KNOWLEDGE_GRAPH")}
           </span>
         )}
         titleId="knowledge-graph-title"
       />
 
-      <div className="mt-5 overflow-hidden border-y border-ui-divider bg-ui-canvas">
-        <PageToolbar ariaLabel={t("GRAPH.TOOLS_ARIA")} className="relative z-30">
+      <div className="mt-6 overflow-hidden rounded-ui-dialog border border-ui-divider bg-ui-panel/40 shadow-ui-panel backdrop-blur-md">
+        <PageToolbar ariaLabel={t("GRAPH.TOOLS_ARIA")} className="relative z-30 border-b border-ui-divider bg-ui-raised/85 backdrop-blur-sm px-4 py-3.5">
           <GraphToolbar
             onCommand={(type) => controller.issueCommand(type)}
             onFocusNode={controller.focusNode}
@@ -89,14 +89,7 @@ export function KnowledgeGraphPage() {
           />
         </PageToolbar>
 
-        <div
-          className="relative h-[calc(100dvh-18rem)] min-h-[32rem] overflow-hidden bg-ui-canvas"
-          style={{
-            backgroundImage:
-              "linear-gradient(rgba(105,117,132,.08) 1px, transparent 1px), linear-gradient(90deg, rgba(105,117,132,.08) 1px, transparent 1px), radial-gradient(circle at 50% 35%, rgba(242,140,69,.08), transparent 45%)",
-            backgroundSize: "32px 32px, 32px 32px, auto",
-          }}
-        >
+        <div className="knowledge-graph-atmosphere relative h-[calc(100dvh-18rem)] min-h-[32rem] overflow-hidden bg-ui-canvas">
           <GraphCanvas
             command={controller.command}
             graph={controller.graph}
@@ -108,34 +101,40 @@ export function KnowledgeGraphPage() {
           />
 
           {workspaceId && controller.query.isPending ? (
-            <div aria-label={t("GRAPH.LOADING")} className="absolute inset-0 z-20 grid place-items-center bg-ui-canvas/85 backdrop-blur" role="status">
+            <div aria-label={t("GRAPH.LOADING")} className="absolute inset-0 z-20 grid place-items-center bg-ui-canvas/80 backdrop-blur-md transition-all duration-200" role="status">
               <div className="text-center text-ui-ink-secondary">
-                <LoaderCircle aria-hidden className="mx-auto h-9 w-9 animate-spin text-brand motion-reduce:animate-none" />
-                <p className="mt-3 font-semibold">{t("GRAPH.LOADING")}</p>
+                <LoaderCircle aria-hidden className="mx-auto h-9 w-9 animate-spin text-brand-text motion-reduce:animate-none" />
+                <p className="mt-3 font-code text-xs uppercase tracking-wider font-semibold text-brand-text animate-pulse">{t("GRAPH.LOADING")}</p>
               </div>
             </div>
           ) : null}
 
           {!workspaceId ? (
-            <div className="absolute inset-0 grid place-items-center p-6 text-center">
-              <div className="max-w-md">
-                <Database aria-hidden className="mx-auto h-10 w-10 text-ui-ink-disabled" />
-                <h2 className="mt-4 text-lg font-bold text-ui-ink">{t("GRAPH.SELECT_WORKSPACE")}</h2>
-                <p className="mt-2 text-ui-ink-secondary">{t("GRAPH.SELECT_WORKSPACE_DESCRIPTION")}</p>
+            <div className="absolute inset-0 grid place-items-center p-6 text-center bg-ui-canvas/10 backdrop-blur-sm">
+              <div className="max-w-md rounded-2xl border border-ui-divider bg-ui-panel/90 backdrop-blur px-8 py-10 shadow-ui-overlay auth-enter">
+                <div className="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-ui-canvas/80 border border-ui-divider shadow-sm">
+                  <Database aria-hidden className="h-6 w-6 text-ui-ink-disabled" />
+                </div>
+                <h2 className="mt-5 text-lg font-bold text-ui-ink">{t("GRAPH.SELECT_WORKSPACE")}</h2>
+                <p className="mt-2.5 text-sm text-ui-ink-secondary leading-relaxed">{t("GRAPH.SELECT_WORKSPACE_DESCRIPTION")}</p>
               </div>
             </div>
           ) : controller.query.isSuccess && controller.graph.nodes.length === 0 ? (
-            <div className="absolute inset-0 grid place-items-center p-6 text-center">
-              <div className="max-w-md">
-                <Database aria-hidden className="mx-auto h-10 w-10 text-ui-ink-disabled" />
-                <h2 className="mt-4 text-lg font-bold text-ui-ink">{t("GRAPH.EMPTY_TITLE")}</h2>
-                <p className="mt-2 text-ui-ink-secondary">{t("GRAPH.EMPTY_DESCRIPTION")}</p>
-                <Link className="button-primary mt-5 no-underline" to="/dashboard/knowledge">{t("GRAPH.OPEN_KNOWLEDGE")}</Link>
+            <div className="absolute inset-0 grid place-items-center p-6 text-center bg-ui-canvas/10 backdrop-blur-sm">
+              <div className="max-w-md rounded-2xl border border-ui-divider bg-ui-panel/90 backdrop-blur px-8 py-10 shadow-ui-overlay auth-enter">
+                <div className="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-ui-canvas/80 border border-ui-divider shadow-sm">
+                  <Database aria-hidden className="h-6 w-6 text-ui-ink-disabled" />
+                </div>
+                <h2 className="mt-5 text-lg font-bold text-ui-ink">{t("GRAPH.EMPTY_TITLE")}</h2>
+                <p className="mt-2.5 text-sm text-ui-ink-secondary leading-relaxed">{t("GRAPH.EMPTY_DESCRIPTION")}</p>
+                <Link className="flae-button-primary mt-6 inline-flex items-center gap-2 no-underline" to="/dashboard/knowledge">
+                  {t("GRAPH.OPEN_KNOWLEDGE")}
+                </Link>
               </div>
             </div>
           ) : null}
 
-          <div className="pointer-events-none absolute bottom-3 left-3 hidden rounded-ui-control border border-ui-divider bg-ui-panel/90 px-3 py-2 font-code text-[0.65rem] text-ui-ink-muted sm:block">
+          <div className="pointer-events-none absolute bottom-4 left-4 hidden rounded-lg border border-ui-divider bg-ui-panel/90 backdrop-blur px-3 py-2 font-code text-[0.62rem] text-ui-ink-muted shadow-sm sm:block">
             {t("GRAPH.GESTURE_HINT")}
           </div>
           <GraphSelectionPanel

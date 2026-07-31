@@ -1,4 +1,4 @@
-from typing import Any, Optional, TypeVar, Generic
+from typing import Generic, Optional, TypeVar
 from pydantic import BaseModel
 
 T = TypeVar("T")
@@ -29,11 +29,11 @@ class DataResponse(ResponseSchemaBase, Generic[T]):
     data: Optional[T] = None
 
     @classmethod
-    def success_response(cls, data: Any = None) -> "DataResponse[T]":
+    def success_response(cls, data: T | None = None) -> "DataResponse[T]":
         """Trả về response thành công với code=200 và message=Success."""
         return cls(code="200", message="Success", data=data)
 
     @classmethod
-    def custom_response(cls, code: str, message: str, data: Any = None) -> "DataResponse[T]":  # type: ignore[override]
+    def custom_response(cls, code: str, message: str, data: T | None = None) -> "DataResponse[T]":  # type: ignore[override]
         """Trả về response với code và message tùy chỉnh."""
         return cls(code=code, message=message, data=data)

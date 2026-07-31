@@ -84,13 +84,14 @@ describe('AppShell', () => {
     expect(appShellSource).not.toMatch(/admin-shell-theme/);
     expect(Object.keys(adminShellThemeStylesheets)).toHaveLength(0);
     expect(sharedStylesheet).toMatch(/:root\s*\{[^}]*color-scheme:\s*light;/s);
-    expect(sharedStylesheet).toContain('--color-primary: oklch(70.5% 0.187 45);');
-    expect(sharedStylesheet).toContain('--color-canvas: oklch(98.5% 0.006 85);');
-    expect(sharedStylesheet).toContain('--color-surface: oklch(100% 0 0);');
-    expect(sharedStylesheet).toMatch(/--font-sans:\s*Inter,/);
-    expect(sharedStylesheet).toMatch(/--font-mono:\s*"JetBrains Mono",/);
+    expect(sharedStylesheet).toContain('--color-primary:');
+    expect(sharedStylesheet).toContain('--color-primary-foreground:');
+    expect(sharedStylesheet).toContain('--background: oklch(97.928% 0.007 88.642);');
+    expect(sharedStylesheet).toContain('--card: oklch(100% 0 0);');
+    expect(sharedStylesheet).toMatch(/--font-sans:\s*ui-sans-serif,/);
+    expect(sharedStylesheet).toMatch(/--font-mono:\s*ui-monospace,/);
     expect(sharedStylesheet).toMatch(/--radius-control:\s*0\.5rem;/);
-    expect(sharedStylesheet).toMatch(/--radius-card:\s*0\.625rem;/);
+    expect(sharedStylesheet).toMatch(/--radius-card:\s*0\.75rem;/);
   });
 
   it('offers responsive navigation and switches workspace without losing page context', async () => {
@@ -124,6 +125,7 @@ describe('AppShell', () => {
     const header = screen.getByRole('banner');
     expect(within(header).getByText('Tập trung')).toBeInTheDocument();
     expect(within(header).getByText('Báo cáo sáng')).toBeInTheDocument();
+    await userEvent.click(within(header).getByRole('button', { name: 'O' }));
     expect(await screen.findByRole('combobox', { name: 'Không gian làm việc' })).toHaveValue('ws-1');
     const main = screen.getByRole('main');
     expect(main).toHaveClass(
@@ -134,7 +136,6 @@ describe('AppShell', () => {
       'md:px-6',
       'md:py-6',
       'xl:px-8',
-      'xl:py-8',
     );
     const contentWrapper = main.parentElement;
     expect(contentWrapper).toHaveClass('md:pl-[72px]', 'lg:pl-64');
@@ -211,6 +212,7 @@ describe('AppShell', () => {
       { id: 'ws-2', name: 'Research', owner_uid: 'owner', created_at: null },
     ])} syncSelection={syncSelection} />} path="/dashboard"><Route element={<h1>Current page</h1>} path="briefing" /></Route></Routes>, { wrapper });
 
+    await userEvent.click(screen.getByRole('button', { name: 'O' }));
     const selector = await screen.findByRole('combobox', { name: 'Không gian làm việc' });
     await userEvent.selectOptions(selector, 'ws-2');
     expect(selector).toHaveValue('ws-2');

@@ -18,7 +18,7 @@ export function ConnectionDialog({ checking = false, onRetry, open }: Connection
       title={t('CONNECTION_MODAL.TITLE')}
     >
       <button
-        className="button-primary min-w-44"
+        className="flae-button-primary min-w-44"
         disabled={checking}
         onClick={onRetry}
         type="button"

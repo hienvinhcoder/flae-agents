@@ -30,7 +30,7 @@ describe("plain link theme contract", () => {
     const link = `#${["9a", "34", "12"].join("")}`;
 
     expect(stylesheet).toMatch(/a\s*\{[^}]*color:\s*var\(--color-link\);/s);
-    expect(stylesheet).toContain(`--color-link: ${link};`);
+    expect(stylesheet).toContain("--color-link: oklch(46.98% 0.143 37.304);");
 
     const backgrounds = [
       ["canvas", "#faf8f3"],

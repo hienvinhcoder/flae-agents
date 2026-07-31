@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.logger import get_logger
+from app.core.exceptions import ResourceNotFoundError
 from app.db.rag_db import rag_db_manager
 from app.models.topic import Topic, TopicMembership, TopicAlias, TopicUpdateQueue
 from app.core.temporal import get_temporal_client
@@ -248,7 +249,7 @@ class TopicService:
             target_topic = target_result.scalar_one_or_none()
 
             if not target_topic:
-                raise ValueError("Target topic không tồn tại.")
+                raise ResourceNotFoundError("Target topic không tồn tại.")
 
             # 2. Lấy danh sách các topic nguồn thực sự tồn tại
             s_stmt = select(Topic).where(

@@ -25,16 +25,16 @@ export function PageHeader({ actions, description, eyebrow, metadata, title, tit
       <div className="min-w-0">
         {hasRenderableContent(eyebrow) ? <p className="text-metadata">{eyebrow}</p> : null}
         <h1
-          className="mt-2 text-[clamp(1.75rem,3vw,2.35rem)] font-semibold leading-tight tracking-[-0.025em] text-ui-ink"
+          className="mt-2 text-[clamp(1.75rem,3vw,2rem)] font-semibold leading-tight tracking-[-0.02em] text-foreground"
           id={resolvedTitleId}
         >
           {title}
         </h1>
         {hasRenderableContent(description) ? (
-          <div className="mt-2 max-w-3xl text-ui-ink-secondary">{description}</div>
+          <div className="mt-2 max-w-3xl text-secondary-foreground">{description}</div>
         ) : null}
         {hasRenderableContent(metadata) ? (
-          <div className="mt-3 text-sm text-ui-ink-muted">{metadata}</div>
+          <div className="mt-3 text-sm text-muted-foreground">{metadata}</div>
         ) : null}
       </div>
       {hasRenderableContent(actions) ? (

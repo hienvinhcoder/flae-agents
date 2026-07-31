@@ -93,7 +93,16 @@ describe("AdminHeader", () => {
       screen.getByRole("searchbox", { name: "Search company memory" }),
     ).toHaveAttribute("readonly");
     expect(screen.getByRole("button", { name: "MCP" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Add source" })).toBeDisabled();
+    const addSourceButton = screen.getByRole("button", { name: "Add source" });
+    expect(addSourceButton).toBeDisabled();
+    expect(addSourceButton).toHaveClass(
+      "header-add-source",
+      "bg-primary-control",
+      "text-primary-control-foreground",
+    );
+    expect(screen.getByTestId("mcp-status-indicator")).toHaveClass(
+      "bg-chart-2",
+    );
   });
 
   it("preserves workspace, language, user, and logout controls", async () => {
@@ -107,8 +116,14 @@ describe("AdminHeader", () => {
       }),
     );
 
-    expect(screen.getByRole("combobox", { name: "Workspace" })).toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: "Language" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "WO" }));
+
+    expect(
+      screen.getByRole("combobox", { name: "Workspace" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("combobox", { name: "Language" }),
+    ).toBeInTheDocument();
     expect(screen.getByLabelText("WO")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Log out" })).toBeInTheDocument();
   });
@@ -121,6 +136,8 @@ describe("AdminHeader", () => {
         user: { ...user, full_name: "Nguyen Vinh" },
       }),
     );
+
+    await userEvent.click(screen.getByRole("button", { name: "NV" }));
 
     expect(screen.getByText("Intelligence")).toBeInTheDocument();
     expect(screen.getByText("Knowledge base")).toBeInTheDocument();
@@ -148,6 +165,8 @@ describe("AdminHeader", () => {
     const onSelectWorkspace = vi.fn();
     await renderHeader(createProps({ onChangeLanguage, onSelectWorkspace }));
 
+    await userEvent.click(screen.getByRole("button", { name: "WO" }));
+
     await userEvent.selectOptions(
       screen.getByRole("combobox", { name: "Workspace" }),
       "workspace-2",
@@ -164,6 +183,8 @@ describe("AdminHeader", () => {
   it("announces workspace loading", async () => {
     await renderHeader(createProps({ workspacesPending: true }));
 
+    await userEvent.click(screen.getByRole("button", { name: "WO" }));
+
     expect(
       screen.getByRole("status", { name: "Loading workspaces" }),
     ).toBeInTheDocument();
@@ -177,6 +198,8 @@ describe("AdminHeader", () => {
       createProps({ currentWorkspaceId: null, workspaces: [] }),
     );
 
+    await userEvent.click(screen.getByRole("button", { name: "WO" }));
+
     const selector = screen.getByRole("combobox", { name: "Workspace" });
     expect(selector).toBeDisabled();
     expect(selector).toHaveDisplayValue("No workspace");
@@ -184,6 +207,8 @@ describe("AdminHeader", () => {
 
   it("disables workspace changes while synchronization is active", async () => {
     await renderHeader(createProps({ syncStatus: "syncing" }));
+
+    await userEvent.click(screen.getByRole("button", { name: "WO" }));
 
     expect(screen.getByRole("combobox", { name: "Workspace" })).toBeDisabled();
   });
@@ -195,6 +220,8 @@ describe("AdminHeader", () => {
         logoutController: { error: null, isLoading: false, logout },
       }),
     );
+
+    await userEvent.click(screen.getByRole("button", { name: "WO" }));
 
     await userEvent.click(screen.getByRole("button", { name: "Log out" }));
     expect(logout).toHaveBeenCalledOnce();
@@ -210,6 +237,8 @@ describe("AdminHeader", () => {
         },
       }),
     );
+
+    await userEvent.click(screen.getByRole("button", { name: "WO" }));
 
     const logoutButton = screen.getByRole("button", { name: "Log out" });
     expect(logoutButton).toBeDisabled();

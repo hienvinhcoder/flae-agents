@@ -1,4 +1,5 @@
 import { buildGraphIndex, stepGraphPhysics } from "./graph-simulation";
+import { resolveEdgeColor, resolveGraphPalette, resolveNodeColor } from "./graph-palette";
 import type {
   GraphCommand,
   GraphSelection,
@@ -47,14 +48,6 @@ function distanceToSegment(
   return Math.hypot(x - (x1 + position * dx), y - (y1 + position * dy));
 }
 
-function edgeColor(edge: RendererEdge) {
-  if (edge.tone === "danger") return "rgba(240, 123, 125, 0.58)";
-  if (edge.tone === "warning") return "rgba(239, 189, 98, 0.58)";
-  if (edge.tone === "success") return "rgba(100, 216, 146, 0.58)";
-  if (edge.tone === "ai") return "rgba(173, 145, 255, 0.58)";
-  return "rgba(197, 199, 203, 0.32)";
-}
-
 export function createGraphRenderer(
   canvas: HTMLCanvasElement,
   options: GraphRendererOptions,
@@ -81,9 +74,7 @@ export function createGraphRenderer(
   } | null = null;
   let activeIndex = -1;
   const pointers = new Map<number, { x: number; y: number }>();
-  const brandColor =
-    getComputedStyle(canvas).getPropertyValue("--color-primary").trim() ||
-    "#fb923c";
+  const palette = resolveGraphPalette(canvas);
 
   const canvasPoint = (event: PointerEvent | WheelEvent) => {
     const rect = canvas.getBoundingClientRect();
@@ -141,10 +132,10 @@ export function createGraphRenderer(
     context.moveTo(source.x, source.y);
     context.lineTo(target.x, target.y);
     context.strokeStyle = selected
-      ? brandColor
+      ? palette.primaryActive
       : related
-        ? "rgba(242, 140, 69, 0.68)"
-        : edgeColor(edge);
+        ? palette.primaryActive
+        : resolveEdgeColor(edge, palette);
     context.lineWidth = selected ? 3 : related ? 2 : 1;
     context.setLineDash(edge.dashed && !selected && !related ? [5, 5] : []);
     context.stroke();
@@ -156,9 +147,9 @@ export function createGraphRenderer(
     context.textAlign = "center";
     context.textBaseline = "bottom";
     const width = context.measureText(edge.displayLabel).width;
-    context.fillStyle = "rgba(13, 15, 18, 0.88)";
+    context.fillStyle = palette.surfaceRaised;
     context.fillRect(x - width / 2 - 4, y - 13, width + 8, 15);
-    context.fillStyle = selected ? brandColor : "rgba(197, 199, 203, 0.82)";
+    context.fillStyle = selected ? palette.link : palette.textSecondary;
     context.fillText(edge.displayLabel, x, y);
   };
   const drawNode = (node: RendererNode) => {
@@ -168,16 +159,21 @@ export function createGraphRenderer(
       index.neighborsById.get(state.selection.id)?.has(node.id);
     context.beginPath();
     context.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
-    context.fillStyle = node.color;
-    context.shadowColor = node.color;
+    const nodeColor = resolveNodeColor(node.color, palette);
+    context.fillStyle = nodeColor;
+    context.shadowColor = nodeColor;
     context.shadowBlur = selected ? 18 : neighbor ? 9 : 0;
     context.fill();
-    context.strokeStyle = selected ? "#f4f2ee" : neighbor ? "#c5c7cb" : "#303640";
+    context.strokeStyle = selected
+      ? palette.focus
+      : neighbor
+        ? palette.borderControl
+        : palette.borderStrong;
     context.lineWidth = selected ? 3 : neighbor ? 2 : 1;
     context.stroke();
     context.shadowBlur = 0;
     context.font = selected ? "bold 12px sans-serif" : "11px sans-serif";
-    context.fillStyle = selected ? "#f4f2ee" : "#c5c7cb";
+    context.fillStyle = selected ? palette.text : palette.textSecondary;
     context.textAlign = "center";
     context.textBaseline = "top";
     context.fillText(node.name, node.x, node.y + node.radius + 7);

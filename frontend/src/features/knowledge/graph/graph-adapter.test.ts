@@ -56,7 +56,7 @@ describe("graph adapter", () => {
 
     const graph = adaptGraph(source);
     expect(graph.nodes[0]).toMatchObject({
-      color: "#fb7185",
+      color: "var(--chart-1)",
       radius: 26,
     });
     expect(typeof graph.nodes[0]?.x).toBe("number");
@@ -79,19 +79,19 @@ describe("graph adapter", () => {
   });
 
   it("GRAPH-01 handles aliases and unknown node types with stable colors", () => {
-    expect(graphNodeColor("person")).toBe("#fb7185");
-    expect(graphNodeColor("cong ty company")).toBe("#60a5fa");
-    expect(graphNodeColor("city location")).toBe("#4ade80");
-    expect(graphNodeColor("event")).toBe("#fbbf24");
-    expect(graphNodeColor("product project")).toBe("#fb923c");
-    expect(graphNodeColor("concept tech category")).toBe("#c084fc");
-    expect(graphNodeColor("equipment system")).toBe("#4ade80");
-    expect(graphNodeColor("unclassified")).toBe("#ddb991");
+    expect(graphNodeColor("person")).toBe("var(--chart-1)");
+    expect(graphNodeColor("cong ty company")).toBe("var(--chart-3)");
+    expect(graphNodeColor("city location")).toBe("var(--chart-2)");
+    expect(graphNodeColor("event")).toBe("var(--chart-4)");
+    expect(graphNodeColor("product project")).toBe("var(--primary)");
+    expect(graphNodeColor("concept tech category")).toBe("var(--chart-5)");
+    expect(graphNodeColor("equipment system")).toBe("var(--chart-2)");
+    expect(graphNodeColor("unclassified")).toBe("var(--secondary)");
   });
 
   it("GRAPH-01 normalizes Vietnamese d-stroke location aliases", () => {
-    expect(graphNodeColor("\u0111i\u1ec3m")).toBe("#4ade80");
-    expect(graphNodeColor("\u0110\u1ecba \u0111i\u1ec3m")).toBe("#4ade80");
+    expect(graphNodeColor("\u0111i\u1ec3m")).toBe("var(--chart-2)");
+    expect(graphNodeColor("\u0110\u1ecba \u0111i\u1ec3m")).toBe("var(--chart-2)");
   });
 
   it("GRAPH-01 keeps renderer radius positive for unsafe direct input", () => {

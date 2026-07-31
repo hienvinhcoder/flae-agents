@@ -26,10 +26,10 @@ export function Toast({ duration = 4000, message, onDismiss, tone = 'info' }: To
   }, [duration, onDismiss]);
   const Icon = icons[tone];
   return (
-    <div className={`flex items-start gap-3 rounded-ui-panel border bg-ui-raised p-4 text-ui-ink shadow-ui-panel ${toneClasses[tone]}`} role={tone === 'error' ? 'alert' : 'status'}>
+    <div className={`flex items-start gap-3 rounded-ui-panel border bg-popover p-4 text-popover-foreground shadow-ui-panel ${toneClasses[tone]}`} role={tone === 'error' ? 'alert' : 'status'}>
       <Icon aria-hidden className="mt-0.5 h-5 w-5 shrink-0" />
-      <p className="flex-1 text-ui-ink">{message}</p>
-      {onDismiss ? <button aria-label="Dismiss notification" className="rounded-ui-control p-1 text-ui-ink-secondary hover:bg-ui-interactive" onClick={onDismiss} type="button"><X aria-hidden className="h-4 w-4" /></button> : null}
+      <p className="flex-1 text-foreground">{message}</p>
+      {onDismiss ? <button aria-label="Dismiss notification" className="rounded-ui-control p-1 text-muted-foreground hover:bg-accent" onClick={onDismiss} type="button"><X aria-hidden className="h-4 w-4" /></button> : null}
     </div>
   );
 }

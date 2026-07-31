@@ -26,7 +26,7 @@ export function GraphFilters({
           {t("GRAPH.ENTITY_TYPE")}
         </label>
         <select
-          className="min-h-11 min-w-11 max-w-52 rounded-ui-control border border-ui-line bg-ui-canvas/80 px-3 text-ui-ink transition-colors hover:border-ui-line-strong motion-reduce:transition-none"
+          className="min-h-11 min-w-11 min-w-[12rem] max-w-52 cursor-pointer rounded-ui-control border border-ui-line bg-ui-raised px-3 text-ui-ink shadow-sm transition-colors duration-200 hover:border-ui-line-strong focus:border-ui-focus focus:outline-none focus:ring-2 focus:ring-ui-focus/25 motion-reduce:transition-none"
           id="graph-node-type"
           onChange={(event) => onNodeTypeChange(event.target.value)}
           value={nodeType}
@@ -38,12 +38,22 @@ export function GraphFilters({
       <button
         aria-label={physicsLabel}
         aria-pressed={physicsEnabled}
-        className={`inline-flex min-h-11 min-w-11 items-center gap-2 rounded-ui-control border px-3 font-semibold transition-colors motion-reduce:transition-none ${physicsEnabled ? "border-brand bg-brand-soft text-brand" : "border-ui-line bg-ui-raised text-ui-ink-secondary hover:bg-ui-interactive"}`}
+        className={`inline-flex min-h-11 min-w-11 items-center gap-2 rounded-ui-control border px-4.5 font-semibold shadow-sm transition-colors duration-200 motion-reduce:transition-none ${
+          physicsEnabled
+            ? "border-brand-text bg-brand-soft/80 text-brand-text font-bold"
+            : "border-ui-line bg-ui-raised text-ui-ink-secondary hover:bg-ui-interactive hover:text-ui-ink"
+        }`}
         onClick={() => onPhysicsChange(!physicsEnabled)}
         type="button"
       >
-        <Icon aria-hidden className="h-4 w-4" />
-        {physicsLabel}
+        <Icon aria-hidden className={`h-4 w-4 ${physicsEnabled ? "animate-pulse" : ""}`} />
+        <span>{physicsLabel}</span>
+        {physicsEnabled && (
+          <span className="relative flex h-2 w-2 ml-1">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-chart-2 opacity-75"></span>
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-chart-2"></span>
+          </span>
+        )}
       </button>
     </div>
   );

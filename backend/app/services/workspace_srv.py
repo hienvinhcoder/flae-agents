@@ -1,12 +1,16 @@
 import uuid
 from datetime import datetime, timedelta, timezone
-from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 from sqlalchemy.exc import NoResultFound
 from cryptography.fernet import Fernet
 
 from app.core.config import settings
+from app.core.exceptions import (
+    AuthorizationError,
+    InvalidArgumentError,
+    ResourceNotFoundError,
+)
 from app.core.logger import get_logger
 from app.db.database import redis_client
 from app.db.rag_db import rag_db_manager
@@ -50,10 +54,7 @@ class WorkspaceService:
         try:
             workspace_uuid = uuid.UUID(workspace_id)
         except ValueError:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid workspace ID format"
-            )
+            raise InvalidArgumentError("Invalid workspace ID format")
 
         result = await db.execute(
             select(WorkspaceMember).where(
@@ -66,10 +67,7 @@ class WorkspaceService:
         )
         membership = result.scalar_one_or_none()
         if not membership:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You do not have access to this workspace"
-            )
+            raise AuthorizationError("You do not have access to this workspace")
 
         # 2. Thực hiện cập nhật
         user_result = await db.execute(select(User).where(User.firebase_uid == user_uid))
@@ -125,10 +123,7 @@ class WorkspaceService:
         result = await db.execute(select(User).where(User.firebase_uid == user_uid))
         user = result.scalar_one_or_none()
         if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
-            )
+            raise ResourceNotFoundError("User not found")
 
         # 1. Tạo mới Workspace
         new_ws = Workspace(
@@ -203,10 +198,7 @@ class WorkspaceService:
     async def invite_member(db: AsyncSession, workspace_id: uuid.UUID, request: WorkspaceInvitationRequest, invited_by_uid: str) -> WorkspaceInvitation:
         """Tạo lời mời tham gia workspace và kích hoạt Temporal workflow."""
         if request.role == WorkspaceRole.owner:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Cannot invite a member with the owner role"
-            )
+            raise InvalidArgumentError("Cannot invite a member with the owner role")
 
         # 1. Kiểm tra xem user đã là thành viên chưa
         user_result = await db.execute(select(User).where(User.email == request.email))
@@ -221,10 +213,7 @@ class WorkspaceService:
                 )
             )
             if member_result.scalar_one_or_none():
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="User is already a member of this workspace"
-                )
+                raise InvalidArgumentError("User is already a member of this workspace")
 
         # 2. Tạo token ngẫu nhiên và lưu invitation
         token = str(uuid.uuid4())
@@ -274,27 +263,22 @@ class WorkspaceService:
         )
         invitation = result.scalar_one_or_none()
         if not invitation:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Invitation not found or already accepted/expired"
+            raise ResourceNotFoundError(
+                "Invitation not found or already accepted/expired"
             )
 
         if invitation.expires_at < datetime.now(timezone.utc):
             invitation.status = InvitationStatus.expired
             await db.commit()
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invitation token has expired"
-            )
+            raise InvalidArgumentError("Invitation token has expired")
 
         # 2. Lấy thông tin user hiện tại
         user_result = await db.execute(select(User).where(User.firebase_uid == user_uid))
         user = user_result.scalar_one()
 
         if user.email.lower() != invitation.email.lower():
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="This invitation was sent to a different email address"
+            raise AuthorizationError(
+                "This invitation was sent to a different email address"
             )
 
         # 3. Tạo WorkspaceMember
@@ -332,6 +316,13 @@ class WorkspaceService:
         logger.info(f"User {user_uid} accepted invitation to workspace {invitation.workspace_id}")
         return user
 
+    @staticmethod
+    async def get_workspace(
+        db: AsyncSession, workspace_id: uuid.UUID
+    ) -> Workspace | None:
+        result = await db.execute(select(Workspace).where(Workspace.id == workspace_id))
+        return result.scalar_one_or_none()
+
 
 
     @staticmethod
@@ -340,7 +331,7 @@ class WorkspaceService:
         result = await db.execute(select(Workspace).where(Workspace.id == workspace_id))
         workspace = result.scalar_one_or_none()
         if not workspace:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workspace not found")
+            raise ResourceNotFoundError("Workspace not found")
         workspace.name = name
         await db.commit()
         await db.refresh(workspace)

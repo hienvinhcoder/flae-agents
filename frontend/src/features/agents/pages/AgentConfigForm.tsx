@@ -272,7 +272,7 @@ export function AgentConfigForm({ agentId, workspaceId }: AgentConfigFormProps) 
               </div>
               <input
                 aria-describedby="agent-temperature-hint"
-                className="min-h-11 w-full accent-[var(--color-primary)]"
+                className="min-h-11 w-full accent-primary"
                 id="agent-temperature"
                 max="2"
                 min="0"

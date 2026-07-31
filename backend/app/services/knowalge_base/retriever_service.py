@@ -11,6 +11,7 @@ from sqlalchemy import text
 
 from app.core.config import settings
 from app.core.logger import get_logger
+from app.core.exceptions import ExternalServiceError
 from app.db.rag_db import rag_db_manager
 from app.services.knowalge_base.prompts import QUERY_ENTITY_EXTRACTION
 from app.services.knowalge_base.retriever_helpers import (
@@ -45,7 +46,7 @@ class RetrieverService:
             contents=text_val,
         )
         if not response.embeddings:
-            raise ValueError("Không nhận được embeddings từ Gemini API.")
+            raise ExternalServiceError("Không thể tạo embedding cho truy vấn.")
         return np.array(response.embeddings[0].values).astype("float32")
 
     @staticmethod

@@ -10,8 +10,8 @@ describe('Input', () => {
     expect(screen.getByRole('textbox', { name: 'Email' })).toHaveClass(
       'min-h-10',
       'rounded-ui-control',
-      'border-ui-line',
-      'bg-ui-raised',
+      'border-input',
+      'bg-card',
       'shadow-none',
       'motion-reduce:transition-none',
     );

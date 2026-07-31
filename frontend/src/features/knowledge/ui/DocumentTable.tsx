@@ -48,7 +48,7 @@ function DocumentActions({
       {document.status === "failed" ? (
         <Button
           aria-label={t("KNOWLEDGE.RETRY_DOCUMENT", { title: document.title })}
-          className="min-w-11 px-3 hover:bg-brand-soft hover:text-brand-text transition-all duration-200 active:scale-95"
+          className="min-w-11 px-3 transition-colors duration-200 hover:bg-brand-soft hover:text-brand-text"
           isLoading={isRetrying}
           loadingText={t("KNOWLEDGE.STATUS_PROCESSING")}
           onClick={() => onRetry(document)}
@@ -59,7 +59,7 @@ function DocumentActions({
       ) : null}
       <Button
         aria-label={t("KNOWLEDGE.OPEN_DOCUMENT", { title: document.title })}
-        className="min-w-11 px-3 hover:bg-brand-soft hover:text-brand-text transition-all duration-200 active:scale-95"
+        className="min-w-11 px-3 transition-colors duration-200 hover:bg-brand-soft hover:text-brand-text"
         onClick={() => onView(document)}
         variant="ghost"
       >
@@ -67,7 +67,7 @@ function DocumentActions({
       </Button>
       <Button
         aria-label={t("KNOWLEDGE.DELETE_DOCUMENT", { title: document.title })}
-        className="min-w-11 px-3 hover:bg-state-danger-soft hover:text-state-danger transition-all duration-200 active:scale-95"
+        className="min-w-11 px-3 transition-colors duration-200 hover:bg-state-danger-soft hover:text-state-danger"
         onClick={() => onDelete(document)}
         variant="ghost"
       >

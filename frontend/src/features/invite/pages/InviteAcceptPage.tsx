@@ -82,7 +82,7 @@ export function InviteAcceptPage() {
           </>
         ) : (
           <>
-            <MailOpen aria-hidden className="mx-auto h-14 w-14 text-brand" />
+            <MailOpen aria-hidden className="mx-auto h-14 w-14 text-brand-text" />
             <h1
               className="mt-5 text-2xl font-bold text-ui-ink"
               id="invite-title"

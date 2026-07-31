@@ -7,9 +7,9 @@ export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
 }
 
 const variantClasses: Record<BadgeVariant, string> = {
-  destructive: 'bg-state-danger-soft text-state-danger',
-  neutral: 'bg-ui-interactive text-ui-ink-secondary',
-  primary: 'bg-brand-soft text-brand-text',
+  destructive: 'bg-state-danger-soft text-destructive',
+  neutral: 'bg-secondary text-muted-foreground',
+  primary: 'bg-primary-soft text-brand-text',
   success: 'bg-state-success-soft text-state-success',
   warning: 'bg-state-warning-soft text-state-warning',
 };

@@ -105,6 +105,22 @@ async def main() -> None:
         logger.error(f"Error running Alembic: {e}")
         raise e
 
+    logger.info("Running Alembic migrations for RAG database...")
+    rag_process = await asyncio.create_subprocess_exec(
+        "alembic",
+        "-c",
+        "alembic-rag.ini",
+        "upgrade",
+        "head",
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    rag_stdout, rag_stderr = await rag_process.communicate()
+    if rag_process.returncode != 0:
+        logger.error("RAG DB Alembic migration failed: %s", rag_stderr.decode().strip())
+        raise RuntimeError("RAG DB Alembic migration failed")
+    logger.info("RAG DB Alembic migrations complete:\n%s", rag_stdout.decode().strip())
+
     logger.info("Service finished initializing")
 
 

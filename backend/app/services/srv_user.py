@@ -1,9 +1,9 @@
-from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.exc import NoResultFound
 from app.models.user import User
 from app.schemas.sche_user import UserCreateRequest
+from app.core.exceptions import AuthenticationError
 
 
 class UserService:
@@ -16,9 +16,7 @@ class UserService:
         email = token_payload.get("email")
 
         if not firebase_uid or not email:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Token không chứa đủ thông tin uid hoặc email"
-            )
+            raise AuthenticationError("Token không chứa đủ thông tin uid hoặc email")
 
         # Kiểm tra user đã tồn tại qua firebase_uid
         try:

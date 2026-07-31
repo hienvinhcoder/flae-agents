@@ -8,6 +8,7 @@ test('selects a workspace through the production adapter with scoped headers', a
   const selection = page.waitForRequest((request) =>
     request.url().endsWith('/api/v1/users/current-workspace') && request.method() === 'PUT');
   await page.goto('/dashboard/briefing');
+  await page.getByRole('button', { name: 'ET' }).click();
   const workspaceSelector = page.getByRole('combobox', { name: 'Workspace', exact: true });
   await workspaceSelector.selectOption(ids.secondWorkspace);
 
@@ -62,6 +63,7 @@ test('keeps member management responsive, accessible, and live-localized', async
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await expectNoA11yViolations(page);
 
+  await page.getByRole('button', { name: 'ET' }).click();
   await page.getByRole('combobox', { name: 'Language' }).selectOption('vi');
   await expect(page.getByRole('heading', { level: 1, name: 'Cấu hình không gian làm việc' })).toBeVisible();
   await expect(member).toContainText('Hoạt động');

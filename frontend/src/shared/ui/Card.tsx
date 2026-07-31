@@ -18,9 +18,9 @@ const paddingClasses: Record<CardPadding, string> = {
 };
 
 const variantClasses: Record<CardVariant, string> = {
-  default: 'border-ui-divider bg-ui-raised text-ui-ink',
+  default: 'border-border bg-card text-card-foreground',
   inverse: 'border-sidebar-border bg-sidebar text-sidebar-foreground',
-  muted: 'border-ui-divider bg-ui-interactive text-ui-ink',
+  muted: 'border-border bg-muted text-foreground',
 };
 
 export function Card({

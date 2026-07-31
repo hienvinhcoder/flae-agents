@@ -60,8 +60,8 @@ describe('Dialog', () => {
     const dialog = screen.getByRole('dialog', { name: 'Checking connection' });
     expect(dialog).toHaveClass(
       'rounded-ui-dialog',
-      'border-ui-divider',
-      'bg-ui-raised',
+      'border-border',
+      'bg-popover',
     );
     expect(dialog).toHaveFocus();
     await userEvent.tab();

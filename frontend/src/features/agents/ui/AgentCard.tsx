@@ -22,7 +22,7 @@ export function AgentCard({ agent, canManage, deleteDisabled = false, onDelete }
         <div className="flex items-start justify-between gap-4">
           <div
             aria-hidden
-            className={`flex h-12 w-12 items-center justify-center rounded-2xl text-white shadow-sm ${getAgentAvatarColor(agent.avatar_color)}`}
+            className={`flex h-12 w-12 items-center justify-center rounded-2xl ${getAgentAvatarColor(agent.avatar_color)}`}
           >
             <AgentAvatarIcon className="h-6 w-6" icon={agent.avatar_icon} />
           </div>

@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import Optional, List, Any
+from typing import List, Optional
 from pydantic import BaseModel, Field
 
 
@@ -78,7 +78,7 @@ class ChatMessageResponse(BaseModel):
     session_id: uuid.UUID
     role: str  # user hoặc assistant
     content: str
-    citations: Optional[List[Any]] = None
+    citations: Optional[List[CitationDetail]] = None
     created_by: str
     created_at: datetime
 

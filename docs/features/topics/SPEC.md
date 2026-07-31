@@ -1,7 +1,7 @@
 # Spec: Chức năng Topics (Chủ đề Tri thức)
 
 > [!IMPORTANT]
-> **Historical implementation notes:** Architecture (including Angular and backend architecture), file paths, commands, and testing guidance in this document are historical and are superseded by [`docs/superpowers/specs/2026-07-22-angular-to-react-migration-design.md`](../../superpowers/specs/2026-07-22-angular-to-react-migration-design.md). The product requirements described here remain valid.
+> **Historical implementation notes:** Architecture, database layout, file paths, commands, testing guidance, and the per-chunk Topic Ingestion & Assignment Pipeline in this document are historical. The current authority is [`docs/specs/agent_memory_contract.md`](../../specs/agent_memory_contract.md): topics are versioned derived views built asynchronously from revision-scoped evidence, separately from entity/assertion extraction. The user-facing topic navigation requirements below remain useful unless they conflict with that spec.
 
 ## Objective
 **Topics** là lớp tổ chức tri thức cấp cao (semantic layer) nằm trên các chunks, documents, entities, relationships và code symbols. Thay vì bắt người dùng phải tổ chức cấu trúc thư mục thủ công, hệ thống tự động gom các thành phần tri thức liên quan vào các **Semantic Clusters** (ví dụ: Billing System, Mobile App, Authentication, MCP Server) để giúp cả AI Agent và người dùng hiểu rõ ngữ cảnh của một khu vực kiến thức.
@@ -189,39 +189,47 @@ Hệ thống sử dụng cơ chế bảo mật cô lập đa khách thuê (Multi
 
 ---
 
-## Topic Ingestion & Assignment Pipeline
-Quy trình xử lý Topic khi hệ thống thực hiện ingest/update Chunk được thực hiện thông qua các bước sau để tối ưu hóa chi phí token và đảm bảo tính chính xác:
+## Topic Discovery Pipeline
 
-1. **Embedding Processing:** Hệ thống sinh mới hoặc tái sử dụng embedding hiện có của chunk.
-2. **Pre-filtering:** Thực hiện lọc trước (pre-filter) top 5-10 candidate topics bằng cách kết hợp vector similarity, alias match (tra cứu trong bảng `topic_aliases`), source metadata, và mức độ trùng lặp thực thể (entity overlap).
-3. **LLM Extraction Integration:** Trong cùng một lần gọi LLM để trích xuất Entities/Relationships từ chunk, yêu cầu LLM trả thêm thông tin gợi ý về chủ đề gồm `topic_assignments` (gán vào các topic có sẵn từ bước pre-filter) và `topic_candidates` (đề xuất các topic mới nếu có).
-4. **Backend Resolve:** Backend giải quyết (resolve) topic assignment bằng các quy tắc chấm điểm (scoring rules), tuyệt đối không tin cậy hoàn toàn vào đầu ra của LLM. Điểm số được tính toán dựa trên:
-   - Match score từ LLM (confidence)
-   - Vector similarity giữa chunk embedding và topic embedding
-   - Trùng lặp entities/concepts
-   - Alias matching
-5. **Membership Creation:** Nếu score sau khi tính toán >= `AUTO_ASSIGN_THRESHOLD`, tự động tạo bản ghi liên kết trong bảng `topic_memberships`.
-6. **Candidate Recommendation:** Nếu không khớp với bất kỳ topic hiện hữu nào nhưng có đủ bằng chứng (evidence) từ nhiều chunks hoặc sources khác nhau (ví dụ: >= 3 chunks hoặc >= 2 sources khác nhau có độ tương đồng cao), hệ thống tự động tạo topic candidate mới với trạng thái `status = 'needs_review'`.
-7. **Queue Marking:** Đẩy các topics bị ảnh hưởng (affected topics) vào hàng đợi `topic_update_queue` để xử lý tiếp.
-8. **Async Summary Update:** Các trường `summary` và `current_state` của topic chỉ được cập nhật bất đồng bộ (async) thông qua hàng đợi `topic_update_queue` với cơ chế debounce thích hợp để tránh gọi LLM quá tải.
+Topic discovery chạy bất đồng bộ sau khi revision-scoped entity/assertion evidence và C-G-M graph snapshot đã publish. Nó không còn là side effect của entity extraction per chunk.
 
-**Định dạng đầu ra mong muốn từ LLM call:**
+1. **Evidence Window:** Gom current authorized chunks, entities, assertions và source signals theo một revision-set snapshot.
+2. **Candidate Generation:** Tạo candidates từ embedding similarity, entity/assertion co-occurrence, source structure và temporal continuity.
+3. **Existing Topic Resolution:** So candidates với topics hiện có bằng aliases, centroid similarity, graph overlap và membership continuity.
+4. **Lifecycle Rules:** Candidate mới phải tích lũy đủ evidence qua versioned threshold trước khi chuyển từ `candidate/needs_review` sang `active`; một chunk không được tạo active topic ngay lập tức.
+5. **Many-to-Many Memberships:** Gán source/document/chunk/entity/assertion vào nhiều topics khi có evidence, kèm confidence, derivation version và supporting evidence IDs.
+6. **Stability And Lineage:** Dùng hysteresis để hạn chế churn và lưu lineage cho rename, merge, split, stale hoặc archive.
+7. **Async Summary Update:** Queue/debounce summary generation từ current authorized evidence. Summary là navigation metadata, không phải answer evidence.
+8. **Atomic Snapshot Publish:** Chỉ publish taxonomy/memberships hoàn chỉnh nếu revision-set checksum vẫn current.
+
+### Compatibility boundary
+
+Topic discovery versioned được ghi vào các bảng staging riêng và không thay đổi
+contract REST/UI hiện tại. Các endpoint topic legacy tiếp tục đọc projection hiện
+hành cho đến khi Task 20 atomically publish discovery snapshot và cung cấp adapter
+tương thích. Trạng thái `candidate` của domain model vì vậy chưa được expose trực
+tiếp thành một breaking REST status; summary vẫn chỉ là navigation metadata và
+không đủ điều kiện làm factual citation.
+
+**Định dạng candidate nội bộ mong muốn từ discovery service:**
 ```json
 {
-  "entities": [],
-  "relations": [],
-  "topic_assignments": [
+  "snapshot_id": "snapshot-123",
+  "assignments": [
     {
       "topic_id": "topic_billing",
       "confidence": 0.88,
-      "reason": "Chunk discusses Stripe webhook retry."
+      "member_type": "assertion",
+      "member_id": "assertion-456",
+      "supporting_evidence_ids": ["assertion-456"]
     }
   ],
-  "topic_candidates": [
+  "candidates": [
     {
       "name": "Usage-Based Billing",
       "confidence": 0.72,
-      "reason": "Repeated mention of usage-based pricing."
+      "status": "needs_review",
+      "supporting_source_count": 2
     }
   ]
 }

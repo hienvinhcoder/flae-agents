@@ -18,17 +18,17 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
 
   return (
     <div className="grid gap-2">
-      <label className="font-semibold text-ui-ink" htmlFor={id}>{label}</label>
+      <label className="font-semibold text-foreground" htmlFor={id}>{label}</label>
       <input
         {...props}
         aria-describedby={describedBy}
         aria-invalid={Boolean(error)}
-        className={`min-h-10 w-full rounded-ui-control border border-ui-line bg-ui-raised px-3 py-2 text-ui-ink shadow-none transition-colors duration-200 placeholder:text-ui-ink-muted hover:border-ui-line-strong focus:border-brand-text focus:outline-none motion-reduce:transition-none ${className}`}
+        className={`min-h-10 w-full rounded-ui-control border border-input bg-card px-3 py-2 text-foreground shadow-none transition-colors duration-200 placeholder:text-muted-foreground hover:border-ui-line-strong focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25 motion-reduce:transition-none ${className}`}
         id={id}
         ref={ref}
       />
-      {hint ? <div className="text-sm text-ui-ink-muted" id={hintId}>{hint}</div> : null}
-      {error ? <div className="text-sm text-state-danger" id={errorId}>{error}</div> : null}
+      {hint ? <div className="text-sm text-muted-foreground" id={hintId}>{hint}</div> : null}
+      {error ? <div className="text-sm text-destructive" id={errorId}>{error}</div> : null}
     </div>
   );
 });

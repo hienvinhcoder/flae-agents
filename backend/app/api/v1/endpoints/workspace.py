@@ -1,6 +1,5 @@
 import uuid
 from fastapi import APIRouter, Depends, status
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.database import get_db
 from app.core.security import get_current_user, require_roles
@@ -109,19 +108,16 @@ async def accept_invitation(
     Chấp nhận lời mời tham gia workspace.
     """
     user = await WorkspaceService.accept_invitation(db, request.token, current_user.firebase_uid)
-    # Tìm workspace tương ứng để trả về thông tin workspace vừa join
-    from app.models.workspace import Workspace
-    ws_db_result = await db.execute(
-        select(Workspace).where(Workspace.id == uuid.UUID(user.current_workspace_id))
+    workspace = await WorkspaceService.get_workspace(
+        db, uuid.UUID(user.current_workspace_id)
     )
-    ws_row = ws_db_result.scalar_one_or_none()
     
     return DataResponse[WorkspaceItemResponse].success_response(
         data=WorkspaceItemResponse(
-            id=str(ws_row.id) if ws_row else "",
-            name=ws_row.name if ws_row else "",
-            owner_uid=ws_row.owner_uid if ws_row else "",
-            created_at=ws_row.created_at if ws_row else None
+            id=str(workspace.id) if workspace else "",
+            name=workspace.name if workspace else "",
+            owner_uid=workspace.owner_uid if workspace else "",
+            created_at=workspace.created_at if workspace else None
         )
     )
 
@@ -220,5 +216,4 @@ async def get_pending_invitations(
         for inv in invitations
     ]
     return DataResponse[list[WorkspaceInvitationResponse]].success_response(data=data)
-
 

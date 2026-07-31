@@ -10,6 +10,7 @@ from typing import Dict, List, Tuple, Any
 
 from app.core.config import settings
 from app.core.logger import get_logger
+from app.core.exceptions import ExternalServiceError
 from app.services.knowalge_base.parser_service import ParserService
 from app.services.knowalge_base.utils import update_graph_degrees
 from app.services.knowalge_base.ingestion_helpers import (
@@ -215,6 +216,7 @@ class IngestionService:
     def generate_embeddings(
         texts: List[str],
         item_type: str = "chunks",
+        max_retries: int = 3,
     ) -> Tuple[List[list | None], int]:
         """Tạo vector embeddings qua Google Gemini API."""
         from google import genai
@@ -232,7 +234,6 @@ class IngestionService:
         client = genai.Client(api_key=api_key)
         total_tokens = 0
         max_batch = 25
-        max_retries = 3
         retry_delay = 2
 
         cleaned_texts: list[str] = []
@@ -256,7 +257,7 @@ class IngestionService:
                     response = client.models.embed_content(model=model_name, contents=batch, config=config)
 
                     if not response.embeddings:
-                        raise ValueError("Gemini API response did not return any embeddings.")
+                        raise ExternalServiceError("Không thể tạo embedding cho tài liệu.")
 
                     batch_embs = [emb.values for emb in response.embeddings]
                     all_embeddings.extend(batch_embs)
@@ -277,7 +278,9 @@ class IngestionService:
                         time.sleep(retry_delay)
                     else:
                         logger.error(f"Embedding batch failed after retries: {e}")
-                        raise RuntimeError(f"Failed to generate embeddings after {max_retries} retries: {e}")
+                        raise ExternalServiceError(
+                            "Không thể tạo embedding sau số lần thử cho phép."
+                        ) from e
 
         final: list[list | None] = [None] * len(texts)
         for idx, emb in enumerate(all_embeddings):

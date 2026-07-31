@@ -148,6 +148,15 @@ def run_alembic_migrations():
     except Exception as e:
         print(f"[TEST SETUP] Error applying Alembic migrations: {e}")
 
+    rag_ini_path = os.path.join(base_dir, "alembic-rag.ini")
+    rag_alembic_cfg = Config(rag_ini_path)
+    rag_alembic_cfg.set_main_option("sqlalchemy.url", settings.RAG_DATABASE_URL)
+    try:
+        command.upgrade(rag_alembic_cfg, "head")
+        print("[TEST SETUP] RAG Alembic migrations applied successfully.")
+    except Exception as e:
+        print(f"[TEST SETUP] Error applying RAG Alembic migrations: {e}")
+
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_environment():

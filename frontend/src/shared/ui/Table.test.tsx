@@ -44,12 +44,12 @@ describe('Table', () => {
     );
 
     expect(screen.getByRole('row', { name: 'Ada' })).toHaveClass(
-      'hover:bg-ui-interactive',
+      'hover:bg-muted',
       'motion-reduce:transition-none',
     );
     expect(screen.getAllByRole('rowgroup')[0]).toHaveClass(
-      'border-ui-divider',
-      'bg-ui-interactive/70',
+      'border-border',
+      'bg-muted/70',
     );
   });
 });

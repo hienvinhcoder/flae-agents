@@ -27,7 +27,7 @@ export function ChatMessage({ agentColor, agentIcon, message }: ChatMessageProps
       {!isUser ? (
         <div
           aria-hidden
-          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white ${getAgentAvatarColor(agentColor)}`}
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${getAgentAvatarColor(agentColor)}`}
         >
           <AgentAvatarIcon className="h-5 w-5" icon={agentIcon} />
         </div>

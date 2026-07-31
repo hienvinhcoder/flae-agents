@@ -46,10 +46,10 @@ export function AdminHeader({
   const { t } = useTranslation();
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center gap-2 border-b border-ui-divider bg-ui-canvas/90 px-3 backdrop-blur-md sm:px-4 md:px-6 xl:px-8">
+    <header className="sticky top-0 z-20 flex h-16 items-center gap-4 border-b border-border bg-background/80 px-3 backdrop-blur-md sm:px-4 md:px-6 lg:px-8">
       <button
         aria-label={t('SHELL.OPEN_NAV')}
-        className="grid min-h-10 min-w-10 place-items-center rounded-ui-control border border-ui-divider bg-ui-raised md:hidden"
+        className="grid min-h-10 min-w-10 place-items-center rounded-ui-control border border-border bg-card md:hidden"
         onClick={onOpenNavigation}
         type="button"
       >
@@ -79,13 +79,13 @@ export function AdminHeader({
         />
         <input
           aria-describedby="admin-header-demo"
-          className="h-10 w-full rounded-ui-control border border-transparent bg-ui-interactive pl-10 pr-14 text-sm placeholder:text-ui-ink-muted focus:border-brand-text focus:outline-none"
+          className="h-10 w-full rounded-ui-control border border-transparent bg-secondary pl-10 pr-24 text-sm placeholder:text-muted-foreground focus-visible:border-primary focus-visible:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25"
           id="admin-header-search"
           placeholder={t('SHELL.SEARCH_PLACEHOLDER')}
           readOnly
           role="searchbox"
         />
-        <kbd className="absolute right-3 top-1/2 hidden -translate-y-1/2 rounded border border-ui-divider bg-ui-canvas px-1.5 py-0.5 text-xs text-ui-ink-muted sm:block">
+        <kbd className="absolute right-3 top-1/2 hidden -translate-y-1/2 rounded border border-border bg-background px-1.5 py-0.5 text-xs text-muted-foreground sm:block">
           ⌘ K
         </kbd>
         <span className="sr-only" id="admin-header-demo">
@@ -93,10 +93,10 @@ export function AdminHeader({
         </span>
       </div>
       <div className="ml-auto flex min-w-0 items-center gap-2">
-        <div className="hidden lg:block">
+        <div className="hidden md:block">
           <Button
             aria-label="MCP"
-            className="disabled:opacity-100"
+            className="font-normal text-ui-ink-muted disabled:opacity-100"
             disabled
             size="sm"
             title={t('SHELL.DEMO_ONLY')}
@@ -104,14 +104,18 @@ export function AdminHeader({
           >
             <Command aria-hidden className="h-4 w-4" />
             MCP
+            <span
+              aria-hidden
+              className="h-1.5 w-1.5 rounded-full bg-chart-2"
+              data-testid="mcp-status-indicator"
+            />
           </Button>
         </div>
-        <div className="hidden xl:block">
+        <div className="hidden lg:block">
           <Button
             aria-label={t('SHELL.ADD_SOURCE')}
-            className="disabled:opacity-100"
+            className="header-add-source"
             disabled
-            size="sm"
             title={t('SHELL.DEMO_ONLY')}
           >
             <Plug aria-hidden className="h-4 w-4" />

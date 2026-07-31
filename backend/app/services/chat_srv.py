@@ -122,4 +122,4 @@ class ChatService:
 
             except Exception as e:
                 logger.error(f"Lỗi khi chạy LangGraph stream: {e}", exc_info=True)
-                yield f"data: {json.dumps({'type': 'error', 'detail': str(e)})}\n\n"
+                yield f"data: {json.dumps({'type': 'error', 'detail': 'Không thể xử lý hội thoại.'})}\n\n"

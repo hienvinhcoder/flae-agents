@@ -169,7 +169,7 @@ async def test_invite_member_rejects_owner_role():
     from app.services.workspace_srv import WorkspaceService
     from app.schemas.sche_workspace import WorkspaceInvitationRequest
     from app.models.workspace import WorkspaceRole
-    from fastapi import HTTPException
+    from app.core.exceptions import ApplicationError
     from sqlalchemy.ext.asyncio import AsyncSession
 
     mock_db = AsyncMock(spec=AsyncSession)
@@ -177,7 +177,7 @@ async def test_invite_member_rejects_owner_role():
     request = WorkspaceInvitationRequest(email="test@example.com", role=WorkspaceRole.owner)
 
 
-    with pytest.raises(HTTPException) as exc_info:
+    with pytest.raises(ApplicationError) as exc_info:
         await WorkspaceService.invite_member(
             db=mock_db,
             workspace_id=workspace_id,
@@ -186,7 +186,6 @@ async def test_invite_member_rejects_owner_role():
         )
 
     assert exc_info.value.status_code == 400
-    assert "Cannot invite a member with the owner role" in exc_info.value.detail
-
+    assert "Cannot invite a member with the owner role" in exc_info.value.message
 
 

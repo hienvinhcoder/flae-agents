@@ -1,4 +1,5 @@
 import firebase_admin
+from threading import Lock
 from firebase_admin import auth, credentials
 from fastapi import Depends, HTTPException, status, Header
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -8,16 +9,30 @@ from app.core.logger import get_logger
 logger = get_logger(__name__)
 
 security = HTTPBearer()
+_firebase_init_lock = Lock()
 
-try:
-    if settings.GOOGLE_APPLICATION_CREDENTIALS:
-        cred = credentials.Certificate(settings.GOOGLE_APPLICATION_CREDENTIALS)
-        firebase_admin.initialize_app(cred)
-    else:
-        firebase_admin.initialize_app()
-except ValueError:
-    # Firebase app already initialized
-    pass
+
+def ensure_firebase_initialized() -> None:
+    try:
+        firebase_admin.get_app()
+        return
+    except ValueError:
+        pass
+
+    with _firebase_init_lock:
+        try:
+            firebase_admin.get_app()
+            return
+        except ValueError:
+            if settings.ENVIRONMENT == "testing":
+                firebase_admin.initialize_app(options={"projectId": "flae-test"})
+            elif settings.GOOGLE_APPLICATION_CREDENTIALS:
+                credential = credentials.Certificate(
+                    settings.GOOGLE_APPLICATION_CREDENTIALS
+                )
+                firebase_admin.initialize_app(credential)
+            else:
+                firebase_admin.initialize_app()
 
 
 async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
@@ -28,6 +43,7 @@ async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(secur
     """
     token = credentials.credentials
     try:
+        ensure_firebase_initialized()
         decoded_token = auth.verify_id_token(token, clock_skew_seconds=settings.FIREBASE_CLOCK_SKEW_SECONDS)
         return decoded_token
     except Exception as e:
@@ -249,4 +265,3 @@ def require_roles(allowed_roles: list[WorkspaceRole]):
         )
         
     return role_dependency
-

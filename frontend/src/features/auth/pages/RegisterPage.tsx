@@ -119,7 +119,7 @@ export function RegisterPage() {
 
           {error ? <p className="rounded-ui-control bg-state-danger-soft p-3 text-state-danger" role="alert">{error}</p> : null}
 
-          <button className="button-primary w-full" disabled={isLoading} type="submit">
+          <button className="flae-button-primary w-full" disabled={isLoading} type="submit">
             {isLoading ? 'Creating account…' : 'Create account'}
           </button>
         </form>

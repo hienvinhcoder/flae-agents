@@ -4,7 +4,7 @@ Xử lý logic: upload, create, list, delete, retry documents.
 Tất cả thao tác DB đều nằm trong service layer.
 """
 import uuid
-import hashlib
+from hashlib import sha256
 from typing import Optional, Any
 
 from fastapi import UploadFile
@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.logger import get_logger
-from app.core.temporal import get_temporal_client
+from app.core.exceptions import InvalidArgumentError
 from app.models.knowledge_base import (
     KnowledgeDocument,
     DocumentStatus,
@@ -28,11 +28,11 @@ from app.schemas.sche_knowledge_base import (
 )
 from app.services.gcs_storage_srv import GCSStorageService
 from app.services.knowalge_base.cleanup import cleanup_rag_data as _cleanup_rag_data
+from app.services.knowalge_base.ingestion_workflow_starter import (
+    start_ingestion_workflow as _start_ingestion_workflow,
+)
 
 logger = get_logger(__name__)
-
-INGESTION_TASK_QUEUE = "flae-default-queue"
-
 
 # ── Private helper functions (Module-level) ───────────────────────
 
@@ -50,44 +50,10 @@ def _validate_upload(file: UploadFile) -> None:
     """Validate file upload: mime type và size."""
     if file.content_type not in settings.ALLOWED_MIME_TYPES:
         ext_hint = ", ".join(settings.ALLOWED_MIME_TYPES)
-        raise ValueError(
+        raise InvalidArgumentError(
             f"File type '{file.content_type}' không được hỗ trợ. "
             f"Cho phép: {ext_hint}"
         )
-
-
-async def _start_ingestion_workflow(doc: KnowledgeDocument) -> str:
-    """Trigger Temporal IngestionWorkflow cho document."""
-    from app.temporal.workflows.ingestion import DocumentIngestionWorkflow
-
-    workflow_id = f"kb-ingest-{doc.id}"
-
-    params = {
-        "document_id": str(doc.id),
-        "workspace_id": str(doc.workspace_id),
-        "document_type": doc.document_type.value,
-        "gcs_path": doc.gcs_path,
-        "content_text": doc.content_text,
-        "file_name": doc.file_name or f"document-{doc.id}",
-    }
-
-    try:
-        client = await get_temporal_client()
-        await client.start_workflow(
-            DocumentIngestionWorkflow.run,
-            params,
-            id=workflow_id,
-            task_queue=INGESTION_TASK_QUEUE,
-        )
-        logger.info(f"Started ingestion workflow: {workflow_id}")
-    except Exception as e:
-        logger.error(f"Failed to start ingestion workflow: {e}")
-        raise
-
-    return workflow_id
-
-
-
 
 
 # ── Service Class ──────────────────────────────────────────────────
@@ -113,7 +79,7 @@ class KnowledgeBaseService:
 
         max_bytes = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
         if file_size > max_bytes:
-            raise ValueError(
+            raise InvalidArgumentError(
                 f"File vượt quá giới hạn {settings.MAX_UPLOAD_SIZE_MB}MB"
             )
 
@@ -142,6 +108,7 @@ class KnowledgeBaseService:
             file_size=file_size,
             gcs_path=gcs_path,
             mime_type=file.content_type,
+            content_checksum="sha256:" + sha256(file_content).hexdigest(),
             status=DocumentStatus.pending,
             uploaded_by=user_uid,
         )
@@ -181,7 +148,20 @@ class KnowledgeBaseService:
         content_size = len(payload.content_text.encode("utf-8"))
         max_bytes = 10 * 1024 * 1024  # 10MB cho text
         if content_size > max_bytes:
-            raise ValueError("Nội dung vượt quá giới hạn 10MB")
+            raise InvalidArgumentError("Nội dung vượt quá giới hạn 10MB")
+
+        content_bytes = payload.content_text.encode("utf-8")
+        gcs_path = None
+        file_name = None
+        if settings.INGESTION_V2_ENABLED:
+            file_name = f"document-{doc_id}.md"
+            gcs_path = await GCSStorageService.upload_file(
+                workspace_id=workspace_id,
+                document_id=doc_id,
+                file_name=file_name,
+                file_content=content_bytes,
+                content_type="text/markdown",
+            )
 
         doc = KnowledgeDocument(
             id=doc_id,
@@ -190,6 +170,9 @@ class KnowledgeBaseService:
             description=payload.description,
             document_type=DocumentType.manual_input,
             content_text=payload.content_text,
+            file_name=file_name,
+            gcs_path=gcs_path,
+            content_checksum="sha256:" + sha256(content_bytes).hexdigest(),
             status=DocumentStatus.pending,
             uploaded_by=user_uid,
         )
@@ -294,7 +277,7 @@ class KnowledgeBaseService:
             return None
 
         if doc.status not in (DocumentStatus.failed, DocumentStatus.completed):
-            raise ValueError(
+            raise InvalidArgumentError(
                 f"Chỉ có thể retry document ở trạng thái failed hoặc completed, "
                 f"hiện tại: {doc.status.value}"
             )

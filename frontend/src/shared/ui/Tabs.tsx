@@ -41,12 +41,12 @@ export function Tabs({ ariaLabel, defaultValue, items, onValueChange }: TabsProp
 
   return (
     <div>
-      <div aria-label={ariaLabel} className="flex gap-1 overflow-x-auto border-b border-ui-divider" role="tablist">
+      <div aria-label={ariaLabel} className="flex gap-1 overflow-x-auto border-b border-border" role="tablist">
         {items.map((item) => (
           <button
             aria-controls={`${instanceId}-${item.id}-panel`}
             aria-selected={active?.id === item.id}
-            className="min-h-10 shrink-0 rounded-ui-control border-b-2 border-transparent px-3 py-2 text-sm font-medium text-ui-ink-secondary transition-colors duration-200 motion-reduce:transition-none hover:bg-ui-interactive hover:text-ui-ink aria-selected:border-brand aria-selected:text-ui-ink disabled:text-ui-ink-disabled"
+            className="min-h-10 shrink-0 rounded-ui-control border-b-2 border-transparent px-3 py-2 text-sm font-medium text-muted-foreground transition-colors duration-200 motion-reduce:transition-none hover:bg-accent hover:text-accent-foreground aria-selected:border-primary-control aria-selected:bg-primary-control aria-selected:text-primary-control-foreground aria-selected:hover:bg-primary-control-hover aria-selected:hover:text-primary-control-foreground disabled:text-ui-ink-disabled"
             disabled={item.disabled}
             id={`${instanceId}-${item.id}-tab`}
             key={item.id}

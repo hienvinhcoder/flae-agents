@@ -13,6 +13,7 @@ from app.core.security import (
     get_current_workspace_id,
     require_roles,
 )
+from app.core.exceptions import ApplicationError
 from app.db.database import get_db
 from app.models.workspace import WorkspaceRole
 from app.schemas.sche_base import DataResponse
@@ -65,7 +66,9 @@ async def upload_document(
             data=result
         )
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise ApplicationError(
+            status_code=400, code="INVALID_ARGUMENT", message="Tài liệu tải lên không hợp lệ."
+        ) from e
 
 
 @router.post(
@@ -93,7 +96,9 @@ async def create_manual_document(
             data=result
         )
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise ApplicationError(
+            status_code=400, code="INVALID_ARGUMENT", message="Nội dung tài liệu không hợp lệ."
+        ) from e
 
 
 @router.get(
@@ -122,9 +127,9 @@ async def get_knowledge_graph(
         return DataResponse[KnowledgeGraphResponse].success_response(data=graph_data)
     except Exception as e:
         logger.error(f"Error fetching knowledge graph: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Không thể lấy đồ thị tri thức: {str(e)}"
-        )
+        raise ApplicationError(
+            status_code=500, code="INTERNAL_ERROR", message="Không thể lấy đồ thị tri thức."
+        ) from e
 
 
 @router.get(
@@ -189,7 +194,9 @@ async def retry_ingestion(
             data=result
         )
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise ApplicationError(
+            status_code=400, code="INVALID_ARGUMENT", message="Không thể retry tài liệu này."
+        ) from e
 
 
 @router.get(
@@ -237,6 +244,6 @@ async def search_knowledge_base(
         )
     except Exception as e:
         logger.error(f"Lỗi khi tìm kiếm trong Knowledge Base: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Tìm kiếm thất bại: {str(e)}"
-        )
+        raise ApplicationError(
+            status_code=500, code="INTERNAL_ERROR", message="Tìm kiếm thất bại."
+        ) from e

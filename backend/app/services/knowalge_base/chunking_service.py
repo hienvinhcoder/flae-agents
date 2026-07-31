@@ -3,17 +3,62 @@ Service chia nhỏ văn bản (Chunking) cho Knowledge Base.
 Tách từ ingestion_service.py để đảm bảo giới hạn kích thước file.
 """
 import re
+from hashlib import sha256
 from typing import Dict, List, Optional
 
 from app.core.config import settings
 from app.core.logger import get_logger
 from app.services.knowalge_base.parser_service import ParserService
 from app.utils.token import get_token_count
+from app.schemas.agent_memory import SectionLocation
+from app.schemas.ingestion_v2 import ParsedBaseChunk
 
 logger = get_logger(__name__)
 
 
 class ChunkingService:
+    @staticmethod
+    def chunk_document_v2(
+        text: str,
+        content_checksum: str,
+        *,
+        strategy: Optional[str] = None,
+        chunk_size: Optional[int] = None,
+        chunk_overlap: Optional[int] = None,
+    ) -> tuple[ParsedBaseChunk, ...]:
+        """Build deterministic typed chunks for a revisioned source."""
+        file_hash = sha256(content_checksum.encode("utf-8")).hexdigest()[:24]
+        chunks = ChunkingService.chunk_document(
+            text=text,
+            file_hash=file_hash,
+            strategy=strategy,
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+        )
+        typed: list[ParsedBaseChunk] = []
+        for index, chunk in enumerate(chunks):
+            chunk_text = str(chunk["text"])
+            headings = tuple(
+                match.group(1).strip()
+                for match in re.finditer(r"^#{1,6}\s+(.+?)\s*$", chunk_text, re.MULTILINE)
+            )
+            heading_path = headings[-6:] or ("Document",)
+            structural_prefix = "/".join(
+                re.sub(r"[^a-z0-9]+", "-", heading.lower()).strip("-")
+                or "section"
+                for heading in heading_path
+            )
+            typed.append(
+                ParsedBaseChunk(
+                    section_structural_key=f"{structural_prefix}/{index:06d}",
+                    heading_path=heading_path,
+                    location=SectionLocation(heading_path=heading_path),
+                    text=chunk_text,
+                    token_count=int(chunk["token_count"]),
+                )
+            )
+        return tuple(typed)
+
     @staticmethod
     def chunk_text_fixed(
         text: str,

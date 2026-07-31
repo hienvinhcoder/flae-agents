@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { I18nextProvider } from "react-i18next";
 import { MemoryRouter } from "react-router-dom";
@@ -22,7 +28,7 @@ const resources = {
         TOPICS: "Topics",
       },
       SHELL: {
-        BRAND_SUBTITLE: "AI operations",
+        BRAND_SUBTITLE: "AI Company Memory",
         CLOSE_NAV: "Close navigation",
         CLOSE_NAV_OVERLAY: "Close navigation overlay",
         COLLAPSE_NAV: "Collapse navigation",
@@ -46,7 +52,6 @@ const defaultProps: AdminSidebarProps = {
   mobileOpen: false,
   onCloseMobile: vi.fn(),
   onToggleDesktop: vi.fn(),
-  workspaceName: "FLAE Labs",
 };
 
 type MediaQueryChangeListener = (event: MediaQueryListEvent) => void;
@@ -131,19 +136,15 @@ describe("AdminSidebar", () => {
     vi.unstubAllGlobals();
   });
 
-  it("keeps the workspace identity concise in expanded navigation", async () => {
-    await renderSidebar({
-      desktopLayout: "expanded",
-      workspaceName: "Acme Workspace",
-    });
+  it("uses the compact AI Company Memory brand from the reference shell", async () => {
+    await renderSidebar({ desktopLayout: "expanded" });
 
-    expect(
-      screen.getByRole("group", { name: /workspace: acme workspace/i }),
-    ).toBeInTheDocument();
-    expect(screen.getByText("AI operations")).toBeInTheDocument();
+    expect(screen.getByText("FLAE")).toBeInTheDocument();
+    expect(screen.getByText("AI Company Memory")).toBeInTheDocument();
+    expect(document.querySelector(".bg-primary.text-primary-foreground")).toBeInTheDocument();
   });
 
-  it("renders grouped expanded navigation and toggles the desktop layout", async () => {
+  it("renders flat expanded navigation and toggles the desktop layout", async () => {
     const onToggleDesktop = vi.fn();
     await renderSidebar({ onToggleDesktop });
 
@@ -156,18 +157,19 @@ describe("AdminSidebar", () => {
       "text-sidebar-foreground",
     );
     expect(within(sidebar).getByText("FLAE")).toBeInTheDocument();
-    expect(within(sidebar).getByText("AI operations")).toBeInTheDocument();
-    expect(within(sidebar).getByText("FLAE Labs")).toBeInTheDocument();
-    expect(within(sidebar).getByText("Focus")).toBeInTheDocument();
-    expect(within(sidebar).getByText("Intelligence")).toBeInTheDocument();
-    expect(within(sidebar).getByText("Workspace")).toBeInTheDocument();
+    expect(within(sidebar).getByText("AI Company Memory")).toBeInTheDocument();
+    expect(within(sidebar).queryByText("Focus")).not.toBeInTheDocument();
+    expect(within(sidebar).queryByText("Intelligence")).not.toBeInTheDocument();
     const statusCard = within(sidebar).getByRole("region", {
       name: "Indexing status",
     });
     expect(statusCard.parentElement).toHaveClass("hidden", "lg:block");
     const activeLink = within(sidebar).getByRole("link", { name: "Briefing" });
     expect(activeLink).toHaveAttribute("aria-current", "page");
-    expect(activeLink).toHaveClass("bg-brand", "text-brand-foreground");
+    expect(activeLink).toHaveClass(
+      "bg-sidebar-primary",
+      "text-sidebar-primary-foreground",
+    );
     expect(activeLink.querySelector(".absolute")).toBeNull();
 
     await userEvent.click(
@@ -187,7 +189,9 @@ describe("AdminSidebar", () => {
     expect(
       within(sidebar).getByRole("button", { name: "Expand navigation" }),
     ).toBeInTheDocument();
-    expect(within(sidebar).queryByText("Indexing status")).not.toBeInTheDocument();
+    expect(
+      within(sidebar).queryByText("Indexing status"),
+    ).not.toBeInTheDocument();
   });
 
   it("marks Overview as current only at the dashboard index", async () => {
@@ -342,13 +346,11 @@ describe("AdminSidebar", () => {
     expect(screen.queryByText("Knowledge Graph")).not.toBeInTheDocument();
   });
 
-  it("gives the collapsed workspace identity valid named semantics", async () => {
+  it("omits workspace chrome from the collapsed reference rail", async () => {
     await renderSidebar({ desktopLayout: "collapsed" });
 
     const sidebar = screen.getByTestId("admin-sidebar");
-    expect(
-      within(sidebar).getByRole("group", { name: "Workspace: FLAE Labs" }),
-    ).toBeInTheDocument();
+    expect(within(sidebar).queryByRole("group")).not.toBeInTheDocument();
   });
 
   it("mounts the mobile dialog only while open and manages focus and scroll", async () => {
@@ -364,7 +366,9 @@ describe("AdminSidebar", () => {
 
     const dialog = screen.getByRole("dialog", { name: "Primary navigation" });
     expect(dialog).toHaveClass("w-64", "bg-sidebar", "text-sidebar-foreground");
-    expect(within(dialog).queryByText("Indexing status")).not.toBeInTheDocument();
+    expect(
+      within(dialog).queryByText("Indexing status"),
+    ).not.toBeInTheDocument();
     const closeButton = within(dialog).getByRole("button", {
       name: "Close navigation",
     });

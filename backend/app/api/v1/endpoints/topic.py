@@ -1,5 +1,5 @@
 import uuid
-from typing import Optional, List, Any
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status as http_status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,12 +9,14 @@ from app.core.security import (
     get_current_workspace_id,
     require_roles,
 )
+from app.core.exceptions import ApplicationError
 from app.db.database import get_db
 from app.models.workspace import WorkspaceRole
 from app.schemas.sche_base import DataResponse
 from app.schemas.sche_topic import (
     TopicListItem,
     TopicDetailResponse,
+    TopicUpdateResponse,
     TopicUpdate,
     TopicMergeRequest,
 )
@@ -46,13 +48,14 @@ async def list_topics(
             limit=limit,
             offset=offset
         )
-        return DataResponse[List[TopicListItem]].success_response(data=topics)
+        return DataResponse[List[TopicListItem]].success_response(
+            data=[TopicListItem.model_validate(topic) for topic in topics]
+        )
     except Exception as e:
         logger.error(f"Error listing topics: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Lỗi khi liệt kê chủ đề: {str(e)}"
-        )
+        raise ApplicationError(
+            status_code=500, code="INTERNAL_ERROR", message="Lỗi khi liệt kê chủ đề."
+        ) from e
 
 
 @router.get(
@@ -76,20 +79,21 @@ async def get_topic(
                 status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Chủ đề không tồn tại."
             )
-        return DataResponse[TopicDetailResponse].success_response(data=topic_detail)
+        return DataResponse[TopicDetailResponse].success_response(
+            data=TopicDetailResponse.model_validate(topic_detail)
+        )
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error fetching topic detail: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Lỗi khi lấy chi tiết chủ đề: {str(e)}"
-        )
+        raise ApplicationError(
+            status_code=500, code="INTERNAL_ERROR", message="Lỗi khi lấy chi tiết chủ đề."
+        ) from e
 
 
 @router.put(
     "/{topic_id}",
-    response_model=DataResponse[Any],
+    response_model=DataResponse[TopicUpdateResponse],
     summary="Cập nhật thông tin topic",
 )
 async def update_topic(
@@ -111,15 +115,16 @@ async def update_topic(
                 status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Chủ đề không tồn tại."
             )
-        return DataResponse[Any].success_response(data=updated)
+        return DataResponse[TopicUpdateResponse].success_response(
+            data=TopicUpdateResponse.model_validate(updated)
+        )
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error updating topic: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Lỗi khi cập nhật chủ đề: {str(e)}"
-        )
+        raise ApplicationError(
+            status_code=500, code="INTERNAL_ERROR", message="Lỗi khi cập nhật chủ đề."
+        ) from e
 
 
 @router.post(
@@ -148,16 +153,14 @@ async def merge_topics(
         )
         return DataResponse[bool].success_response(data=success)
     except ValueError as e:
-        raise HTTPException(
-            status_code=http_status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise ApplicationError(
+            status_code=400, code="INVALID_ARGUMENT", message="Dữ liệu gộp chủ đề không hợp lệ."
+        ) from e
     except Exception as e:
         logger.error(f"Error merging topics: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Lỗi khi gộp chủ đề: {str(e)}"
-        )
+        raise ApplicationError(
+            status_code=500, code="INTERNAL_ERROR", message="Lỗi khi gộp chủ đề."
+        ) from e
 
 
 @router.post(
@@ -177,7 +180,6 @@ async def re_summarize_topic(
         return DataResponse[bool].success_response(data=True)
     except Exception as e:
         logger.error(f"Error re-summarizing topic: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Lỗi khi tóm tắt lại chủ đề: {str(e)}"
-        )
+        raise ApplicationError(
+            status_code=500, code="INTERNAL_ERROR", message="Lỗi khi tóm tắt lại chủ đề."
+        ) from e

@@ -19,7 +19,7 @@ const graph: RendererGraph = {
   ],
   nodes: [
     {
-      color: "#fb7185",
+      color: "var(--chart-1)",
       degree: 1,
       frequency: 1,
       fx: null,
@@ -34,7 +34,7 @@ const graph: RendererGraph = {
       y: 100,
     },
     {
-      color: "#60a5fa",
+      color: "var(--chart-3)",
       degree: 1,
       frequency: 1,
       fx: null,
@@ -53,14 +53,21 @@ const graph: RendererGraph = {
 
 function contextStub() {
   const gradient = { addColorStop: vi.fn() };
-  return {
+  const styles = {
+    fill: [] as Array<CanvasRenderingContext2D["fillStyle"]>,
+    stroke: [] as Array<CanvasRenderingContext2D["strokeStyle"]>,
+  };
+  let fillStyle: CanvasRenderingContext2D["fillStyle"] = "";
+  let strokeStyle: CanvasRenderingContext2D["strokeStyle"] = "";
+  const context = {
     arc: vi.fn(),
     beginPath: vi.fn(),
     clearRect: vi.fn(),
     createRadialGradient: vi.fn(() => gradient),
     fill: vi.fn(),
     fillRect: vi.fn(),
-    fillStyle: "",
+    get fillStyle() { return fillStyle; },
+    set fillStyle(value) { fillStyle = value; styles.fill.push(value); },
     fillText: vi.fn(),
     font: "",
     lineTo: vi.fn(),
@@ -75,11 +82,13 @@ function contextStub() {
     shadowBlur: 0,
     shadowColor: "",
     stroke: vi.fn(),
-    strokeStyle: "",
+    get strokeStyle() { return strokeStyle; },
+    set strokeStyle(value) { strokeStyle = value; styles.stroke.push(value); },
     textAlign: "",
     textBaseline: "",
     translate: vi.fn(),
   } as unknown as CanvasRenderingContext2D;
+  return { context, styles };
 }
 
 let resizeCallback: ResizeObserverCallback;
@@ -88,6 +97,7 @@ const observe = vi.fn();
 let rafCallbacks = new Map<number, FrameRequestCallback>();
 let nextRaf = 1;
 const canvasClearRects = new WeakMap<HTMLCanvasElement, ReturnType<typeof vi.fn>>();
+const canvasDrawStyles = new WeakMap<HTMLCanvasElement, ReturnType<typeof contextStub>["styles"]>();
 const canvasPointerCaptures = new WeakMap<
   HTMLCanvasElement,
   { release: ReturnType<typeof vi.fn>; set: ReturnType<typeof vi.fn> }
@@ -141,10 +151,11 @@ function createCanvas(width = 800, height = 600) {
     clientHeight: { configurable: true, value: height },
     clientWidth: { configurable: true, value: width },
   });
-  const context = contextStub();
+  const { context, styles } = contextStub();
   const clearRect = vi.fn();
   context.clearRect = clearRect;
   canvasClearRects.set(canvas, clearRect);
+  canvasDrawStyles.set(canvas, styles);
   Object.defineProperty(canvas, "getContext", {
     configurable: true,
     value: vi.fn(() => context),
@@ -179,6 +190,66 @@ function screenPoint(
 }
 
 describe("graph renderer", () => {
+  it("uses semantic canvas colors for readable edges, labels, and node strokes", () => {
+    const canvas = createCanvas();
+    const colors = {
+      "--color-ai": "#060606",
+      "--color-border-control": "#020202",
+      "--color-border-strong": "#0c0c0c",
+      "--color-danger": "#030303",
+      "--color-focus": "#0b0b0b",
+      "--color-link": "#080808",
+      "--color-primary": "#010101",
+      "--color-success": "#050505",
+      "--color-surface-raised": "#070707",
+      "--color-text": "#090909",
+      "--color-text-secondary": "#0a0a0a",
+      "--color-warning": "#040404",
+      "--chart-1": "#0d0d0d", "--chart-3": "#0e0e0e",
+    } as const;
+    for (const [token, value] of Object.entries(colors)) {
+      canvas.style.setProperty(token, value);
+    }
+    const tones = ["default", "danger", "warning", "success", "ai"] as const;
+    const themedGraph: RendererGraph = {
+      ...graph,
+      edges: tones.map((tone, index) => ({
+        ...graph.edges[0]!,
+        id: `edge-${index}`,
+        tone,
+      })),
+    };
+    const renderer = createGraphRenderer(canvas, { onSelectionChange: vi.fn() });
+
+    renderer.update({ graph: themedGraph, physicsEnabled: false, selection: null });
+    renderer.update({ graph: themedGraph, physicsEnabled: false, selection: { id: "edge-4", kind: "edge" } });
+    renderer.update({ graph: themedGraph, physicsEnabled: false, selection: { id: "node-1", kind: "node" } });
+
+    const styles = canvasDrawStyles.get(canvas);
+    expect(styles?.stroke).toEqual(
+      expect.arrayContaining([
+        colors["--color-primary"],
+        colors["--color-border-control"],
+        colors["--color-border-strong"],
+        colors["--color-danger"],
+        colors["--color-warning"],
+        colors["--color-success"],
+        colors["--color-ai"],
+        colors["--color-focus"],
+      ]),
+    );
+    expect(styles?.fill).toEqual(
+      expect.arrayContaining([
+        colors["--color-surface-raised"],
+        colors["--color-link"],
+        colors["--color-text"],
+        colors["--color-text-secondary"],
+        colors["--chart-1"],
+        colors["--chart-3"],
+      ]),
+    );
+  });
+
   it("GRAPH-02A/02B supports touch selection, pan, node drag, and bounded pinch zoom", () => {
     const canvas = createCanvas();
     const onSelectionChange = vi.fn();

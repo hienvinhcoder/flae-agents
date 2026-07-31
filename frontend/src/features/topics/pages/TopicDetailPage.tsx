@@ -59,7 +59,7 @@ function EvidenceList({
           >
             {member.member_type === "document" ? (
               <Link
-                className="block transition-colors hover:text-brand"
+                className="block transition-colors hover:text-brand-text"
                 to="/dashboard/knowledge"
               >
                 {content}
@@ -206,7 +206,7 @@ export function TopicDetailPage() {
       className="mx-auto grid w-full max-w-7xl gap-6"
     >
       <Link
-        className="inline-flex min-h-11 items-center gap-2 self-start rounded-ui-control font-semibold text-ui-ink-secondary transition-colors duration-200 motion-reduce:transition-none hover:text-ui-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+        className="inline-flex min-h-11 items-center gap-2 self-start rounded-ui-control font-semibold text-ui-ink-secondary transition-colors duration-200 motion-reduce:transition-none hover:text-ui-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-focus"
         to="/dashboard/topics"
       >
         <ArrowLeft aria-hidden className="h-4 w-4" />

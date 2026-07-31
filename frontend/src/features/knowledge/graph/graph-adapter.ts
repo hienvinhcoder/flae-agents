@@ -22,43 +22,43 @@ function normalized(value: string) {
 
 export function graphNodeColor(type: string) {
   const value = normalized(type);
-  if (value.includes("person") || value.includes("nguoi")) return "#fb7185";
+  if (value.includes("person") || value.includes("nguoi")) return "var(--chart-1)";
   if (
     value.includes("org") ||
     value.includes("chuc") ||
     value.includes("company") ||
     value.includes("cong ty")
   )
-    return "#60a5fa";
+    return "var(--chart-3)";
   if (
     value.includes("loc") ||
     value.includes("diem") ||
     value.includes("city")
   )
-    return "#4ade80";
-  if (value.includes("event") || value.includes("su kien")) return "#fbbf24";
+    return "var(--chart-2)";
+  if (value.includes("event") || value.includes("su kien")) return "var(--chart-4)";
   if (
     value.includes("product") ||
     value.includes("san pham") ||
     value.includes("project") ||
     value.includes("du an")
   )
-    return "#fb923c";
+    return "var(--primary)";
   if (
     value.includes("concept") ||
     value.includes("khai niem") ||
     value.includes("tech") ||
     value.includes("category")
   )
-    return "#c084fc";
+    return "var(--chart-5)";
   if (
     value.includes("equipment") ||
     value.includes("thiet bi") ||
     value.includes("system") ||
     value.includes("he thong")
   )
-    return "#4ade80";
-  return "#ddb991";
+    return "var(--chart-2)";
+  return "var(--secondary)";
 }
 
 export function latestEdgeLabel(label: string | null | undefined) {

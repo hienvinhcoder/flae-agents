@@ -1,5 +1,6 @@
 import os
 import json
+import re
 from typing import List, Dict, Any, Optional
 import urllib.parse
 from contextlib import asynccontextmanager
@@ -7,6 +8,7 @@ from contextlib import asynccontextmanager
 import numpy as np
 import pandas as pd
 import psycopg2
+from psycopg2 import sql
 import psycopg2.extras
 from psycopg2.extensions import register_adapter, AsIs
 from sqlalchemy import create_engine, text
@@ -52,6 +54,14 @@ class DBManager:
         self.async_db_url = db_url or settings.RAG_DATABASE_URL
         self.embedding_dimensions = embedding_dimensions or settings.EMBEDDING_DIMENSIONS
         self.schema = schema.lower().replace("-", "_")
+        self.app_role = settings.RAG_DATABASE_APP_ROLE
+        if not re.fullmatch(r"[a-z_][a-z0-9_]*", self.app_role):
+            raise ValueError("RAG_DATABASE_APP_ROLE must be a safe PostgreSQL identifier")
+        self.ingestion_role = settings.RAG_DATABASE_INGESTION_ROLE
+        if not re.fullmatch(r"[a-z_][a-z0-9_]*", self.ingestion_role):
+            raise ValueError(
+                "RAG_DATABASE_INGESTION_ROLE must be a safe PostgreSQL identifier"
+            )
 
         # Phân tích URL để kết nối thông qua psycopg2 (đồng bộ)
         parsed_url = make_url(self.async_db_url)
@@ -78,11 +88,8 @@ class DBManager:
 
         self._initialized = False
 
-    def initialize(self):
-        """Khởi tạo database RAG (chạy DDL). Chỉ thực hiện một lần."""
-        if self._initialized:
-            return
-        self._init_db()
+    def initialize(self) -> None:
+        """Compatibility marker; schema creation is owned by RAG Alembic."""
         self._initialized = True
 
 
@@ -97,171 +104,6 @@ class DBManager:
             port=self.port
         )
 
-    def _init_db(self):
-        """Khởi tạo database, schema, các bảng cha (parent partition tables) và chính sách RLS."""
-        conn = self.get_conn()
-        conn.autocommit = True
-        cur = conn.cursor()
-
-        try:
-            # 1. Tạo extension pgvector
-            cur.execute("CREATE EXTENSION IF NOT EXISTS vector;")
-
-            # 2. Tạo schema
-            if self.schema != "public":
-                cur.execute(f"CREATE SCHEMA IF NOT EXISTS {self.schema};")
-
-            # 3. Tạo bảng chunks cha (Partitioned Table)
-            cur.execute(
-                f"""
-                CREATE TABLE IF NOT EXISTS {self.schema}.chunks (
-                    workspace_id TEXT NOT NULL,
-                    chunk_id TEXT NOT NULL,
-                    text TEXT,
-                    token_count INT,
-                    embedding vector({self.embedding_dimensions}),
-                    source_document_id TEXT,
-                    entity_ids JSONB,
-                    relation_ids JSONB,
-                    PRIMARY KEY (workspace_id, chunk_id)
-                ) PARTITION BY LIST (workspace_id);
-                """
-            )
-
-            # 4. Tạo bảng entities cha (Partitioned Table)
-            cur.execute(
-                f"""
-                CREATE TABLE IF NOT EXISTS {self.schema}.entities (
-                    workspace_id TEXT NOT NULL,
-                    entity_id TEXT NOT NULL,
-                    entity_name TEXT,
-                    entity_type TEXT,
-                    description TEXT,
-                    source_chunk_ids JSONB,
-                    chunk_descriptions JSONB,
-                    degree INT,
-                    frequency INT,
-                    embedding vector({self.embedding_dimensions}),
-                    PRIMARY KEY (workspace_id, entity_id)
-                ) PARTITION BY LIST (workspace_id);
-                """
-            )
-
-            # 5. Tạo bảng relationships cha (Partitioned Table)
-            cur.execute(
-                f"""
-                CREATE TABLE IF NOT EXISTS {self.schema}.relationships (
-                    workspace_id TEXT NOT NULL,
-                    relation_id TEXT NOT NULL,
-                    source_id TEXT,
-                    source_name TEXT,
-                    target_id TEXT,
-                    target_name TEXT,
-                    keywords TEXT,
-                    description TEXT,
-                    source_chunk_ids JSONB,
-                    chunk_meta JSONB,
-                    frequency INT,
-                    degree INT,
-                    embedding vector({self.embedding_dimensions}),
-                    PRIMARY KEY (workspace_id, relation_id)
-                ) PARTITION BY LIST (workspace_id);
-                """
-            )
-
-            # Đảm bảo các cột mới tồn tại cho các DB cũ chưa drop
-            cur.execute(f"ALTER TABLE {self.schema}.entities ADD COLUMN IF NOT EXISTS chunk_descriptions JSONB;")
-            cur.execute(f"ALTER TABLE {self.schema}.relationships ADD COLUMN IF NOT EXISTS chunk_meta JSONB;")
-
-            # 5.5. Khởi tạo các bảng Topics mới nếu chưa tồn tại
-            from app.db.rag_ddl import (
-                CREATE_TOPICS_TABLE,
-                CREATE_TOPIC_MEMBERSHIPS_TABLE,
-                CREATE_TOPIC_ALIASES_TABLE,
-                CREATE_TOPIC_UPDATE_QUEUE_TABLE,
-                CREATE_TOPIC_FOREIGN_KEYS,
-                CREATE_RLS_POLICY_TEMPLATE
-            )
-
-            cur.execute(CREATE_TOPICS_TABLE.format(schema=self.schema, dimensions=self.embedding_dimensions))
-            cur.execute(CREATE_TOPIC_MEMBERSHIPS_TABLE.format(schema=self.schema))
-            cur.execute(CREATE_TOPIC_ALIASES_TABLE.format(schema=self.schema))
-            cur.execute(CREATE_TOPIC_UPDATE_QUEUE_TABLE.format(schema=self.schema))
-
-            for fk_sql in CREATE_TOPIC_FOREIGN_KEYS:
-                cur.execute(fk_sql.format(schema=self.schema))
-
-            # 6. Kích hoạt Row Level Security (RLS) trên tất cả các bảng
-            all_tables = ["chunks", "entities", "relationships", "topics", "topic_memberships", "topic_aliases", "topic_update_queue"]
-            for table_name in all_tables:
-                cur.execute(f"ALTER TABLE {self.schema}.{table_name} ENABLE ROW LEVEL SECURITY;")
-
-            # 7. Tạo RLS policies (Kiểm tra sự tồn tại của policy trước khi tạo bằng PL/pgSQL)
-            for table_name in all_tables:
-                policy_name = f"{table_name}_workspace_isolation_policy"
-                cur.execute(f"""
-                    DO $$
-                    BEGIN
-                        IF NOT EXISTS (
-                            SELECT 1 FROM pg_policies
-                            WHERE schemaname = '{self.schema}'
-                              AND tablename = '{table_name}'
-                              AND policyname = '{policy_name}'
-                        ) THEN
-                            CREATE POLICY {policy_name} ON {self.schema}.{table_name}
-                            USING (workspace_id = current_setting('app.current_workspace_id', true));
-                        END IF;
-                    END
-                    $$;
-                """)
-
-            logger.info(f"✅ Đã khởi tạo schema '{self.schema}' cho RAG database với RLS & Partitioning (bao gồm Topics).")
-        except Exception as e:
-            logger.error(f"❌ Lỗi khi khởi tạo database RAG: {e}")
-            raise e
-        finally:
-            cur.close()
-            conn.close()
-
-    def _ensure_partition(self, cur, workspace_id: str) -> str:
-        """
-        Đảm bảo bảng partition cho workspace_id đã được tạo.
-        Trả về hậu tố an toàn của tên bảng (workspace_safe).
-        """
-        # Chuẩn hóa workspace_id để chỉ chứa ký tự chữ và số và dấu gạch dưới
-        workspace_safe = "".join([c if c.isalnum() else "_" for c in workspace_id]).lower()
-
-        # Tạo bảng partition con cho chunks, entities, relationships, topics
-        cur.execute(f"""
-            CREATE TABLE IF NOT EXISTS {self.schema}.chunks_{workspace_safe}
-            PARTITION OF {self.schema}.chunks FOR VALUES IN ('{workspace_id}');
-        """)
-        cur.execute(f"""
-            CREATE TABLE IF NOT EXISTS {self.schema}.entities_{workspace_safe}
-            PARTITION OF {self.schema}.entities FOR VALUES IN ('{workspace_id}');
-        """)
-        cur.execute(f"""
-            CREATE TABLE IF NOT EXISTS {self.schema}.relationships_{workspace_safe}
-            PARTITION OF {self.schema}.relationships FOR VALUES IN ('{workspace_id}');
-        """)
-        cur.execute(f"""
-            CREATE TABLE IF NOT EXISTS {self.schema}.topics_{workspace_safe}
-            PARTITION OF {self.schema}.topics FOR VALUES IN ('{workspace_id}');
-        """)
-        cur.execute(f"""
-            CREATE TABLE IF NOT EXISTS {self.schema}.topic_memberships_{workspace_safe}
-            PARTITION OF {self.schema}.topic_memberships FOR VALUES IN ('{workspace_id}');
-        """)
-        cur.execute(f"""
-            CREATE TABLE IF NOT EXISTS {self.schema}.topic_aliases_{workspace_safe}
-            PARTITION OF {self.schema}.topic_aliases FOR VALUES IN ('{workspace_id}');
-        """)
-        cur.execute(f"""
-            CREATE TABLE IF NOT EXISTS {self.schema}.topic_update_queue_{workspace_safe}
-            PARTITION OF {self.schema}.topic_update_queue FOR VALUES IN ('{workspace_id}');
-        """)
-        return workspace_safe
-
     def load_df(self, table_name: str, workspace_id: str) -> pd.DataFrame:
         """
         Tải dữ liệu từ một bảng cho một workspace cụ thể dưới dạng Pandas DataFrame.
@@ -271,13 +113,22 @@ class DBManager:
         conn = self.get_conn()
         try:
             # Thiết lập session workspace context cho RLS trên connection này
-            cur = conn.cursor()
-            cur.execute("SET app.current_workspace_id = %s;", (workspace_id,))
-            cur.close()
+            with conn.cursor() as cur:
+                cur.execute(
+                    sql.SQL("SET LOCAL ROLE {}").format(sql.Identifier(self.app_role))
+                )
+                cur.execute("SET app.current_workspace_id = %s;", (workspace_id,))
 
-            # Sử dụng connection đã cài đặt RLS context để đọc dữ liệu
-            query = f"SELECT * FROM {self.schema}.{table_name}"
-            df = pd.read_sql(query, conn)
+                # Identifier composition prevents callers from injecting SQL through
+                # dynamic schema or table names.
+                query = sql.SQL("SELECT * FROM {}.{}").format(
+                    sql.Identifier(self.schema),
+                    sql.Identifier(table_name),
+                )
+                cur.execute(query)
+                rows = cur.fetchall()
+                columns = [column.name for column in (cur.description or ())]
+            df = pd.DataFrame(rows, columns=columns)
 
             vector_cols = ["embedding"]
             json_cols = ["source_chunk_ids", "entity_ids", "relation_ids", "chunk_descriptions", "chunk_meta"]
@@ -323,10 +174,8 @@ class DBManager:
 
         try:
             # 1. Thiết lập RLS context cho transaction hiện tại
+            cur.execute(f"SET LOCAL ROLE {self.app_role};")
             cur.execute("SET LOCAL app.current_workspace_id = %s;", (workspace_id,))
-
-            # 2. Đảm bảo bảng partition con của workspace này tồn tại
-            self._ensure_partition(cur, workspace_id)
 
             df_to_save = df.copy()
 
@@ -457,7 +306,9 @@ class DBManager:
             conn.close()
 
     @asynccontextmanager
-    async def get_async_session(self, workspace_id: str):
+    async def get_async_session(
+        self, workspace_id: str, subject_id: str | None = None
+    ):
         """
         Context manager cung cấp AsyncSession SQLAlchemy, tự động thiết lập
         biến local session `app.current_workspace_id` cho RLS.
@@ -466,13 +317,41 @@ class DBManager:
         async with self.async_session_factory() as session:
             try:
                 # Đảm bảo thiết lập RLS trong transaction hiện tại
+                await session.execute(text(f"SET LOCAL ROLE {self.app_role}"))
                 await session.execute(
                     text("SELECT set_config('app.current_workspace_id', :workspace_id, true)"),
                     {"workspace_id": workspace_id}
                 )
+                await session.execute(
+                    text("SELECT set_config('app.current_subject_id', :subject_id, true)"),
+                    {"subject_id": subject_id or ""},
+                )
                 yield session
             except Exception as e:
                 logger.error(f"Error in async session for workspace {workspace_id}: {e}")
+                raise
+
+    @asynccontextmanager
+    async def get_ingestion_session(self, workspace_id: str):
+        """Yield a least-privilege, workspace-scoped ingestion transaction."""
+        self.initialize()
+        async with self.async_session_factory() as session:
+            try:
+                await session.execute(text(f"SET LOCAL ROLE {self.ingestion_role}"))
+                await session.execute(
+                    text(
+                        "SELECT set_config('app.current_workspace_id', "
+                        ":workspace_id, true)"
+                    ),
+                    {"workspace_id": workspace_id},
+                )
+                yield session
+            except Exception as error:
+                logger.error(
+                    "Error in ingestion session for workspace %s: %s",
+                    workspace_id,
+                    error,
+                )
                 raise
 
     async def search_similar_chunks(
@@ -516,25 +395,9 @@ class DBManager:
                 })
             return chunks
 
-    async def create_workspace_partition(self, workspace_id: str):
-        """
-        Khởi tạo phân vùng RAG (chunks, entities, relationships) cho workspace_id
-        một cách bất đồng bộ để tránh block event loop.
-        """
-        self.initialize()
-        import asyncio
-        def sync_task():
-            conn = self.get_conn()
-            conn.autocommit = True
-            cur = conn.cursor()
-            try:
-                self._ensure_partition(cur, workspace_id)
-            finally:
-                cur.close()
-                conn.close()
-
-        loop = asyncio.get_event_loop()
-        await loop.run_in_executor(None, sync_task)
+    async def create_workspace_partition(self, workspace_id: str) -> None:
+        """Compatibility no-op; tenant tables are provisioned by Alembic."""
+        logger.debug("RAG schema already provisioned for workspace %s", workspace_id)
 
     async def close(self):
         """Đóng tất cả các engine kết nối."""

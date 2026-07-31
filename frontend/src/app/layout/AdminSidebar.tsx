@@ -1,9 +1,13 @@
-import { Building2, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Sparkles, X } from "lucide-react";
 import { type KeyboardEvent, type RefObject, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, useLocation } from "react-router-dom";
 
-import { findActiveNavigationItem, navigationGroups } from "./admin-navigation";
+import {
+  type AdminNavigationItem,
+  findActiveNavigationItem,
+  navigationGroups,
+} from "./admin-navigation";
 import { RailTooltipPortal } from "./RailTooltipPortal";
 import { SidebarStatusCard } from "./SidebarStatusCard";
 import type { SidebarLayout } from "./use-sidebar-layout";
@@ -14,7 +18,6 @@ export interface AdminSidebarProps {
   mobileOpen: boolean;
   onCloseMobile: () => void;
   onToggleDesktop: () => void;
-  workspaceName?: string;
 }
 
 interface SidebarContentProps {
@@ -25,8 +28,15 @@ interface SidebarContentProps {
   onSelectMobile?: () => void;
   onToggleDesktop?: () => void;
   presentation: "desktop" | "mobile";
-  workspaceName: string;
 }
+
+const navigationItems = navigationGroups.flatMap((group) => group.items);
+const primaryNavigationItems = navigationItems.filter(
+  (item) => item.to !== "/dashboard/settings",
+);
+const settingsNavigationItems = navigationItems.filter(
+  (item) => item.to === "/dashboard/settings",
+);
 
 const focusableSelector = [
   "a[href]",
@@ -47,19 +57,19 @@ function BrandIdentity({
   const { t } = useTranslation();
 
   return (
-    <div className="flex min-w-0 items-center gap-3 text-sidebar-foreground">
+    <div className="flex min-w-0 items-center gap-2.5 text-sidebar-foreground">
       <span
         aria-hidden="true"
-        className="grid h-10 w-10 shrink-0 place-items-center rounded-ui-control bg-brand text-sm font-bold text-brand-foreground"
+        className="grid h-9 w-9 shrink-0 place-items-center rounded-ui-control bg-primary text-primary-foreground"
       >
-        F
+        <Sparkles className="h-5 w-5" />
       </span>
       {expanded ? (
         <span className={`min-w-0 ${responsive ? "hidden lg:block" : ""}`}>
-          <strong className="block truncate text-sm font-semibold tracking-[0.18em]">
+          <strong className="block truncate font-semibold leading-tight tracking-tight">
             FLAE
           </strong>
-          <small className="block truncate font-code text-xs uppercase tracking-[0.08em] text-sidebar-foreground/60">
+          <small className="block truncate text-[11px] leading-tight text-sidebar-foreground/60">
             {t("SHELL.BRAND_SUBTITLE")}
           </small>
         </span>
@@ -68,39 +78,11 @@ function BrandIdentity({
   );
 }
 
-function WorkspaceIdentity({
-  expanded,
-  responsive,
-  workspaceName,
-}: {
-  expanded: boolean;
-  responsive: boolean;
-  workspaceName: string;
-}) {
-  const { t } = useTranslation();
-
-  return (
-    <div
-      aria-label={`${t("SHELL.WORKSPACE")}: ${workspaceName}`}
-      className="flex min-h-14 min-w-0 items-center gap-3 border-y border-sidebar-border bg-sidebar-accent/70 px-3 text-sidebar-foreground/70"
-      role="group"
-    >
-      <Building2 aria-hidden="true" className="h-5 w-5 shrink-0" />
-      {expanded ? (
-        <span
-          className={`min-w-0 truncate font-medium text-sidebar-foreground ${responsive ? "hidden lg:block" : ""}`}
-        >
-          {workspaceName}
-        </span>
-      ) : null}
-    </div>
-  );
-}
-
-function NavigationGroups({
+function NavigationItems({
   activePath,
   expanded,
   hideTooltip,
+  items,
   onSelect,
   presentation,
   showTooltip,
@@ -108,6 +90,7 @@ function NavigationGroups({
   activePath: string | undefined;
   expanded: boolean;
   hideTooltip?: (target: HTMLElement, interaction: TooltipInteraction) => void;
+  items: readonly AdminNavigationItem[];
   onSelect?: () => void;
   presentation: "desktop" | "mobile";
   showTooltip?: (
@@ -118,76 +101,55 @@ function NavigationGroups({
 }) {
   const { t } = useTranslation();
 
-  return navigationGroups.map((group) => (
-    <section className="grid gap-0.5" key={group.id}>
-      {expanded ? (
-        <h2
-          className={`px-3 pb-1 pt-4 font-code text-label-md uppercase tracking-[0.12em] text-sidebar-foreground/50 ${presentation === "desktop" ? "hidden lg:block" : ""}`}
-        >
-          {t(group.key)}
-        </h2>
-      ) : (
-        <div aria-hidden="true" className="my-2 border-t border-sidebar-border" />
-      )}
-      {expanded && presentation === "desktop" ? (
-        <div
-          aria-hidden="true"
-          className="my-2 border-t border-sidebar-border lg:hidden"
-        />
-      ) : null}
-      {group.items.map((item) => {
-        const label = t(item.key);
-        const isActive = activePath === item.to;
-        const Icon = item.icon;
+  return items.map((item) => {
+    const label = t(item.key);
+    const isActive = activePath === item.to;
+    const Icon = item.icon;
 
-        return (
-          <div className="group relative" key={item.to}>
-            <NavLink
-              aria-label={label}
-              className={`relative flex min-h-11 min-w-0 items-center rounded-ui-control py-2 no-underline transition-colors duration-200 motion-reduce:transition-none ${
-                expanded && presentation === "desktop"
-                  ? "justify-center px-2 lg:justify-start lg:gap-3 lg:px-3"
-                  : expanded
-                    ? "gap-3 px-3"
-                    : "justify-center px-2"
-              } ${
-                isActive
-                  ? "bg-brand font-semibold text-brand-foreground"
-                  : "bg-transparent text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-              }`}
-              end
-              onBlur={(event) => hideTooltip?.(event.currentTarget, "focus")}
-              onClick={onSelect}
-              onFocus={(event) =>
-                showTooltip?.(event.currentTarget, label, "focus")
-              }
-              onMouseEnter={(event) =>
-                showTooltip?.(event.currentTarget, label, "hover")
-              }
-              onMouseLeave={(event) =>
-                hideTooltip?.(event.currentTarget, "hover")
-              }
-              ref={(element) => {
-                // NavLink owns aria-current, so reapply the longest-prefix result.
-                if (isActive) element?.setAttribute("aria-current", "page");
-                else element?.removeAttribute("aria-current");
-              }}
-              to={item.to}
+    return (
+      <div className="group relative" key={item.to}>
+        <NavLink
+          aria-label={label}
+          className={`relative flex min-h-11 min-w-0 items-center rounded-ui-control py-2 text-sm no-underline transition-colors duration-200 motion-reduce:transition-none md:min-h-10 ${
+            expanded && presentation === "desktop"
+              ? "justify-center px-2 lg:justify-start lg:gap-3 lg:px-3"
+              : expanded
+                ? "gap-3 px-3"
+                : "justify-center px-2"
+          } ${
+            isActive
+              ? "bg-sidebar-primary font-medium text-sidebar-primary-foreground"
+              : "bg-transparent text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+          }`}
+          end
+          onBlur={(event) => hideTooltip?.(event.currentTarget, "focus")}
+          onClick={onSelect}
+          onFocus={(event) =>
+            showTooltip?.(event.currentTarget, label, "focus")
+          }
+          onMouseEnter={(event) =>
+            showTooltip?.(event.currentTarget, label, "hover")
+          }
+          onMouseLeave={(event) => hideTooltip?.(event.currentTarget, "hover")}
+          ref={(element) => {
+            // NavLink owns aria-current, so reapply the longest-prefix result.
+            if (isActive) element?.setAttribute("aria-current", "page");
+            else element?.removeAttribute("aria-current");
+          }}
+          to={item.to}
+        >
+          <Icon aria-hidden="true" className="h-4 w-4 shrink-0" />
+          {expanded ? (
+            <span
+              className={`min-w-0 truncate ${presentation === "desktop" ? "hidden lg:block" : ""}`}
             >
-              <Icon aria-hidden="true" className="h-5 w-5 shrink-0" />
-              {expanded ? (
-                <span
-                  className={`min-w-0 truncate ${presentation === "desktop" ? "hidden lg:block" : ""}`}
-                >
-                  {label}
-                </span>
-              ) : null}
-            </NavLink>
-          </div>
-        );
-      })}
-    </section>
-  ));
+              {label}
+            </span>
+          ) : null}
+        </NavLink>
+      </div>
+    );
+  });
 }
 
 function SidebarContent({
@@ -198,7 +160,6 @@ function SidebarContent({
   onSelectMobile,
   onToggleDesktop,
   presentation,
-  workspaceName,
 }: SidebarContentProps) {
   const { t } = useTranslation();
   const isMobile = presentation === "mobile";
@@ -210,8 +171,10 @@ function SidebarContent({
   });
 
   return (
-    <div className="flex h-full min-h-0 flex-col px-3 py-4">
-      <div className="flex min-h-12 items-center justify-between gap-2">
+    <div className="flex h-full min-h-0 flex-col">
+      <div
+        className={`flex min-h-[84px] items-center justify-between gap-2 ${expanded ? "px-6 py-6" : "px-3 py-6"}`}
+      >
         <BrandIdentity expanded={expanded} responsive={responsiveExpansion} />
         {isMobile ? (
           <button
@@ -223,59 +186,60 @@ function SidebarContent({
           >
             <X aria-hidden="true" className="h-5 w-5" />
           </button>
-        ) : null}
-      </div>
-
-      <div className="mt-4">
-        <WorkspaceIdentity
-          expanded={expanded}
-          responsive={responsiveExpansion}
-          workspaceName={workspaceName}
-        />
+        ) : (
+          <button
+            aria-label={
+              desktopLayout === "expanded"
+                ? t("SHELL.COLLAPSE_NAV")
+                : t("SHELL.EXPAND_NAV")
+            }
+            className={`hidden min-h-9 min-w-9 shrink-0 place-items-center rounded-ui-control text-sidebar-foreground/60 transition-colors duration-200 hover:bg-sidebar-accent hover:text-sidebar-foreground motion-reduce:transition-none lg:grid ${expanded ? "" : "absolute left-[18px] top-[76px]"}`}
+            onClick={onToggleDesktop}
+            type="button"
+          >
+            {desktopLayout === "expanded" ? (
+              <ChevronLeft aria-hidden="true" className="h-4 w-4" />
+            ) : (
+              <ChevronRight aria-hidden="true" className="h-4 w-4" />
+            )}
+          </button>
+        )}
       </div>
 
       <nav
         aria-label={t("SHELL.PRIMARY_NAV")}
-        className="mt-3 grid min-h-0 flex-1 content-start gap-2 overflow-y-auto pb-3"
+        className="mt-2 grid min-h-0 flex-1 content-start gap-0.5 overflow-y-auto px-3 pb-3"
         onScroll={!isMobile ? clearTooltip : undefined}
       >
-        <NavigationGroups
+        <NavigationItems
           activePath={activePath}
           expanded={expanded}
           hideTooltip={!isMobile ? hideTooltip : undefined}
+          items={primaryNavigationItems}
           onSelect={isMobile ? onSelectMobile : undefined}
           presentation={presentation}
           showTooltip={!isMobile ? showTooltip : undefined}
         />
       </nav>
 
-      {!isMobile && expanded ? (
-        <div className="hidden lg:block">
-          <SidebarStatusCard />
+      <div className={`${expanded ? "p-4" : "p-3"}`}>
+        {!isMobile && expanded ? (
+          <div className="hidden lg:block">
+            <SidebarStatusCard />
+          </div>
+        ) : null}
+        <div className={expanded && !isMobile ? "mt-3" : ""}>
+          <NavigationItems
+            activePath={activePath}
+            expanded={expanded}
+            hideTooltip={!isMobile ? hideTooltip : undefined}
+            items={settingsNavigationItems}
+            onSelect={isMobile ? onSelectMobile : undefined}
+            presentation={presentation}
+            showTooltip={!isMobile ? showTooltip : undefined}
+          />
         </div>
-      ) : null}
-
-      {!isMobile ? (
-        <button
-          aria-label={
-            desktopLayout === "expanded"
-              ? t("SHELL.COLLAPSE_NAV")
-              : t("SHELL.EXPAND_NAV")
-          }
-          className="mt-2 hidden min-h-11 min-w-11 items-center justify-center gap-2 rounded-ui-control border border-transparent bg-transparent px-3 font-medium text-sidebar-foreground/70 transition-colors duration-200 hover:border-sidebar-border hover:bg-sidebar-accent hover:text-sidebar-foreground motion-reduce:transition-none lg:flex"
-          onClick={onToggleDesktop}
-          type="button"
-        >
-          {desktopLayout === "expanded" ? (
-            <ChevronLeft aria-hidden="true" className="h-5 w-5 shrink-0" />
-          ) : (
-            <ChevronRight aria-hidden="true" className="h-5 w-5 shrink-0" />
-          )}
-          {desktopLayout === "expanded" ? (
-            <span className="min-w-0 truncate">{t("SHELL.COLLAPSE_NAV")}</span>
-          ) : null}
-        </button>
-      ) : null}
+      </div>
       {!isMobile ? (
         <RailTooltipPortal hiddenAtLarge={expanded} tooltip={tooltip} />
       ) : null}
@@ -288,7 +252,6 @@ export function AdminSidebar({
   mobileOpen,
   onCloseMobile,
   onToggleDesktop,
-  workspaceName,
 }: AdminSidebarProps) {
   const { t } = useTranslation();
   const location = useLocation();
@@ -378,8 +341,6 @@ export function AdminSidebar({
     }
   }
 
-  const resolvedWorkspaceName = workspaceName ?? t("SHELL.WORKSPACE");
-
   return (
     <>
       <aside
@@ -394,7 +355,6 @@ export function AdminSidebar({
           desktopLayout={desktopLayout}
           onToggleDesktop={onToggleDesktop}
           presentation="desktop"
-          workspaceName={resolvedWorkspaceName}
         />
       </aside>
 
@@ -420,7 +380,6 @@ export function AdminSidebar({
               onCloseMobile={onCloseMobile}
               onSelectMobile={closeMobileFromSelection}
               presentation="mobile"
-              workspaceName={resolvedWorkspaceName}
             />
           </div>
         </>

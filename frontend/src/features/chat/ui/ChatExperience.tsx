@@ -184,7 +184,7 @@ function ContextualChatExperience({
         <header className="flex min-h-16 items-center border-b border-ui-divider bg-ui-raised px-5">
           {agentLoading ? <div className="w-52"><Skeleton label={t("AGENTS_UI.LOADING_CARD")} lines={2} /></div> : agent ? (
             <div className="flex items-center gap-3">
-              <div aria-hidden className={`flex h-10 w-10 items-center justify-center rounded-xl text-white ${getAgentAvatarColor(agent.avatar_color)}`}>
+              <div aria-hidden className={`flex h-10 w-10 items-center justify-center rounded-xl ${getAgentAvatarColor(agent.avatar_color)}`}>
                 <AgentAvatarIcon className="h-5 w-5" icon={agent.avatar_icon} />
               </div>
               <div>

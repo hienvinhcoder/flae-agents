@@ -3,48 +3,80 @@
 :root {
   color-scheme: light;
 
-  --color-primary: oklch(70.5% 0.187 45);
-  --color-primary-hover: oklch(66.5% 0.187 45);
-  --color-primary-active: oklch(62.5% 0.187 45);
-  --color-primary-soft: oklch(93% 0.06 60);
-  --color-primary-foreground: #3d1b0c;
-  --color-primary-cta: #c2410c;
-  --color-primary-cta-hover: #b53a07;
-  --color-primary-cta-active: #a83205;
-  --color-primary-cta-foreground: #fffbf5;
-  --color-canvas: oklch(98.5% 0.006 85);
-  --color-surface: oklch(100% 0 0);
-  --color-surface-raised: oklch(100% 0 0);
-  --color-surface-interactive: oklch(94% 0.012 85);
-  --color-divider: oklch(90% 0.015 80);
-  --color-border: oklch(90% 0.015 80);
-  --color-border-control: #776f64;
-  --color-border-strong: #4b443b;
-  --color-text: oklch(18% 0.02 60);
-  --color-text-secondary: oklch(25% 0.02 60);
-  --color-text-muted: oklch(48% 0.02 60);
-  --color-text-disabled: #7a746b;
-  --color-on-primary: #2a241c;
-  --color-link: #9a3412;
-  --color-focus: #9a3412;
-  --color-ai: #9a3412;
-  --color-ai-soft: oklch(93% 0.06 60);
-  --sidebar: oklch(22% 0.02 60);
-  --sidebar-foreground: oklch(94% 0.012 85);
-  --sidebar-accent: oklch(28% 0.02 60);
-  --sidebar-border: oklch(30% 0.02 60);
-  --color-success: #0f6b3d;
-  --color-success-soft: #e1f2e8;
-  --color-warning: #8a5a00;
-  --color-warning-soft: #fff0c2;
-  --color-danger: #b42318;
-  --color-danger-soft: #fee4e2;
-  --color-info: #1d5e91;
-  --color-info-soft: #e0effa;
+  --background: oklch(97.928% 0.007 88.642);
+  --foreground: oklch(22.462% 0.0128 77.97);
+  --card: oklch(100% 0 0);
+  --card-foreground: var(--foreground);
+  --popover: oklch(100% 0 0);
+  --popover-foreground: var(--foreground);
+  --primary: oklch(70.487% 0.1867 47.604);
+  --primary-foreground: oklch(98.951% 0.009 78.283);
+  --primary-soft: oklch(92.518% 0.0456 66.146);
+  --primary-control: var(--primary);
+  --primary-control-hover: color-mix(in oklch, var(--primary), var(--foreground) 10%);
+  --primary-control-active: color-mix(in oklch, var(--primary), var(--foreground) 18%);
+  --primary-control-foreground: var(--primary-foreground);
+  --secondary: oklch(92.504% 0.0153 90.24);
+  --secondary-foreground: var(--foreground);
+  --muted: oklch(94.647% 0.014 88.685);
+  --muted-foreground: oklch(51.127% 0.023 77.145);
+  --accent: var(--secondary);
+  --accent-foreground: var(--foreground);
+  --destructive: oklch(57.7% 0.245 27);
+  --destructive-foreground: var(--primary-foreground);
+  --border: oklch(90.376% 0.0196 90.552);
+  --input: var(--border);
+  --ring: var(--primary);
+  --chart-1: oklch(64.6% 0.222 41.116);
+  --chart-2: oklch(60% 0.118 184.704);
+  --chart-3: oklch(39.8% 0.07 227.392);
+  --chart-4: oklch(82.8% 0.189 84.429);
+  --chart-5: oklch(76.9% 0.188 70.08);
+  --sidebar: oklch(26.437% 0.0169 74.882);
+  --sidebar-foreground: oklch(92.504% 0.0153 90.24);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: color-mix(in oklch, var(--sidebar), var(--sidebar-foreground) 8%);
+  --sidebar-accent-foreground: var(--sidebar-foreground);
+  --sidebar-border: color-mix(in oklch, var(--sidebar), var(--sidebar-foreground) 12%);
+  --sidebar-ring: var(--ring);
 
-  --font-sans: Inter, Geist, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", sans-serif;
-  --font-mono: "JetBrains Mono", "Geist Mono", "SFMono-Regular", Consolas, monospace;
+  /* Compatibility aliases while feature modules migrate to canonical tokens. */
+  --color-primary-cta: var(--primary-control);
+  --color-primary-cta-hover: var(--primary-control-hover);
+  --color-primary-cta-active: var(--primary-control-active);
+  --color-primary-cta-foreground: var(--primary-control-foreground);
+  --color-canvas: var(--background);
+  --color-surface: var(--card);
+  --color-surface-raised: var(--card);
+  --color-surface-interactive: var(--muted);
+  --color-divider: var(--border);
+  --color-border: var(--border);
+  --color-border-control: var(--muted-foreground);
+  --color-border-strong: var(--foreground);
+  --color-text: var(--foreground);
+  --color-text-secondary: var(--secondary-foreground);
+  --color-text-muted: var(--muted-foreground);
+  --color-text-disabled: color-mix(in oklch, var(--muted-foreground), var(--background) 28%);
+  --color-on-primary: var(--primary-control-foreground);
+  --color-on-primary-cta: var(--color-primary-cta-foreground);
+  --color-link: oklch(46.98% 0.143 37.304);
+  --color-focus: var(--ring);
+  --color-ai: var(--primary);
+  --color-ai-soft: var(--primary-soft);
+  --color-success: color-mix(in oklch, var(--chart-2), var(--foreground) 35%);
+  --color-success-soft: color-mix(in oklch, var(--chart-2) 12%, var(--card));
+  --color-warning: color-mix(in oklch, var(--chart-4), var(--foreground) 55%);
+  --color-warning-soft: color-mix(in oklch, var(--chart-4) 18%, var(--card));
+  --color-danger: color-mix(in oklch, var(--destructive), var(--foreground) 15%);
+  --color-danger-soft: color-mix(in oklch, var(--destructive) 10%, var(--card));
+  --color-info: var(--muted-foreground);
+  --color-info-soft: var(--muted);
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas,
+    "Liberation Mono", monospace;
 
   --text-display: 4rem;
   --text-display-line-height: 1.04;
@@ -73,13 +105,13 @@
   --radius-control: 0.5rem;
   --radius-lg: 0.625rem;
   --radius-xl: 0.875rem;
-  --radius-card: 0.625rem;
-  --radius-dialog: 0.875rem;
+  --radius-card: 0.75rem;
+  --radius-dialog: 1rem;
   --radius-pill: 9999px;
 
   --shadow-panel: 0 1px 2px oklch(20% 0.03 60 / 0.04);
   --shadow-overlay: 0 18px 48px -16px oklch(20% 0.03 60 / 0.28);
-  --focus-ring: 0 0 0 4px rgba(154, 52, 18, 0.18);
+  --focus-ring: 0 0 0 4px color-mix(in oklch, var(--ring) 22%, transparent);
 
   --motion-fast: 150ms;
   --motion-normal: 200ms;
@@ -88,11 +120,41 @@
 }
 
 @theme inline {
-  --color-brand: var(--color-primary);
-  --color-brand-hover: var(--color-primary-hover);
-  --color-brand-active: var(--color-primary-active);
-  --color-brand-soft: var(--color-primary-soft);
-  --color-brand-foreground: var(--color-on-primary);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-control: var(--primary-control);
+  --color-primary-control-hover: var(--primary-control-hover);
+  --color-primary-control-active: var(--primary-control-active);
+  --color-primary-control-foreground: var(--primary-control-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-brand: var(--primary-control);
+  --color-brand-vivid: var(--primary);
+  --color-brand-hover: var(--primary-control-hover);
+  --color-brand-active: var(--primary-control-active);
+  --color-brand-soft: var(--primary-soft);
+  --color-brand-foreground: var(--primary-control-foreground);
   --color-brand-text: var(--color-link);
   --color-brand-cta: var(--color-primary-cta);
   --color-brand-cta-hover: var(--color-primary-cta-hover);
@@ -123,8 +185,12 @@
   --color-state-info-soft: var(--color-info-soft);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
   --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
   --font-ui: var(--font-sans);
   --font-code: var(--font-mono);
   --spacing-ui-base: var(--space-2);
@@ -158,14 +224,13 @@
   *::before,
   *::after {
     box-sizing: border-box;
-    border-color: var(--color-border);
+    border-color: var(--border);
   }
 
   html {
-    min-width: 20rem;
     min-height: 100%;
-    background: var(--color-canvas);
-    color: var(--color-text);
+    background: var(--background);
+    color: var(--foreground);
     font-family: var(--font-sans);
     text-rendering: optimizeLegibility;
   }
@@ -173,8 +238,8 @@
   body {
     min-height: 100vh;
     margin: 0;
-    background: var(--color-canvas);
-    color: var(--color-text);
+    background: var(--background);
+    color: var(--foreground);
     font-size: 1rem;
     line-height: 1.6;
   }
@@ -202,19 +267,19 @@
   }
 
   ::selection {
-    background: var(--color-primary-soft);
-    color: var(--color-text);
+    background: var(--primary-soft);
+    color: var(--foreground);
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-focus);
+    outline: 2px solid var(--ring);
     outline-offset: 3px;
     box-shadow: var(--focus-ring);
   }
 }
 
 @layer components {
-  .button-primary {
+  .flae-button-primary {
     display: inline-flex;
     min-height: 2.5rem;
     align-items: center;
@@ -223,35 +288,102 @@
     padding: var(--space-2) var(--space-4);
     border: 1px solid transparent;
     border-radius: var(--radius-control);
-    background: var(--color-primary);
-    color: var(--color-on-primary);
+    background: var(--primary-control);
+    color: var(--primary-control-foreground);
     font-weight: 650;
     line-height: 1.25;
     transition: background-color var(--motion-fast) var(--ease-standard);
   }
 
-  .button-primary:hover:not(:disabled) {
-    background: var(--color-primary-hover);
+  /*
+   * Keep the semantic primary contract stronger than optional utility classes
+   * supplied by feature screens. This prevents a stray surface class from
+   * turning a primary action into a secondary-looking button.
+   */
+  button[data-variant="primary"] {
+    border-color: transparent;
+    background: var(--primary-control);
+    color: var(--primary-control-foreground);
   }
 
-  .button-primary:active:not(:disabled) {
-    background: var(--color-primary-active);
+  .flae-button-primary:hover:not(:disabled),
+  button[data-variant="primary"]:hover:not(:disabled) {
+    background: var(--primary-control-hover);
   }
 
-  .button-primary:disabled {
+  .flae-button-primary:active:not(:disabled),
+  button[data-variant="primary"]:active:not(:disabled) {
+    background: var(--primary-control-active);
+  }
+
+  .flae-button-primary:disabled {
     opacity: 0.48;
   }
+
 }
 
 @layer utilities {
+  .header-add-source.flae-button-primary:disabled {
+    background: var(--primary-control) !important;
+    color: var(--primary-control-foreground) !important;
+    opacity: 1 !important;
+  }
+
+  .auth-grid {
+    background-image:
+      linear-gradient(color-mix(in oklch, var(--border) 45%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in oklch, var(--border) 45%, transparent) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+
+  .auth-enter {
+    animation: auth-enter 420ms var(--ease-standard) both;
+  }
+
+  .auth-enter-delay {
+    animation-delay: 90ms;
+  }
+
+  .memory-flow {
+    stroke: color-mix(in oklch, var(--primary) 58%, transparent);
+    stroke-dasharray: 7 12;
+    stroke-linecap: round;
+    stroke-width: 1.6;
+    vector-effect: non-scaling-stroke;
+    animation: memory-flow 12s linear infinite;
+  }
+
+  .memory-flow-delay {
+    animation-delay: -4s;
+  }
+
+  .memory-pulse {
+    animation: memory-pulse 4.8s ease-in-out infinite;
+  }
+
+  .knowledge-graph-atmosphere {
+    background-image:
+      linear-gradient(
+        color-mix(in srgb, var(--color-border-strong) 8%, transparent) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--color-border-strong) 8%, transparent) 1px,
+        transparent 1px
+      ),
+      radial-gradient(circle at 50% 35%, var(--primary-soft), transparent 45%);
+    background-size: 32px 32px, 32px 32px, auto;
+  }
+
   .surface-panel {
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--border);
     border-radius: var(--radius-card);
-    background: var(--color-surface-raised);
+    background: var(--card);
   }
 
   .text-metadata {
-    color: var(--color-text-muted);
+    color: var(--muted-foreground);
     font-family: var(--font-mono);
     font-size: var(--text-label);
     font-weight: var(--text-label-font-weight);
@@ -259,9 +391,38 @@
   }
 
   .focus-ring {
-    outline: 2px solid var(--color-focus);
+    outline: 2px solid var(--ring);
     outline-offset: 3px;
     box-shadow: var(--focus-ring);
+  }
+}
+
+@keyframes auth-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes memory-flow {
+  to {
+    stroke-dashoffset: -190;
+  }
+}
+
+@keyframes memory-pulse {
+  0%,
+  100% {
+    box-shadow: 0 18px 45px color-mix(in oklch, var(--primary) 20%, transparent);
+  }
+
+  50% {
+    box-shadow: 0 18px 58px color-mix(in oklch, var(--primary) 32%, transparent);
   }
 }
 

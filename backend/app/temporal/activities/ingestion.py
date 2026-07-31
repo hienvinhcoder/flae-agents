@@ -2,6 +2,7 @@
 Temporal Activities cho Knowledge Base Ingestion Pipeline.
 Mỗi activity là một bước riêng biệt trong pipeline TGS-RAG.
 """
+import asyncio
 import uuid
 from typing import Optional, Any
 
@@ -62,10 +63,12 @@ async def prepare_document_content(params: dict) -> str:
     # Download from GCS
     from app.services.gcs_storage_srv import GCSStorageService
 
-    file_content = GCSStorageService.download_file_sync(gcs_path)
+    file_content = await asyncio.to_thread(GCSStorageService.download_file_sync, gcs_path)
 
     if doc_type == "pdf":
-        text = ParserService.convert_pdf_to_markdown(file_content, file_name)
+        text = await asyncio.to_thread(
+            ParserService.convert_pdf_to_markdown, file_content, file_name
+        )
     else:
         # markdown hoặc text: decode trực tiếp
         text = file_content.decode("utf-8", errors="replace")
@@ -96,7 +99,8 @@ async def chunk_document_activity(params: dict) -> list[dict]:
     chunk_size = params.get("chunk_size", default_size)
     chunk_overlap = params.get("chunk_overlap", default_overlap)
 
-    chunks = ChunkingService.chunk_document(
+    chunks = await asyncio.to_thread(
+        ChunkingService.chunk_document,
         text=raw_text,
         file_hash=doc_hash,
         strategy=strategy,
@@ -112,7 +116,9 @@ async def chunk_document_activity(params: dict) -> list[dict]:
 async def generate_embeddings_activity(params: dict) -> list[dict]:
     """Tạo embeddings cho batch chunks."""
     chunks = params["chunks"]
-    embedded_chunks, tokens = IngestionService.generate_chunk_embeddings(chunks)
+    embedded_chunks, tokens = await asyncio.to_thread(
+        IngestionService.generate_chunk_embeddings, chunks
+    )
     valid_count = sum(1 for c in embedded_chunks if c.get("embedding"))
     logger.info(
         f"Embeddings generated: {valid_count}/{len(chunks)} chunks, "
@@ -151,7 +157,8 @@ async def fuse_and_save_activity(params: dict) -> dict:
     relations = params.get("relations", [])
     source_doc_id = params["source_doc_id"]
 
-    res = IngestionService.fuse_and_save(
+    res = await asyncio.to_thread(
+        IngestionService.fuse_and_save,
         workspace_id=workspace_id,
         chunks=chunks,
         entities=entities,

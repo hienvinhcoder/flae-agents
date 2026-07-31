@@ -8,6 +8,70 @@ from app.core.config import settings
 from app.db.rag_db import rag_db_manager
 from app.services.knowalge_base.cleanup import cleanup_rag_data as _cleanup_rag_data
 
+
+def _insert_revisioned_chunk(
+    cur,
+    *,
+    schema: str,
+    workspace_id: str,
+    chunk_id: str,
+    text: str,
+    document_id: str,
+    entity_ids: list[str] | None = None,
+    relation_ids: list[str] | None = None,
+) -> None:
+    revision_id = str(uuid.uuid4())
+    source_id = str(uuid.uuid4())
+    cur.execute(
+        f"""
+        INSERT INTO {schema}.document_revisions (
+            workspace_id, revision_id, source_id, document_id,
+            source_external_id, source_version_key, content_checksum,
+            acl_checksum, state, base_readiness, graph_readiness,
+            discovery_readiness, acl_scope, acl_principal_ids
+        ) VALUES (%s, %s, %s, %s, %s, 'cleanup-test-v1', %s, %s,
+                  'searchable', 'ready', 'pending', 'pending',
+                  'workspace', '[]'::jsonb)
+        """,
+        (
+            workspace_id,
+            revision_id,
+            source_id,
+            document_id,
+            document_id,
+            "sha256:" + uuid.uuid4().hex * 2,
+            "sha256:" + uuid.uuid4().hex * 2,
+        ),
+    )
+    cur.execute(
+        f"""
+        INSERT INTO {schema}.chunks (
+            workspace_id, chunk_id, text, source_document_id,
+            entity_ids, relation_ids, revision_id, source_id, document_id,
+            heading_path, location_kind, location_data, content_hash,
+            parser_version, chunker_version, pipeline_version, source_name,
+            source_type, source_modified_at, ingested_at, acl_scope,
+            acl_principal_ids
+        ) VALUES (%s, %s, %s, %s, %s::jsonb, %s::jsonb, %s, %s, %s,
+                  '[]'::jsonb, 'section',
+                  '{{"heading_path":["Cleanup test"]}}'::jsonb, %s,
+                  'test-parser', 'test-chunker', 'test-pipeline',
+                  'Cleanup test', 'test', now(), now(), 'workspace', '[]'::jsonb)
+        """,
+        (
+            workspace_id,
+            chunk_id,
+            text,
+            document_id,
+            json.dumps(entity_ids or []),
+            json.dumps(relation_ids or []),
+            revision_id,
+            source_id,
+            document_id,
+            "sha256:" + uuid.uuid4().hex * 2,
+        ),
+    )
+
 @pytest.mark.asyncio
 async def test_cleanup_rag_data_recalculate():
     workspace_id = str(uuid.uuid4())
@@ -24,15 +88,22 @@ async def test_cleanup_rag_data_recalculate():
     cur = conn.cursor()
     schema = rag_db_manager.schema
 
-    # Đảm bảo partition cho workspace tồn tại
-    rag_db_manager._ensure_partition(cur, workspace_id)
-
     # 1. Insert Chunks
-    cur.execute(
-        f"INSERT INTO {schema}.chunks (workspace_id, chunk_id, text, source_document_id) "
-        f"VALUES (%s, %s, %s, %s), (%s, %s, %s, %s)",
-        (workspace_id, chunk_delete_1, "Text delete", doc_to_delete,
-         workspace_id, chunk_keep_1, "Text keep", doc_to_keep)
+    _insert_revisioned_chunk(
+        cur,
+        schema=schema,
+        workspace_id=workspace_id,
+        chunk_id=chunk_delete_1,
+        text="Text delete",
+        document_id=doc_to_delete,
+    )
+    _insert_revisioned_chunk(
+        cur,
+        schema=schema,
+        workspace_id=workspace_id,
+        chunk_id=chunk_keep_1,
+        text="Text keep",
+        document_id=doc_to_keep,
     )
 
     # 2. Insert Entity liên kết cả 2 chunks
@@ -148,15 +219,24 @@ async def test_cleanup_rag_data_with_topics():
     cur = conn.cursor()
     schema = rag_db_manager.schema
 
-    # Tạo partition cho workspace (bây giờ sẽ tạo partition cho cả chunks, entities, relationships, topics, memberships...)
-    rag_db_manager._ensure_partition(cur, workspace_id)
-
     # 1. Insert Chunks
-    cur.execute(
-        f"INSERT INTO {schema}.chunks (workspace_id, chunk_id, text, source_document_id, entity_ids, relation_ids) "
-        f"VALUES (%s, %s, %s, %s, %s::jsonb, %s::jsonb), (%s, %s, %s, %s, %s::jsonb, %s::jsonb)",
-        (workspace_id, chunk_delete_1, "Text delete", doc_to_delete, json.dumps(["ent_delete_1"]), json.dumps(["rel_delete_1"]),
-         workspace_id, chunk_keep_1, "Text keep", doc_to_keep, json.dumps([]), json.dumps([]))
+    _insert_revisioned_chunk(
+        cur,
+        schema=schema,
+        workspace_id=workspace_id,
+        chunk_id=chunk_delete_1,
+        text="Text delete",
+        document_id=doc_to_delete,
+        entity_ids=["ent_delete_1"],
+        relation_ids=["rel_delete_1"],
+    )
+    _insert_revisioned_chunk(
+        cur,
+        schema=schema,
+        workspace_id=workspace_id,
+        chunk_id=chunk_keep_1,
+        text="Text keep",
+        document_id=doc_to_keep,
     )
 
     # 1.1 Insert Entity và Relationship sẽ bị xóa hoàn toàn (chỉ thuộc về chunk_delete_1)

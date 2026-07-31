@@ -1,5 +1,7 @@
+import { zodResolver } from "@hookform/resolvers/zod";
 import { FileText, Pencil, RefreshCw, Save, X } from "lucide-react";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "../../../shared/ui/Button";
@@ -7,7 +9,7 @@ import { Input } from "../../../shared/ui/Input";
 import { PageHeader } from "../../../shared/ui/PageHeader";
 import { Select } from "../../../shared/ui/Select";
 import { Tabs, type TabItem } from "../../../shared/ui/Tabs";
-import { topicEditSchema } from "../schemas/topic-schema";
+import { topicEditSchema, type TopicEditForm } from "../schemas/topic-schema";
 import type {
   TopicDetail,
   TopicStatus,
@@ -66,12 +68,25 @@ export function TopicDetailWorkbench({
 }: TopicDetailWorkbenchProps) {
   const { i18n, t } = useTranslation();
   const [editing, setEditing] = useState(false);
-  const [name, setName] = useState("");
-  const [status, setStatus] = useState<TopicStatus>("active");
-  const [validationError, setValidationError] = useState<ValidationErrorCode>();
+  const {
+    formState: { errors },
+    handleSubmit,
+    register,
+    reset,
+  } = useForm<TopicEditForm>({
+    defaultValues: { name: topic.name, status: topic.status },
+    resolver: zodResolver(topicEditSchema),
+  });
   const [actionError, setActionError] = useState<ActionErrorState>();
   const [summaryFeedback, setSummaryFeedback] = useState<SummaryFeedbackState>();
   const busy = updatePending || summaryPending;
+  const validationError: ValidationErrorCode | undefined = errors.name?.type === "too_big"
+    ? "nameMax"
+    : errors.name
+      ? "nameRequired"
+      : errors.status
+        ? "reviewDetails"
+        : undefined;
   const validationMessage = validationError === "nameMax"
     ? t("TOPICS.NAME_MAX")
     : validationError === "nameRequired"
@@ -89,23 +104,10 @@ export function TopicDetailWorkbench({
     i18n.resolvedLanguage ?? i18n.language,
   ).format(new Date(topic.updated_at));
 
-  const save = async () => {
-    const result = topicEditSchema.safeParse({ name, status });
-    if (!result.success) {
-      const issue = result.error.issues[0];
-      setValidationError(
-        issue?.code === "too_big"
-          ? "nameMax"
-          : issue?.code === "too_small"
-            ? "nameRequired"
-            : "reviewDetails",
-      );
-      return;
-    }
-    setValidationError(undefined);
+  const save = async (payload: TopicEditForm) => {
     setActionError(undefined);
     try {
-      const updated = await onUpdate(result.data);
+      const updated = await onUpdate(payload);
       setEditing(false);
       onStableId(updated.topic_id);
     } catch (error) {
@@ -138,9 +140,7 @@ export function TopicDetailWorkbench({
               disabled={busy || editing}
               onClick={() => {
                 setActionError(undefined);
-                setName(topic.name);
-                setStatus(topic.status);
-                setValidationError(undefined);
+                reset({ name: topic.name, status: topic.status });
                 setEditing(true);
               }}
               type="button"
@@ -173,31 +173,23 @@ export function TopicDetailWorkbench({
           aria-describedby={updateError ? "topic-update-error" : undefined}
           aria-label={t("TOPICS.EDIT_TOPIC")}
           className="surface-panel grid gap-4 p-5 md:grid-cols-[minmax(0,1fr)_14rem_auto] md:items-end"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void save();
-          }}
+          onSubmit={(event) => void handleSubmit(save)(event)}
         >
           <Input
             disabled={busy}
             error={validationMessage}
             label={t("TOPICS.TOPIC_NAME")}
-            onChange={(event) => {
-              setName(event.target.value);
-              setValidationError(undefined);
-            }}
-            value={name}
+            {...register("name")}
           />
           <Select
             disabled={busy}
             label={t("TOPICS.TOPIC_STATUS")}
-            onChange={(event) => setStatus(event.target.value as TopicStatus)}
+            {...register("status")}
             options={[
               { label: t("TOPICS.STATUS_ACTIVE"), value: "active" },
               { label: t("TOPICS.STATUS_NEEDS_REVIEW"), value: "needs_review" },
               { label: t("TOPICS.STATUS_ARCHIVED"), value: "archived" },
             ]}
-            value={status}
           />
           <div className="flex flex-wrap gap-2">
             <Button
@@ -214,9 +206,7 @@ export function TopicDetailWorkbench({
               onClick={() => {
                 setActionError(undefined);
                 setEditing(false);
-                setName(topic.name);
-                setStatus(topic.status);
-                setValidationError(undefined);
+                reset({ name: topic.name, status: topic.status });
               }}
               type="button"
               variant="ghost"

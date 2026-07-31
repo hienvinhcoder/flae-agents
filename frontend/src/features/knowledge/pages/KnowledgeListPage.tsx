@@ -220,7 +220,10 @@ export function KnowledgeListPage() {
               <PencilLine aria-hidden className="h-4 w-4" />
               {t("KNOWLEDGE.ADD_TEXT")}
             </Button>
-            <Button onClick={() => setUploadOpen(true)}>
+            <Button
+              onClick={() => setUploadOpen(true)}
+              variant="primary"
+            >
               <FilePlus2 aria-hidden className="h-4 w-4" />
               {t("KNOWLEDGE.UPLOAD_FILE")}
             </Button>

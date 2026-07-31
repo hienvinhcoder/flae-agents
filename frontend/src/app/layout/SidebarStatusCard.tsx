@@ -7,7 +7,7 @@ export function SidebarStatusCard() {
   return (
     <section
       aria-labelledby="sidebar-indexing-title"
-      className="rounded-ui-panel border border-sidebar-border bg-sidebar-accent p-4 text-sidebar-foreground"
+      className="rounded-ui-panel bg-sidebar-accent p-4 text-sidebar-foreground"
     >
       <div className="flex items-center gap-2 text-xs text-sidebar-foreground/70">
         <Activity aria-hidden className="h-3.5 w-3.5" />
@@ -24,7 +24,7 @@ export function SidebarStatusCard() {
         className="mt-3 h-1.5 overflow-hidden rounded-ui-status bg-sidebar-border"
         role="meter"
       >
-        <span className="block h-full w-4/5 bg-brand" />
+        <span className="block h-full w-4/5 bg-primary" />
       </div>
       <p className="mt-2 text-xs text-sidebar-foreground/60">42,180 nodes · 128k edges</p>
     </section>

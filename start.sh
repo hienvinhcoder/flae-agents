@@ -1,6 +1,6 @@
 #!/bin/bash
 # start.sh - Khởi động hệ thống flae-agents
-# Backend, DB, Temporal chạy ngầm trong Docker Compose
+# Backend, Firebase Emulator và hạ tầng chạy trong Docker Compose; log dịch vụ được theo dõi trực tiếp
 # Frontend chạy bằng Vite trực tiếp bên ngoài để hỗ trợ hot reload
 
 set -e
@@ -14,12 +14,39 @@ echo "🚀 Đang khởi động hệ thống FLAE Agents..."
 echo "=========================================================="
 
 # 1. Khởi động Docker Compose
-echo "📦 Khởi động các dịch vụ Backend, DB, Redis và Temporal..."
+echo "📦 Khởi động Backend, Firebase Emulator, DB, Redis và Temporal..."
 docker compose up -d
 
-# 2. Kiểm tra và đồng bộ dependencies cho Frontend
+# 2. Khởi tạo cấu hình local cho Frontend nếu chưa có
+FRONTEND_DIR="$PROJECT_DIR/frontend"
+FRONTEND_ENV_FILE="$FRONTEND_DIR/.env"
+
+if [ ! -f "$FRONTEND_ENV_FILE" ]; then
+  cp "$FRONTEND_DIR/.env.example" "$FRONTEND_ENV_FILE"
+  echo "⚠️  Đã tạo frontend/.env từ .env.example."
+  echo "✅ Firebase Authentication và Storage Emulator đã được bật cho local."
+else
+  echo "✅ Đã tìm thấy cấu hình frontend/.env."
+fi
+
+# 3. Theo dõi log Firebase Emulator, Backend và Worker trong terminal hiện tại
+LOGS_PID=""
+
+cleanup_log_follower() {
+  if [ -n "$LOGS_PID" ] && kill -0 "$LOGS_PID" 2>/dev/null; then
+    kill "$LOGS_PID" 2>/dev/null || true
+    wait "$LOGS_PID" 2>/dev/null || true
+  fi
+}
+trap cleanup_log_follower EXIT
+
+echo "📋 Bắt đầu theo dõi log Firebase Emulator, Backend và Worker..."
+docker compose logs --follow --tail=100 firebase-emulator backend flae-worker &
+LOGS_PID=$!
+
+# 4. Kiểm tra và đồng bộ dependencies cho Frontend
 echo "📦 Kiểm tra dependencies của Frontend..."
-cd "$PROJECT_DIR/frontend"
+cd "$FRONTEND_DIR"
 
 if [ ! -d "node_modules" ]; then
   echo "⚠️  Không tìm thấy node_modules. Đang cài đặt dependencies từ package-lock.json..."
@@ -31,12 +58,16 @@ else
   echo "✅ Dependencies hiện có hợp lệ."
 fi
 
-# 3. Khởi chạy Vite Frontend ở chế độ Foreground
+# 5. Khởi chạy Vite Frontend ở chế độ Foreground
 echo "=========================================================="
 echo "✨ Đang khởi chạy Vite Frontend..."
 echo "🌐 Ứng dụng sẽ khả dụng tại: http://localhost:4200"
+echo "🔥 Firebase Emulator UI: http://localhost:4000"
+echo "🔐 Authentication Emulator: http://localhost:9099"
+echo "🗄️  Storage Emulator: http://localhost:9199"
+echo "📋 Log Firebase Emulator, Backend và Worker sẽ hiển thị trong terminal này."
 echo "ℹ️  Nhấn Ctrl+C để dừng Frontend."
-echo "ℹ️  Để tắt hoàn toàn các dịch vụ Backend & DB chạy ngầm, hãy chạy: ./stop.sh"
+echo "ℹ️  Để tắt hoàn toàn các dịch vụ Docker chạy ngầm, hãy chạy: ./stop.sh"
 echo "=========================================================="
 
 npm run dev

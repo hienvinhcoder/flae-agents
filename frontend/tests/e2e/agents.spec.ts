@@ -153,6 +153,7 @@ test('reloads the explorer for a newly selected workspace', async ({ api, page }
     api.members.map((member) => ({ ...member, workspace_id: ids.secondWorkspace })),
   ));
 
+  await page.getByRole('button', { name: 'ET' }).click();
   await page.getByRole('combobox', { name: 'Workspace', exact: true }).selectOption(ids.secondWorkspace);
 
   await expect(page.getByRole('heading', { level: 2, name: 'No agents yet' })).toBeVisible();

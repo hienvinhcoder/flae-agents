@@ -49,6 +49,9 @@ class KnowledgeDocument(BaseModel):
     file_size: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     gcs_path: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
     mime_type: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    content_checksum: Mapped[Optional[str]] = mapped_column(
+        String(71), nullable=True
+    )
 
     # --- Manual input content (null nếu file upload) ---
     content_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)

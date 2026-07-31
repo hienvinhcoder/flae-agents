@@ -10,11 +10,22 @@ describe('Button', () => {
 
     const button = screen.getByRole('button', { name: 'Upload document' });
     expect(button).toHaveClass(
-      'button-primary',
-      'bg-brand-cta',
-      'text-brand-cta-foreground',
-      'hover:bg-brand-cta-hover',
-      'active:bg-brand-cta-active',
+      'flae-button-primary',
+      'bg-primary-control',
+      'text-primary-control-foreground',
+      'hover:bg-primary-control-hover',
+      'active:bg-primary-control-active',
+    );
+    expect(button).toHaveAttribute('data-variant', 'primary');
+    expect(button).not.toHaveClass('button-primary');
+  });
+
+  it('keeps the semantic primary contract when callers add surface utilities', () => {
+    render(<Button className="bg-secondary text-secondary-foreground">Upload document</Button>);
+
+    expect(screen.getByRole('button', { name: 'Upload document' })).toHaveAttribute(
+      'data-variant',
+      'primary',
     );
   });
 
@@ -45,8 +56,8 @@ describe('Button', () => {
     expect(screen.getByRole('button', { name: 'Add source' })).toHaveClass(
       'min-h-10',
       'min-w-10',
-      'border-ui-divider',
-      'bg-ui-raised',
+      'border-border',
+      'bg-card',
     );
   });
 });

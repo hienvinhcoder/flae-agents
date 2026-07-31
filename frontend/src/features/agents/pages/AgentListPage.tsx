@@ -76,7 +76,7 @@ export function AgentListPage() {
     <section className="mx-auto grid w-full max-w-7xl gap-8">
       <PageHeader
         actions={canManage ? (
-          <Link className="button-primary inline-flex min-h-11 items-center justify-center gap-2 rounded-ui-control border px-4 py-2 font-semibold" to="/dashboard/agents/new">
+          <Link className="flae-button-primary inline-flex min-h-11 items-center justify-center gap-2 rounded-ui-control border px-4 py-2 font-semibold" to="/dashboard/agents/new">
             <Plus aria-hidden className="h-4 w-4" />
             {t("AGENTS_UI.CREATE")}
           </Link>
@@ -107,7 +107,7 @@ export function AgentListPage() {
           <div className="border-y border-ui-divider bg-ui-raised/45">
             <EmptyState
               action={canManage ? (
-                <Link className="button-primary inline-flex min-h-11 items-center justify-center gap-2 rounded-ui-control border px-4 py-2 font-semibold" to="/dashboard/agents/new">
+                <Link className="flae-button-primary inline-flex min-h-11 items-center justify-center gap-2 rounded-ui-control border px-4 py-2 font-semibold" to="/dashboard/agents/new">
                   <Plus aria-hidden className="h-4 w-4" />
                   {t("AGENTS_UI.CREATE")}
                 </Link>

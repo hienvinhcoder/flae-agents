@@ -12,7 +12,11 @@ cp .env.example .env
 npm run dev
 ```
 
-Update `.env` with the backend, WebSocket, and Firebase values for your environment. The Vite development server listens on all interfaces and uses port 4200.
+The example environment enables Firebase Authentication and Storage emulators for project `flae-agents`. The Vite development server listens on all interfaces and uses port 4200.
+
+When starting from the repository root with `./start.sh`, the script creates `frontend/.env` from `.env.example` if needed and follows the Docker Compose `firebase-emulator`, `backend`, and `flae-worker` logs. Emulator UI is available at `http://localhost:4000`, Auth at port `9099`, and Storage at port `9199`.
+
+For production, set `VITE_USE_FIREBASE_EMULATORS=false` and provide the real Firebase Web SDK values. Do not expose emulator host variables to production Backend or Worker services.
 
 ## Application architecture
 
@@ -20,6 +24,12 @@ Update `.env` with the backend, WebSocket, and Firebase values for your environm
 - TanStack Query owns server state, Zustand is reserved for shared client state, and component-local state stays in React.
 - Feature API modules provide typed request/response boundaries; UI components do not call network transports directly.
 - Timers, subscriptions, streams, sockets, listeners, and cancellable requests created by effects must be cleaned up when their owner unmounts.
+
+## Tailwind theme
+
+The frontend uses Tailwind CSS v4 with the `@tailwindcss/vite` integration registered in `vite.config.ts`. The application entry point imports `src/styles.css`, which loads Tailwind and defines the project-wide design tokens through CSS-first `:root` values and semantic `@theme inline` mappings.
+
+Do not add a Tailwind v3-style `tailwind.config.js`. Prefer semantic utilities such as `bg-ui-canvas`, `text-ui-ink`, `border-ui-line`, and `rounded-ui-panel` so components consume the shared theme instead of hard-coded design values.
 
 ## Quality checks
 

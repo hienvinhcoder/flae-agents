@@ -13,9 +13,9 @@ describe('Card', () => {
 
     expect(screen.getByRole('region', { name: 'Memory' })).toHaveClass(
       'border',
-      'border-ui-divider',
+      'border-border',
       'rounded-ui-panel',
-      'bg-ui-interactive',
+      'bg-muted',
       'p-4',
     );
   });

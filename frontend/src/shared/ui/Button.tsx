@@ -19,11 +19,11 @@ const sizeClasses: Record<ButtonSize, string> = {
 };
 
 const variantClasses: Record<ButtonVariant, string> = {
-  danger: 'border-state-danger bg-state-danger-soft text-state-danger hover:bg-ui-interactive',
-  ghost: 'border-transparent bg-transparent text-ui-ink-secondary hover:bg-ui-interactive hover:text-ui-ink',
-  outline: 'border-ui-divider bg-ui-raised text-ui-ink hover:bg-ui-interactive',
-  primary: 'button-primary border-transparent bg-brand-cta text-brand-cta-foreground hover:bg-brand-cta-hover active:bg-brand-cta-active',
-  secondary: 'border-ui-line bg-ui-raised text-ui-ink hover:bg-ui-interactive',
+  danger: 'border-destructive bg-destructive text-destructive-foreground hover:opacity-90',
+  ghost: 'border-transparent bg-transparent text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+  outline: 'border-border bg-card text-foreground hover:bg-secondary',
+  primary: 'flae-button-primary border-transparent bg-primary-control text-primary-control-foreground hover:bg-primary-control-hover active:bg-primary-control-active',
+  secondary: 'border-border bg-secondary text-secondary-foreground hover:bg-accent',
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
@@ -45,6 +45,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       {...props}
       aria-busy={isLoading || undefined}
       className={`inline-flex items-center justify-center gap-2 border font-semibold transition-colors duration-200 motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-50 ${pill ? 'rounded-ui-status' : 'rounded-ui-control'} ${sizeClasses[size]} ${variantClasses[variant]} ${className}`}
+      data-variant={variant}
       disabled={disabled || isLoading}
       ref={ref}
     >

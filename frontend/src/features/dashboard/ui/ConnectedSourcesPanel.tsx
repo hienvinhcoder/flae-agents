@@ -38,9 +38,9 @@ export function ConnectedSourcesPanel({
           {manageLabel}
         </Button>
       </div>
-      <ul className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <ul className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
         {sources.map((source) => (
-          <li className="rounded-ui-panel border border-ui-divider p-4" key={source.id}>
+          <li className="rounded-ui-panel border border-ui-divider p-4 transition-colors duration-200 hover:border-primary/50 motion-reduce:transition-none" key={source.id}>
             <div className="flex items-center justify-between gap-3">
               <span
                 aria-hidden

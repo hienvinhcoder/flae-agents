@@ -21,11 +21,30 @@ function renderPage() {
   );
 }
 
+function deferredPromise() {
+  let resolve!: () => void;
+  const promise = new Promise<void>((resolvePromise) => {
+    resolve = resolvePromise;
+  });
+
+  return { promise, resolve };
+}
+
 describe('LoginPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useAuthStore.getState().resetForBootstrap();
     useAuthStore.getState().setAnonymous();
+  });
+
+  it('presents the product story and focuses email for immediate sign-in', () => {
+    renderPage();
+
+    expect.soft(screen.queryByText('AI COMPANY MEMORY')).toBeInTheDocument();
+    expect.soft(
+      screen.queryByText("Sign in to access your team's connected knowledge."),
+    ).toBeInTheDocument();
+    expect.soft(screen.getByRole('textbox', { name: 'Email' })).toHaveFocus();
   });
 
   it('maps an email login failure to a safe inline message without leaking PII', async () => {
@@ -64,6 +83,32 @@ describe('LoginPage', () => {
     );
   });
 
+  it('communicates and prevents duplicate actions while email login is pending', async () => {
+    const user = userEvent.setup();
+    const pendingLogin = deferredPromise();
+    firebaseMocks.signInWithEmail.mockReturnValue(pendingLogin.promise);
+    renderPage();
+
+    await user.type(screen.getByLabelText('Email'), 'member@example.com');
+    await user.type(screen.getByLabelText('Password'), 'secret-value');
+
+    try {
+      await user.click(screen.getByRole('button', { name: 'Sign in' }));
+      const signInButton = screen.getByRole('button', { name: /^Signing in/ });
+      expect.soft(signInButton).toHaveAccessibleName('Signing in...');
+      expect.soft(signInButton).toBeDisabled();
+      expect.soft(signInButton).toHaveAttribute('aria-busy', 'true');
+      expect
+        .soft(screen.getByRole('button', { name: 'Continue with Google' }))
+        .toBeDisabled();
+    } finally {
+      pendingLogin.resolve();
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Sign in' })).toBeEnabled(),
+      );
+    }
+  });
+
   it('shows accessible validation messages before calling Firebase', async () => {
     const user = userEvent.setup();
     renderPage();
@@ -75,6 +120,22 @@ describe('LoginPage', () => {
     expect(await screen.findByText('Enter a valid email address.')).toBeInTheDocument();
     expect(screen.getByText('Password must contain at least 6 characters.')).toBeInTheDocument();
     expect(firebaseMocks.signInWithEmail).not.toHaveBeenCalled();
+  });
+
+  it('associates each validation message with its input', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.type(screen.getByLabelText('Email'), 'invalid');
+    await user.type(screen.getByLabelText('Password'), '123');
+    await user.click(screen.getByRole('button', { name: 'Sign in' }));
+
+    expect(screen.getByLabelText('Email')).toHaveAccessibleDescription(
+      'Enter a valid email address.',
+    );
+    expect(screen.getByLabelText('Password')).toHaveAccessibleDescription(
+      'Password must contain at least 6 characters.',
+    );
   });
 
   it('preserves the safe return URL when linking to registration', () => {
