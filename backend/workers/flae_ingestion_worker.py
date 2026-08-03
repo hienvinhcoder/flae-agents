@@ -27,9 +27,14 @@ from app.temporal.activities.enrichment import (
     verify_evidence_manifests_activity,
 )
 from app.temporal.activities.memory_state import project_memory_state_activity
+from app.temporal.activities.discovery import (
+    mark_discovery_failed_activity,
+    project_and_publish_discovery_activity,
+)
 from app.temporal.workflows.company_memory_ingestion import (
     CompanyMemoryIngestionWorkflow,
 )
+from app.temporal.workflows.discovery import DiscoveryEnrichmentWorkflow
 from app.temporal.workflows.enrichment import GraphEnrichmentWorkflow
 from app.temporal.workflows.evidence_extraction import EvidenceExtractionWorkflow
 from app.temporal.workflows.ingestion_v2 import IngestionWorkflowV2
@@ -51,6 +56,7 @@ def create_ingestion_worker(
         task_queue=settings.TEMPORAL_INGESTION_TASK_QUEUE,
         workflows=[
             CompanyMemoryIngestionWorkflow,
+            DiscoveryEnrichmentWorkflow,
             IngestionWorkflowV2,
             EvidenceExtractionWorkflow,
             GraphEnrichmentWorkflow,
@@ -72,6 +78,8 @@ def create_ingestion_worker(
             publish_graph_snapshot_activity,
             mark_graph_failed_activity,
             project_memory_state_activity,
+            project_and_publish_discovery_activity,
+            mark_discovery_failed_activity,
         ],
         activity_executor=activity_executor,
         max_concurrent_workflow_tasks=(
