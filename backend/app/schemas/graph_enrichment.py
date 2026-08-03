@@ -151,6 +151,9 @@ class GraphSnapshotPublishResult(GraphEnrichmentModel):
     semantic_projection_id: UUID | None = None
     revision_count: int = Field(ge=1)
     entity_count: int = Field(default=0, ge=0)
+    revision_set_checksum: str | None = Field(
+        default=None, pattern=r"^sha256:[0-9a-f]{64}$"
+    )
     relationship_count: int = Field(ge=0)
     mapping_count: int = Field(ge=0)
     graph_checksum: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")

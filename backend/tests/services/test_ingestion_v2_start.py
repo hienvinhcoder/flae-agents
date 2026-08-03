@@ -17,8 +17,8 @@ from app.services.knowalge_base import ingestion_workflow_starter
 from app.services.knowalge_base.ingestion_v2_start_service import (
     IngestionV2StartService,
 )
-from app.temporal.workflows.company_memory_ingestion import (
-    CompanyMemoryIngestionWorkflow,
+from app.temporal.workflows.discoverable_memory_ingestion import (
+    DiscoverableMemoryIngestionWorkflow,
 )
 
 
@@ -121,7 +121,7 @@ async def test_feature_flag_routes_new_checksummed_starts_to_v2_queue(
 
     assert workflow_id == f"kb-ingest-v2-{source.ingestion_run_id}"
     call = temporal_client.start_workflow.call_args
-    assert call.args[0] == CompanyMemoryIngestionWorkflow.run
-    assert call.args[1].base.source == source
-    assert call.args[1].semantic_graph.workspace_id == source.workspace_id
+    assert call.args[0] == DiscoverableMemoryIngestionWorkflow.run
+    assert call.args[1].memory.base.source == source
+    assert call.args[1].memory.semantic_graph.workspace_id == source.workspace_id
     assert call.kwargs["task_queue"] == settings.TEMPORAL_INGESTION_TASK_QUEUE

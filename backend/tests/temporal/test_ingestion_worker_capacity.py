@@ -29,6 +29,9 @@ from app.temporal.workflows.company_memory_ingestion import (
     CompanyMemoryIngestionWorkflow,
 )
 from app.temporal.workflows.discovery import DiscoveryEnrichmentWorkflow
+from app.temporal.workflows.discoverable_memory_ingestion import (
+    DiscoverableMemoryIngestionWorkflow,
+)
 from app.temporal.workflows.ingestion import DocumentIngestionWorkflow
 from app.temporal.workflows.ingestion_v2 import IngestionWorkflowV2
 from app.temporal.workflows.enrichment import GraphEnrichmentWorkflow
@@ -53,6 +56,7 @@ def test_ingestion_v2_uses_a_dedicated_bounded_worker(monkeypatch) -> None:
     assert kwargs["task_queue"] != "flae-default-queue"
     assert kwargs["workflows"] == [
         CompanyMemoryIngestionWorkflow,
+        DiscoverableMemoryIngestionWorkflow,
         DiscoveryEnrichmentWorkflow,
         IngestionWorkflowV2,
         EvidenceExtractionWorkflow,

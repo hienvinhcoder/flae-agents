@@ -35,6 +35,9 @@ from app.temporal.workflows.company_memory_ingestion import (
     CompanyMemoryIngestionWorkflow,
 )
 from app.temporal.workflows.discovery import DiscoveryEnrichmentWorkflow
+from app.temporal.workflows.discoverable_memory_ingestion import (
+    DiscoverableMemoryIngestionWorkflow,
+)
 from app.temporal.workflows.enrichment import GraphEnrichmentWorkflow
 from app.temporal.workflows.evidence_extraction import EvidenceExtractionWorkflow
 from app.temporal.workflows.ingestion_v2 import IngestionWorkflowV2
@@ -56,6 +59,7 @@ def create_ingestion_worker(
         task_queue=settings.TEMPORAL_INGESTION_TASK_QUEUE,
         workflows=[
             CompanyMemoryIngestionWorkflow,
+            DiscoverableMemoryIngestionWorkflow,
             DiscoveryEnrichmentWorkflow,
             IngestionWorkflowV2,
             EvidenceExtractionWorkflow,
