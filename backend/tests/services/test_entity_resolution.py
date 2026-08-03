@@ -11,6 +11,7 @@ def _observation(
     *,
     external_ids: tuple[str, ...] = (),
     attributes: tuple[tuple[str, str], ...] = (),
+    graph_neighbor_mentions: tuple[str, ...] = (),
     confidence: float = 0.95,
 ) -> ResolutionObservation:
     return ResolutionObservation(
@@ -25,6 +26,7 @@ def _observation(
         disambiguation_attributes=tuple(
             {"name": key, "value": value} for key, value in attributes
         ),
+        graph_neighbor_mentions=graph_neighbor_mentions,
     )
 
 
@@ -137,3 +139,34 @@ def test_lineage_records_merge_and_split_without_rewriting_prior_projection() ->
     assert merged.mapping_checksum != split.mapping_checksum
     assert len(merged.entities) == 1
     assert len(split.entities) == 2
+
+
+def test_source_backed_alias_connects_cross_document_mentions() -> None:
+    canonical = _observation("Atlas Edge")
+    alias = _observation(
+        "Project Edge", attributes=(("alias", "Atlas Edge"),)
+    )
+
+    projection = EntityResolutionService.resolve_observations(
+        (canonical, alias), resolver_version="resolver-v2"
+    )
+
+    assert len(projection.entities) == 1
+    assert projection.entities[0].aliases == ("Atlas Edge", "Project Edge")
+
+
+def test_shared_graph_neighborhood_supports_cross_document_identity() -> None:
+    first = _observation(
+        "Orion",
+        graph_neighbor_mentions=("helios api", "platform team"),
+    )
+    second = _observation(
+        "ORION",
+        graph_neighbor_mentions=("helios api", "customer portal"),
+    )
+
+    projection = EntityResolutionService.resolve_observations(
+        (first, second), resolver_version="resolver-v2"
+    )
+
+    assert len(projection.entities) == 1

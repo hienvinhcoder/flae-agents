@@ -26,6 +26,7 @@ class ResolutionObservation(GraphEnrichmentModel):
     disambiguation_attributes: tuple[ObservationAttribute, ...] = Field(
         default=(), max_length=100
     )
+    graph_neighbor_mentions: tuple[str, ...] = Field(default=(), max_length=1_000)
 
 
 class CanonicalEntityVersion(GraphEnrichmentModel):

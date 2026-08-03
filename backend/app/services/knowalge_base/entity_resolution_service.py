@@ -36,6 +36,22 @@ def _attributes(item: ResolutionObservation) -> set[tuple[str, str]]:
     }
 
 
+def _aliases(item: ResolutionObservation) -> set[str]:
+    return {
+        attribute.value.casefold()
+        for attribute in item.disambiguation_attributes
+        if attribute.name.casefold() == "alias"
+    }
+
+
+def _context_attributes(item: ResolutionObservation) -> set[tuple[str, str]]:
+    return {
+        value
+        for value in _attributes(item)
+        if value[0] != "alias"
+    }
+
+
 LineageEvent = Literal["created", "unchanged", "merged", "split"]
 
 
@@ -210,10 +226,18 @@ class EntityResolutionService:
         left_external, right_external = set(left.external_ids), set(right.external_ids)
         if left_external and right_external:
             return bool(left_external & right_external)
-        return (
-            left.normalized_mention == right.normalized_mention
-            and bool(_attributes(left) & _attributes(right))
+        left_aliases, right_aliases = _aliases(left), _aliases(right)
+        if left_aliases & ({right.normalized_mention} | right_aliases):
+            return True
+        if right_aliases & ({left.normalized_mention} | left_aliases):
+            return True
+        if left.normalized_mention != right.normalized_mention:
+            return False
+        shared_context = _context_attributes(left) & _context_attributes(right)
+        shared_neighbors = set(left.graph_neighbor_mentions) & set(
+            right.graph_neighbor_mentions
         )
+        return bool(shared_context or shared_neighbors)
 
     @staticmethod
     def _entity(

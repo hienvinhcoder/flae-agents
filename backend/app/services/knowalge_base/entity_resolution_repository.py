@@ -50,13 +50,53 @@ class EntityResolutionRepository:
                         {"workspace_id": str(workspace_id)},
                     )
                 ).mappings().all()
+                assertion_rows = (
+                    await session.execute(
+                        text(
+                            """SELECT assertion.subject_observation_id,
+                                      assertion.object_observation_id
+                                 FROM assertion_evidence AS assertion
+                                 JOIN document_revisions AS revision
+                                   ON revision.workspace_id = assertion.workspace_id
+                                  AND revision.revision_id = assertion.revision_id
+                                WHERE assertion.workspace_id = :workspace_id
+                                  AND assertion.object_observation_id IS NOT NULL
+                                  AND revision.state = 'searchable'
+                                  AND revision.base_readiness = 'ready'"""
+                        ),
+                        {"workspace_id": str(workspace_id)},
+                    )
+                ).mappings().all()
                 previous = await self._load_previous(session, workspace_id)
         except SQLAlchemyError as error:
             raise ExternalServiceError(
                 "Không thể đọc entity-resolution evidence từ RAG database."
             ) from error
+        mentions = {
+            row["observation_id"]: str(row["normalized_mention"])
+            for row in observation_rows
+        }
+        neighbors: dict[UUID, set[str]] = {
+            observation_id: set() for observation_id in mentions
+        }
+        for row in assertion_rows:
+            subject_id = row["subject_observation_id"]
+            object_id = row["object_observation_id"]
+            if subject_id in mentions and object_id in mentions:
+                neighbors[subject_id].add(mentions[object_id])
+                neighbors[object_id].add(mentions[subject_id])
         return (
-            tuple(ResolutionObservation.model_validate(row) for row in observation_rows),
+            tuple(
+                ResolutionObservation.model_validate(
+                    {
+                        **dict(row),
+                        "graph_neighbor_mentions": tuple(
+                            sorted(neighbors[row["observation_id"]])
+                        ),
+                    }
+                )
+                for row in observation_rows
+            ),
             previous,
         )
 

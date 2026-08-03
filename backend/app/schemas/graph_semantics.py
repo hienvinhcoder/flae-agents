@@ -116,7 +116,7 @@ class SemanticEmbedding(GraphSemanticModel):
         return self
 
 
-class GraphSemanticEntity(GraphSemanticModel):
+class GraphSemanticEntityDraft(GraphSemanticModel):
     entity_id: UUID
     canonical_name: str
     entity_type: str
@@ -128,10 +128,13 @@ class GraphSemanticEntity(GraphSemanticModel):
     frequency: int = Field(ge=1)
     degree: int = Field(ge=0)
     semantic_input: str = Field(min_length=1)
+
+
+class GraphSemanticEntity(GraphSemanticEntityDraft):
     embedding: SemanticEmbedding
 
 
-class GraphSemanticRelationship(GraphSemanticModel):
+class GraphSemanticRelationshipDraft(GraphSemanticModel):
     relationship_id: UUID
     subject_entity_id: UUID
     predicate: str
@@ -146,6 +149,9 @@ class GraphSemanticRelationship(GraphSemanticModel):
     frequency: int = Field(ge=1)
     degree: int = Field(ge=0)
     semantic_input: str = Field(min_length=1)
+
+
+class GraphSemanticRelationship(GraphSemanticRelationshipDraft):
     embedding: SemanticEmbedding
 
 

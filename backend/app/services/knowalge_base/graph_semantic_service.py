@@ -13,9 +13,11 @@ from app.schemas.graph_semantics import (
     DemoIngestionProfile,
     EntitySemanticEvidence,
     GraphSemanticEntity,
+    GraphSemanticEntityDraft,
     GraphSemanticMapping,
     GraphSemanticProjection,
     GraphSemanticRelationship,
+    GraphSemanticRelationshipDraft,
     RelationshipSemanticEvidence,
     SemanticEmbedding,
 )
@@ -26,7 +28,9 @@ class DescriptionSummarizer(Protocol):
 
 
 class SemanticEmbedder(Protocol):
-    def __call__(self, semantic_input: str, dimension: int) -> tuple[float, ...]: ...
+    def __call__(
+        self, semantic_inputs: tuple[str, ...], dimension: int
+    ) -> tuple[tuple[float, ...], ...]: ...
 
 
 EvidenceT = TypeVar("EvidenceT")
@@ -81,16 +85,37 @@ class GraphSemanticService:
             if first.object_entity_id is not None:
                 incident[first.object_entity_id].add(relationship_id)
 
-        entities = tuple(
-            self._build_entity(entity_id, tuple(group), len(incident[entity_id]))
+        entity_drafts = tuple(
+            self._build_entity_draft(
+                entity_id, tuple(group), len(incident[entity_id])
+            )
             for entity_id, group in sorted(entity_groups.items(), key=lambda pair: str(pair[0]))
         )
-        entity_by_id = {item.entity_id: item for item in entities}
-        relationships = tuple(
-            self._build_relationship(relationship_id, tuple(group), entity_by_id)
+        entity_degrees = {item.entity_id: item.degree for item in entity_drafts}
+        relationship_drafts = tuple(
+            self._build_relationship_draft(
+                relationship_id, tuple(group), entity_degrees
+            )
             for relationship_id, group in sorted(
                 relationship_groups.items(), key=lambda pair: str(pair[0])
             )
+        )
+        semantic_inputs = tuple(
+            item.semantic_input for item in (*entity_drafts, *relationship_drafts)
+        )
+        embeddings = self._embeddings(semantic_inputs)
+        entity_count = len(entity_drafts)
+        entities = tuple(
+            GraphSemanticEntity(
+                **draft.model_dump(), embedding=embeddings[index]
+            )
+            for index, draft in enumerate(entity_drafts)
+        )
+        relationships = tuple(
+            GraphSemanticRelationship(
+                **draft.model_dump(), embedding=embeddings[entity_count + index]
+            )
+            for index, draft in enumerate(relationship_drafts)
         )
         mappings = self._build_mappings(observations, assertions)
         payload = {
@@ -105,12 +130,12 @@ class GraphSemanticService:
             is_complete=all(item.embedding.vector for item in (*entities, *relationships)),
         )
 
-    def _build_entity(
+    def _build_entity_draft(
         self,
         entity_id: UUID,
         evidence: tuple[EntitySemanticEvidence, ...],
         degree: int,
-    ) -> GraphSemanticEntity:
+    ) -> GraphSemanticEntityDraft:
         names = {item.canonical_name for item in evidence}
         types = {item.entity_type for item in evidence}
         if len(names) != 1 or len(types) != 1:
@@ -122,7 +147,7 @@ class GraphSemanticService:
             canonical_name, tuple(item.description for item in evidence)
         )
         semantic_input = f"{canonical_name}\n{description}"
-        return GraphSemanticEntity(
+        return GraphSemanticEntityDraft(
             entity_id=entity_id,
             canonical_name=canonical_name,
             entity_type=next(iter(types)),
@@ -134,15 +159,14 @@ class GraphSemanticService:
             frequency=len({item.observation_id for item in evidence}),
             degree=degree,
             semantic_input=semantic_input,
-            embedding=self._embedding(semantic_input),
         )
 
-    def _build_relationship(
+    def _build_relationship_draft(
         self,
         relationship_id: UUID,
         evidence: tuple[RelationshipSemanticEvidence, ...],
-        entities: dict[UUID, GraphSemanticEntity],
-    ) -> GraphSemanticRelationship:
+        entity_degrees: dict[UUID, int],
+    ) -> GraphSemanticRelationshipDraft:
         first = evidence[0]
         identity = {
             (
@@ -158,9 +182,15 @@ class GraphSemanticService:
             raise InvalidArgumentError(
                 "Relationship evidence must preserve one directed identity."
             )
-        subject = entities.get(first.subject_entity_id)
-        target = entities.get(first.object_entity_id) if first.object_entity_id else None
-        if subject is None or (first.object_entity_id is not None and target is None):
+        subject_degree = entity_degrees.get(first.subject_entity_id)
+        target_degree = (
+            entity_degrees.get(first.object_entity_id)
+            if first.object_entity_id
+            else None
+        )
+        if subject_degree is None or (
+            first.object_entity_id is not None and target_degree is None
+        ):
             raise InvalidArgumentError(
                 "Relationship endpoints require active source-backed entity evidence."
             )
@@ -174,8 +204,8 @@ class GraphSemanticService:
         semantic_input = (
             f"{keyword_text}\t{first.subject_name}\n{object_text}\n{description}"
         )
-        degree = subject.degree + (target.degree if target else 0)
-        return GraphSemanticRelationship(
+        degree = subject_degree + (target_degree or 0)
+        return GraphSemanticRelationshipDraft(
             relationship_id=relationship_id,
             subject_entity_id=first.subject_entity_id,
             predicate=first.predicate,
@@ -190,17 +220,31 @@ class GraphSemanticService:
             frequency=len({item.assertion_id for item in evidence}),
             degree=degree,
             semantic_input=semantic_input,
-            embedding=self._embedding(semantic_input),
         )
 
-    def _embedding(self, semantic_input: str) -> SemanticEmbedding:
-        vector = self._embedder(semantic_input, self._profile.embedding_dimension)
-        return SemanticEmbedding(
-            vector=vector,
-            model=self._profile.embedding_model,
-            dimension=self._profile.embedding_dimension,
-            policy_version=self._profile.embedding_policy_version,
-            semantic_input_checksum=_checksum(semantic_input),
+    def _embeddings(
+        self, semantic_inputs: tuple[str, ...]
+    ) -> tuple[SemanticEmbedding, ...]:
+        if not semantic_inputs:
+            return ()
+        vectors = self._embedder(
+            semantic_inputs, self._profile.embedding_dimension
+        )
+        if len(vectors) != len(semantic_inputs):
+            raise InvalidArgumentError(
+                "Embedding provider returned an incomplete semantic batch."
+            )
+        return tuple(
+            SemanticEmbedding(
+                vector=vector,
+                model=self._profile.embedding_model,
+                dimension=self._profile.embedding_dimension,
+                policy_version=self._profile.embedding_policy_version,
+                semantic_input_checksum=_checksum(semantic_input),
+            )
+            for semantic_input, vector in zip(
+                semantic_inputs, vectors, strict=True
+            )
         )
 
     def _fuse_descriptions(self, name: str, values: tuple[str, ...]) -> str:

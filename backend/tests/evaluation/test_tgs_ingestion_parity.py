@@ -28,9 +28,16 @@ def _fixture() -> IngestionParityFixture:
     return IngestionParityFixture.model_validate(json.loads(FIXTURE_PATH.read_text()))
 
 
-def _embed(semantic_input: str, dimension: int) -> tuple[float, ...]:
-    seed = sum(semantic_input.encode()) or 1
-    return tuple(((seed + index) % 101) / 100 for index in range(dimension))
+def _embed(
+    semantic_inputs: tuple[str, ...], dimension: int
+) -> tuple[tuple[float, ...], ...]:
+    return tuple(
+        tuple(
+            ((sum(semantic_input.encode()) + index) % 101) / 100
+            for index in range(dimension)
+        )
+        for semantic_input in semantic_inputs
+    )
 
 
 def test_reference_profile_locks_chunking_and_stage_order() -> None:
@@ -144,3 +151,21 @@ def test_description_threshold_uses_bounded_summarizer_input() -> None:
     ]
     assert projection.entities[0].description == "Bounded evidence summary."
     assert projection.entities[0].frequency == 4
+
+
+def test_semantic_inputs_are_embedded_in_one_bounded_batch() -> None:
+    fixture = _fixture()
+    calls: list[tuple[str, ...]] = []
+
+    def embed(
+        semantic_inputs: tuple[str, ...], dimension: int
+    ) -> tuple[tuple[float, ...], ...]:
+        calls.append(semantic_inputs)
+        return _embed(semantic_inputs, dimension)
+
+    projection = GraphSemanticService(
+        fixture.profile, embedder=embed
+    ).build(fixture.entity_evidence, fixture.relationship_evidence)
+
+    assert len(calls) == 1
+    assert len(calls[0]) == len(projection.entities) + len(projection.relationships)
