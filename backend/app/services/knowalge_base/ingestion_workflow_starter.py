@@ -6,6 +6,11 @@ from app.core.logger import get_logger
 from app.core.temporal import get_temporal_client
 from app.db.rag_db import rag_db_manager
 from app.models.knowledge_base import KnowledgeDocument
+from app.schemas.company_memory_ingestion import (
+    CompanyMemoryIngestionWorkflowInput,
+)
+from app.schemas.graph_enrichment import SemanticGraphEnrichmentWorkflowInput
+from app.schemas.graph_semantics import DemoIngestionProfile
 from app.schemas.ingestion_v2 import (
     IngestionV2BootstrapInput,
     IngestionWorkflowV2Input,
@@ -34,7 +39,9 @@ async def start_ingestion_workflow(doc: KnowledgeDocument) -> str:
 async def _start_v2(doc: KnowledgeDocument) -> str:
     if doc.gcs_path is None or doc.content_checksum is None:
         raise InvalidArgumentError("Ingestion V2 requires a checksummed GCS reference.")
-    from app.temporal.workflows.ingestion_v2 import IngestionWorkflowV2
+    from app.temporal.workflows.company_memory_ingestion import (
+        CompanyMemoryIngestionWorkflow,
+    )
 
     source = await IngestionV2StartService(rag_db_manager).prepare_reference(
         IngestionV2BootstrapInput(
@@ -49,10 +56,28 @@ async def _start_v2(doc: KnowledgeDocument) -> str:
     workflow_id = f"kb-ingest-v2-{source.ingestion_run_id}"
     client = await get_temporal_client()
     await client.start_workflow(
-        IngestionWorkflowV2.run,
-        IngestionWorkflowV2Input(
-            source=source,
-            max_parallel_batches=min(
+        CompanyMemoryIngestionWorkflow.run,
+        CompanyMemoryIngestionWorkflowInput(
+            base=IngestionWorkflowV2Input(
+                source=source,
+                max_parallel_batches=min(
+                    settings.INGESTION_V2_MAX_PARALLEL_BATCHES, 16
+                ),
+            ),
+            semantic_graph=SemanticGraphEnrichmentWorkflowInput(
+                workspace_id=source.workspace_id,
+                resolver_version="resolver-v2",
+                projection_version="projection-v2",
+                semantic_profile=DemoIngestionProfile(
+                    profile_version="demo-reference-v1",
+                    embedding_model=settings.GEMINI_EMBEDDING_MODEL,
+                    embedding_dimension=settings.EMBEDDING_DIMENSIONS,
+                    embedding_policy_version="semantic-input-v1",
+                ),
+            ),
+            evidence_model_name=settings.GEMINI_LLM_MODEL,
+            evidence_glean_max=settings.RAG_GLEAN_MAX,
+            max_parallel_evidence_chunks=min(
                 settings.INGESTION_V2_MAX_PARALLEL_BATCHES, 16
             ),
         ),

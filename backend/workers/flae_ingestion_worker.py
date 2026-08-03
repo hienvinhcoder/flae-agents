@@ -27,6 +27,9 @@ from app.temporal.activities.enrichment import (
     verify_evidence_manifests_activity,
 )
 from app.temporal.activities.memory_state import project_memory_state_activity
+from app.temporal.workflows.company_memory_ingestion import (
+    CompanyMemoryIngestionWorkflow,
+)
 from app.temporal.workflows.enrichment import GraphEnrichmentWorkflow
 from app.temporal.workflows.evidence_extraction import EvidenceExtractionWorkflow
 from app.temporal.workflows.ingestion_v2 import IngestionWorkflowV2
@@ -47,6 +50,7 @@ def create_ingestion_worker(
         client,
         task_queue=settings.TEMPORAL_INGESTION_TASK_QUEUE,
         workflows=[
+            CompanyMemoryIngestionWorkflow,
             IngestionWorkflowV2,
             EvidenceExtractionWorkflow,
             GraphEnrichmentWorkflow,
