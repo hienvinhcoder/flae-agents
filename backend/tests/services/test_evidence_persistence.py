@@ -11,6 +11,7 @@ from app.core.config import settings
 from app.core.exceptions import InvalidArgumentError
 from app.db.rag_db import DBManager
 from app.db.rag_repository import AuthorizationContext
+from app.schemas.agent_memory import FacetState
 from app.schemas.enrichment import (
     EvidenceBatchPlanInput,
     EvidenceExtractionActivityInput,
@@ -639,22 +640,40 @@ async def test_canonical_query_repository_returns_only_current_cited_graph() -> 
     manager = DBManager()
     try:
         command, projection = await _prepare_graph(manager)
-        await GraphSnapshotService(manager).publish(
-            command.workspace_id, projection_id=projection.projection_id
+        semantic = await GraphSemanticProjectionService(manager).build_workspace(
+            GraphSemanticBuildInput(
+                workspace_id=command.workspace_id,
+                resolution_run_id=projection.resolution_run_id,
+                relationship_projection_id=projection.projection_id,
+                profile=DemoIngestionProfile(
+                    profile_version="demo-reference-v1",
+                    embedding_model="fixture-embedding-v1",
+                    embedding_dimension=1024,
+                    embedding_policy_version="semantic-input-v1",
+                ),
+            ),
+            embedder=lambda values, dimension: tuple(
+                (0.0, 1.0, *((0.0,) * (dimension - 2))) for _value in values
+            ),
+        )
+        await GraphSnapshotService(manager).publish_complete(
+            command.workspace_id,
+            projection_id=projection.projection_id,
+            semantic_projection_id=semantic.semantic_projection_id,
         )
         with _connect() as connection, connection.cursor() as cursor:
             cursor.execute(
                 """UPDATE chunks SET embedding = %s::vector
                     WHERE workspace_id = %s AND chunk_id = %s""",
                 (
-                    str([0.125] * 1024),
+                    str([1.0, 0.0] + [0.0] * 1022),
                     str(command.workspace_id),
                     command.chunk_id,
                 ),
             )
 
         async def embed(_query: str) -> np.ndarray:
-            return np.array([0.125] * 1024, dtype="float32")
+            return np.array([0.0, 1.0] + [0.0] * 1022, dtype="float32")
 
         repository = CanonicalQueryRepository(
             manager,
@@ -668,6 +687,7 @@ async def test_canonical_query_repository_returns_only_current_cited_graph() -> 
         result = await KnowledgeQueryService(repository).search(
             MemoryQueryRequest(query="Which library does Atlas Edge use?")
         )
+        query_data = await repository.load_query_data("Atlas Edge", 1)
         explanation = await repository.resolve_assertion(
             str(projection.relationships[0].assertion_ids[0])
         )
@@ -695,8 +715,13 @@ async def test_canonical_query_repository_returns_only_current_cited_graph() -> 
         await manager.close()
 
     assert result.text_hits[0].chunk_id == command.chunk_id
+    assert query_data.seed_entity_ids
+    assert query_data.graph is not None
+    assert query_data.graph.entities[0].semantic_score == pytest.approx(1.0)
     assert result.graph_paths[0].hops[0].predicate == "uses"
     assert result.graph_paths[0].hops[0].citations
     assert explanation.excerpt == CHUNK_TEXT
     assert denied.text_hits == ()
     assert denied.graph_paths == ()
+    assert denied.readiness.base is FacetState.ready
+    assert denied.readiness.graph is FacetState.ready

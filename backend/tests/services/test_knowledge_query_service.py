@@ -22,7 +22,8 @@ class FakeAuthorizedRepository:
         return self._data
 
 
-def _data(*, graph_ready: bool = True) -> TGSQueryData:
+
+def _data(*, graph_ready: bool = True, graph_only: bool = False) -> TGSQueryData:
     chunks = (
         TGSChunkCandidate(
             chunk_id="chunk-a",
@@ -63,6 +64,19 @@ def _data(*, graph_ready: bool = True) -> TGSQueryData:
             ),
         ),
     )
+    graph_chunks = (
+        (
+            TGSChunkCandidate(
+                chunk_id="chunk-graph-only",
+                source_id="source-graph-only",
+                semantic_score=0.1,
+                entity_ids=("entity-b",),
+                token_count=6,
+            ),
+        )
+        if graph_only
+        else ()
+    )
     return TGSQueryData(
         readiness=MemoryReadiness(
             base=FacetState.ready,
@@ -70,6 +84,7 @@ def _data(*, graph_ready: bool = True) -> TGSQueryData:
             graph_snapshot_id="snapshot-1" if graph_ready else None,
         ),
         chunks=chunks,
+        graph_chunks=graph_chunks,
         chunk_content={
             "chunk-a": {
                 "source_name": "Architecture ADR",
@@ -80,6 +95,11 @@ def _data(*, graph_ready: bool = True) -> TGSQueryData:
                 "source_name": "Runbook",
                 "resource_uri": "flae://workspace/ws/chunks/chunk-b",
                 "content": "B is deployed.",
+            },
+            "chunk-graph-only": {
+                "source_name": "Graph evidence",
+                "resource_uri": "flae://workspace/ws/chunks/chunk-graph-only",
+                "content": "B has graph-only evidence.",
             },
         },
         graph=graph if graph_ready else None,
@@ -131,6 +151,39 @@ async def test_graph_failure_degrades_to_base_hits_without_hiding_readiness() ->
     assert result.graph_paths == ()
     assert result.readiness.base is FacetState.ready
     assert result.readiness.graph is FacetState.failed
+
+
+async def test_search_admits_graph_only_chunk_via_global_voting() -> None:
+    data = _data(graph_only=True)
+    graph = data.graph
+    assert graph is not None
+    data = data.model_copy(
+        update={
+            "graph": graph.model_copy(
+                update={
+                    "entities": (
+                        graph.entities[0],
+                        graph.entities[1].model_copy(
+                            update={
+                                "source_chunk_ids": (
+                                    "chunk-b",
+                                    "chunk-graph-only",
+                                )
+                            }
+                        ),
+                    )
+                }
+            )
+        }
+    )
+    result = await KnowledgeQueryService(FakeAuthorizedRepository(data)).search(
+        MemoryQueryRequest(
+            query="Find graph-only evidence",
+            budget=MemoryQueryBudget(max_chunks=3),
+        )
+    )
+
+    assert "chunk-graph-only" in {item.chunk_id for item in result.text_hits}
 
 
 async def test_legacy_mapper_is_additive_and_keeps_existing_response_shape() -> None:

@@ -42,6 +42,7 @@ class TGSChunkContent(QueryDataModel):
 class TGSQueryData(QueryDataModel):
     readiness: MemoryReadiness
     chunks: tuple[TGSChunkCandidate, ...]
+    graph_chunks: tuple[TGSChunkCandidate, ...] = ()
     chunk_content: dict[str, TGSChunkContent]
     graph: TGSGraph | None = None
     seed_entity_ids: tuple[str, ...] = ()
@@ -78,10 +79,14 @@ class KnowledgeQueryService:
         run = TGSRetriever.run(
             seed_entity_ids=data.seed_entity_ids if graph_available else (),
             initial_chunks=data.chunks,
+            graph_chunks=data.graph_chunks if graph_available else (),
             graph=graph,
             config=TGSRetrievalConfig(
                 beam_depth=request.budget.max_hops,
-                top_k_chunks=min(request.budget.max_chunks, len(data.chunks) or 1),
+                top_k_chunks=min(
+                    request.budget.max_chunks,
+                    len(data.chunks) + len(data.graph_chunks) or 1,
+                ),
                 top_k_paths=max(1, request.budget.max_paths or 1),
                 max_orphan_paths=(
                     min(20, request.budget.max_paths)
