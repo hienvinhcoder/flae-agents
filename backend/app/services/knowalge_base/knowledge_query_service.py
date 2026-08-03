@@ -239,6 +239,8 @@ class KnowledgeQueryService:
                             "target": hop.target_entity_id,
                             "keywords": hop.predicate,
                             "description": hop.predicate,
+                            "source_desc": "",
+                            "target_desc": "",
                         }
                         for hop in path.hops
                     ],

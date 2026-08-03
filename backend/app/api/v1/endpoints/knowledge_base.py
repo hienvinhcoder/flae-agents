@@ -27,9 +27,13 @@ from app.schemas.sche_knowledge_base import (
     KnowledgeSearchRequest,
     KnowledgeSearchResponse,
 )
+from app.schemas.memory_query import MemoryQueryBudget, MemoryQueryRequest
 from app.services.knowledge_base_srv import KnowledgeBaseService
 from app.services.knowledge_graph_srv import KnowledgeGraphService
-from app.services.knowalge_base.retriever_service import RetrieverService
+from app.services.knowalge_base.knowledge_query_service import KnowledgeQueryService
+from app.services.knowalge_base.memory_query_factory import (
+    create_memory_query_service,
+)
 from app.core.logger import get_logger
 
 logger = get_logger(__name__)
@@ -226,24 +230,34 @@ async def get_ingestion_status(
 )
 async def search_knowledge_base(
     payload: KnowledgeSearchRequest,
+    user_uid: str = Depends(get_current_user_uid),
     workspace_id: uuid.UUID = Depends(get_current_workspace_id),
 ):
     try:
-        results, diagnostics = await RetrieverService.retrieve(
-            workspace_id=str(workspace_id),
-            query=payload.query,
-            top_k_chunks=payload.top_k_chunks,
-            top_k_paths=payload.top_k_paths,
-        )
-        return DataResponse[KnowledgeSearchResponse].success_response(
-            data=KnowledgeSearchResponse(
-                top_chunks=results["top_chunks"],
-                top_paths=results["top_paths"],
-                diagnostics=diagnostics,
+        result = await create_memory_query_service(
+            workspace_id, user_uid
+        ).search(
+            MemoryQueryRequest(
+                query=payload.query,
+                budget=MemoryQueryBudget(
+                    max_chunks=payload.top_k_chunks,
+                    max_paths=payload.top_k_paths,
+                ),
             )
         )
-    except Exception as e:
-        logger.error(f"Lỗi khi tìm kiếm trong Knowledge Base: {e}")
+        legacy = KnowledgeQueryService.to_legacy_result(result)
+        return DataResponse[KnowledgeSearchResponse].success_response(
+            data=KnowledgeSearchResponse(
+                top_chunks=legacy["top_chunks"],
+                top_paths=legacy["top_paths"],
+                diagnostics={
+                    "readiness": result.readiness.model_dump(mode="json"),
+                    "truncation": result.truncation.model_dump(mode="json"),
+                },
+            )
+        )
+    except Exception as error:
+        logger.error("Knowledge Base canonical search failed")
         raise ApplicationError(
             status_code=500, code="INTERNAL_ERROR", message="Tìm kiếm thất bại."
-        ) from e
+        ) from error
