@@ -170,3 +170,21 @@ class GraphSemanticProjection(GraphSemanticModel):
     mappings: tuple[GraphSemanticMapping, ...]
     projection_checksum: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
     is_complete: bool
+
+
+class GraphSemanticBuildInput(GraphSemanticModel):
+    workspace_id: UUID
+    resolution_run_id: UUID
+    relationship_projection_id: UUID
+    profile: DemoIngestionProfile
+
+
+class GraphSemanticBuildResult(GraphSemanticModel):
+    semantic_projection_id: UUID
+    resolution_run_id: UUID
+    relationship_projection_id: UUID
+    input_checksum: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+    projection_checksum: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+    entity_count: int = Field(ge=1)
+    relationship_count: int = Field(ge=0)
+    mapping_count: int = Field(ge=1)

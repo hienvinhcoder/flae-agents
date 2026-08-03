@@ -33,6 +33,10 @@ from app.services.knowalge_base.canonical_query_repository import (
 )
 from app.services.knowalge_base.knowledge_query_service import KnowledgeQueryService
 from app.schemas.memory_query import MemoryQueryRequest
+from app.schemas.graph_semantics import DemoIngestionProfile, GraphSemanticBuildInput
+from app.services.knowalge_base.graph_semantic_projection_service import (
+    GraphSemanticProjectionService,
+)
 
 
 CHUNK_TEXT = "Atlas Edge uses Minh Stream."
@@ -388,6 +392,44 @@ async def _prepare_graph(manager: DBManager):
         command.workspace_id, projection_version="projection-v1"
     )
     return command, projection
+
+
+@pytest.mark.asyncio
+async def test_graph_semantics_persist_and_reuse_one_complete_embedding_batch() -> None:
+    manager = DBManager()
+    calls: list[tuple[str, ...]] = []
+
+    def embed(
+        semantic_inputs: tuple[str, ...], dimension: int
+    ) -> tuple[tuple[float, ...], ...]:
+        calls.append(semantic_inputs)
+        return tuple((0.5,) * dimension for _ in semantic_inputs)
+
+    try:
+        command, graph = await _prepare_graph(manager)
+        service = GraphSemanticProjectionService(manager)
+        build = GraphSemanticBuildInput(
+            workspace_id=command.workspace_id,
+            resolution_run_id=graph.resolution_run_id,
+            relationship_projection_id=graph.projection_id,
+            profile=DemoIngestionProfile(
+                profile_version="demo-reference-v1",
+                embedding_model="fixture-embedding-v1",
+                embedding_dimension=1024,
+                embedding_policy_version="semantic-input-v1",
+            ),
+        )
+        first = await service.build_workspace(build, embedder=embed)
+        replay = await service.build_workspace(build, embedder=embed)
+    finally:
+        await manager.close()
+
+    assert first == replay
+    assert first.entity_count == 2
+    assert first.relationship_count == 1
+    assert first.mapping_count == 4
+    assert len(calls) == 1
+    assert len(calls[0]) == 3
 
 
 @pytest.mark.asyncio
