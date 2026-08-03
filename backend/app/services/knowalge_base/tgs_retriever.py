@@ -28,17 +28,33 @@ class TGSRetriever:
         graph: TGSGraph,
         config: TGSRetrievalConfig,
         features: TGSFeatures,
+        graph_chunks: tuple[TGSChunkCandidate, ...] = (),
     ) -> TGSRetrievalResult:
         entities = {item.entity_id: item for item in graph.entities}
         TGSRetriever._validate_authorized_graph(
-            seed_entity_ids, initial_chunks, graph, set(entities)
+            seed_entity_ids,
+            initial_chunks,
+            graph_chunks,
+            graph,
+            set(entities),
         )
-        outgoing: dict[str, list[TGSRelationshipCandidate]] = defaultdict(list)
+        adjacency: dict[
+            str, list[tuple[TGSRelationshipCandidate, str]]
+        ] = defaultdict(list)
         for relationship in graph.relationships:
-            outgoing[relationship.source_entity_id].append(relationship)
-        for relationships in outgoing.values():
-            relationships.sort(
-                key=lambda item: (-item.semantic_score, item.relationship_id)
+            adjacency[relationship.source_entity_id].append(
+                (relationship, relationship.target_entity_id)
+            )
+            adjacency[relationship.target_entity_id].append(
+                (relationship, relationship.source_entity_id)
+            )
+        for neighbors in adjacency.values():
+            neighbors.sort(
+                key=lambda item: (
+                    -item[0].semantic_score,
+                    item[0].relationship_id,
+                    item[1],
+                )
             )
 
         visited = {
@@ -51,7 +67,10 @@ class TGSRetriever:
             for entity_id in sorted(set(seed_entity_ids))
         }
         current = tuple(visited.values())
-        selected: dict[tuple[str, ...], TGSPathCandidate] = {}
+        selected: dict[
+            tuple[tuple[str, ...], tuple[str, ...], tuple[str, ...]],
+            TGSPathCandidate,
+        ] = {}
         expansion_count = 0
         for _depth in range(config.beam_depth):
             candidates: list[TGSVisitedNode] = []
@@ -59,9 +78,8 @@ class TGSRetriever:
                 break
             expansion_count += 1
             for beam in current:
-                neighbors = outgoing.get(beam.entity_id, ())[: config.max_neighbors]
-                for relationship in neighbors:
-                    target_id = relationship.target_entity_id
+                neighbors = adjacency.get(beam.entity_id, ())[: config.max_neighbors]
+                for relationship, target_id in neighbors:
                     if target_id in beam.entity_ids:
                         continue
                     target = entities[target_id]
@@ -87,7 +105,9 @@ class TGSRetriever:
             current = tuple(candidates[: config.beam_width])
             for candidate in current:
                 path = TGSRetriever._as_path(candidate, origin="selected")
-                selected[path.entity_ids] = path
+                selected[
+                    (path.entity_ids, path.relationship_ids, path.assertion_ids)
+                ] = path
 
         selected_paths = tuple(
             sorted(selected.values(), key=TGSRetriever._path_rank_key)[
@@ -98,7 +118,9 @@ class TGSRetriever:
         if features.graph_to_text:
             for record in visited.values():
                 votes.update(set(record.source_chunk_ids))
-        ranked_chunks = TGSRetriever._rank_chunks(initial_chunks, votes, config)
+        ranked_chunks = TGSRetriever._rank_chunks(
+            initial_chunks, graph_chunks, votes, config
+        )
         orphan_paths = TGSRetriever._recover_orphans(
             initial_chunks,
             selected_paths,
@@ -147,10 +169,21 @@ class TGSRetriever:
 
     @staticmethod
     def _rank_chunks(
-        chunks: tuple[TGSChunkCandidate, ...],
+        initial_chunks: tuple[TGSChunkCandidate, ...],
+        graph_chunks: tuple[TGSChunkCandidate, ...],
         votes: Counter[str],
         config: TGSRetrievalConfig,
     ) -> tuple[TGSChunkScore, ...]:
+        candidates = {item.chunk_id: item for item in initial_chunks}
+        initial_ids = set(candidates)
+        for chunk in graph_chunks:
+            existing = candidates.get(chunk.chunk_id)
+            if existing is not None and existing != chunk:
+                raise InvalidArgumentError(
+                    "Authorized chunk ID maps to conflicting retrieval data."
+                )
+            if votes[chunk.chunk_id] > 0:
+                candidates[chunk.chunk_id] = chunk
         ranked = tuple(
             TGSChunkScore(
                 chunk_id=chunk.chunk_id,
@@ -161,14 +194,12 @@ class TGSRetriever:
                     chunk.semantic_score
                     + config.graph_vote_weight * votes[chunk.chunk_id]
                 ),
-                match_signals=(
-                    ("semantic", "graph_vote")
-                    if votes[chunk.chunk_id]
-                    else ("semantic",)
+                match_signals=TGSRetriever._chunk_signals(
+                    chunk.chunk_id in initial_ids, votes[chunk.chunk_id] > 0
                 ),
                 token_count=chunk.token_count,
             )
-            for chunk in chunks
+            for chunk in candidates.values()
         )
         return tuple(
             sorted(ranked, key=lambda item: (-item.score, item.chunk_id))[
@@ -191,7 +222,8 @@ class TGSRetriever:
     @staticmethod
     def _validate_authorized_graph(
         seeds: tuple[str, ...],
-        chunks: tuple[TGSChunkCandidate, ...],
+        initial_chunks: tuple[TGSChunkCandidate, ...],
+        graph_chunks: tuple[TGSChunkCandidate, ...],
         graph: TGSGraph,
         entity_ids: set[str],
     ) -> None:
@@ -207,8 +239,10 @@ class TGSRetriever:
             raise InvalidArgumentError(
                 "TGS graph references an entity outside the authorized entity set."
             )
-        chunk_ids = {item.chunk_id for item in chunks}
-        graph_chunks = {
+        chunk_ids = {
+            item.chunk_id for item in (*initial_chunks, *graph_chunks)
+        }
+        referenced_graph_chunk_ids = {
             chunk_id
             for entity in graph.entities
             for chunk_id in entity.source_chunk_ids
@@ -217,10 +251,20 @@ class TGSRetriever:
             for relationship in graph.relationships
             for chunk_id in relationship.source_chunk_ids
         }
-        if not graph_chunks <= chunk_ids:
+        if not referenced_graph_chunk_ids <= chunk_ids:
             raise InvalidArgumentError(
                 "TGS graph references a chunk outside the authorized chunk set."
             )
+
+    @staticmethod
+    def _chunk_signals(
+        is_initial: bool, has_graph_vote: bool
+    ) -> tuple[str, ...]:
+        if is_initial and has_graph_vote:
+            return ("semantic", "graph_vote")
+        if is_initial:
+            return ("semantic",)
+        return ("graph_vote",)
 
     @staticmethod
     def _better(candidate: TGSVisitedNode, previous: TGSVisitedNode) -> bool:
