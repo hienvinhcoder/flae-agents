@@ -19,13 +19,19 @@ from app.schemas.enrichment import (
     EvidenceManifestVerificationInput,
 )
 from app.schemas.graph_enrichment import (
+    CompleteGraphSnapshotActivityInput,
     EntityResolutionActivityInput,
     EntityResolutionResult,
     GraphFailureActivityInput,
     GraphProjectionActivityInput,
     GraphProjectionResult,
+    GraphSemanticActivityInput,
     GraphSnapshotActivityInput,
     GraphSnapshotPublishResult,
+)
+from app.schemas.graph_semantics import (
+    GraphSemanticBuildInput,
+    GraphSemanticBuildResult,
 )
 from app.services.knowalge_base.evidence_service import EvidenceService
 from app.services.knowalge_base.evidence_workflow_service import (
@@ -33,7 +39,11 @@ from app.services.knowalge_base.evidence_workflow_service import (
 )
 from app.services.knowalge_base.entity_resolution_service import EntityResolutionService
 from app.services.knowalge_base.graph_projection_service import GraphProjectionService
+from app.services.knowalge_base.graph_semantic_projection_service import (
+    GraphSemanticProjectionService,
+)
 from app.services.knowalge_base.graph_snapshot_service import GraphSnapshotService
+from app.services.knowalge_base.ingestion_service import IngestionService
 
 
 @activity.defn
@@ -157,6 +167,64 @@ async def project_graph_activity(
     )
 
 
+def _embed_graph_semantics(
+    semantic_inputs: tuple[str, ...], dimension: int
+) -> tuple[tuple[float, ...], ...]:
+    if dimension != settings.EMBEDDING_DIMENSIONS:
+        raise InvalidArgumentError(
+            "Semantic profile dimension does not match the configured provider."
+        )
+    embeddings, _token_count = IngestionService.generate_embeddings(
+        list(semantic_inputs), "graph_semantics", 0
+    )
+    if any(embedding is None for embedding in embeddings):
+        raise InvalidArgumentError(
+            "Embedding provider returned an incomplete semantic batch."
+        )
+    return tuple(
+        tuple(float(value) for value in embedding or ())
+        for embedding in embeddings
+    )
+
+
+def _summarize_semantic_descriptions(
+    name: str, descriptions: tuple[str, ...]
+) -> str:
+    """Deterministic, evidence-only fallback for the reference profile."""
+    del name
+    return " ".join(descriptions)[:8_000].rstrip()
+
+
+@activity.defn
+async def project_graph_semantics_activity(
+    command: GraphSemanticActivityInput,
+) -> GraphSemanticBuildResult:
+    activity.heartbeat({"stage": "project_graph_semantics", "completed": 0})
+    try:
+        if command.profile.embedding_model != settings.GEMINI_EMBEDDING_MODEL:
+            raise InvalidArgumentError(
+                "Semantic profile model does not match the configured provider."
+            )
+        result = await GraphSemanticProjectionService(
+            rag_db_manager
+        ).build_workspace(
+            GraphSemanticBuildInput(
+                workspace_id=command.workspace_id,
+                resolution_run_id=command.resolution_run_id,
+                relationship_projection_id=command.relationship_projection_id,
+                profile=command.profile,
+            ),
+            embedder=_embed_graph_semantics,
+            summarizer=_summarize_semantic_descriptions,
+        )
+    except InvalidArgumentError as error:
+        raise ApplicationError(
+            str(error), type="INVALID_GRAPH_SEMANTICS", non_retryable=True
+        ) from error
+    activity.heartbeat({"stage": "project_graph_semantics", "completed": 1})
+    return result
+
+
 @activity.defn
 async def publish_graph_snapshot_activity(
     command: GraphSnapshotActivityInput,
@@ -171,6 +239,25 @@ async def publish_graph_snapshot_activity(
             str(error), type="INVALID_GRAPH_SNAPSHOT", non_retryable=True
         ) from error
     activity.heartbeat({"stage": "publish_graph", "completed": 1})
+    return result
+
+
+@activity.defn
+async def publish_complete_graph_snapshot_activity(
+    command: CompleteGraphSnapshotActivityInput,
+) -> GraphSnapshotPublishResult:
+    activity.heartbeat({"stage": "publish_complete_graph", "completed": 0})
+    try:
+        result = await GraphSnapshotService(rag_db_manager).publish_complete(
+            command.workspace_id,
+            projection_id=command.projection_id,
+            semantic_projection_id=command.semantic_projection_id,
+        )
+    except InvalidArgumentError as error:
+        raise ApplicationError(
+            str(error), type="INVALID_GRAPH_SNAPSHOT", non_retryable=True
+        ) from error
+    activity.heartbeat({"stage": "publish_complete_graph", "completed": 1})
     return result
 
 

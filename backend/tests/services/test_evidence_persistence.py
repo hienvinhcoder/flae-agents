@@ -433,6 +433,64 @@ async def test_graph_semantics_persist_and_reuse_one_complete_embedding_batch() 
 
 
 @pytest.mark.asyncio
+async def test_complete_graph_snapshot_pins_and_exposes_semantic_projection() -> None:
+    manager = DBManager()
+
+    def embed(
+        semantic_inputs: tuple[str, ...], dimension: int
+    ) -> tuple[tuple[float, ...], ...]:
+        return tuple((0.5,) * dimension for _ in semantic_inputs)
+
+    try:
+        command, graph = await _prepare_graph(manager)
+        semantic = await GraphSemanticProjectionService(manager).build_workspace(
+            GraphSemanticBuildInput(
+                workspace_id=command.workspace_id,
+                resolution_run_id=graph.resolution_run_id,
+                relationship_projection_id=graph.projection_id,
+                profile=DemoIngestionProfile(
+                    profile_version="demo-reference-v1",
+                    embedding_model="fixture-embedding-v1",
+                    embedding_dimension=1024,
+                    embedding_policy_version="semantic-input-v1",
+                ),
+            ),
+            embedder=embed,
+        )
+        result = await GraphSnapshotService(manager).publish_complete(
+            command.workspace_id,
+            projection_id=graph.projection_id,
+            semantic_projection_id=semantic.semantic_projection_id,
+        )
+    finally:
+        await manager.close()
+
+    assert result.semantic_projection_id == semantic.semantic_projection_id
+    assert result.entity_count == 2
+    assert result.relationship_count == 1
+    assert result.mapping_count == 4
+    with _connect() as connection, connection.cursor() as cursor:
+        cursor.execute(
+            """SELECT snapshot.semantic_projection_id,
+                      (SELECT count(*) FROM current_entity_semantic_versions
+                        WHERE workspace_id = snapshot.workspace_id),
+                      (SELECT count(*) FROM current_relationship_semantic_versions
+                        WHERE workspace_id = snapshot.workspace_id),
+                      (SELECT count(*) FROM current_semantic_graph_mappings
+                        WHERE workspace_id = snapshot.workspace_id)
+                 FROM graph_snapshots AS snapshot
+                WHERE snapshot.workspace_id = %s AND snapshot.status = 'current'""",
+            (str(command.workspace_id),),
+        )
+        assert cursor.fetchone() == (
+            str(semantic.semantic_projection_id),
+            2,
+            1,
+            4,
+        )
+
+
+@pytest.mark.asyncio
 async def test_graph_snapshot_publish_is_atomic_current_and_auditable() -> None:
     manager = DBManager()
     try:

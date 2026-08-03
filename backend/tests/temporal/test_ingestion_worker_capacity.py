@@ -28,7 +28,11 @@ from app.temporal.workflows.greeting import GreetingWorkflow
 from app.temporal.workflows.ingestion import DocumentIngestionWorkflow
 from app.temporal.workflows.ingestion_v2 import IngestionWorkflowV2
 from app.temporal.workflows.enrichment import GraphEnrichmentWorkflow
+from app.temporal.workflows.evidence_extraction import EvidenceExtractionWorkflow
 from app.temporal.workflows.memory_state import MemoryStateWorkflow
+from app.temporal.workflows.semantic_graph_enrichment import (
+    SemanticGraphEnrichmentWorkflow,
+)
 from workers import flae_ingestion_worker
 from workers import flae_worker
 
@@ -45,7 +49,9 @@ def test_ingestion_v2_uses_a_dedicated_bounded_worker(monkeypatch) -> None:
     assert kwargs["task_queue"] != "flae-default-queue"
     assert kwargs["workflows"] == [
         IngestionWorkflowV2,
+        EvidenceExtractionWorkflow,
         GraphEnrichmentWorkflow,
+        SemanticGraphEnrichmentWorkflow,
         MemoryStateWorkflow,
     ]
     assert any(

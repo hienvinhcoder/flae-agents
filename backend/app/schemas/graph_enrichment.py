@@ -8,6 +8,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.schemas.agent_memory import AssertionPolarity, ObservationAttribute
+from app.schemas.graph_semantics import DemoIngestionProfile
 
 
 class GraphEnrichmentModel(BaseModel):
@@ -147,7 +148,9 @@ class GraphSnapshot(GraphEnrichmentModel):
 class GraphSnapshotPublishResult(GraphEnrichmentModel):
     snapshot_id: UUID
     projection_id: UUID
+    semantic_projection_id: UUID | None = None
     revision_count: int = Field(ge=1)
+    entity_count: int = Field(default=0, ge=0)
     relationship_count: int = Field(ge=0)
     mapping_count: int = Field(ge=0)
     graph_checksum: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
@@ -187,6 +190,19 @@ class GraphSnapshotActivityInput(GraphEnrichmentModel):
     projection_id: UUID
 
 
+class GraphSemanticActivityInput(GraphEnrichmentModel):
+    workspace_id: UUID
+    resolution_run_id: UUID
+    relationship_projection_id: UUID
+    profile: DemoIngestionProfile
+
+
+class CompleteGraphSnapshotActivityInput(GraphEnrichmentModel):
+    workspace_id: UUID
+    projection_id: UUID
+    semantic_projection_id: UUID
+
+
 class GraphFailureActivityInput(GraphEnrichmentModel):
     workspace_id: UUID
     reason: str = Field(min_length=1, max_length=500)
@@ -196,4 +212,19 @@ class GraphEnrichmentWorkflowInput(GraphEnrichmentModel):
     workspace_id: UUID
     resolver_version: str = Field(min_length=1, max_length=200)
     projection_version: str = Field(min_length=1, max_length=200)
+    minimum_resolution_confidence: float = Field(default=0.75, ge=0.0, le=1.0)
+
+
+class SemanticGraphEnrichmentWorkflowInput(GraphEnrichmentModel):
+    workspace_id: UUID
+    resolver_version: str = Field(min_length=1, max_length=200)
+    projection_version: str = Field(min_length=1, max_length=200)
+    semantic_profile: DemoIngestionProfile = Field(
+        default_factory=lambda: DemoIngestionProfile(
+            profile_version="demo-reference-v1",
+            embedding_model="gemini-embedding-001",
+            embedding_dimension=1024,
+            embedding_policy_version="semantic-input-v1",
+        )
+    )
     minimum_resolution_confidence: float = Field(default=0.75, ge=0.0, le=1.0)

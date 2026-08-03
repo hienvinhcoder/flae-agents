@@ -20,6 +20,8 @@ from app.temporal.activities.enrichment import (
     mark_graph_failed_activity,
     plan_evidence_batch_activity,
     project_graph_activity,
+    project_graph_semantics_activity,
+    publish_complete_graph_snapshot_activity,
     publish_graph_snapshot_activity,
     resolve_entities_activity,
     verify_evidence_manifests_activity,
@@ -29,6 +31,9 @@ from app.temporal.workflows.enrichment import GraphEnrichmentWorkflow
 from app.temporal.workflows.evidence_extraction import EvidenceExtractionWorkflow
 from app.temporal.workflows.ingestion_v2 import IngestionWorkflowV2
 from app.temporal.workflows.memory_state import MemoryStateWorkflow
+from app.temporal.workflows.semantic_graph_enrichment import (
+    SemanticGraphEnrichmentWorkflow,
+)
 
 
 logger = get_logger(__name__)
@@ -45,6 +50,7 @@ def create_ingestion_worker(
             IngestionWorkflowV2,
             EvidenceExtractionWorkflow,
             GraphEnrichmentWorkflow,
+            SemanticGraphEnrichmentWorkflow,
             MemoryStateWorkflow,
         ],
         activities=[
@@ -57,6 +63,8 @@ def create_ingestion_worker(
             verify_evidence_manifests_activity,
             resolve_entities_activity,
             project_graph_activity,
+            project_graph_semantics_activity,
+            publish_complete_graph_snapshot_activity,
             publish_graph_snapshot_activity,
             mark_graph_failed_activity,
             project_memory_state_activity,
