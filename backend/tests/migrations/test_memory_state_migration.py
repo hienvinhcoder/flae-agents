@@ -9,7 +9,7 @@ BACKEND_ROOT = Path(__file__).parents[2]
 
 def test_memory_state_migration_is_rag_head_and_invalidates_with_graph() -> None:
     config = Config(str(BACKEND_ROOT / "alembic-rag.ini"))
-    assert ScriptDirectory.from_config(config).get_current_head() == "rag_0016"
+    assert ScriptDirectory.from_config(config).get_current_head() == "rag_0019"
 
     source = (
         BACKEND_ROOT

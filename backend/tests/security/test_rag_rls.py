@@ -173,9 +173,10 @@ def test_evidence_rows_inherit_chunk_acl_without_leaking_ids_or_counts() -> None
                 workspace_id, observation_id, revision_id, chunk_id,
                 raw_mention, normalized_mention, proposed_type,
                 evidence_start, evidence_end, extractor_version, confidence,
-                evidence_key
+                evidence_key, description
             ) VALUES (%s, %s, %s, 'evidence-chunk-a', 'Aurora', 'aurora',
-                      'customer', 0, 6, 'extractor-v2', 0.9, %s)
+                      'customer', 0, 6, 'extractor-v2', 0.9, %s,
+                      'Source-backed Aurora description')
             """,
             (
                 workspace_id,
@@ -190,9 +191,10 @@ def test_evidence_rows_inherit_chunk_acl_without_leaking_ids_or_counts() -> None
                 workspace_id, assertion_id, revision_id, chunk_id,
                 subject_observation_id, predicate, object_value, polarity,
                 confidence, evidence_start, evidence_end, extractor_version,
-                evidence_key
+                evidence_key, keywords, description
             ) VALUES (%s, %s, %s, 'evidence-chunk-a', %s, 'has_status',
-                      'active', 'affirmed', 0.9, 0, 20, 'extractor-v2', %s)
+                      'active', 'affirmed', 0.9, 0, 20, 'extractor-v2', %s,
+                      '["status"]'::jsonb, 'Source-backed status')
             """,
             (
                 workspace_id,

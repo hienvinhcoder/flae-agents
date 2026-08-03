@@ -81,9 +81,9 @@ def _insert_observation(
         INSERT INTO entity_observations (
             workspace_id, observation_id, revision_id, chunk_id, raw_mention,
             normalized_mention, proposed_type, evidence_start, evidence_end,
-            extractor_version, confidence, evidence_key
+            extractor_version, confidence, evidence_key, description
         ) VALUES (%s, %s, %s, %s, %s, lower(%s), 'organization', 0, 4,
-                  'extractor-v2', 0.9, %s)
+                  'extractor-v2', 0.9, %s, %s)
         """,
         (
             workspace_id,
@@ -93,6 +93,7 @@ def _insert_observation(
             mention,
             mention,
             "sha256:" + observation_id.hex * 2,
+            f"Source-backed description for {mention}",
         ),
     )
     return observation_id
@@ -117,9 +118,10 @@ def test_assertions_preserve_predicate_and_retry_identity() -> None:
                         workspace_id, assertion_id, revision_id, chunk_id,
                         subject_observation_id, predicate, object_observation_id,
                         polarity, confidence, evidence_start, evidence_end,
-                        extractor_version, evidence_key
+                        extractor_version, evidence_key, keywords, description
                     ) VALUES (%s, %s, %s, %s, %s, %s, %s,
-                              'affirmed', 0.95, 0, 20, 'extractor-v2', %s)
+                              'affirmed', 0.95, 0, 20, 'extractor-v2', %s,
+                              '["relation"]'::jsonb, 'Source-backed relationship')
                     ON CONFLICT (workspace_id, revision_id, evidence_key) DO NOTHING
                     """,
                     (
@@ -162,10 +164,11 @@ def test_assertion_constraints_cover_literal_negation_uncertainty_and_time() -> 
                 workspace_id, assertion_id, revision_id, chunk_id,
                 subject_observation_id, predicate, object_value, polarity,
                 confidence, valid_from, valid_to, evidence_start, evidence_end,
-                extractor_version, evidence_key
+                extractor_version, evidence_key, keywords, description
             ) VALUES (%s, %s, %s, %s, %s, 'expires_at', '2026-12-31',
                       'uncertain', 0.6, '2026-01-01', '2027-01-01',
-                      0, 20, 'extractor-v2', %s)
+                      0, 20, 'extractor-v2', %s,
+                      '["expiry"]'::jsonb, 'Source-backed expiry')
             """,
             base_values,
         )
@@ -174,16 +177,19 @@ def test_assertion_constraints_cover_literal_negation_uncertainty_and_time() -> 
             """INSERT INTO assertion_evidence (
                    workspace_id, assertion_id, revision_id, chunk_id,
                    subject_observation_id, predicate, polarity, confidence,
-                   evidence_start, evidence_end, extractor_version, evidence_key
+                   evidence_start, evidence_end, extractor_version, evidence_key,
+                   keywords, description
                ) VALUES (%s, %s, %s, %s, %s, 'missing_object', 'negated', 0.8,
-                         0, 5, 'extractor-v2', %s)""",
+                         0, 5, 'extractor-v2', %s,
+                         '["missing"]'::jsonb, 'Missing object')""",
             """INSERT INTO assertion_evidence (
                    workspace_id, assertion_id, revision_id, chunk_id,
                    subject_observation_id, predicate, object_value, polarity,
                    confidence, evidence_start, evidence_end, extractor_version,
-                   evidence_key
+                   evidence_key, keywords, description
                ) VALUES (%s, %s, %s, %s, %s, 'bad_span', 'value', 'affirmed',
-                         0.8, 5, 5, 'extractor-v2', %s)""",
+                         0.8, 5, 5, 'extractor-v2', %s,
+                         '["span"]'::jsonb, 'Bad span')""",
         ):
             with connection.cursor() as invalid_cursor:
                 invalid_cursor.execute("SAVEPOINT invalid_assertion")
