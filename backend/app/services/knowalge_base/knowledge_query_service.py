@@ -8,7 +8,7 @@ from typing import Protocol
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.schemas.agent_memory import FacetState
+from app.schemas.agent_memory import EvidenceProvenance, FacetState
 from app.schemas.memory_query import (
     MemoryCitation,
     MemoryEvidenceExplanation,
@@ -37,6 +37,7 @@ class TGSChunkContent(QueryDataModel):
     source_name: str
     resource_uri: str
     content: str
+    provenance: EvidenceProvenance | None = None
 
 
 class TGSQueryData(QueryDataModel):
@@ -146,6 +147,7 @@ class KnowledgeQueryService:
                     score=chunk.score,
                     token_count=chunk.token_count,
                     match_signals=chunk.match_signals,
+                    provenance=content.provenance,
                 )
             )
             tokens_used += chunk.token_count

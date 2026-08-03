@@ -10,6 +10,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.schemas.memory_query import MemoryCitation
 from app.services.knowalge_base.knowledge_query_service import TGSChunkContent
+from app.services.knowalge_base.memory_provenance import (
+    build_evidence_provenance,
+)
 from app.services.knowalge_base.tgs_models import TGSChunkCandidate
 
 
@@ -35,7 +38,10 @@ class CanonicalChunkLoader:
                 text(
                     """SELECT chunk.chunk_id, chunk.source_id,
                               chunk.document_id, chunk.revision_id,
-                              chunk.source_name, chunk.text, chunk.token_count,
+                              chunk.source_name, chunk.source_type,
+                              chunk.source_modified_at, chunk.ingested_at,
+                              chunk.location_kind, chunk.location_data,
+                              chunk.content_hash, chunk.text, chunk.token_count,
                               1 - (chunk.embedding <=> CAST(:embedding AS vector))
                                 AS semantic_score
                          FROM current_chunks AS chunk
@@ -115,6 +121,7 @@ class CanonicalChunkLoader:
                         f"/chunks/{row['chunk_id']}"
                     ),
                     content=row["text"] or "",
+                    provenance=build_evidence_provenance(workspace_id, row),
                 )
                 for row in rows
             },
@@ -135,7 +142,10 @@ class CanonicalChunkLoader:
                     """SELECT assertion.assertion_id, assertion.revision_id,
                               assertion.chunk_id, assertion.evidence_start,
                               assertion.evidence_end, chunk.source_id,
-                              chunk.source_name, chunk.document_id
+                              chunk.source_name, chunk.source_type,
+                              chunk.source_modified_at, chunk.ingested_at,
+                              chunk.location_kind, chunk.location_data,
+                              chunk.content_hash, chunk.document_id
                          FROM assertion_evidence AS assertion
                          JOIN current_chunks AS chunk
                            ON chunk.workspace_id = assertion.workspace_id
@@ -171,6 +181,7 @@ class CanonicalChunkLoader:
                     evidence_end=row["evidence_end"],
                     source_id=str(row["source_id"]),
                     source_name=row["source_name"],
+                    provenance=build_evidence_provenance(workspace_id, row),
                 )
             )
         return {key: tuple(value) for key, value in citations.items()}

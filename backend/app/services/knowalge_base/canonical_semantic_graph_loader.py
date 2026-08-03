@@ -101,7 +101,10 @@ class CanonicalSemanticGraphLoader:
                 text(
                     """SELECT chunk.chunk_id, chunk.source_id,
                               chunk.document_id, chunk.revision_id,
-                              chunk.source_name, chunk.text, chunk.token_count,
+                              chunk.source_name, chunk.source_type,
+                              chunk.source_modified_at, chunk.ingested_at,
+                              chunk.location_kind, chunk.location_data,
+                              chunk.content_hash, chunk.text, chunk.token_count,
                               1 - (chunk.embedding <=> CAST(:embedding AS vector))
                                 AS semantic_score
                          FROM current_chunks AS chunk

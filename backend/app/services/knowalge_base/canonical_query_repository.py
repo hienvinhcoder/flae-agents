@@ -17,6 +17,9 @@ from app.services.knowalge_base.knowledge_query_service import (
 from app.services.knowalge_base.canonical_semantic_graph_loader import (
     CanonicalSemanticGraphLoader,
 )
+from app.services.knowalge_base.memory_provenance import (
+    build_evidence_provenance,
+)
 from app.services.knowalge_base.tgs_models import TGSRetrievalConfig
 
 
@@ -118,7 +121,10 @@ class CanonicalQueryRepository:
                         """SELECT assertion.assertion_id, assertion.revision_id,
                                   assertion.chunk_id, assertion.evidence_start,
                                   assertion.evidence_end, chunk.source_id,
-                                  chunk.source_name, chunk.document_id, chunk.text
+                                  chunk.source_name, chunk.source_type,
+                                  chunk.source_modified_at, chunk.ingested_at,
+                                  chunk.location_kind, chunk.location_data,
+                                  chunk.content_hash, chunk.document_id, chunk.text
                              FROM assertion_evidence AS assertion
                              JOIN current_chunks AS chunk
                                ON chunk.workspace_id = assertion.workspace_id
@@ -151,6 +157,7 @@ class CanonicalQueryRepository:
             evidence_end=row["evidence_end"],
             source_id=str(row["source_id"]),
             source_name=row["source_name"],
+            provenance=build_evidence_provenance(workspace_id, row),
         )
         return MemoryEvidenceExplanation(
             citation=citation,

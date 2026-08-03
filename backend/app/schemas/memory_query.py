@@ -6,7 +6,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from app.schemas.agent_memory import AssertionPolarity, FacetState
+from app.schemas.agent_memory import AssertionPolarity, EvidenceProvenance, FacetState
 from app.services.knowalge_base.tgs_models import TGSFeatures
 
 
@@ -43,6 +43,7 @@ class MemoryCitation(MemoryQueryModel):
     evidence_end: int = Field(gt=0)
     source_id: str
     source_name: str
+    provenance: EvidenceProvenance | None = None
 
 
 class MemoryTextHit(MemoryQueryModel):
@@ -54,6 +55,7 @@ class MemoryTextHit(MemoryQueryModel):
     score: float
     token_count: int = Field(ge=0)
     match_signals: tuple[str, ...]
+    provenance: EvidenceProvenance | None = None
 
 
 class MemoryGraphHop(MemoryQueryModel):

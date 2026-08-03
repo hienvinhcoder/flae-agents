@@ -715,11 +715,14 @@ async def test_canonical_query_repository_returns_only_current_cited_graph() -> 
         await manager.close()
 
     assert result.text_hits[0].chunk_id == command.chunk_id
+    assert result.text_hits[0].provenance is not None
+    assert result.text_hits[0].provenance.content_hash.startswith("sha256:")
     assert query_data.seed_entity_ids
     assert query_data.graph is not None
     assert query_data.graph.entities[0].semantic_score == pytest.approx(1.0)
     assert result.graph_paths[0].hops[0].predicate == "uses"
     assert result.graph_paths[0].hops[0].citations
+    assert result.graph_paths[0].hops[0].citations[0].provenance is not None
     assert explanation.excerpt == CHUNK_TEXT
     assert denied.text_hits == ()
     assert denied.graph_paths == ()
