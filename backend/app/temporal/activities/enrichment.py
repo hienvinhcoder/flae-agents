@@ -11,8 +11,12 @@ from app.core.config import settings
 from app.core.exceptions import InvalidArgumentError
 from app.db.rag_db import rag_db_manager
 from app.schemas.enrichment import (
+    EvidenceBatchPlan,
+    EvidenceBatchPlanInput,
     EvidenceExtractionActivityInput,
     EvidenceExtractionResult,
+    EvidenceExtractionWorkflowResult,
+    EvidenceManifestVerificationInput,
 )
 from app.schemas.graph_enrichment import (
     EntityResolutionActivityInput,
@@ -24,6 +28,9 @@ from app.schemas.graph_enrichment import (
     GraphSnapshotPublishResult,
 )
 from app.services.knowalge_base.evidence_service import EvidenceService
+from app.services.knowalge_base.evidence_workflow_service import (
+    EvidenceWorkflowService,
+)
 from app.services.knowalge_base.entity_resolution_service import EntityResolutionService
 from app.services.knowalge_base.graph_projection_service import GraphProjectionService
 from app.services.knowalge_base.graph_snapshot_service import GraphSnapshotService
@@ -62,6 +69,42 @@ async def extract_evidence_activity(
         raise ApplicationError(
             str(error), type="INVALID_EVIDENCE_OUTPUT", non_retryable=True
         ) from error
+
+
+@activity.defn
+async def plan_evidence_batch_activity(
+    command: EvidenceBatchPlanInput,
+) -> EvidenceBatchPlan:
+    activity.heartbeat({"stage": "plan_evidence", "completed": 0})
+    try:
+        result = await EvidenceWorkflowService(rag_db_manager).plan_batch(command)
+    except InvalidArgumentError as error:
+        raise ApplicationError(
+            str(error), type="INVALID_EVIDENCE_PLAN", non_retryable=True
+        ) from error
+    activity.heartbeat(
+        {"stage": "plan_evidence", "completed": len(result.items)}
+    )
+    return result
+
+
+@activity.defn
+async def verify_evidence_manifests_activity(
+    command: EvidenceManifestVerificationInput,
+) -> EvidenceExtractionWorkflowResult:
+    activity.heartbeat({"stage": "verify_evidence", "completed": 0})
+    try:
+        result = await EvidenceWorkflowService(rag_db_manager).verify_manifests(
+            command
+        )
+    except InvalidArgumentError as error:
+        raise ApplicationError(
+            str(error), type="INCOMPLETE_EVIDENCE", non_retryable=True
+        ) from error
+    activity.heartbeat(
+        {"stage": "verify_evidence", "completed": result.chunk_count}
+    )
+    return result
 
 
 @activity.defn

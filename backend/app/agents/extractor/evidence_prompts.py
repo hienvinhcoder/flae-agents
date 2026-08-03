@@ -10,6 +10,7 @@ Observation fields:
 - raw_mention: exact source substring
 - normalized_mention: NFKC/case-folded, whitespace-collapsed mention
 - proposed_type: one of [{entity_types}]
+- description: concise semantics based solely on this exact source chunk
 - evidence_start/evidence_end: zero-based Python character offsets
 - confidence: 0..1
 - external_ids: explicit identifiers stated by the source, otherwise []
@@ -20,6 +21,8 @@ Assertion fields:
 - predicate: directed predicate exactly as expressed; never sort endpoints
 - exactly one of object_mention_key or object_value
 - polarity: affirmed, negated, or uncertain
+- keywords: one or more relationship terms grounded in the source span
+- description: concise relationship semantics grounded in the source span
 - confidence, evidence_start, evidence_end
 - optional valid_from/valid_to ISO datetimes, otherwise null
 - qualifiers: typed qualifier objects, otherwise []

@@ -14,6 +14,7 @@ class EvidenceExtractionState(TypedDict):
     language: str
     extractor_version: str
     glean_max: int
+    gleans_completed: int
     model: ChatGoogleGenerativeAI
     system_prompt: str
     messages: list[BaseMessage]

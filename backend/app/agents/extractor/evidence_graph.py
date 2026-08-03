@@ -19,7 +19,11 @@ from app.schemas.enrichment import EvidenceExtractionCandidateBatch
 def _route_glean(
     state: EvidenceExtractionState,
 ) -> Literal["extract_glean", "__end__"]:
-    return "extract_glean" if state["glean_max"] > 0 else "__end__"
+    return (
+        "extract_glean"
+        if state["gleans_completed"] < state["glean_max"]
+        else "__end__"
+    )
 
 
 builder = StateGraph(EvidenceExtractionState)  # type: ignore[bad-specialization]
@@ -33,7 +37,11 @@ builder.add_conditional_edges(
     _route_glean,
     {"extract_glean": "extract_glean", END: END},
 )
-builder.add_edge("extract_glean", END)
+builder.add_conditional_edges(
+    "extract_glean",
+    _route_glean,
+    {"extract_glean": "extract_glean", END: END},
+)
 evidence_extraction_graph = builder.compile()
 
 
@@ -66,6 +74,7 @@ async def run_evidence_extraction_agent(
         "language": resolved_language,
         "extractor_version": extractor_version,
         "glean_max": glean_max,
+        "gleans_completed": 0,
         "model": model,
         "system_prompt": "",
         "messages": [],

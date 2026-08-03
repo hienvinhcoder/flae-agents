@@ -81,6 +81,12 @@ async def extract_evidence_glean_node(state: EvidenceExtractionState) -> dict:
         ),
         "tokens_used": state["tokens_used"]
         + _token_count(response.response_metadata),
+        "gleans_completed": state["gleans_completed"] + 1,
+        "messages": [
+            *state["messages"],
+            HumanMessage(content=EVIDENCE_GLEAN_PROMPT),
+            AIMessage(content=raw_text),
+        ],
     }
 
 

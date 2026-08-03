@@ -146,7 +146,9 @@ class EvidenceService:
             disambiguation_attributes=candidate.disambiguation_attributes,
         )
         return MaterializedObservation(
-            **base.model_dump(), evidence_key=evidence_key
+            **base.model_dump(),
+            evidence_key=evidence_key,
+            description=candidate.description,
         )
 
     @staticmethod
@@ -223,7 +225,10 @@ class EvidenceService:
             qualifiers=candidate.qualifiers,
         )
         return MaterializedAssertion(
-            **base.model_dump(), evidence_key=evidence_key
+            **base.model_dump(),
+            evidence_key=evidence_key,
+            keywords=tuple(sorted(set(candidate.keywords))),
+            description=candidate.description,
         )
 
     @staticmethod

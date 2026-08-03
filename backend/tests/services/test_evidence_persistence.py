@@ -12,10 +12,15 @@ from app.core.exceptions import InvalidArgumentError
 from app.db.rag_db import DBManager
 from app.db.rag_repository import AuthorizationContext
 from app.schemas.enrichment import (
+    EvidenceBatchPlanInput,
     EvidenceExtractionActivityInput,
     EvidenceExtractionCandidateBatch,
+    EvidenceManifestVerificationInput,
 )
 from app.services.knowalge_base.evidence_service import EvidenceService
+from app.services.knowalge_base.evidence_workflow_service import (
+    EvidenceWorkflowService,
+)
 from app.services.knowalge_base.entity_resolution_service import (
     EntityResolutionService,
 )
@@ -132,6 +137,7 @@ def _candidates() -> EvidenceExtractionCandidateBatch:
                     "raw_mention": "Atlas Edge",
                     "normalized_mention": "atlas edge",
                     "proposed_type": "project",
+                    "description": "Atlas Edge is a project.",
                     "evidence_start": 0,
                     "evidence_end": 10,
                     "confidence": 0.98,
@@ -145,6 +151,7 @@ def _candidates() -> EvidenceExtractionCandidateBatch:
                     "raw_mention": "Minh Stream",
                     "normalized_mention": "minh stream",
                     "proposed_type": "library",
+                    "description": "Minh Stream is a library.",
                     "evidence_start": 16,
                     "evidence_end": 27,
                     "confidence": 0.97,
@@ -157,6 +164,8 @@ def _candidates() -> EvidenceExtractionCandidateBatch:
                     "predicate": "uses",
                     "object_mention_key": "stream",
                     "polarity": "affirmed",
+                    "keywords": ["uses"],
+                    "description": "Atlas Edge uses Minh Stream.",
                     "confidence": 0.96,
                     "evidence_start": 0,
                     "evidence_end": len(CHUNK_TEXT),
@@ -216,6 +225,45 @@ async def test_evidence_persistence_is_atomic_and_idempotent() -> None:
                 (str(command.workspace_id),),
             )
             assert cursor.fetchone() == (0,)
+
+
+@pytest.mark.asyncio
+async def test_evidence_workflow_plans_refs_and_verifies_complete_manifests() -> None:
+    command = _arrange_current_chunk()
+    manager = DBManager()
+    workflow_service = EvidenceWorkflowService(manager)
+    try:
+        plan = await workflow_service.plan_batch(
+            EvidenceBatchPlanInput(
+                workspace_id=command.workspace_id,
+                ingestion_run_id=command.ingestion_run_id,
+                revision_id=command.revision_id,
+                extractor_version=command.extractor_version,
+                model_name=command.model_name,
+            )
+        )
+        persisted = await EvidenceService(manager).persist_candidates(
+            command, _candidates()
+        )
+        verified = await workflow_service.verify_manifests(
+            EvidenceManifestVerificationInput(
+                workspace_id=command.workspace_id,
+                ingestion_run_id=command.ingestion_run_id,
+                revision_id=command.revision_id,
+                extractor_version=command.extractor_version,
+                expected_chunk_count=1,
+                expected_observation_count=persisted.observation_count,
+                expected_assertion_count=persisted.assertion_count,
+            )
+        )
+    finally:
+        await manager.close()
+
+    assert tuple(item.chunk_id for item in plan.items) == (command.chunk_id,)
+    assert plan.next_cursor is None
+    assert verified.chunk_count == 1
+    assert verified.observation_count == 2
+    assert verified.assertion_count == 1
 
 
 @pytest.mark.asyncio

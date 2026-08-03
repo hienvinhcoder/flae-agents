@@ -20,6 +20,7 @@ def _raw_extraction() -> str:
                     "raw_mention": "Atlas Edge",
                     "normalized_mention": "atlas edge",
                     "proposed_type": "project",
+                    "description": "Atlas Edge is a project.",
                     "evidence_start": text.index("Atlas Edge"),
                     "evidence_end": text.index("Atlas Edge") + len("Atlas Edge"),
                     "confidence": 0.98,
@@ -33,6 +34,7 @@ def _raw_extraction() -> str:
                     "raw_mention": "Minh Stream",
                     "normalized_mention": "minh stream",
                     "proposed_type": "library",
+                    "description": "Minh Stream is a library.",
                     "evidence_start": text.index("Minh Stream"),
                     "evidence_end": text.index("Minh Stream") + len("Minh Stream"),
                     "confidence": 0.97,
@@ -46,6 +48,8 @@ def _raw_extraction() -> str:
                     "predicate": "uses",
                     "object_mention_key": "minh_stream",
                     "polarity": "affirmed",
+                    "keywords": ["uses"],
+                    "description": "Atlas Edge uses Minh Stream.",
                     "confidence": 0.96,
                     "evidence_start": 0,
                     "evidence_end": len(text),
@@ -92,6 +96,8 @@ def test_materialization_deduplicates_mentions_and_preserves_direction() -> None
     assert assertion.subject_observation_id == observations["Atlas Edge"].observation_id
     assert assertion.object_observation_id == observations["Minh Stream"].observation_id
     assert assertion.predicate == "uses"
+    assert assertion.keywords == ("uses",)
+    assert assertion.description == "Atlas Edge uses Minh Stream."
     assert assertion.evidence_start == 0
     assert assertion.evidence_end == len(context.chunk_text)
 

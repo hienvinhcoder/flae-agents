@@ -35,6 +35,12 @@ def _checksum(value: object) -> str:
     return "sha256:" + sha256(encoded).hexdigest()
 
 
+def evidence_manifest_version(
+    pipeline_version: str, extractor_version: str
+) -> str:
+    return f"{pipeline_version}:extractor:{extractor_version}"
+
+
 class EvidenceRepository:
     def __init__(self, manager: DBManager) -> None:
         self._manager = manager
@@ -76,10 +82,13 @@ class EvidenceRepository:
                         }
                     )
                     item_count = len(evidence.observations) + len(evidence.assertions)
+                    manifest_version = evidence_manifest_version(
+                        row["pipeline_version"], command.extractor_version
+                    )
                     await self._validate_existing_manifest(
                         session,
                         command,
-                        pipeline_version=row["pipeline_version"],
+                        pipeline_version=manifest_version,
                         input_checksum=input_checksum,
                         output_checksum=output_checksum,
                         item_count=item_count,
@@ -92,7 +101,7 @@ class EvidenceRepository:
                     await self._write_manifest(
                         session,
                         command,
-                        pipeline_version=row["pipeline_version"],
+                        pipeline_version=manifest_version,
                         input_checksum=input_checksum,
                         output_checksum=output_checksum,
                         item_count=item_count,
@@ -218,12 +227,12 @@ class EvidenceRepository:
             text(
                 """INSERT INTO entity_observations (
                      workspace_id, observation_id, revision_id, chunk_id,
-                     raw_mention, normalized_mention, proposed_type,
+                     raw_mention, normalized_mention, proposed_type, description,
                      evidence_start, evidence_end, extractor_version, confidence,
                      external_ids, disambiguation_attributes, evidence_key
                    ) VALUES (
                      :workspace_id, :observation_id, :revision_id, :chunk_id,
-                     :raw_mention, :normalized_mention, :proposed_type,
+                     :raw_mention, :normalized_mention, :proposed_type, :description,
                      :evidence_start, :evidence_end, :extractor_version, :confidence,
                      CAST(:external_ids AS jsonb),
                      CAST(:disambiguation_attributes AS jsonb), :evidence_key
@@ -260,15 +269,25 @@ class EvidenceRepository:
                      workspace_id, assertion_id, revision_id, chunk_id,
                      subject_observation_id, predicate, object_observation_id,
                      object_value, polarity, confidence, valid_from, valid_to,
-                     evidence_start, evidence_end, extractor_version, evidence_key
+                     evidence_start, evidence_end, extractor_version, keywords,
+                     description, evidence_key
                    ) VALUES (
                      :workspace_id, :assertion_id, :revision_id, :chunk_id,
                      :subject_observation_id, :predicate, :object_observation_id,
                      :object_value, :polarity, :confidence, :valid_from, :valid_to,
-                     :evidence_start, :evidence_end, :extractor_version, :evidence_key
+                     :evidence_start, :evidence_end, :extractor_version,
+                     CAST(:keywords AS jsonb), :description, :evidence_key
                    ) ON CONFLICT DO NOTHING"""
             ),
-            [item.model_dump(mode="json", exclude={"qualifiers"}) for item in evidence.assertions],
+            [
+                {
+                    **item.model_dump(
+                        mode="json", exclude={"qualifiers", "keywords"}
+                    ),
+                    "keywords": json.dumps(item.keywords),
+                }
+                for item in evidence.assertions
+            ],
         )
 
     @staticmethod
