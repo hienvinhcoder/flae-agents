@@ -5,8 +5,11 @@ from uuid import NAMESPACE_URL, uuid4, uuid5
 import psycopg2
 import pytest
 from sqlalchemy.engine import make_url
+from temporalio.common import WorkflowIDConflictPolicy, WorkflowIDReusePolicy
+from temporalio.exceptions import WorkflowAlreadyStartedError
 
 from app.core.config import settings
+from app.core.exceptions import InvalidArgumentError
 from app.db.rag_db import DBManager
 from app.models.knowledge_base import DocumentType
 from app.schemas.ingestion import (
@@ -156,7 +159,7 @@ async def test_ingestion_bootstrap_preserves_connector_identity_and_restricted_a
 
 
 @pytest.mark.asyncio
-async def test_ingestion_feature_flag_routes_new_checksummed_starts_to_queue(
+async def test_document_start_always_uses_the_canonical_knowledge_workflow(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     document_id = uuid4()
@@ -191,7 +194,6 @@ async def test_ingestion_feature_flag_routes_new_checksummed_starts_to_queue(
     )
     temporal_client = MagicMock()
     temporal_client.start_workflow = AsyncMock()
-    monkeypatch.setattr(settings, "INGESTION_V2_ENABLED", True)
     monkeypatch.setattr(
         ingestion_workflow_starter,
         "get_temporal_client",
@@ -206,8 +208,69 @@ async def test_ingestion_feature_flag_routes_new_checksummed_starts_to_queue(
     workflow_id = await ingestion_workflow_starter.start_ingestion_workflow(document)
 
     assert workflow_id == f"knowledge-ingestion-v1-{source.ingestion_run_id}"
+    temporal_client.start_workflow.assert_awaited_once()
     call = temporal_client.start_workflow.call_args
     assert call.args[0] == DiscoverableMemoryIngestionWorkflow.run
     assert call.args[1].memory.base.source == source
+    assert call.args[1].memory.base.update_core_document_status is True
     assert call.args[1].memory.semantic_graph.workspace_id == source.workspace_id
+    assert call.args[1].memory.semantic_graph.resolver_version == "resolver-v1"
+    assert call.args[1].memory.semantic_graph.projection_version == "projection-v1"
+    assert call.kwargs["id"] == workflow_id
     assert call.kwargs["task_queue"] == settings.TEMPORAL_INGESTION_TASK_QUEUE
+    assert (
+        call.kwargs["id_conflict_policy"]
+        is WorkflowIDConflictPolicy.USE_EXISTING
+    )
+    assert (
+        call.kwargs["id_reuse_policy"]
+        is WorkflowIDReusePolicy.REJECT_DUPLICATE
+    )
+
+
+@pytest.mark.asyncio
+async def test_canonical_starter_returns_workflow_id_when_closed_id_exists() -> None:
+    source = SourceRevisionReference(
+        workspace_id=uuid4(),
+        source_id=uuid4(),
+        document_id=uuid4(),
+        revision_id=uuid4(),
+        ingestion_run_id=uuid4(),
+        source_uri=f"gcs://{settings.GCS_BUCKET_NAME}/workspace/document.md",
+        source_name="Architecture notes",
+        source_type="knowledge_base",
+        source_modified_at=datetime(2026, 7, 29, tzinfo=UTC),
+        content_checksum="sha256:" + "a" * 64,
+        acl_checksum="sha256:" + "b" * 64,
+        acl_scope="workspace",
+        parser_version="markdown-v1",
+        chunker_version="structure-v1",
+        pipeline_version="v1",
+    )
+    workflow_id = f"knowledge-ingestion-v1-{source.ingestion_run_id}"
+    temporal_client = MagicMock()
+    temporal_client.start_workflow = AsyncMock(
+        side_effect=WorkflowAlreadyStartedError(
+            workflow_id,
+            "DiscoverableMemoryIngestionWorkflow",
+        )
+    )
+
+    result = await ingestion_workflow_starter.IngestionWorkflowStarter(
+        temporal_client
+    ).start(source, update_core_document_status=False)
+
+    assert result == workflow_id
+
+
+@pytest.mark.asyncio
+async def test_document_start_requires_a_checksummed_gcs_reference() -> None:
+    document = MagicMock(
+        id=uuid4(),
+        workspace_id=uuid4(),
+        gcs_path=None,
+        content_checksum=None,
+    )
+
+    with pytest.raises(InvalidArgumentError, match="checksummed GCS reference"):
+        await ingestion_workflow_starter.start_ingestion_workflow(document)

@@ -1,6 +1,8 @@
-import pytest
-import uuid
+from hashlib import sha256
 from unittest.mock import patch, AsyncMock, MagicMock
+import uuid
+
+import pytest
 
 # Mock require_roles decorator dependency TRƯỚC KHI import main/app
 def mock_require_roles(roles):
@@ -14,7 +16,13 @@ patcher.start()
 from main import app
 from fastapi.testclient import TestClient
 from app.core.security import get_current_user, get_current_workspace_id
-from app.schemas.sche_knowledge_base import KnowledgeGraphResponse, GraphNode, GraphEdge
+from app.schemas.sche_knowledge_base import (
+    GraphEdge,
+    GraphNode,
+    KnowledgeGraphResponse,
+    ManualDocumentCreate,
+)
+from app.services.knowledge_base_srv import KnowledgeBaseService
 
 # Khôi phục require_roles ngay lập tức để tránh làm hỏng các test case của file khác
 patcher.stop()
@@ -98,3 +106,60 @@ def test_get_knowledge_graph_success(mock_graph_service):
     assert edges[0]["target"] == "entity_1"
     assert edges[0]["label"] == "FOUNDED"
     assert edges[0]["weight"] == 3
+
+
+@pytest.mark.asyncio
+async def test_create_manual_document_uploads_exact_utf8_bytes_without_flag(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeSession:
+        def __init__(self) -> None:
+            self.added = None
+
+        def add(self, value) -> None:
+            self.added = value
+
+        async def commit(self) -> None:
+            pass
+
+        async def refresh(self, value) -> None:
+            pass
+
+    workspace_id = uuid.uuid4()
+    payload = ManualDocumentCreate(
+        title="Architecture",
+        content_text="# Café 🚀\n",
+    )
+    content_bytes = payload.content_text.encode("utf-8")
+    upload = AsyncMock(return_value="workspace/manual/document.md")
+    start_workflow = AsyncMock(return_value="knowledge-ingestion-v1-run")
+    monkeypatch.setattr(
+        "app.services.knowledge_base_srv.GCSStorageService.upload_file",
+        upload,
+    )
+    monkeypatch.setattr(
+        "app.services.knowledge_base_srv._start_ingestion_workflow",
+        start_workflow,
+    )
+    monkeypatch.setattr(
+        "app.services.knowledge_base_srv.settings.INGESTION_V2_ENABLED",
+        False,
+    )
+    db = FakeSession()
+
+    await KnowledgeBaseService.create_manual_document(
+        db,
+        workspace_id,
+        "user-1",
+        payload,
+    )
+
+    upload.assert_awaited_once_with(
+        workspace_id=workspace_id,
+        document_id=db.added.id,
+        file_name=f"document-{db.added.id}.md",
+        file_content=content_bytes,
+        content_type="text/markdown",
+    )
+    assert db.added.gcs_path == "workspace/manual/document.md"
+    assert db.added.content_checksum == "sha256:" + sha256(content_bytes).hexdigest()

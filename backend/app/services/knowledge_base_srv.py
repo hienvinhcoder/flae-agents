@@ -151,17 +151,14 @@ class KnowledgeBaseService:
             raise InvalidArgumentError("Nội dung vượt quá giới hạn 10MB")
 
         content_bytes = payload.content_text.encode("utf-8")
-        gcs_path = None
-        file_name = None
-        if settings.INGESTION_V2_ENABLED:
-            file_name = f"document-{doc_id}.md"
-            gcs_path = await GCSStorageService.upload_file(
-                workspace_id=workspace_id,
-                document_id=doc_id,
-                file_name=file_name,
-                file_content=content_bytes,
-                content_type="text/markdown",
-            )
+        file_name = f"document-{doc_id}.md"
+        gcs_path = await GCSStorageService.upload_file(
+            workspace_id=workspace_id,
+            document_id=doc_id,
+            file_name=file_name,
+            file_content=content_bytes,
+            content_type="text/markdown",
+        )
 
         doc = KnowledgeDocument(
             id=doc_id,

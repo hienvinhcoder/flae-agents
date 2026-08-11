@@ -1,4 +1,9 @@
-"""Feature-flagged dispatcher for compatible V1 and references-only V2 starts."""
+"""Canonical references-only ingestion workflow starter."""
+
+from typing import Protocol, cast
+
+from temporalio.common import WorkflowIDConflictPolicy, WorkflowIDReusePolicy
+from temporalio.exceptions import WorkflowAlreadyStartedError
 
 from app.core.config import settings
 from app.core.exceptions import InvalidArgumentError
@@ -17,6 +22,7 @@ from app.schemas.graph_semantics import DemoIngestionProfile
 from app.schemas.ingestion import (
     IngestionBootstrapInput,
     IngestionWorkflowInput,
+    SourceRevisionReference,
 )
 from app.services.knowalge_base.ingestion_start_service import (
     IngestionStartService,
@@ -24,27 +30,82 @@ from app.services.knowalge_base.ingestion_start_service import (
 
 
 logger = get_logger(__name__)
-V1_TASK_QUEUE = "flae-default-queue"
+
+
+class TemporalWorkflowClient(Protocol):
+    async def start_workflow(
+        self,
+        workflow: object,
+        arg: DiscoverableMemoryIngestionWorkflowInput,
+        *,
+        id: str,
+        task_queue: str,
+        id_conflict_policy: WorkflowIDConflictPolicy,
+        id_reuse_policy: WorkflowIDReusePolicy,
+    ) -> object: ...
+
+
+class IngestionWorkflowStarter:
+    def __init__(self, client: TemporalWorkflowClient) -> None:
+        self._client = client
+
+    async def start(
+        self,
+        source: SourceRevisionReference,
+        *,
+        update_core_document_status: bool,
+    ) -> str:
+        from app.temporal.workflows.discoverable_memory_ingestion import (
+            DiscoverableMemoryIngestionWorkflow,
+        )
+
+        max_parallel_batches = min(
+            settings.INGESTION_V2_MAX_PARALLEL_BATCHES,
+            16,
+        )
+        workflow_id = f"knowledge-ingestion-v1-{source.ingestion_run_id}"
+        try:
+            await self._client.start_workflow(
+                DiscoverableMemoryIngestionWorkflow.run,
+                DiscoverableMemoryIngestionWorkflowInput(
+                    memory=CompanyMemoryIngestionWorkflowInput(
+                        base=IngestionWorkflowInput(
+                            source=source,
+                            max_parallel_batches=max_parallel_batches,
+                            update_core_document_status=update_core_document_status,
+                        ),
+                        semantic_graph=SemanticGraphEnrichmentWorkflowInput(
+                            workspace_id=source.workspace_id,
+                            resolver_version="resolver-v1",
+                            projection_version="projection-v1",
+                            semantic_profile=DemoIngestionProfile(
+                                profile_version="demo-reference-v1",
+                                embedding_model=settings.GEMINI_EMBEDDING_MODEL,
+                                embedding_dimension=settings.EMBEDDING_DIMENSIONS,
+                                embedding_policy_version="semantic-input-v1",
+                            ),
+                        ),
+                        evidence_model_name=settings.GEMINI_LLM_MODEL,
+                        evidence_glean_max=settings.RAG_GLEAN_MAX,
+                        max_parallel_evidence_chunks=max_parallel_batches,
+                    ),
+                ),
+                id=workflow_id,
+                task_queue=settings.TEMPORAL_INGESTION_TASK_QUEUE,
+                id_conflict_policy=WorkflowIDConflictPolicy.USE_EXISTING,
+                id_reuse_policy=WorkflowIDReusePolicy.REJECT_DUPLICATE,
+            )
+        except WorkflowAlreadyStartedError:
+            return workflow_id
+        logger.info("Started canonical knowledge ingestion workflow: %s", workflow_id)
+        return workflow_id
 
 
 async def start_ingestion_workflow(doc: KnowledgeDocument) -> str:
-    if settings.INGESTION_V2_ENABLED and doc.gcs_path and doc.content_checksum:
-        return await _start_v2(doc)
-    if settings.INGESTION_V2_ENABLED:
-        logger.warning(
-            "Falling back to ingestion V1 for legacy document %s without a "
-            "GCS checksum reference",
-            doc.id,
+    if not doc.gcs_path or not doc.content_checksum:
+        raise InvalidArgumentError(
+            "Knowledge ingestion requires a checksummed GCS reference."
         )
-    return await _start_v1(doc)
-
-
-async def _start_v2(doc: KnowledgeDocument) -> str:
-    if doc.gcs_path is None or doc.content_checksum is None:
-        raise InvalidArgumentError("Ingestion V2 requires a checksummed GCS reference.")
-    from app.temporal.workflows.discoverable_memory_ingestion import (
-        DiscoverableMemoryIngestionWorkflow,
-    )
 
     source = await IngestionStartService(rag_db_manager).prepare_reference(
         IngestionBootstrapInput(
@@ -56,61 +117,8 @@ async def _start_v2(doc: KnowledgeDocument) -> str:
             content_checksum=doc.content_checksum,
         )
     )
-    workflow_id = f"knowledge-ingestion-v1-{source.ingestion_run_id}"
-    client = await get_temporal_client()
-    await client.start_workflow(
-        DiscoverableMemoryIngestionWorkflow.run,
-        DiscoverableMemoryIngestionWorkflowInput(
-            memory=CompanyMemoryIngestionWorkflowInput(
-                base=IngestionWorkflowInput(
-                    source=source,
-                    max_parallel_batches=min(
-                        settings.INGESTION_V2_MAX_PARALLEL_BATCHES, 16
-                    ),
-                ),
-                semantic_graph=SemanticGraphEnrichmentWorkflowInput(
-                    workspace_id=source.workspace_id,
-                    resolver_version="resolver-v2",
-                    projection_version="projection-v2",
-                    semantic_profile=DemoIngestionProfile(
-                        profile_version="demo-reference-v1",
-                        embedding_model=settings.GEMINI_EMBEDDING_MODEL,
-                        embedding_dimension=settings.EMBEDDING_DIMENSIONS,
-                        embedding_policy_version="semantic-input-v1",
-                    ),
-                ),
-                evidence_model_name=settings.GEMINI_LLM_MODEL,
-                evidence_glean_max=settings.RAG_GLEAN_MAX,
-                max_parallel_evidence_chunks=min(
-                    settings.INGESTION_V2_MAX_PARALLEL_BATCHES, 16
-                ),
-            ),
-        ),
-        id=workflow_id,
-        task_queue=settings.TEMPORAL_INGESTION_TASK_QUEUE,
+    client = cast(TemporalWorkflowClient, await get_temporal_client())
+    return await IngestionWorkflowStarter(client).start(
+        source,
+        update_core_document_status=True,
     )
-    logger.info("Started ingestion V2 workflow: %s", workflow_id)
-    return workflow_id
-
-
-async def _start_v1(doc: KnowledgeDocument) -> str:
-    from app.temporal.workflows.ingestion import DocumentIngestionWorkflow
-
-    workflow_id = f"kb-ingest-{doc.id}"
-    params = {
-        "document_id": str(doc.id),
-        "workspace_id": str(doc.workspace_id),
-        "document_type": doc.document_type.value,
-        "gcs_path": doc.gcs_path,
-        "content_text": doc.content_text,
-        "file_name": doc.file_name or f"document-{doc.id}",
-    }
-    client = await get_temporal_client()
-    await client.start_workflow(
-        DocumentIngestionWorkflow.run,
-        params,
-        id=workflow_id,
-        task_queue=V1_TASK_QUEUE,
-    )
-    logger.info("Started ingestion V1 workflow: %s", workflow_id)
-    return workflow_id
