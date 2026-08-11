@@ -1,16 +1,15 @@
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 from unittest.mock import MagicMock
 
 import pytest
-from temporalio import activity
+from temporalio import activity, workflow
 from temporalio.contrib.pydantic import pydantic_data_converter
 from temporalio.testing import WorkflowEnvironment
 from temporalio.worker import Worker
 
-from app.core.config import settings
 from app.schemas.ingestion_v2 import (
     BaseBatchReference,
     BaseStagePlan,
@@ -23,8 +22,6 @@ from app.schemas.ingestion_v2 import (
     StageEmbeddingInput,
     V2DocumentStatusInput,
 )
-from app.temporal.activities.greet import greet
-from app.temporal.workflows.greeting import GreetingWorkflow
 from app.temporal.workflows.company_memory_ingestion import (
     CompanyMemoryIngestionWorkflow,
 )
@@ -40,11 +37,28 @@ from app.temporal.workflows.memory_state import MemoryStateWorkflow
 from app.temporal.workflows.semantic_graph_enrichment import (
     SemanticGraphEnrichmentWorkflow,
 )
-from workers import flae_ingestion_worker
-from workers import flae_worker
+
+
+@activity.defn(name="interactive_probe_activity")
+async def interactive_probe_activity(value: str) -> str:
+    return value
+
+
+@workflow.defn(name="InteractiveProbeWorkflow")
+class InteractiveProbeWorkflow:
+    @workflow.run
+    async def run(self, value: str) -> str:
+        return await workflow.execute_activity(
+            interactive_probe_activity,
+            value,
+            start_to_close_timeout=timedelta(seconds=5),
+        )
 
 
 def test_ingestion_v2_uses_a_dedicated_bounded_worker(monkeypatch) -> None:
+    from app.core.config import settings
+    from workers import flae_ingestion_worker
+
     worker_factory = MagicMock(return_value=MagicMock())
     monkeypatch.setattr(flae_ingestion_worker, "Worker", worker_factory)
     client = MagicMock()
@@ -80,6 +94,9 @@ def test_ingestion_v2_uses_a_dedicated_bounded_worker(monkeypatch) -> None:
 
 
 def test_v1_remains_registered_on_the_interactive_compatible_worker() -> None:
+    from app.core.config import settings
+    from workers import flae_worker
+
     source = open(flae_worker.__file__, encoding="utf-8").read()
 
     assert DocumentIngestionWorkflow.__name__ in source
@@ -167,8 +184,8 @@ async def test_ingestion_backlog_does_not_starve_interactive_queue() -> None:
         ), Worker(
             environment.client,
             task_queue="capacity-interactive-queue",
-            workflows=[GreetingWorkflow],
-            activities=[greet],
+            workflows=[InteractiveProbeWorkflow],
+            activities=[interactive_probe_activity],
             max_concurrent_activities=1,
         ):
             with environment.auto_time_skipping_disabled():
@@ -182,15 +199,15 @@ async def test_ingestion_backlog_does_not_starve_interactive_queue() -> None:
                     for _ in range(3)
                 ]
                 await asyncio.wait_for(ingestion_started.wait(), timeout=5)
-                greeting = await asyncio.wait_for(
+                interactive_result = await asyncio.wait_for(
                     environment.client.execute_workflow(
-                        GreetingWorkflow.run,
+                        InteractiveProbeWorkflow.run,
                         "interactive",
-                        id=f"capacity-greeting-{uuid4()}",
+                        id=f"capacity-interactive-probe-{uuid4()}",
                         task_queue="capacity-interactive-queue",
                     ),
                     timeout=5,
                 )
-                assert greeting == "Hello, interactive!"
+                assert interactive_result == "interactive"
                 release_ingestion.set()
                 await asyncio.gather(*(handle.result() for handle in handles))

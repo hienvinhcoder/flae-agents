@@ -5,11 +5,9 @@ from app.core.temporal import get_temporal_client
 from app.core.logger import get_logger, setup_logging
 
 # Import workflows và activities
-from app.temporal.workflows.greeting import GreetingWorkflow
 from app.temporal.workflows.invitation import WorkspaceInvitationWorkflow
 from app.temporal.workflows.ingestion import DocumentIngestionWorkflow
 from app.temporal.workflows.topic import TopicUpdateWorkflow
-from app.temporal.activities.greet import greet
 from app.temporal.activities.invitation import send_invitation_email
 from app.temporal.activities.topic import update_topic_summary_activity
 from app.temporal.activities.ingestion import (
@@ -43,13 +41,11 @@ async def run_worker():
             client,
             task_queue="flae-default-queue",
             workflows=[
-                GreetingWorkflow,
                 WorkspaceInvitationWorkflow,
                 DocumentIngestionWorkflow,
                 TopicUpdateWorkflow,
             ],
             activities=[
-                greet,
                 send_invitation_email,
                 update_topic_summary_activity,
                 update_document_status,
