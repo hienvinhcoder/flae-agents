@@ -13,14 +13,14 @@ from app.core.config import settings
 from app.core.exceptions import InvalidArgumentError
 from app.db.database import AsyncSessionLocal
 from app.db.rag_db import rag_db_manager
-from app.schemas.ingestion_v2 import (
+from app.schemas.ingestion import (
     BaseStagePlan,
     PrepareBaseStageInput,
     StageBatchResult,
     StageEmbeddingInput,
     PublishBaseInput,
     PublishBaseResult,
-    V2DocumentStatusInput,
+    DocumentIngestionStatusInput,
 )
 from app.services.gcs_storage_srv import GCSStorageService
 from app.services.knowalge_base.chunking_service import ChunkingService
@@ -122,7 +122,7 @@ async def publish_base_activity(command: PublishBaseInput) -> PublishBaseResult:
 
 @activity.defn
 async def update_v2_document_status_activity(
-    command: V2DocumentStatusInput,
+    command: DocumentIngestionStatusInput,
 ) -> None:
     """Synchronize compact V2 lifecycle state to core document metadata."""
     from app.services.knowledge_base_srv import KnowledgeBaseService

@@ -1,5 +1,6 @@
 import asyncio
 from datetime import UTC, datetime
+from unittest.mock import AsyncMock
 from uuid import uuid4
 
 import pytest
@@ -10,17 +11,17 @@ from temporalio.exceptions import ApplicationError
 from temporalio.testing import WorkflowEnvironment
 from temporalio.worker import Replayer, Worker
 
-from app.schemas.ingestion_v2 import (
+from app.schemas.ingestion import (
     BaseBatchReference,
     BaseStagePlan,
-    IngestionWorkflowV2Input,
+    IngestionWorkflowInput,
     PrepareBaseStageInput,
     PublishBaseInput,
     PublishBaseResult,
     SourceRevisionReference,
     StageBatchResult,
     StageEmbeddingInput,
-    V2DocumentStatusInput,
+    DocumentIngestionStatusInput,
 )
 from app.temporal.workflows.ingestion_v2 import IngestionWorkflowV2
 
@@ -39,9 +40,9 @@ def _source() -> SourceRevisionReference:
         content_checksum="sha256:" + "a" * 64,
         acl_checksum="sha256:" + "b" * 64,
         acl_scope="workspace",
-        parser_version="markdown-v2",
-        chunker_version="structure-v2",
-        pipeline_version="pipeline-v2",
+        parser_version="markdown-v1",
+        chunker_version="structure-v1",
+        pipeline_version="v1",
     )
 
 
@@ -69,6 +70,24 @@ def _plan(source: SourceRevisionReference) -> BaseStagePlan:
 
 
 @pytest.mark.asyncio
+async def test_connector_workflow_skips_core_document_status_activity(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    execute_activity = AsyncMock()
+    monkeypatch.setattr(
+        "app.temporal.workflows.ingestion_v2.workflow.execute_activity",
+        execute_activity,
+    )
+    command = IngestionWorkflowInput(
+        source=_source(), update_core_document_status=False
+    )
+
+    await IngestionWorkflowV2._update_status(command, "processing")
+
+    execute_activity.assert_not_awaited()
+
+
+@pytest.mark.asyncio
 async def test_workflow_v2_retries_transient_batches_and_bounds_fanout() -> None:
     source = _source()
     plan = _plan(source)
@@ -78,7 +97,7 @@ async def test_workflow_v2_retries_transient_batches_and_bounds_fanout() -> None
     statuses: list[str] = []
 
     @activity.defn(name="update_v2_document_status_activity")
-    async def update_status(command: V2DocumentStatusInput) -> None:
+    async def update_status(command: DocumentIngestionStatusInput) -> None:
         statuses.append(command.status)
 
     @activity.defn(name="prepare_base_stage_activity")
@@ -123,7 +142,7 @@ async def test_workflow_v2_retries_transient_batches_and_bounds_fanout() -> None
         ):
             handle = await environment.client.start_workflow(
                 IngestionWorkflowV2.run,
-                IngestionWorkflowV2Input(
+                IngestionWorkflowInput(
                     source=source,
                     batch_size=20,
                     max_parallel_batches=2,
@@ -152,7 +171,7 @@ async def test_workflow_v2_does_not_retry_permanent_input_failure() -> None:
     statuses: list[str] = []
 
     @activity.defn(name="update_v2_document_status_activity")
-    async def update_status(command: V2DocumentStatusInput) -> None:
+    async def update_status(command: DocumentIngestionStatusInput) -> None:
         statuses.append(command.status)
 
     @activity.defn(name="prepare_base_stage_activity")
@@ -177,7 +196,7 @@ async def test_workflow_v2_does_not_retry_permanent_input_failure() -> None:
             with pytest.raises(WorkflowFailureError):
                 await environment.client.execute_workflow(
                     IngestionWorkflowV2.run,
-                    IngestionWorkflowV2Input(source=source),
+                    IngestionWorkflowInput(source=source),
                     id=f"ingestion-v2-{uuid4()}",
                     task_queue="ingestion-v2-permanent-test",
                 )
@@ -192,7 +211,7 @@ async def test_workflow_v2_cancellation_reaches_heartbeat_activity() -> None:
     started = asyncio.Event()
 
     @activity.defn(name="update_v2_document_status_activity")
-    async def update_status(_command: V2DocumentStatusInput) -> None:
+    async def update_status(_command: DocumentIngestionStatusInput) -> None:
         return None
 
     @activity.defn(name="prepare_base_stage_activity")
@@ -213,7 +232,7 @@ async def test_workflow_v2_cancellation_reaches_heartbeat_activity() -> None:
         ):
             handle = await environment.client.start_workflow(
                 IngestionWorkflowV2.run,
-                IngestionWorkflowV2Input(source=source),
+                IngestionWorkflowInput(source=source),
                 id=f"ingestion-v2-{uuid4()}",
                 task_queue="ingestion-v2-cancel-test",
             )

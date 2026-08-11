@@ -1,5 +1,6 @@
-"""Idempotent revision/run bootstrap for new V2 ingestion starts."""
+"""Idempotent revision/run bootstrap for canonical ingestion starts."""
 
+import json
 from hashlib import sha256
 from uuid import NAMESPACE_URL, uuid5
 
@@ -9,32 +10,56 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.core.config import settings
 from app.core.exceptions import ExternalServiceError, InvalidArgumentError
 from app.db.rag_db import DBManager
-from app.schemas.ingestion_v2 import (
-    IngestionV2BootstrapInput,
+from app.schemas.ingestion import (
+    IngestionBootstrapInput,
     SourceRevisionReference,
 )
 
 
-class IngestionV2StartService:
+class IngestionStartService:
     def __init__(self, manager: DBManager) -> None:
         self._manager = manager
 
     async def prepare_reference(
-        self, command: IngestionV2BootstrapInput
+        self, command: IngestionBootstrapInput
     ) -> SourceRevisionReference:
-        source_id = uuid5(
+        source_id = command.source_id or uuid5(
             NAMESPACE_URL, f"flae:knowledge-base:{command.workspace_id}"
+        )
+        source_external_id = command.source_external_id or str(command.document_id)
+        source_version_key = command.source_version_key or command.content_checksum
+        acl_checksum = command.acl_checksum or (
+            "sha256:" + sha256(b"workspace").hexdigest()
+        )
+        legacy_knowledge_base = (
+            command.source_id is None
+            and command.source_external_id is None
+            and command.source_version_key is None
+            and command.source_type == "knowledge_base"
+            and command.acl_scope == "workspace"
+            and command.acl_checksum is None
+            and not command.acl_principal_ids
+        )
+        revision_material = (
+            command.content_checksum
+            if legacy_knowledge_base
+            else f"{command.content_checksum}:{acl_checksum}"
         )
         revision_id = uuid5(
             NAMESPACE_URL,
             f"flae:{command.workspace_id}:{command.document_id}:"
-            f"{command.content_checksum}",
+            f"{revision_material}",
         )
         run_id = uuid5(
             NAMESPACE_URL, f"flae:{revision_id}:{command.pipeline_version}"
         )
-        workflow_id = f"kb-ingest-v2-{run_id}"
-        acl_checksum = "sha256:" + sha256(b"workspace").hexdigest()
+        workflow_id = f"knowledge-ingestion-v1-{run_id}"
+        input_checksum = (
+            command.content_checksum
+            if legacy_knowledge_base
+            else "sha256:"
+            + sha256(f"{command.content_checksum}:{acl_checksum}".encode()).hexdigest()
+        )
         workspace_id = str(command.workspace_id)
         try:
             async with self._manager.get_ingestion_session(workspace_id) as session:
@@ -64,7 +89,8 @@ class IngestionV2StartService:
                                  :workspace_id, :revision_id, :source_id, :document_id,
                                  :source_external_id, :source_version_key,
                                  :content_checksum, :acl_checksum, 'staging',
-                                 'pending', 'pending', 'pending', 'workspace', '[]'::jsonb
+                                 'pending', 'pending', 'pending', :acl_scope,
+                                 CAST(:acl_principal_ids AS jsonb)
                                ) ON CONFLICT (
                                  workspace_id, source_id, source_external_id,
                                  source_version_key
@@ -75,10 +101,14 @@ class IngestionV2StartService:
                             "revision_id": revision_id,
                             "source_id": source_id,
                             "document_id": command.document_id,
-                            "source_external_id": str(command.document_id),
-                            "source_version_key": command.content_checksum,
+                            "source_external_id": source_external_id,
+                            "source_version_key": source_version_key,
                             "content_checksum": command.content_checksum,
                             "acl_checksum": acl_checksum,
+                            "acl_scope": command.acl_scope,
+                            "acl_principal_ids": json.dumps(
+                                command.acl_principal_ids
+                            ),
                         },
                     )
                     await session.execute(
@@ -100,7 +130,7 @@ class IngestionV2StartService:
                             "revision_id": revision_id,
                             "workflow_id": workflow_id,
                             "pipeline_version": command.pipeline_version,
-                            "input_checksum": command.content_checksum,
+                            "input_checksum": input_checksum,
                         },
                     )
                     state = await session.scalar(
@@ -113,14 +143,14 @@ class IngestionV2StartService:
                     )
                     if state not in ("staging", "searchable"):
                         raise InvalidArgumentError(
-                            "V2 revision cannot be started from its current state."
+                            "Revision cannot be started from its current state."
                         )
                     await session.commit()
                 except Exception:
                     await session.rollback()
                     raise
         except SQLAlchemyError as error:
-            raise ExternalServiceError("Không thể khởi tạo ingestion V2.") from error
+            raise ExternalServiceError("Không thể khởi tạo ingestion.") from error
 
         return SourceRevisionReference(
             workspace_id=command.workspace_id,
@@ -132,11 +162,12 @@ class IngestionV2StartService:
                 f"gcs://{settings.GCS_BUCKET_NAME}/{command.gcs_path.lstrip('/')}"
             ),
             source_name=command.source_name,
-            source_type="knowledge_base",
+            source_type=command.source_type,
             source_modified_at=command.source_modified_at,
             content_checksum=command.content_checksum,
             acl_checksum=acl_checksum,
-            acl_scope="workspace",
+            acl_scope=command.acl_scope,
+            acl_principal_ids=command.acl_principal_ids,
             parser_version=command.parser_version,
             chunker_version=command.chunker_version,
             pipeline_version=command.pipeline_version,

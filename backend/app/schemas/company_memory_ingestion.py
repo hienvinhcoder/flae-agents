@@ -9,9 +9,9 @@ from app.schemas.graph_enrichment import (
     GraphSnapshotPublishResult,
     SemanticGraphEnrichmentWorkflowInput,
 )
-from app.schemas.ingestion_v2 import (
-    IngestionWorkflowV2Input,
-    IngestionWorkflowV2Output,
+from app.schemas.ingestion import (
+    IngestionWorkflowInput,
+    IngestionWorkflowOutput,
 )
 
 
@@ -20,7 +20,7 @@ class CompanyMemoryIngestionModel(BaseModel):
 
 
 class CompanyMemoryIngestionWorkflowInput(CompanyMemoryIngestionModel):
-    base: IngestionWorkflowV2Input
+    base: IngestionWorkflowInput
     semantic_graph: SemanticGraphEnrichmentWorkflowInput
     evidence_extractor_version: str = Field(
         default="evidence-v2", min_length=1, max_length=200
@@ -39,6 +39,6 @@ class CompanyMemoryIngestionWorkflowInput(CompanyMemoryIngestionModel):
 
 
 class CompanyMemoryIngestionWorkflowResult(CompanyMemoryIngestionModel):
-    base: IngestionWorkflowV2Output
+    base: IngestionWorkflowOutput
     evidence: EvidenceExtractionWorkflowResult
     graph: GraphSnapshotPublishResult

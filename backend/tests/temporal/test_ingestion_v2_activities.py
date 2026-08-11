@@ -8,10 +8,10 @@ import pytest
 from pydantic import ValidationError
 
 from app.core.config import settings
-from app.schemas.ingestion_v2 import (
+from app.schemas.ingestion import (
     BaseBatchReference,
     BaseStagePlan,
-    IngestionWorkflowV2Input,
+    IngestionWorkflowInput,
     PrepareBaseStageInput,
     SourceRevisionReference,
 )
@@ -32,9 +32,9 @@ def _source(content: bytes = b"# Architecture\n\nEvidence") -> SourceRevisionRef
         content_checksum="sha256:" + sha256(content).hexdigest(),
         acl_checksum="sha256:" + "b" * 64,
         acl_scope="workspace",
-        parser_version="markdown-v2",
-        chunker_version="structure-v2",
-        pipeline_version="pipeline-v2",
+        parser_version="markdown-v1",
+        chunker_version="structure-v1",
+        pipeline_version="v1",
     )
 
 
@@ -121,7 +121,7 @@ async def test_prepare_activity_cancellation_at_heartbeat_stops_before_staging(
 def test_workflow_v2_contract_rejects_raw_document_payloads() -> None:
     source = _source()
     with pytest.raises(ValidationError, match="content_text"):
-        IngestionWorkflowV2Input.model_validate(
+        IngestionWorkflowInput.model_validate(
             {
                 "source": source.model_dump(mode="json"),
                 "content_text": "raw evidence must never enter workflow history",

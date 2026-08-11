@@ -30,10 +30,10 @@ from app.schemas.graph_enrichment import (
     SemanticGraphEnrichmentWorkflowInput,
 )
 from app.schemas.graph_semantics import GraphSemanticBuildResult
-from app.schemas.ingestion_v2 import (
+from app.schemas.ingestion import (
     BaseBatchReference,
     BaseStagePlan,
-    IngestionWorkflowV2Input,
+    IngestionWorkflowInput,
     PrepareBaseStageInput,
     PublishBaseInput,
     PublishBaseResult,
@@ -207,7 +207,7 @@ async def test_company_memory_workflow_composes_real_versioned_workflows() -> No
         calls.append("graph:failed")
 
     command = CompanyMemoryIngestionWorkflowInput(
-        base=IngestionWorkflowV2Input(
+        base=IngestionWorkflowInput(
             source=source,
             update_core_document_status=False,
         ),
@@ -290,7 +290,7 @@ def _source() -> SourceRevisionReference:
         content_checksum="sha256:" + "a" * 64,
         acl_checksum="sha256:" + "b" * 64,
         acl_scope="workspace",
-        parser_version="markdown-v2",
-        chunker_version="structure-v2",
-        pipeline_version="pipeline-v2",
+        parser_version="markdown-v1",
+        chunker_version="structure-v1",
+        pipeline_version="v1",
     )

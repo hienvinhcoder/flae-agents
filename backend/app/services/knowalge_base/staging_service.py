@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ExternalServiceError, InvalidArgumentError
 from app.db.rag_db import DBManager
-from app.schemas.ingestion_v2 import (
+from app.schemas.ingestion import (
     BaseBatchReference,
     BaseStagePlan,
     EmbeddingBatchItem,

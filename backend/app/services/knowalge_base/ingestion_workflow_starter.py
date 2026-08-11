@@ -14,12 +14,12 @@ from app.schemas.discoverable_memory_ingestion import (
 )
 from app.schemas.graph_enrichment import SemanticGraphEnrichmentWorkflowInput
 from app.schemas.graph_semantics import DemoIngestionProfile
-from app.schemas.ingestion_v2 import (
-    IngestionV2BootstrapInput,
-    IngestionWorkflowV2Input,
+from app.schemas.ingestion import (
+    IngestionBootstrapInput,
+    IngestionWorkflowInput,
 )
-from app.services.knowalge_base.ingestion_v2_start_service import (
-    IngestionV2StartService,
+from app.services.knowalge_base.ingestion_start_service import (
+    IngestionStartService,
 )
 
 
@@ -46,8 +46,8 @@ async def _start_v2(doc: KnowledgeDocument) -> str:
         DiscoverableMemoryIngestionWorkflow,
     )
 
-    source = await IngestionV2StartService(rag_db_manager).prepare_reference(
-        IngestionV2BootstrapInput(
+    source = await IngestionStartService(rag_db_manager).prepare_reference(
+        IngestionBootstrapInput(
             workspace_id=doc.workspace_id,
             document_id=doc.id,
             gcs_path=doc.gcs_path,
@@ -56,13 +56,13 @@ async def _start_v2(doc: KnowledgeDocument) -> str:
             content_checksum=doc.content_checksum,
         )
     )
-    workflow_id = f"kb-ingest-v2-{source.ingestion_run_id}"
+    workflow_id = f"knowledge-ingestion-v1-{source.ingestion_run_id}"
     client = await get_temporal_client()
     await client.start_workflow(
         DiscoverableMemoryIngestionWorkflow.run,
         DiscoverableMemoryIngestionWorkflowInput(
             memory=CompanyMemoryIngestionWorkflowInput(
-                base=IngestionWorkflowV2Input(
+                base=IngestionWorkflowInput(
                     source=source,
                     max_parallel_batches=min(
                         settings.INGESTION_V2_MAX_PARALLEL_BATCHES, 16

@@ -10,16 +10,16 @@ from temporalio import workflow
 from temporalio.common import RetryPolicy
 
 with workflow.unsafe.imports_passed_through():
-    from app.schemas.ingestion_v2 import (
+    from app.schemas.ingestion import (
         BaseStagePlan,
-        IngestionWorkflowV2Input,
-        IngestionWorkflowV2Output,
+        IngestionWorkflowInput,
+        IngestionWorkflowOutput,
         ManifestExpectation,
         PrepareBaseStageInput,
         PublishBaseInput,
         StageBatchResult,
         StageEmbeddingInput,
-        V2DocumentStatusInput,
+        DocumentIngestionStatusInput,
     )
     from app.temporal.activities.ingestion_v2 import (
         prepare_base_stage_activity,
@@ -45,8 +45,8 @@ TRANSIENT_RETRY = RetryPolicy(
 class IngestionWorkflowV2:
     @workflow.run
     async def run(
-        self, command: IngestionWorkflowV2Input
-    ) -> IngestionWorkflowV2Output:
+        self, command: IngestionWorkflowInput
+    ) -> IngestionWorkflowOutput:
         await self._update_status(command, "processing")
         try:
             result = await self._ingest(command)
@@ -61,8 +61,8 @@ class IngestionWorkflowV2:
         return result
 
     async def _ingest(
-        self, command: IngestionWorkflowV2Input
-    ) -> IngestionWorkflowV2Output:
+        self, command: IngestionWorkflowInput
+    ) -> IngestionWorkflowOutput:
         plan = await workflow.execute_activity(
             prepare_base_stage_activity,
             PrepareBaseStageInput(
@@ -108,7 +108,7 @@ class IngestionWorkflowV2:
         )
         if published.revision_id != command.source.revision_id:
             raise RuntimeError("Published revision does not match workflow input.")
-        return IngestionWorkflowV2Output(
+        return IngestionWorkflowOutput(
             revision_id=published.revision_id,
             chunk_count=published.chunk_count,
             batch_count=len(typed_plan.batches),
@@ -139,15 +139,17 @@ class IngestionWorkflowV2:
 
     @staticmethod
     async def _update_status(
-        command: IngestionWorkflowV2Input,
+        command: IngestionWorkflowInput,
         status: Literal["processing", "completed", "failed"],
         *,
         chunk_count: int | None = None,
         error_code: str | None = None,
     ) -> None:
+        if not command.update_core_document_status:
+            return
         await workflow.execute_activity(
             update_v2_document_status_activity,
-            V2DocumentStatusInput(
+            DocumentIngestionStatusInput(
                 document_id=command.source.document_id,
                 status=status,
                 chunk_count=chunk_count,

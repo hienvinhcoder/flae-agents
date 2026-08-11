@@ -9,7 +9,7 @@ from app.core.config import settings
 from app.core.exceptions import InvalidArgumentError
 from app.db.rag_db import DBManager
 from app.schemas.agent_memory import SectionLocation
-from app.schemas.ingestion_v2 import (
+from app.schemas.ingestion import (
     ManifestExpectation,
     ParsedBaseChunk,
     PrepareBaseStageInput,
@@ -75,7 +75,7 @@ def _arrange_revisions() -> tuple[SourceRevisionReference, UUID]:
             INSERT INTO ingestion_runs (
               workspace_id, run_id, revision_id, pipeline_version,
               input_checksum, status
-            ) VALUES (%s, %s, %s, 'pipeline-v2', %s, 'running')
+            ) VALUES (%s, %s, %s, 'v1', %s, 'running')
             """,
             (
                 str(workspace_id),
@@ -98,9 +98,9 @@ def _arrange_revisions() -> tuple[SourceRevisionReference, UUID]:
         acl_checksum="sha256:" + "b" * 64,
         acl_scope="restricted",
         acl_principal_ids=("new-reader",),
-        parser_version="markdown-v2",
-        chunker_version="structure-v2",
-        pipeline_version="pipeline-v2",
+        parser_version="markdown-v1",
+        chunker_version="structure-v1",
+        pipeline_version="v1",
         expected_previous_revision_id=old_revision_id,
     )
     return source, old_revision_id

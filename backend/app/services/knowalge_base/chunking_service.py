@@ -11,7 +11,7 @@ from app.core.logger import get_logger
 from app.services.knowalge_base.parser_service import ParserService
 from app.utils.token import get_token_count
 from app.schemas.agent_memory import SectionLocation
-from app.schemas.ingestion_v2 import ParsedBaseChunk
+from app.schemas.ingestion import ParsedBaseChunk
 
 logger = get_logger(__name__)
 

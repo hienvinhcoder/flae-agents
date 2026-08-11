@@ -10,17 +10,17 @@ from temporalio.contrib.pydantic import pydantic_data_converter
 from temporalio.testing import WorkflowEnvironment
 from temporalio.worker import Worker
 
-from app.schemas.ingestion_v2 import (
+from app.schemas.ingestion import (
     BaseBatchReference,
     BaseStagePlan,
-    IngestionWorkflowV2Input,
+    IngestionWorkflowInput,
     PrepareBaseStageInput,
     PublishBaseInput,
     PublishBaseResult,
     SourceRevisionReference,
     StageBatchResult,
     StageEmbeddingInput,
-    V2DocumentStatusInput,
+    DocumentIngestionStatusInput,
 )
 from app.temporal.workflows.company_memory_ingestion import (
     CompanyMemoryIngestionWorkflow,
@@ -117,9 +117,9 @@ def _source() -> SourceRevisionReference:
         content_checksum="sha256:" + "a" * 64,
         acl_checksum="sha256:" + "b" * 64,
         acl_scope="workspace",
-        parser_version="markdown-v2",
-        chunker_version="structure-v2",
-        pipeline_version="pipeline-v2",
+        parser_version="markdown-v1",
+        chunker_version="structure-v1",
+        pipeline_version="v1",
     )
 
 
@@ -129,7 +129,7 @@ async def test_ingestion_backlog_does_not_starve_interactive_queue() -> None:
     ingestion_started = asyncio.Event()
 
     @activity.defn(name="update_v2_document_status_activity")
-    async def status(_command: V2DocumentStatusInput) -> None:
+    async def status(_command: DocumentIngestionStatusInput) -> None:
         return None
 
     @activity.defn(name="prepare_base_stage_activity")
@@ -192,7 +192,7 @@ async def test_ingestion_backlog_does_not_starve_interactive_queue() -> None:
                 handles = [
                     await environment.client.start_workflow(
                         IngestionWorkflowV2.run,
-                        IngestionWorkflowV2Input(source=_source()),
+                        IngestionWorkflowInput(source=_source()),
                         id=f"capacity-ingestion-{uuid4()}",
                         task_queue="capacity-ingestion-queue",
                     )

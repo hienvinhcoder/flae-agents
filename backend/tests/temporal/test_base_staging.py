@@ -8,7 +8,7 @@ from sqlalchemy.engine import make_url
 from app.core.config import settings
 from app.db.rag_db import DBManager
 from app.schemas.agent_memory import SectionLocation
-from app.schemas.ingestion_v2 import (
+from app.schemas.ingestion import (
     ParsedBaseChunk,
     PrepareBaseStageInput,
     SourceRevisionReference,
@@ -60,7 +60,7 @@ def _source_reference() -> SourceRevisionReference:
             INSERT INTO ingestion_runs (
                 workspace_id, run_id, revision_id, pipeline_version,
                 input_checksum, status
-            ) VALUES (%s, %s, %s, 'pipeline-v2', %s, 'running')
+            ) VALUES (%s, %s, %s, 'v1', %s, 'running')
             """,
             (
                 str(workspace_id),
@@ -83,9 +83,9 @@ def _source_reference() -> SourceRevisionReference:
         acl_checksum="sha256:" + "b" * 64,
         acl_scope="restricted",
         acl_principal_ids=("reader-1",),
-        parser_version="markdown-v2",
-        chunker_version="structure-v2",
-        pipeline_version="pipeline-v2",
+        parser_version="markdown-v1",
+        chunker_version="structure-v1",
+        pipeline_version="v1",
     )
 
 
