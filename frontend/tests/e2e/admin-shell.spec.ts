@@ -47,11 +47,9 @@ for (const viewport of responsiveViewports) {
       width: viewport.width,
     });
     await installAuthSession(page);
-    await page.goto("/dashboard/briefing");
+    await page.goto("/dashboard/knowledge");
 
-    await expect(
-      page.getByRole("heading", { name: "Morning briefing" }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Company memory" })).toBeVisible();
     expect(
       await page.evaluate(
         () =>
@@ -76,7 +74,7 @@ test("persists the collapsed desktop preference across reloads", async ({
 }) => {
   await page.setViewportSize({ height: 900, width: 1440 });
   await installAuthSession(page);
-  await page.goto("/dashboard/briefing");
+  await page.goto("/dashboard/knowledge");
 
   const sidebar = page.getByTestId("admin-sidebar");
   await page.getByRole("button", { name: "Collapse navigation" }).click();
@@ -101,7 +99,7 @@ test("keeps the expanded desktop preference while tablet uses the rail layout", 
     sidebarLayoutKey,
   );
   await installAuthSession(page);
-  await page.goto("/dashboard/briefing");
+  await page.goto("/dashboard/knowledge");
 
   const sidebar = page.getByTestId("admin-sidebar");
   await expect(sidebar).toHaveAttribute("data-desktop-layout", "expanded");
@@ -129,7 +127,7 @@ test("supports keyboard and backdrop dismissal for the accessible mobile drawer"
 }) => {
   await page.setViewportSize({ height: 812, width: 375 });
   await installAuthSession(page);
-  await page.goto("/dashboard/briefing");
+  await page.goto("/dashboard/knowledge");
 
   const trigger = page.getByRole("button", { name: "Open navigation" });
   await trigger.click();
@@ -171,7 +169,7 @@ test("collapses the sidebar without animation under reduced motion", async ({
   await page.setViewportSize({ height: 900, width: 1440 });
   await page.emulateMedia({ reducedMotion: "reduce" });
   await installAuthSession(page);
-  await page.goto("/dashboard/briefing");
+  await page.goto("/dashboard/knowledge");
 
   const sidebar = page.getByTestId("admin-sidebar");
   const transition = await sidebar.evaluate((element) => {
@@ -203,7 +201,7 @@ test("keeps short rail navigation usable and invalidates portal tooltip geometry
 }) => {
   await page.setViewportSize({ height: 500, width: 768 });
   await installAuthSession(page);
-  await page.goto("/dashboard/briefing");
+  await page.goto("/dashboard/knowledge");
 
   const sidebar = page.getByTestId("admin-sidebar");
   const navigation = page.getByRole("navigation", {

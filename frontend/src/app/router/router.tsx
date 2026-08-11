@@ -30,16 +30,7 @@ export function createRouteObjects(appShell: ReactElement = runtimeAppShell): Ro
             path: 'dashboard',
             element: appShell,
             children: [
-              {
-                index: true,
-                element: createLazyElement(() =>
-                  import('../../features/dashboard/pages/DashboardHomePage').then(
-                    ({ DashboardHomePage }) => ({ default: DashboardHomePage }),
-                  ),
-                ),
-              },
-              { path: 'briefing', element: createLazyElement(() => import('../../features/briefing/pages/BriefingPage').then(({ BriefingPage }) => ({ default: BriefingPage }))) },
-              { path: 'inbox', element: createLazyElement(() => import('../../features/inbox/pages/InboxPage').then(({ InboxPage }) => ({ default: InboxPage }))) },
+              { index: true, element: <Navigate replace to="chat" /> },
               { path: 'chat', element: createLazyElement(() => import('../../features/chat/pages/ChatPage').then(({ ChatPage }) => ({ default: ChatPage }))) },
               { path: 'agents', element: createLazyElement(() => import('../../features/agents/pages/AgentListPage').then(({ AgentListPage }) => ({ default: AgentListPage }))) },
               { path: 'agents/new', element: createLazyElement(() => import('../../features/agents/pages/AgentConfigPage').then(({ AgentConfigPage }) => ({ default: AgentConfigPage }))) },
@@ -49,7 +40,6 @@ export function createRouteObjects(appShell: ReactElement = runtimeAppShell): Ro
               { path: 'knowledge/graph', element: createLazyElement(() => import('../../features/knowledge/pages/KnowledgeGraphPage').then(({ KnowledgeGraphPage }) => ({ default: KnowledgeGraphPage }))) },
               { path: 'topics', element: createLazyElement(() => import('../../features/topics/pages/TopicListPage').then(({ TopicListPage }) => ({ default: TopicListPage }))) },
               { path: 'topics/:id', element: createLazyElement(() => import('../../features/topics/pages/TopicDetailPage').then(({ TopicDetailPage }) => ({ default: TopicDetailPage }))) },
-              { path: 'reports', element: createLazyElement(() => import('../../features/reports/pages/ReportsPage').then(({ ReportsPage }) => ({ default: ReportsPage }))) },
               { path: 'settings', element: createLazyElement(() => import('../../features/settings/pages/SettingsPage').then(({ SettingsPage }) => ({ default: SettingsPage }))) },
             ],
           },

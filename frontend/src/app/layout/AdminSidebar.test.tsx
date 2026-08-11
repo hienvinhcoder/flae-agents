@@ -18,12 +18,8 @@ const resources = {
     translation: {
       NAV: {
         AGENTS: "Agents",
-        BRIEFING: "Briefing",
-        CHAT: "Chat",
-        INBOX: "Inbox",
+        CHAT: "AI Chat",
         KNOWLEDGE: "Knowledge",
-        OVERVIEW: "Overview",
-        REPORTS: "Reports",
         SETTINGS: "Settings",
         TOPICS: "Topics",
       },
@@ -95,7 +91,7 @@ function installMatchMedia(initialMatches = false) {
 
 async function renderSidebar(
   props: Partial<AdminSidebarProps> = {},
-  initialPath = "/dashboard/briefing",
+  initialPath = "/dashboard/chat",
 ) {
   const i18n = await createI18n(resources, "en");
   const resolvedProps = { ...defaultProps, ...props };
@@ -164,7 +160,7 @@ describe("AdminSidebar", () => {
       name: "Indexing status",
     });
     expect(statusCard.parentElement).toHaveClass("hidden", "lg:block");
-    const activeLink = within(sidebar).getByRole("link", { name: "Briefing" });
+    const activeLink = within(sidebar).getByRole("link", { name: "AI Chat" });
     expect(activeLink).toHaveAttribute("aria-current", "page");
     expect(activeLink).toHaveClass(
       "bg-sidebar-primary",
@@ -192,18 +188,6 @@ describe("AdminSidebar", () => {
     expect(
       within(sidebar).queryByText("Indexing status"),
     ).not.toBeInTheDocument();
-  });
-
-  it("marks Overview as current only at the dashboard index", async () => {
-    await renderSidebar({}, "/dashboard");
-
-    const sidebar = screen.getByTestId("admin-sidebar");
-    expect(
-      within(sidebar).getByRole("link", { name: "Overview" }),
-    ).toHaveAttribute("aria-current", "page");
-    expect(
-      within(sidebar).getByRole("link", { name: "Briefing" }),
-    ).not.toHaveAttribute("aria-current");
   });
 
   it("portals visual rail tooltips outside the scrolling navigation", async () => {
@@ -430,7 +414,9 @@ describe("AdminSidebar", () => {
     await renderSidebar({ mobileOpen: true, onCloseMobile });
 
     const dialog = screen.getByRole("dialog", { name: "Primary navigation" });
-    await userEvent.click(within(dialog).getByRole("link", { name: "Chat" }));
+    await userEvent.click(
+      within(dialog).getByRole("link", { name: "Knowledge" }),
+    );
 
     expect(onCloseMobile).toHaveBeenCalledOnce();
   });

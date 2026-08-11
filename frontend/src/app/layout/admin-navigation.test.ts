@@ -1,13 +1,9 @@
 import {
   BookOpen,
   Bot,
-  FileText,
-  House,
-  Inbox,
   MessageSquare,
   Network,
   Settings,
-  Sparkles,
   Tags,
 } from "lucide-react";
 import { describe, expect, it } from "vitest";
@@ -34,25 +30,9 @@ describe("admin navigation", () => {
         key: "SHELL.NAV_GROUP_FOCUS",
         items: [
           {
-            exact: true,
-            key: "NAV.OVERVIEW",
-            to: "/dashboard",
-            icon: House,
-          },
-          {
-            key: "NAV.BRIEFING",
-            to: "/dashboard/briefing",
-            icon: Sparkles,
-          },
-          {
             key: "NAV.CHAT",
             to: "/dashboard/chat",
             icon: MessageSquare,
-          },
-          {
-            key: "NAV.INBOX",
-            to: "/dashboard/inbox",
-            icon: Inbox,
           },
         ],
       },
@@ -80,11 +60,6 @@ describe("admin navigation", () => {
             to: "/dashboard/topics",
             icon: Tags,
           },
-          {
-            key: "NAV.REPORTS",
-            to: "/dashboard/reports",
-            icon: FileText,
-          },
         ],
       },
       {
@@ -102,9 +77,7 @@ describe("admin navigation", () => {
   });
 
   it.each([
-    ["/dashboard", "NAV.OVERVIEW"],
-    ["/dashboard/briefing", "NAV.BRIEFING"],
-    ["/dashboard/chat?conversation=conversation-1#latest", "NAV.CHAT"],
+    ["/dashboard/chat", "NAV.CHAT"],
     ["/dashboard/agents/agent-1", "NAV.AGENTS"],
     ["/dashboard/knowledge", "NAV.KNOWLEDGE"],
     ["/dashboard/knowledge/graph", "SHELL.KNOWLEDGE_GRAPH"],

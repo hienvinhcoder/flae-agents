@@ -24,7 +24,7 @@ test('signs in through Auth Emulator and synchronizes with the backend', async (
   await page.getByLabel('Password').fill(password);
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 
-  await expect(page).toHaveURL(/\/dashboard\/briefing$/);
+  await expect(page).toHaveURL(/\/dashboard\/chat$/);
   expect(firebaseRequests.some((url) => url.host === '127.0.0.1:9099')).toBe(true);
   expect(
     firebaseRequests.some((url) => url.host === 'identitytoolkit.googleapis.com'),

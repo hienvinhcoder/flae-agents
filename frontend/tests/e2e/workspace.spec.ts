@@ -7,7 +7,7 @@ test.beforeEach(async ({ page }) => {
 test('selects a workspace through the production adapter with scoped headers', async ({ page }) => {
   const selection = page.waitForRequest((request) =>
     request.url().endsWith('/api/v1/users/current-workspace') && request.method() === 'PUT');
-  await page.goto('/dashboard/briefing');
+  await page.goto('/dashboard/knowledge');
   await page.getByRole('button', { name: 'ET' }).click();
   const workspaceSelector = page.getByRole('combobox', { name: 'Workspace', exact: true });
   await workspaceSelector.selectOption(ids.secondWorkspace);

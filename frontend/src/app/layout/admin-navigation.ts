@@ -1,13 +1,9 @@
 import {
   BookOpen,
   Bot,
-  FileText,
-  House,
-  Inbox,
   MessageSquare,
   Network,
   Settings,
-  Sparkles,
   Tags,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -33,25 +29,9 @@ export const navigationGroups: readonly AdminNavigationGroup[] = [
     key: "SHELL.NAV_GROUP_FOCUS",
     items: [
       {
-        exact: true,
-        key: "NAV.OVERVIEW",
-        to: "/dashboard",
-        icon: House,
-      },
-      {
-        key: "NAV.BRIEFING",
-        to: "/dashboard/briefing",
-        icon: Sparkles,
-      },
-      {
         key: "NAV.CHAT",
         to: "/dashboard/chat",
         icon: MessageSquare,
-      },
-      {
-        key: "NAV.INBOX",
-        to: "/dashboard/inbox",
-        icon: Inbox,
       },
     ],
   },
@@ -78,11 +58,6 @@ export const navigationGroups: readonly AdminNavigationGroup[] = [
         key: "NAV.TOPICS",
         to: "/dashboard/topics",
         icon: Tags,
-      },
-      {
-        key: "NAV.REPORTS",
-        to: "/dashboard/reports",
-        icon: FileText,
       },
     ],
   },

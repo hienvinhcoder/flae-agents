@@ -12,21 +12,29 @@ test('redirects guests, signs in locally, and returns to the protected route', a
   await page.getByRole('button', { name: 'Sign in' }).click();
 
   await expect(page).toHaveURL(/\/dashboard\/knowledge$/);
-  await expect(page.getByRole('heading', { name: 'Knowledge base' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Company memory' })).toBeVisible();
 });
 
 test('restores a deterministic local session on a protected route', async ({ page }) => {
   await installAuthSession(page);
-  await page.goto('/dashboard/briefing');
+  await page.goto('/dashboard/knowledge');
 
-  await expect(page).toHaveURL(/\/dashboard\/briefing$/);
-  await expect(page.getByRole('heading', { name: /briefing/i })).toBeVisible();
+  await expect(page).toHaveURL(/\/dashboard\/knowledge$/);
+  await expect(page.getByRole('heading', { name: 'Company memory' })).toBeVisible();
+});
+
+test('opens Chat as the authenticated dashboard default', async ({ page }) => {
+  await installAuthSession(page);
+  await page.goto('/dashboard');
+
+  await expect(page).toHaveURL(/\/dashboard\/chat$/);
+  await expect(page.getByRole('region', { name: 'Workspace assistant chat' })).toBeVisible();
 });
 
 test('supports keyboard navigation in the dashboard shell and logs out', async ({ page }) => {
   await installAuthSession(page);
-  await page.goto('/dashboard/briefing');
-  await expect(page.getByRole('heading', { name: 'Morning briefing' })).toBeVisible();
+  await page.goto('/dashboard/knowledge');
+  await expect(page.getByRole('heading', { name: 'Company memory' })).toBeVisible();
   await expectNoA11yViolations(page);
 
   await page.keyboard.press('Tab');
