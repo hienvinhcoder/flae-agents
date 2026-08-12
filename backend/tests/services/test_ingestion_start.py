@@ -20,9 +20,6 @@ from app.services.knowledge.ingestion import workflow_starter as ingestion_workf
 from app.services.knowledge.ingestion.start_service import (
     IngestionStartService,
 )
-from app.temporal.workflows.discoverable_memory_ingestion import (
-    DiscoverableMemoryIngestionWorkflow,
-)
 
 
 def _connect_to_rag_test_database():
@@ -210,7 +207,7 @@ async def test_document_start_always_uses_the_canonical_knowledge_workflow(
     assert workflow_id == f"knowledge-ingestion-v1-{source.ingestion_run_id}"
     temporal_client.start_workflow.assert_awaited_once()
     call = temporal_client.start_workflow.call_args
-    assert call.args[0] == DiscoverableMemoryIngestionWorkflow.run
+    assert call.args[0] == "DiscoverableMemoryIngestionWorkflow"
     assert call.args[1].memory.base.source == source
     assert call.args[1].memory.base.update_core_document_status is True
     assert call.args[1].memory.semantic_graph.workspace_id == source.workspace_id

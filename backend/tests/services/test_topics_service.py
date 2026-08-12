@@ -335,3 +335,29 @@ async def test_merge_topics():
         assert success is True
         assert mock_session.commit.called
         mock_trigger.assert_called_once_with(workspace_id, [target_topic_id])
+
+
+@pytest.mark.asyncio
+async def test_topic_updates_start_the_registered_durable_workflow() -> None:
+    client = MagicMock()
+    client.start_workflow = AsyncMock()
+
+    with patch(
+        "app.services.knowledge.discovery.topics.get_temporal_client",
+        new=AsyncMock(return_value=client),
+    ):
+        await TopicService.trigger_topic_updates_via_temporal(
+            "workspace-1",
+            ["topic-1", "topic-1"],
+        )
+
+    client.start_workflow.assert_awaited_once()
+    call = client.start_workflow.await_args
+    assert call.args == (
+        "TopicUpdateWorkflow",
+        {"workspace_id": "workspace-1", "topic_id": "topic-1"},
+    )
+    assert call.kwargs == {
+        "id": "topic-update-workspace-1-topic-1",
+        "task_queue": "flae-default-queue",
+    }

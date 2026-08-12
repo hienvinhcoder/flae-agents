@@ -5,14 +5,9 @@ import type { User } from '../../core/auth/user-schema';
 import type { Workspace } from '../../features/settings/types/workspace';
 import { Button } from '../../shared/ui/Button';
 import { HeaderUtilities } from './HeaderUtilities';
+import type { LogoutController, WorkspaceSyncStatus } from './header-types';
 
-export type WorkspaceSyncStatus = 'error' | 'idle' | 'success' | 'syncing';
-
-export interface LogoutController {
-  error: string | null;
-  isLoading: boolean;
-  logout: () => Promise<void>;
-}
+export type { LogoutController, WorkspaceSyncStatus } from './header-types';
 
 export interface AdminHeaderProps {
   currentWorkspaceId: string | null;

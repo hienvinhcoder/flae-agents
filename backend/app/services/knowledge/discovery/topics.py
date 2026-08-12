@@ -368,7 +368,6 @@ class TopicService:
         if not topic_ids:
             return
 
-        from app.temporal.workflows.topic import TopicUpdateWorkflow
         client = await get_temporal_client()
 
         for t_id in set(topic_ids):
@@ -381,7 +380,7 @@ class TopicService:
                 # Sử dụng WorkflowIDReusePolicy.ALLOW_DUPLICATE_FAILED_ONLY hoặc tương ứng
                 # Để nếu workflow đang chạy thì thôi không trigger mới (hoặc debounce tự nhiên bằng temporal timer)
                 await client.start_workflow(
-                    TopicUpdateWorkflow.run,
+                    "TopicUpdateWorkflow",
                     params,
                     id=workflow_id,
                     task_queue="flae-default-queue"  # Cùng task queue với ingestion

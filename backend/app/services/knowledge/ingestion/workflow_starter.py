@@ -55,10 +55,6 @@ class IngestionWorkflowStarter:
         *,
         update_core_document_status: bool,
     ) -> str:
-        from app.temporal.workflows.discoverable_memory_ingestion import (
-            DiscoverableMemoryIngestionWorkflow,
-        )
-
         max_parallel_batches = min(
             settings.KNOWLEDGE_MAX_PARALLEL_BATCHES,
             16,
@@ -66,7 +62,7 @@ class IngestionWorkflowStarter:
         workflow_id = f"knowledge-ingestion-v1-{source.ingestion_run_id}"
         try:
             await self._client.start_workflow(
-                DiscoverableMemoryIngestionWorkflow.run,
+                "DiscoverableMemoryIngestionWorkflow",
                 DiscoverableMemoryIngestionWorkflowInput(
                     memory=CompanyMemoryIngestionWorkflowInput(
                         base=IngestionWorkflowInput(

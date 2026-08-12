@@ -4,6 +4,11 @@ const agentSources = import.meta.glob<string>(
   "../features/agents/**/*.{ts,tsx}",
   { eager: true, import: "default", query: "?raw" },
 );
+const appSources = import.meta.glob<string>("./**/*.{ts,tsx}", {
+  eager: true,
+  import: "default",
+  query: "?raw",
+});
 
 describe("feature boundaries", () => {
   it("keeps chat session and message ownership out of agents", () => {
@@ -14,5 +19,12 @@ describe("feature boundaries", () => {
       }
     }
     expect(violations).toEqual([]);
+  });
+
+  it("keeps app bootstrap and layout dependencies acyclic", () => {
+    expect(appSources["./App.tsx"]).not.toContain("./router/router");
+    expect(appSources["./layout/HeaderUtilities.tsx"]).not.toContain(
+      "./AdminHeader",
+    );
   });
 });

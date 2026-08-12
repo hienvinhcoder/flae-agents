@@ -68,3 +68,12 @@ def test_rag_records_live_under_models() -> None:
         APP_ROOT / "db" / "rag_memory_state_models.py",
     ]
     assert [str(path) for path in forbidden if path.exists()] == []
+
+
+def test_services_do_not_import_temporal_workflow_modules() -> None:
+    violations = [
+        str(path.relative_to(BACKEND_ROOT))
+        for path in (APP_ROOT / "services").rglob("*.py")
+        if "app.temporal.workflows" in path.read_text(encoding="utf-8")
+    ]
+    assert violations == []

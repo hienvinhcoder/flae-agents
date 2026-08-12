@@ -6,7 +6,7 @@ import type { User } from '../../core/auth/user-schema';
 import type { Workspace } from '../../features/settings/types/workspace';
 import { Button } from '../../shared/ui/Button';
 import { Skeleton } from '../../shared/ui/Skeleton';
-import type { LogoutController, WorkspaceSyncStatus } from './AdminHeader';
+import type { LogoutController, WorkspaceSyncStatus } from './header-types';
 
 export interface HeaderUtilitiesProps {
   currentWorkspaceId: string | null;
