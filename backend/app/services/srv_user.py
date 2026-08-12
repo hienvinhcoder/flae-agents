@@ -2,7 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.exc import NoResultFound
 from app.models.user import User
-from app.schemas.sche_user import UserCreateRequest
+from app.schemas.users import UserCreateRequest
 from app.core.exceptions import AuthenticationError
 
 

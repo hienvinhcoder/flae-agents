@@ -12,8 +12,8 @@ from app.core.security import (
 from app.core.exceptions import ApplicationError
 from app.db.database import get_db
 from app.models.workspace import WorkspaceRole
-from app.schemas.sche_base import DataResponse
-from app.schemas.sche_topic import (
+from app.schemas.common import DataResponse
+from app.schemas.topics import (
     TopicListItem,
     TopicDetailResponse,
     TopicUpdateResponse,

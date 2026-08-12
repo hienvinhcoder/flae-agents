@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 from pydantic import EmailStr
-from app.schemas.sche_base import ResponseSchemaBase
+from app.schemas.common import ResponseSchemaBase
 from app.models.workspace import WorkspaceRole, WorkspaceMemberStatus, InvitationStatus
 
 class WorkspaceItemResponse(ResponseSchemaBase):

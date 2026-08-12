@@ -4,7 +4,8 @@ from unittest.mock import AsyncMock, MagicMock
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.agent_srv import AgentService
-from app.schemas.sche_agent import AgentCreate, AgentUpdate, ChatSessionCreate
+from app.schemas.agents import AgentCreate, AgentUpdate
+from app.schemas.chat import ChatSessionCreate
 from app.models.agent import Agent, ChatSession, ChatMessage
 
 

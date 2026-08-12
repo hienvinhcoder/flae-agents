@@ -6,11 +6,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.security import get_current_user_uid, get_current_workspace_id, require_roles
 from app.db.database import get_db
 from app.models.workspace import WorkspaceRole
-from app.schemas.sche_base import DataResponse
-from app.schemas.sche_agent import (
+from app.schemas.common import DataResponse
+from app.schemas.agents import (
     AgentCreate,
     AgentUpdate,
     AgentDetail,
+)
+from app.schemas.chat import (
     ChatSessionCreate,
     ChatSessionResponse,
     ChatMessageResponse,

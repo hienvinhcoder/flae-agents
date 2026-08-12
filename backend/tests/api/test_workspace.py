@@ -167,7 +167,7 @@ def test_get_pending_invitations(mock_workspace_service_all):
 @pytest.mark.asyncio
 async def test_invite_member_rejects_owner_role():
     from app.services.workspace_srv import WorkspaceService
-    from app.schemas.sche_workspace import WorkspaceInvitationRequest
+    from app.schemas.workspaces import WorkspaceInvitationRequest
     from app.models.workspace import WorkspaceRole
     from app.core.exceptions import ApplicationError
     from sqlalchemy.ext.asyncio import AsyncSession
@@ -187,4 +187,3 @@ async def test_invite_member_rejects_owner_role():
 
     assert exc_info.value.status_code == 400
     assert "Cannot invite a member with the owner role" in exc_info.value.message
-

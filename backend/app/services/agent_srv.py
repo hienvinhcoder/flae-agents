@@ -4,7 +4,8 @@ from sqlalchemy import select, and_, desc, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.agent import Agent, ChatSession, ChatMessage
-from app.schemas.sche_agent import AgentCreate, AgentUpdate, ChatSessionCreate
+from app.schemas.agents import AgentCreate, AgentUpdate
+from app.schemas.chat import ChatSessionCreate
 
 
 class AgentService:

@@ -2,7 +2,7 @@ from typing import Optional
 from pydantic import EmailStr
 
 from app.models.user import LoginProvider
-from app.schemas.sche_base import ResponseSchemaBase
+from app.schemas.common import ResponseSchemaBase
 
 
 class UserItemResponse(ResponseSchemaBase):
@@ -40,4 +40,3 @@ class UserUpdateRequest(ResponseSchemaBase):
 
 class UserCurrentWorkspaceUpdateRequest(ResponseSchemaBase):
     workspace_id: str
-

@@ -2,7 +2,7 @@ import pytest
 import uuid
 from unittest.mock import AsyncMock, patch, MagicMock
 from app.services.knowledge_graph_srv import KnowledgeGraphService
-from app.schemas.sche_knowledge_base import KnowledgeGraphResponse
+from app.schemas.knowledge import KnowledgeGraphResponse
 
 @pytest.mark.asyncio
 async def test_get_graph_success():

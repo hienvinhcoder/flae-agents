@@ -6,7 +6,7 @@ from uuid import uuid4
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.schemas.sche_agent import ChatSessionCreate
+from app.schemas.chat import ChatSessionCreate
 from app.services.agent_srv import AgentService
 from app.services.chat_srv import ChatService
 

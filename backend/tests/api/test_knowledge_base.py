@@ -16,7 +16,7 @@ patcher.start()
 from main import app
 from fastapi.testclient import TestClient
 from app.core.security import get_current_user, get_current_workspace_id
-from app.schemas.sche_knowledge_base import (
+from app.schemas.knowledge import (
     GraphEdge,
     GraphNode,
     KnowledgeGraphResponse,

@@ -23,7 +23,7 @@ from app.models.workspace import (
     InvitationStatus
 )
 from app.models.user import User
-from app.schemas.sche_workspace import (
+from app.schemas.workspaces import (
     WorkspaceManualCreateRequest,
     WorkspaceInvitationRequest
 )

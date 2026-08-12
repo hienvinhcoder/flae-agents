@@ -5,7 +5,7 @@ Chịu trách nhiệm truy vấn các thực thể (Entities) và quan hệ (Rel
 import uuid
 from sqlalchemy import text
 from app.db.rag_db import rag_db_manager
-from app.schemas.sche_knowledge_base import (
+from app.schemas.knowledge import (
     GraphNode,
     GraphEdge,
     KnowledgeGraphResponse,

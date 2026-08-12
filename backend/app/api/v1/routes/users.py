@@ -4,8 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.database import get_db
 from app.core.security import verify_token, get_current_user
 from app.core.logger import get_logger
-from app.schemas.sche_base import DataResponse
-from app.schemas.sche_user import UserCreateRequest, UserItemResponse, UserCurrentWorkspaceUpdateRequest
+from app.schemas.common import DataResponse
+from app.schemas.users import UserCreateRequest, UserItemResponse, UserCurrentWorkspaceUpdateRequest
 from app.services.srv_user import UserService
 from app.services.workspace_srv import WorkspaceService
 
@@ -109,4 +109,3 @@ async def delete_user(
         message="User deleted successfully",
         data={"user_id": user_id, "deleted": True},
     )
-

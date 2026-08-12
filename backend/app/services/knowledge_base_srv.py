@@ -19,7 +19,7 @@ from app.models.knowledge_base import (
     DocumentStatus,
     DocumentType,
 )
-from app.schemas.sche_knowledge_base import (
+from app.schemas.knowledge import (
     DocumentUploadResponse,
     DocumentListItem,
     DocumentDetail,

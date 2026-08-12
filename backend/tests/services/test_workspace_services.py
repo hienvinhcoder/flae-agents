@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ApplicationError
 from app.models.workspace import WorkspaceMemberStatus, WorkspaceRole
-from app.schemas.sche_workspace import (
+from app.schemas.workspaces import (
     WorkspaceInvitationRequest,
     WorkspaceManualCreateRequest,
 )

@@ -34,7 +34,7 @@ from app.schemas.agent_memory import (
     Topic,
     TopicSummary,
 )
-from app.schemas.sche_knowledge_base import KnowledgeSearchResponse
+from app.schemas.knowledge import KnowledgeSearchResponse
 
 
 NOW = datetime(2026, 7, 29, tzinfo=UTC)

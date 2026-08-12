@@ -8,7 +8,7 @@ from sqlalchemy.exc import NoResultFound
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.core.logger import get_logger
-from app.schemas.sche_base import ResponseSchemaBase
+from app.schemas.common import ResponseSchemaBase
 
 
 logger = get_logger(__name__)

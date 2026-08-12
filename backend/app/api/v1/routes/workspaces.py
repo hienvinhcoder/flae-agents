@@ -3,8 +3,8 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.database import get_db
 from app.core.security import get_current_user, require_roles
-from app.schemas.sche_base import DataResponse
-from app.schemas.sche_workspace import (
+from app.schemas.common import DataResponse
+from app.schemas.workspaces import (
     WorkspaceItemResponse,
     WorkspaceManualCreateRequest,
     WorkspaceInvitationRequest,
@@ -216,4 +216,3 @@ async def get_pending_invitations(
         for inv in invitations
     ]
     return DataResponse[list[WorkspaceInvitationResponse]].success_response(data=data)
-
