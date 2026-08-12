@@ -4,22 +4,10 @@ from temporalio.worker import Worker
 from app.core.temporal import get_temporal_client
 from app.core.logger import get_logger, setup_logging
 
-# Import workflows và activities
 from app.temporal.workflows.invitation import WorkspaceInvitationWorkflow
-from app.temporal.workflows.ingestion import DocumentIngestionWorkflow
 from app.temporal.workflows.topic import TopicUpdateWorkflow
 from app.temporal.activities.invitation import send_invitation_email
 from app.temporal.activities.topic import update_topic_summary_activity
-from app.temporal.activities.ingestion import (
-    update_document_status,
-    prepare_document_content,
-    chunk_document_activity,
-    generate_embeddings_activity,
-    extract_entities_activity,
-    fuse_and_save_activity,
-    finalize_ingestion,
-    trigger_topic_updates_activity,
-)
 
 logger = get_logger(__name__)
 
@@ -42,20 +30,11 @@ async def run_worker():
             task_queue="flae-default-queue",
             workflows=[
                 WorkspaceInvitationWorkflow,
-                DocumentIngestionWorkflow,
                 TopicUpdateWorkflow,
             ],
             activities=[
                 send_invitation_email,
                 update_topic_summary_activity,
-                update_document_status,
-                prepare_document_content,
-                chunk_document_activity,
-                generate_embeddings_activity,
-                extract_entities_activity,
-                fuse_and_save_activity,
-                finalize_ingestion,
-                trigger_topic_updates_activity,
             ],
             activity_executor=activity_executor,
         )
@@ -72,4 +51,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

@@ -45,7 +45,7 @@ from app.temporal.workflows.company_memory_ingestion import (
     CompanyMemoryIngestionWorkflow,
 )
 from app.temporal.workflows.evidence_extraction import EvidenceExtractionWorkflow
-from app.temporal.workflows.ingestion_v2 import IngestionWorkflowV2
+from app.temporal.workflows.ingestion import IngestionWorkflow
 from app.temporal.workflows.semantic_graph_enrichment import (
     SemanticGraphEnrichmentWorkflow,
 )
@@ -227,7 +227,7 @@ async def test_company_memory_workflow_composes_real_versioned_workflows() -> No
             task_queue=task_queue,
             workflows=[
                 CompanyMemoryIngestionWorkflow,
-                IngestionWorkflowV2,
+                IngestionWorkflow,
                 EvidenceExtractionWorkflow,
                 SemanticGraphEnrichmentWorkflow,
             ],

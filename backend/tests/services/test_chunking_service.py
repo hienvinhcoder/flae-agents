@@ -1,22 +1,25 @@
-import pytest
+from app.schemas.ingestion import ParsedBaseChunk
 from app.services.knowalge_base.chunking_service import ChunkingService
+
+
+CHECKSUM = "sha256:" + "a" * 64
 
 
 def test_chunk_document_fixed():
     text = "Line 1\nLine 2\nLine 3\n" * 50
-    file_hash = "abc123hash"
     chunks = ChunkingService.chunk_document(
         text=text,
-        file_hash=file_hash,
+        content_checksum=CHECKSUM,
         strategy="fixed",
         chunk_size=100,
         chunk_overlap=10,
     )
 
     assert len(chunks) > 0
-    assert all(c["chunk_id"].startswith(file_hash) for c in chunks)
-    assert all("text" in c for c in chunks)
-    assert all("token_count" in c for c in chunks)
+    assert all(isinstance(chunk, ParsedBaseChunk) for chunk in chunks)
+    assert all(chunk.section_structural_key for chunk in chunks)
+    assert all(chunk.text for chunk in chunks)
+    assert all(chunk.token_count > 0 for chunk in chunks)
 
 
 def test_chunk_document_semantic():
@@ -27,30 +30,29 @@ def test_chunk_document_semantic():
         "## Section 2\n"
         "This is paragraph 2 under section 2."
     )
-    file_hash = "semantic123"
     chunks = ChunkingService.chunk_document(
         text=text,
-        file_hash=file_hash,
+        content_checksum=CHECKSUM,
         strategy="semantic",
         chunk_size=1200,
         chunk_overlap=100,
     )
 
     assert len(chunks) > 0
-    assert all(c["chunk_id"].startswith(file_hash) for c in chunks)
-    assert any("Section" in c["text"] for c in chunks)
+    assert all(isinstance(chunk, ParsedBaseChunk) for chunk in chunks)
+    assert any("Section" in chunk.text for chunk in chunks)
+    assert any("Section 2" in chunk.heading_path for chunk in chunks)
 
 
 def test_chunk_document_defaults():
     text = "Line 1\nLine 2\nLine 3\n" * 50
-    file_hash = "defaults123"
     # Chạy dispatcher không truyền tham số tùy chọn để sử dụng settings
     chunks = ChunkingService.chunk_document(
         text=text,
-        file_hash=file_hash,
+        content_checksum=CHECKSUM,
     )
 
     assert len(chunks) > 0
-    assert all(c["chunk_id"].startswith(file_hash) for c in chunks)
-    assert all("text" in c for c in chunks)
-    assert all("token_count" in c for c in chunks)
+    assert all(isinstance(chunk, ParsedBaseChunk) for chunk in chunks)
+    assert all(chunk.text for chunk in chunks)
+    assert all(chunk.token_count > 0 for chunk in chunks)

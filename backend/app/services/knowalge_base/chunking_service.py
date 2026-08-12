@@ -18,7 +18,7 @@ logger = get_logger(__name__)
 
 class ChunkingService:
     @staticmethod
-    def chunk_document_v2(
+    def chunk_document(
         text: str,
         content_checksum: str,
         *,
@@ -28,7 +28,7 @@ class ChunkingService:
     ) -> tuple[ParsedBaseChunk, ...]:
         """Build deterministic typed chunks for a revisioned source."""
         file_hash = sha256(content_checksum.encode("utf-8")).hexdigest()[:24]
-        chunks = ChunkingService.chunk_document(
+        chunks = ChunkingService._chunk_document_raw(
             text=text,
             file_hash=file_hash,
             strategy=strategy,
@@ -198,7 +198,7 @@ class ChunkingService:
         return final_chunks
 
     @staticmethod
-    def chunk_document(
+    def _chunk_document_raw(
         text: str,
         file_hash: str,
         strategy: Optional[str] = None,

@@ -29,8 +29,7 @@ from app.temporal.workflows.discovery import DiscoveryEnrichmentWorkflow
 from app.temporal.workflows.discoverable_memory_ingestion import (
     DiscoverableMemoryIngestionWorkflow,
 )
-from app.temporal.workflows.ingestion import DocumentIngestionWorkflow
-from app.temporal.workflows.ingestion_v2 import IngestionWorkflowV2
+from app.temporal.workflows.ingestion import IngestionWorkflow
 from app.temporal.workflows.enrichment import GraphEnrichmentWorkflow
 from app.temporal.workflows.evidence_extraction import EvidenceExtractionWorkflow
 from app.temporal.workflows.memory_state import MemoryStateWorkflow
@@ -55,7 +54,7 @@ class InteractiveProbeWorkflow:
         )
 
 
-def test_ingestion_v2_uses_a_dedicated_bounded_worker(monkeypatch) -> None:
+def test_ingestion_uses_a_dedicated_bounded_worker(monkeypatch) -> None:
     from app.core.config import settings
     from workers import flae_ingestion_worker
 
@@ -72,7 +71,7 @@ def test_ingestion_v2_uses_a_dedicated_bounded_worker(monkeypatch) -> None:
         CompanyMemoryIngestionWorkflow,
         DiscoverableMemoryIngestionWorkflow,
         DiscoveryEnrichmentWorkflow,
-        IngestionWorkflowV2,
+        IngestionWorkflow,
         EvidenceExtractionWorkflow,
         GraphEnrichmentWorkflow,
         SemanticGraphEnrichmentWorkflow,
@@ -93,13 +92,13 @@ def test_ingestion_v2_uses_a_dedicated_bounded_worker(monkeypatch) -> None:
     )
 
 
-def test_v1_remains_registered_on_the_interactive_compatible_worker() -> None:
+def test_ingestion_workflow_is_not_registered_on_interactive_worker() -> None:
     from app.core.config import settings
     from workers import flae_worker
 
     source = open(flae_worker.__file__, encoding="utf-8").read()
 
-    assert DocumentIngestionWorkflow.__name__ in source
+    assert IngestionWorkflow.__name__ not in source
     assert settings.TEMPORAL_INGESTION_TASK_QUEUE not in source
 
 
@@ -128,7 +127,7 @@ async def test_ingestion_backlog_does_not_starve_interactive_queue() -> None:
     release_ingestion = asyncio.Event()
     ingestion_started = asyncio.Event()
 
-    @activity.defn(name="update_v2_document_status_activity")
+    @activity.defn(name="update_document_status_activity")
     async def status(_command: DocumentIngestionStatusInput) -> None:
         return None
 
@@ -178,7 +177,7 @@ async def test_ingestion_backlog_does_not_starve_interactive_queue() -> None:
         async with Worker(
             environment.client,
             task_queue="capacity-ingestion-queue",
-            workflows=[IngestionWorkflowV2],
+            workflows=[IngestionWorkflow],
             activities=[status, prepare, embed, publish],
             max_concurrent_activities=1,
         ), Worker(
@@ -191,7 +190,7 @@ async def test_ingestion_backlog_does_not_starve_interactive_queue() -> None:
             with environment.auto_time_skipping_disabled():
                 handles = [
                     await environment.client.start_workflow(
-                        IngestionWorkflowV2.run,
+                        IngestionWorkflow.run,
                         IngestionWorkflowInput(source=_source()),
                         id=f"capacity-ingestion-{uuid4()}",
                         task_queue="capacity-ingestion-queue",

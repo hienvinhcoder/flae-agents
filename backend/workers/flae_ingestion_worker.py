@@ -9,11 +9,11 @@ from temporalio.worker import Worker
 from app.core.config import settings
 from app.core.logger import get_logger, setup_logging
 from app.core.temporal import get_temporal_client
-from app.temporal.activities.ingestion_v2 import (
+from app.temporal.activities.ingestion import (
     prepare_base_stage_activity,
     publish_base_activity,
     stage_embedding_batch_activity,
-    update_v2_document_status_activity,
+    update_document_status_activity,
 )
 from app.temporal.activities.enrichment import (
     extract_evidence_activity,
@@ -40,7 +40,7 @@ from app.temporal.workflows.discoverable_memory_ingestion import (
 )
 from app.temporal.workflows.enrichment import GraphEnrichmentWorkflow
 from app.temporal.workflows.evidence_extraction import EvidenceExtractionWorkflow
-from app.temporal.workflows.ingestion_v2 import IngestionWorkflowV2
+from app.temporal.workflows.ingestion import IngestionWorkflow
 from app.temporal.workflows.memory_state import MemoryStateWorkflow
 from app.temporal.workflows.semantic_graph_enrichment import (
     SemanticGraphEnrichmentWorkflow,
@@ -61,7 +61,7 @@ def create_ingestion_worker(
             CompanyMemoryIngestionWorkflow,
             DiscoverableMemoryIngestionWorkflow,
             DiscoveryEnrichmentWorkflow,
-            IngestionWorkflowV2,
+            IngestionWorkflow,
             EvidenceExtractionWorkflow,
             GraphEnrichmentWorkflow,
             SemanticGraphEnrichmentWorkflow,
@@ -71,7 +71,7 @@ def create_ingestion_worker(
             prepare_base_stage_activity,
             stage_embedding_batch_activity,
             publish_base_activity,
-            update_v2_document_status_activity,
+            update_document_status_activity,
             extract_evidence_activity,
             plan_evidence_batch_activity,
             verify_evidence_manifests_activity,

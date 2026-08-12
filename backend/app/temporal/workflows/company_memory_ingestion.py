@@ -16,7 +16,7 @@ with workflow.unsafe.imports_passed_through():
     from app.schemas.graph_enrichment import GraphSnapshotPublishResult
     from app.schemas.ingestion import IngestionWorkflowOutput
     from app.temporal.workflows.evidence_extraction import EvidenceExtractionWorkflow
-    from app.temporal.workflows.ingestion_v2 import IngestionWorkflowV2
+    from app.temporal.workflows.ingestion import IngestionWorkflow
     from app.temporal.workflows.semantic_graph_enrichment import (
         SemanticGraphEnrichmentWorkflow,
     )
@@ -32,7 +32,7 @@ class CompanyMemoryIngestionWorkflow:
         task_queue = workflow.info().task_queue
         child_prefix = f"company-memory:{source.ingestion_run_id}"
         base_value = await workflow.execute_child_workflow(
-            IngestionWorkflowV2.run,
+            IngestionWorkflow.run,
             command.base,
             id=f"{child_prefix}:base",
             task_queue=task_queue,

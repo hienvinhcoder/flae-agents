@@ -14,6 +14,7 @@ from temporalio.worker import Replayer, Worker
 from app.schemas.ingestion import (
     BaseBatchReference,
     BaseStagePlan,
+    DocumentIngestionStatusInput,
     IngestionWorkflowInput,
     PrepareBaseStageInput,
     PublishBaseInput,
@@ -21,9 +22,15 @@ from app.schemas.ingestion import (
     SourceRevisionReference,
     StageBatchResult,
     StageEmbeddingInput,
-    DocumentIngestionStatusInput,
 )
-from app.temporal.workflows.ingestion_v2 import IngestionWorkflowV2
+from app.temporal.workflows.ingestion import IngestionWorkflow
+
+
+def test_workflow_declares_canonical_durable_type() -> None:
+    assert (
+        IngestionWorkflow.__temporal_workflow_definition.name
+        == "KnowledgeIngestionWorkflowV1"
+    )
 
 
 def _source() -> SourceRevisionReference:
@@ -70,25 +77,25 @@ def _plan(source: SourceRevisionReference) -> BaseStagePlan:
 
 
 @pytest.mark.asyncio
-async def test_connector_workflow_skips_core_document_status_activity(
+async def test_workflow_skips_core_document_status_activity_for_connectors(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     execute_activity = AsyncMock()
     monkeypatch.setattr(
-        "app.temporal.workflows.ingestion_v2.workflow.execute_activity",
+        "app.temporal.workflows.ingestion.workflow.execute_activity",
         execute_activity,
     )
     command = IngestionWorkflowInput(
         source=_source(), update_core_document_status=False
     )
 
-    await IngestionWorkflowV2._update_status(command, "processing")
+    await IngestionWorkflow._update_status(command, "processing")
 
     execute_activity.assert_not_awaited()
 
 
 @pytest.mark.asyncio
-async def test_workflow_v2_retries_transient_batches_and_bounds_fanout() -> None:
+async def test_workflow_retries_transient_batches_and_bounds_fanout() -> None:
     source = _source()
     plan = _plan(source)
     attempts: dict[str, int] = {}
@@ -96,7 +103,7 @@ async def test_workflow_v2_retries_transient_batches_and_bounds_fanout() -> None
     peak = 0
     statuses: list[str] = []
 
-    @activity.defn(name="update_v2_document_status_activity")
+    @activity.defn(name="update_document_status_activity")
     async def update_status(command: DocumentIngestionStatusInput) -> None:
         statuses.append(command.status)
 
@@ -136,19 +143,19 @@ async def test_workflow_v2_retries_transient_batches_and_bounds_fanout() -> None
     ) as environment:
         async with Worker(
             environment.client,
-            task_queue="ingestion-v2-test",
-            workflows=[IngestionWorkflowV2],
+            task_queue="ingestion-test",
+            workflows=[IngestionWorkflow],
             activities=[update_status, prepare, embed, publish],
         ):
             handle = await environment.client.start_workflow(
-                IngestionWorkflowV2.run,
+                IngestionWorkflow.run,
                 IngestionWorkflowInput(
                     source=source,
                     batch_size=20,
                     max_parallel_batches=2,
                 ),
-                id=f"ingestion-v2-{uuid4()}",
-                task_queue="ingestion-v2-test",
+                id=f"ingestion-{uuid4()}",
+                task_queue="ingestion-test",
             )
             result = await handle.result()
             history = await handle.fetch_history()
@@ -159,18 +166,18 @@ async def test_workflow_v2_retries_transient_batches_and_bounds_fanout() -> None
     assert statuses == ["processing", "completed"]
     assert "VERY_SECRET_RAW_DOCUMENT" not in history.to_json()
     await Replayer(
-        workflows=[IngestionWorkflowV2],
+        workflows=[IngestionWorkflow],
         data_converter=pydantic_data_converter,
     ).replay_workflow(history)
 
 
 @pytest.mark.asyncio
-async def test_workflow_v2_does_not_retry_permanent_input_failure() -> None:
+async def test_workflow_does_not_retry_permanent_input_failure() -> None:
     source = _source()
     attempts = 0
     statuses: list[str] = []
 
-    @activity.defn(name="update_v2_document_status_activity")
+    @activity.defn(name="update_document_status_activity")
     async def update_status(command: DocumentIngestionStatusInput) -> None:
         statuses.append(command.status)
 
@@ -189,16 +196,16 @@ async def test_workflow_v2_does_not_retry_permanent_input_failure() -> None:
     ) as environment:
         async with Worker(
             environment.client,
-            task_queue="ingestion-v2-permanent-test",
-            workflows=[IngestionWorkflowV2],
+            task_queue="ingestion-permanent-test",
+            workflows=[IngestionWorkflow],
             activities=[update_status, reject],
         ):
             with pytest.raises(WorkflowFailureError):
                 await environment.client.execute_workflow(
-                    IngestionWorkflowV2.run,
+                    IngestionWorkflow.run,
                     IngestionWorkflowInput(source=source),
-                    id=f"ingestion-v2-{uuid4()}",
-                    task_queue="ingestion-v2-permanent-test",
+                    id=f"ingestion-{uuid4()}",
+                    task_queue="ingestion-permanent-test",
                 )
 
     assert attempts == 1
@@ -206,11 +213,11 @@ async def test_workflow_v2_does_not_retry_permanent_input_failure() -> None:
 
 
 @pytest.mark.asyncio
-async def test_workflow_v2_cancellation_reaches_heartbeat_activity() -> None:
+async def test_workflow_cancellation_reaches_heartbeat_activity() -> None:
     source = _source()
     started = asyncio.Event()
 
-    @activity.defn(name="update_v2_document_status_activity")
+    @activity.defn(name="update_document_status_activity")
     async def update_status(_command: DocumentIngestionStatusInput) -> None:
         return None
 
@@ -226,15 +233,15 @@ async def test_workflow_v2_cancellation_reaches_heartbeat_activity() -> None:
     ) as environment:
         async with Worker(
             environment.client,
-            task_queue="ingestion-v2-cancel-test",
-            workflows=[IngestionWorkflowV2],
+            task_queue="ingestion-cancel-test",
+            workflows=[IngestionWorkflow],
             activities=[update_status, wait_for_cancel],
         ):
             handle = await environment.client.start_workflow(
-                IngestionWorkflowV2.run,
+                IngestionWorkflow.run,
                 IngestionWorkflowInput(source=source),
-                id=f"ingestion-v2-{uuid4()}",
-                task_queue="ingestion-v2-cancel-test",
+                id=f"ingestion-{uuid4()}",
+                task_queue="ingestion-cancel-test",
             )
             await asyncio.wait_for(started.wait(), timeout=5)
             await handle.cancel()
