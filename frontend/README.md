@@ -14,7 +14,7 @@ npm run dev
 
 The example environment enables Firebase Authentication and Storage emulators for project `flae-agents`. The Vite development server listens on all interfaces and uses port 4200.
 
-When starting from the repository root with `./start.sh`, the script creates `frontend/.env` from `.env.example` if needed and follows the Docker Compose `firebase-emulator`, `backend`, and `flae-worker` logs. Emulator UI is available at `http://localhost:4000`, Auth at port `9099`, and Storage at port `9199`.
+When starting from the repository root with `./start.sh`, the script creates `frontend/.env` from `.env.example` if needed and follows the Docker Compose `firebase-emulator`, `backend`, `application-worker`, and `knowledge-worker` logs. Emulator UI is available at `http://localhost:4000`, Auth at port `9099`, and Storage at port `9199`.
 
 For production, set `VITE_USE_FIREBASE_EMULATORS=false` and provide the real Firebase Web SDK values. Do not expose emulator host variables to production Backend or Worker services.
 

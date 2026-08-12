@@ -19,7 +19,7 @@ jq -e '.services["firebase-emulator"].ports | map(.published | tonumber) | sort 
 jq -e '.services["firebase-emulator"].healthcheck.test | length > 0' <<<"$compose_json" >/dev/null || \
   fail "firebase-emulator has no health check"
 
-for service in backend flae-worker; do
+for service in backend application-worker knowledge-worker; do
   jq -e --arg service "$service" '.services[$service].environment.GOOGLE_CLOUD_PROJECT == "flae-agents"' <<<"$compose_json" >/dev/null || \
     fail "$service does not use the local Firebase project"
   jq -e --arg service "$service" '.services[$service].environment.FIREBASE_AUTH_EMULATOR_HOST == "firebase-emulator:9099"' <<<"$compose_json" >/dev/null || \

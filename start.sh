@@ -29,7 +29,7 @@ else
   echo "✅ Đã tìm thấy cấu hình frontend/.env."
 fi
 
-# 3. Theo dõi log Firebase Emulator, Backend và Worker trong terminal hiện tại
+# 3. Theo dõi log Firebase Emulator, Backend và Workers trong terminal hiện tại
 LOGS_PID=""
 
 cleanup_log_follower() {
@@ -40,8 +40,8 @@ cleanup_log_follower() {
 }
 trap cleanup_log_follower EXIT
 
-echo "📋 Bắt đầu theo dõi log Firebase Emulator, Backend và Worker..."
-docker compose logs --follow --tail=100 firebase-emulator backend flae-worker &
+echo "📋 Bắt đầu theo dõi log Firebase Emulator, Backend và Workers..."
+docker compose logs --follow --tail=100 firebase-emulator backend application-worker knowledge-worker &
 LOGS_PID=$!
 
 # 4. Kiểm tra và đồng bộ dependencies cho Frontend

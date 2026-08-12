@@ -1,3 +1,5 @@
+"""Temporal worker for interactive application workflows."""
+
 import asyncio
 import concurrent.futures
 from temporalio.worker import Worker
@@ -12,18 +14,16 @@ from app.temporal.activities.topic import update_topic_summary_activity
 logger = get_logger(__name__)
 
 
-async def run_worker():
-    # Đảm bảo setup logging
+async def run_worker() -> None:
     setup_logging()
 
-    logger.info("Initializing Temporal Worker...")
+    logger.info("Initializing application Temporal worker")
     try:
         client = await get_temporal_client()
     except Exception as e:
-        logger.error(f"Could not connect to Temporal server, exiting: {e}")
+        logger.error("Could not connect to Temporal server, exiting: %s", e)
         return
 
-    # Định nghĩa ThreadPoolExecutor cho các sync activities
     with concurrent.futures.ThreadPoolExecutor(max_workers=100) as activity_executor:
         worker = Worker(
             client,
@@ -38,15 +38,15 @@ async def run_worker():
             ],
             activity_executor=activity_executor,
         )
-        logger.info("Temporal Worker started. Listening on task queue: flae-default-queue")
+        logger.info("Application worker started on queue flae-default-queue")
         await worker.run()
 
 
-def main():
+def main() -> None:
     try:
         asyncio.run(run_worker())
     except KeyboardInterrupt:
-        logger.info("Worker stopped by user.")
+        logger.info("Application worker stopped by user")
 
 
 if __name__ == "__main__":

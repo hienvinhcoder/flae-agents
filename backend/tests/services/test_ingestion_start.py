@@ -217,7 +217,7 @@ async def test_document_start_always_uses_the_canonical_knowledge_workflow(
     assert call.args[1].memory.semantic_graph.resolver_version == "resolver-v1"
     assert call.args[1].memory.semantic_graph.projection_version == "projection-v1"
     assert call.kwargs["id"] == workflow_id
-    assert call.kwargs["task_queue"] == settings.TEMPORAL_INGESTION_TASK_QUEUE
+    assert call.kwargs["task_queue"] == settings.TEMPORAL_KNOWLEDGE_TASK_QUEUE
     assert (
         call.kwargs["id_conflict_policy"]
         is WorkflowIDConflictPolicy.USE_EXISTING

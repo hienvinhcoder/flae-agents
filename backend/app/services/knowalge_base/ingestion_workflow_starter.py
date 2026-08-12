@@ -60,7 +60,7 @@ class IngestionWorkflowStarter:
         )
 
         max_parallel_batches = min(
-            settings.INGESTION_V2_MAX_PARALLEL_BATCHES,
+            settings.KNOWLEDGE_MAX_PARALLEL_BATCHES,
             16,
         )
         workflow_id = f"knowledge-ingestion-v1-{source.ingestion_run_id}"
@@ -91,7 +91,7 @@ class IngestionWorkflowStarter:
                     ),
                 ),
                 id=workflow_id,
-                task_queue=settings.TEMPORAL_INGESTION_TASK_QUEUE,
+                task_queue=settings.TEMPORAL_KNOWLEDGE_TASK_QUEUE,
                 id_conflict_policy=WorkflowIDConflictPolicy.USE_EXISTING,
                 id_reuse_policy=WorkflowIDReusePolicy.REJECT_DUPLICATE,
             )

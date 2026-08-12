@@ -41,7 +41,7 @@ if [[ "$*" == "run dev" ]]; then
   [[ -f .env ]] || { echo "frontend/.env was not created before Vite startup" >&2; exit 91; }
 
   for _ in {1..100}; do
-    if grep -Fqx "compose logs --follow --tail=100 firebase-emulator backend flae-worker" "$START_TEST_COMMAND_LOG"; then
+    if grep -Fqx "compose logs --follow --tail=100 firebase-emulator backend application-worker knowledge-worker" "$START_TEST_COMMAND_LOG"; then
       printf '%s\n' "$*" >> "$START_TEST_COMMAND_LOG"
       exit 0
     fi
@@ -77,7 +77,7 @@ grep -Fqx 'VITE_USE_FIREBASE_EMULATORS=true' "$missing_env_fixture/frontend/.env
   fail "generated frontend/.env does not enable Firebase emulators"
 grep -Fqx "compose up -d" "$missing_env_fixture/commands.log" || \
   fail "start.sh did not start Docker Compose"
-grep -Fqx "compose logs --follow --tail=100 firebase-emulator backend flae-worker" "$missing_env_fixture/commands.log" || \
+grep -Fqx "compose logs --follow --tail=100 firebase-emulator backend application-worker knowledge-worker" "$missing_env_fixture/commands.log" || \
   fail "start.sh did not follow Firebase emulator, backend, and worker logs"
 
 existing_env_fixture="$TEST_TMP_DIR/existing-env"

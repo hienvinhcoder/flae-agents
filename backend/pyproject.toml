@@ -45,8 +45,8 @@ dependencies = [
 
 [project.scripts]
 migrate = "scripts.migrate:run_migrations"
-flae-worker = "workers.flae_worker:main"
-flae-ingestion-worker = "workers.flae_ingestion_worker:main"
+application-worker = "workers.application_worker:main"
+knowledge-worker = "workers.knowledge_worker:main"
 
 [tool.uv]
 package = true

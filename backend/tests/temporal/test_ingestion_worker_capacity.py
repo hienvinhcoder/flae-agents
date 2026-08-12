@@ -54,18 +54,18 @@ class InteractiveProbeWorkflow:
         )
 
 
-def test_ingestion_uses_a_dedicated_bounded_worker(monkeypatch) -> None:
+def test_knowledge_uses_a_dedicated_bounded_worker(monkeypatch) -> None:
     from app.core.config import settings
-    from workers import flae_ingestion_worker
+    from workers import knowledge_worker
 
     worker_factory = MagicMock(return_value=MagicMock())
-    monkeypatch.setattr(flae_ingestion_worker, "Worker", worker_factory)
+    monkeypatch.setattr(knowledge_worker, "Worker", worker_factory)
     client = MagicMock()
     with ThreadPoolExecutor(max_workers=1) as executor:
-        flae_ingestion_worker.create_ingestion_worker(client, executor)
+        knowledge_worker.create_knowledge_worker(client, executor)
 
     kwargs = worker_factory.call_args.kwargs
-    assert kwargs["task_queue"] == settings.TEMPORAL_INGESTION_TASK_QUEUE
+    assert kwargs["task_queue"] == settings.TEMPORAL_KNOWLEDGE_TASK_QUEUE
     assert kwargs["task_queue"] != "flae-default-queue"
     assert kwargs["workflows"] == [
         CompanyMemoryIngestionWorkflow,
@@ -82,24 +82,28 @@ def test_ingestion_uses_a_dedicated_bounded_worker(monkeypatch) -> None:
         for value in kwargs["activities"]
     )
     assert kwargs["max_concurrent_workflow_tasks"] == (
-        settings.INGESTION_V2_MAX_CONCURRENT_WORKFLOWS
+        settings.KNOWLEDGE_MAX_CONCURRENT_WORKFLOWS
     )
     assert kwargs["max_concurrent_activities"] == (
-        settings.INGESTION_V2_MAX_CONCURRENT_ACTIVITIES
+        settings.KNOWLEDGE_MAX_CONCURRENT_ACTIVITIES
     )
     assert kwargs["max_task_queue_activities_per_second"] == (
-        settings.INGESTION_V2_TASK_QUEUE_ACTIVITIES_PER_SECOND
+        settings.KNOWLEDGE_TASK_QUEUE_ACTIVITIES_PER_SECOND
     )
 
 
-def test_ingestion_workflow_is_not_registered_on_interactive_worker() -> None:
+def test_ingestion_workflow_is_not_registered_on_application_worker() -> None:
     from app.core.config import settings
-    from workers import flae_worker
+    from app.temporal.workflows.invitation import WorkspaceInvitationWorkflow
+    from app.temporal.workflows.topic import TopicUpdateWorkflow
+    from workers import application_worker
 
-    source = open(flae_worker.__file__, encoding="utf-8").read()
+    source = open(application_worker.__file__, encoding="utf-8").read()
 
+    assert WorkspaceInvitationWorkflow.__name__ in source
+    assert TopicUpdateWorkflow.__name__ in source
     assert IngestionWorkflow.__name__ not in source
-    assert settings.TEMPORAL_INGESTION_TASK_QUEUE not in source
+    assert settings.TEMPORAL_KNOWLEDGE_TASK_QUEUE not in source
 
 
 def _source() -> SourceRevisionReference:

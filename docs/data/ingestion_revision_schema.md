@@ -59,7 +59,7 @@ The application role may update only lifecycle/readiness columns. Assertion,
 qualifier, and stage-manifest rows are insert/select only; observation resolver
 fields may be updated without mutating the extracted evidence.
 
-## Base staging, atomic publish, and Workflow V2
+## Base staging, atomic publish, and canonical Workflow V1
 
 `staged_base_chunks` holds revision-scoped parse output and embeddings before
 publication. Stable chunk and section IDs derive from revision identity,
@@ -79,15 +79,14 @@ NOINHERIT, NOBYPASSRLS role. Its policy is workspace-scoped and its grants omit
 DELETE and immutable-evidence updates. This lets an ACL change supersede a prior
 revision without borrowing an end-user principal or bypassing tenant RLS.
 
-`IngestionWorkflowV2` carries only GCS references, UUIDs, counts, and checksums.
-All file, database, embedding, and status side effects run in heartbeat-enabled
-activities. V2 uses `flae-ingestion-v2-queue` and a dedicated worker with bounded
-workflow/activity concurrency and task-queue rate. V1 stays registered on
-`flae-default-queue`; new checksummed GCS starts switch to V2 only when
-`INGESTION_V2_ENABLED=true`.
+`IngestionWorkflow` is registered durably as `KnowledgeIngestionWorkflowV1`
+and carries only GCS references, UUIDs, counts, and checksums. All file,
+database, embedding, and status side effects run in heartbeat-enabled
+activities. The dedicated knowledge worker consumes
+`flae-knowledge-queue` with bounded workflow/activity concurrency and
+task-queue rate; the application worker remains isolated on
+`flae-default-queue`.
 
-Rollout order: migrate both core and RAG databases, start the ingestion worker
-with the flag still false, verify V1 replay, enable the worker, then canary the
-feature flag. Roll back by disabling new V2 starts and leaving both workflow
-types registered until all V2 histories complete; do not downgrade tables while
-executions still reference staged rows.
+Because this is the first pre-release ingestion contract, new executions always
+use the canonical workflow and there is no rollout feature flag or legacy
+workflow registration to maintain.

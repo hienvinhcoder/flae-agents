@@ -141,10 +141,6 @@ async def test_create_manual_document_uploads_exact_utf8_bytes_without_flag(
         "app.services.knowledge_base_srv._start_ingestion_workflow",
         start_workflow,
     )
-    monkeypatch.setattr(
-        "app.services.knowledge_base_srv.settings.INGESTION_V2_ENABLED",
-        False,
-    )
     db = FakeSession()
 
     await KnowledgeBaseService.create_manual_document(

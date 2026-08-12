@@ -129,11 +129,11 @@ services:
     entrypoint: ["/bin/sh", "-c", "./start-ui-server.sh > /dev/null 2>&1"]
 
 
-  flae-worker:
+  application-worker:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    command: uv run watchfiles flae-worker app workers
+    command: uv run watchfiles application-worker app workers
     env_file:
       - .env
     environment:
@@ -164,11 +164,11 @@ services:
     networks:
       - app-network
 
-  flae-ingestion-worker:
+  knowledge-worker:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    command: uv run watchfiles flae-ingestion-worker app workers
+    command: uv run watchfiles knowledge-worker app workers
     env_file:
       - .env
     environment:

@@ -76,23 +76,20 @@ class Settings(BaseSettings):
     # Temporal
     TEMPORAL_HOST: str = os.getenv('TEMPORAL_HOST', 'localhost:7233')
     TEMPORAL_NAMESPACE: str = os.getenv('TEMPORAL_NAMESPACE', 'default')
-    TEMPORAL_INGESTION_TASK_QUEUE: str = os.getenv(
-        'TEMPORAL_INGESTION_TASK_QUEUE', 'flae-ingestion-v2-queue'
+    TEMPORAL_KNOWLEDGE_TASK_QUEUE: str = os.getenv(
+        'TEMPORAL_KNOWLEDGE_TASK_QUEUE', 'flae-knowledge-queue'
     )
-    INGESTION_V2_ENABLED: bool = os.getenv(
-        'INGESTION_V2_ENABLED', 'false'
-    ).lower() == 'true'
-    INGESTION_V2_MAX_PARALLEL_BATCHES: int = int(
-        os.getenv('INGESTION_V2_MAX_PARALLEL_BATCHES', '4')
+    KNOWLEDGE_MAX_PARALLEL_BATCHES: int = int(
+        os.getenv('KNOWLEDGE_MAX_PARALLEL_BATCHES', '4')
     )
-    INGESTION_V2_MAX_CONCURRENT_WORKFLOWS: int = int(
-        os.getenv('INGESTION_V2_MAX_CONCURRENT_WORKFLOWS', '20')
+    KNOWLEDGE_MAX_CONCURRENT_WORKFLOWS: int = int(
+        os.getenv('KNOWLEDGE_MAX_CONCURRENT_WORKFLOWS', '20')
     )
-    INGESTION_V2_MAX_CONCURRENT_ACTIVITIES: int = int(
-        os.getenv('INGESTION_V2_MAX_CONCURRENT_ACTIVITIES', '8')
+    KNOWLEDGE_MAX_CONCURRENT_ACTIVITIES: int = int(
+        os.getenv('KNOWLEDGE_MAX_CONCURRENT_ACTIVITIES', '8')
     )
-    INGESTION_V2_TASK_QUEUE_ACTIVITIES_PER_SECOND: float = float(
-        os.getenv('INGESTION_V2_TASK_QUEUE_ACTIVITIES_PER_SECOND', '10')
+    KNOWLEDGE_TASK_QUEUE_ACTIVITIES_PER_SECOND: float = float(
+        os.getenv('KNOWLEDGE_TASK_QUEUE_ACTIVITIES_PER_SECOND', '10')
     )
 
     # Firebase / GCP configuration
@@ -157,21 +154,21 @@ class Settings(BaseSettings):
     )
 
     @field_validator(
-        'INGESTION_V2_MAX_PARALLEL_BATCHES',
-        'INGESTION_V2_MAX_CONCURRENT_WORKFLOWS',
-        'INGESTION_V2_MAX_CONCURRENT_ACTIVITIES',
+        'KNOWLEDGE_MAX_PARALLEL_BATCHES',
+        'KNOWLEDGE_MAX_CONCURRENT_WORKFLOWS',
+        'KNOWLEDGE_MAX_CONCURRENT_ACTIVITIES',
     )
     @classmethod
-    def validate_positive_ingestion_capacity(cls, value: int) -> int:
+    def validate_positive_knowledge_capacity(cls, value: int) -> int:
         if value < 1:
-            raise ValueError('ingestion capacity settings must be positive')
+            raise ValueError('knowledge capacity settings must be positive')
         return value
 
-    @field_validator('INGESTION_V2_TASK_QUEUE_ACTIVITIES_PER_SECOND')
+    @field_validator('KNOWLEDGE_TASK_QUEUE_ACTIVITIES_PER_SECOND')
     @classmethod
-    def validate_positive_ingestion_rate(cls, value: float) -> float:
+    def validate_positive_knowledge_rate(cls, value: float) -> float:
         if value <= 0:
-            raise ValueError('ingestion activity rate must be positive')
+            raise ValueError('knowledge activity rate must be positive')
         return value
 
 settings = Settings()
