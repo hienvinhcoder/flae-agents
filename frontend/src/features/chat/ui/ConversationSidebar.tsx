@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
-import type { ChatSession } from "../../agents/types/agent";
+import type { ChatSession } from "../types/chat";
 import { Button } from "../../../shared/ui/Button";
 import { ErrorState } from "../../../shared/ui/ErrorState";
 import { Skeleton } from "../../../shared/ui/Skeleton";

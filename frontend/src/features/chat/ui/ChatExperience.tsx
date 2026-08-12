@@ -5,11 +5,16 @@ import { AppError } from "../../../core/api/errors";
 import { Button } from "../../../shared/ui/Button";
 import { Skeleton } from "../../../shared/ui/Skeleton";
 import { Toast, ToastViewport } from "../../../shared/ui/Toast";
-import { useMessages, useSessionActions, useSessions } from "../../agents/hooks/use-sessions";
-import type { AgentDetail, ChatMessage, ChatSession } from "../../agents/types/agent";
+import type { AgentDetail } from "../../agents/types/agent";
 import { AgentAvatarIcon } from "../../agents/ui/agent-appearance";
 import { getAgentAvatarColor } from "../../agents/ui/agent-avatar-color";
+import {
+  useConversationActions,
+  useConversationMessages,
+  useConversationSessions,
+} from "../hooks/use-conversations";
 import { useChatStream } from "../hooks/use-chat-stream";
+import type { ChatMessage, ChatSession } from "../types/chat";
 import { ChatComposer } from "./ChatComposer";
 import { ConversationMessages } from "./ConversationMessages";
 import { ConversationSidebar } from "./ConversationSidebar";
@@ -62,8 +67,8 @@ function ContextualChatExperience({
 }: ChatExperienceProps) {
   const { t } = useTranslation();
   const contextKey = `${workspaceId}:${agentId ?? ""}`;
-  const sessionsQuery = useSessions(workspaceId, agentId);
-  const actions = useSessionActions(workspaceId, agentId);
+  const sessionsQuery = useConversationSessions(workspaceId, agentId);
+  const actions = useConversationActions(workspaceId, agentId);
   const [selection, setSelection] = useState<SelectionState>({ contextKey, sessionId: null });
   const [actionErrorState, setActionError] = useState<ActionError | null>(null);
   const selectedSessionId = selection.contextKey === contextKey ? selection.sessionId : null;
@@ -86,7 +91,7 @@ function ContextualChatExperience({
     };
   }, []);
 
-  const messagesQuery = useMessages(workspaceId, agentId, activeSessionId);
+  const messagesQuery = useConversationMessages(workspaceId, agentId, activeSessionId);
   const refetchMessages = messagesQuery.refetch;
   const reloadMessages = useCallback(async () => {
     await refetchMessages();

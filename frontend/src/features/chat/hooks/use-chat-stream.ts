@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { AppError } from "../../../core/api/errors";
-import type { ChatMessage, Citation } from "../../agents/types/agent";
+import type { ChatMessage, Citation } from "../types/chat";
 import { streamChat } from "../api/chat-api";
 import type { StreamCitation, StreamEvent, StreamStatus } from "../types/stream";
 

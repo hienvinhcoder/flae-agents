@@ -4,8 +4,9 @@ import { useTranslation } from "react-i18next";
 
 import { ErrorState } from "../../../shared/ui/ErrorState";
 import { Skeleton } from "../../../shared/ui/Skeleton";
-import type { AgentDetail, ChatMessage as ChatMessageData } from "../../agents/types/agent";
-import { ChatMessage } from "../../agents/ui/ChatMessage";
+import type { AgentDetail } from "../../agents/types/agent";
+import type { ChatMessage as ChatMessageData } from "../types/chat";
+import { ChatMessage } from "./ChatMessage";
 import { AgentAvatarIcon } from "../../agents/ui/agent-appearance";
 import { getAgentAvatarColor } from "../../agents/ui/agent-avatar-color";
 import type { StreamStatus } from "../types/stream";

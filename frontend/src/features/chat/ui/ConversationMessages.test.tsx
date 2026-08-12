@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { TestI18nProvider } from "../../../../tests/TestI18nProvider";
-import type { ChatMessage } from "../../agents/types/agent";
+import type { ChatMessage } from "../types/chat";
 import { ConversationMessages } from "./ConversationMessages";
 
 const message: ChatMessage = {

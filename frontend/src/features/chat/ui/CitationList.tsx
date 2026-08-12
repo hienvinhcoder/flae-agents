@@ -1,6 +1,6 @@
 import { FileText } from "lucide-react";
 
-import type { Citation } from "../types/agent";
+import type { Citation } from "../types/chat";
 
 interface CitationListProps {
   citations: readonly Citation[];

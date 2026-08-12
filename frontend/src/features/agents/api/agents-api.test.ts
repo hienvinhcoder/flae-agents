@@ -3,20 +3,15 @@ import { describe, expect, it, vi } from "vitest";
 import type { ApiClient } from "../../../core/api/client";
 import {
   createAgent,
-  createSession,
   deleteAgent,
-  deleteSession,
   getAgent,
   getDefaultAgent,
   listAgents,
-  listMessages,
-  listSessions,
   updateAgent,
 } from "./agents-api";
 
 const workspaceId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const agentId = "11111111-1111-4111-8111-111111111111";
-const sessionId = "22222222-2222-4222-8222-222222222222";
 const agent = {
   avatar_color: "bg-blue-500",
   avatar_icon: "bot",
@@ -29,15 +24,6 @@ const agent = {
   name: "Research assistant",
   system_prompt: "Answer from workspace sources.",
   temperature: 0.2,
-  updated_at: "2026-07-24T00:00:00Z",
-  workspace_id: workspaceId,
-};
-const session = {
-  agent_id: agentId,
-  created_at: "2026-07-23T00:00:00Z",
-  created_by: "user-1",
-  id: sessionId,
-  title: "Launch questions",
   updated_at: "2026-07-24T00:00:00Z",
   workspace_id: workspaceId,
 };
@@ -137,76 +123,11 @@ describe("agents API", () => {
     ).rejects.toMatchObject({ kind: "server" });
   });
 
-  it("preserves false agent and session deletion responses", async () => {
+  it("preserves false agent deletion responses", async () => {
     const request = vi.fn().mockResolvedValue(false);
     const client = { request } as ApiClient;
 
     await expect(deleteAgent(workspaceId, agentId, client)).resolves.toBe(false);
-    await expect(
-      deleteSession(workspaceId, agentId, sessionId, client),
-    ).resolves.toBe(false);
-  });
-
-  it("lists and creates sessions at the agent-scoped routes", async () => {
-    const request = vi
-      .fn()
-      .mockResolvedValueOnce([session])
-      .mockResolvedValueOnce(session);
-    const client = { request } as ApiClient;
-    const signal = new AbortController().signal;
-
-    await expect(
-      listSessions(workspaceId, agentId, client, signal),
-    ).resolves.toEqual([session]);
-    await expect(
-      createSession(workspaceId, agentId, { title: "Launch questions" }, client),
-    ).resolves.toEqual(session);
-    expect(request).toHaveBeenNthCalledWith(1, {
-      auth: true,
-      method: "GET",
-      path: `/workspaces/${workspaceId}/agents/${agentId}/sessions`,
-      signal,
-      workspaceId,
-    });
-    expect(request).toHaveBeenNthCalledWith(2, {
-      auth: true,
-      body: { title: "Launch questions" },
-      method: "POST",
-      path: `/workspaces/${workspaceId}/agents/${agentId}/sessions`,
-      workspaceId,
-    });
-  });
-
-  it("loads typed message history and normalizes nullable citations", async () => {
-    const request = vi.fn().mockResolvedValue([
-      {
-        citations: null,
-        content: "What is the launch date?",
-        created_at: "2026-07-24T00:00:00Z",
-        created_by: "user-1",
-        id: "33333333-3333-4333-8333-333333333333",
-        role: "user",
-        session_id: sessionId,
-      },
-    ]);
-    const signal = new AbortController().signal;
-
-    await expect(
-      listMessages(
-        workspaceId,
-        agentId,
-        sessionId,
-        { request } as ApiClient,
-        signal,
-      ),
-    ).resolves.toMatchObject([{ citations: [], role: "user" }]);
-    expect(request).toHaveBeenCalledWith({
-      auth: true,
-      method: "GET",
-      path: `/workspaces/${workspaceId}/agents/${agentId}/sessions/${sessionId}/messages`,
-      signal,
-      workspaceId,
-    });
   });
 
   it("turns malformed server data into a safe application error", async () => {

@@ -10,11 +10,14 @@ import { TestI18nProvider } from "../../../../tests/TestI18nProvider";
 import { AgentChatPage } from "./AgentChatPage";
 
 const agentsApi = vi.hoisted(() => ({
-  createAgent: vi.fn(), createSession: vi.fn(), deleteAgent: vi.fn(), deleteSession: vi.fn(), getAgent: vi.fn(),
-  getDefaultAgent: vi.fn(), listAgents: vi.fn(), listMessages: vi.fn(), listSessions: vi.fn(), updateAgent: vi.fn(),
+  getAgent: vi.fn(),
+}));
+const chatSessionsApi = vi.hoisted(() => ({
+  createSession: vi.fn(), deleteSession: vi.fn(), listMessages: vi.fn(), listSessions: vi.fn(),
 }));
 const chatApi = vi.hoisted(() => ({ streamChat: vi.fn() }));
 vi.mock("../api/agents-runtime-api", () => agentsApi);
+vi.mock("../../chat/api/chat-sessions-runtime-api", () => chatSessionsApi);
 vi.mock("../../chat/api/chat-api", () => chatApi);
 vi.mock("../../settings/api/workspace-runtime-api", () => ({ listWorkspaceMembers: vi.fn() }));
 
@@ -40,20 +43,21 @@ describe("AgentChatPage", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     Object.values(agentsApi).forEach((mock) => mock.mockReset());
+    Object.values(chatSessionsApi).forEach((mock) => mock.mockReset());
     chatApi.streamChat.mockReset().mockResolvedValue(undefined);
     agentsApi.getAgent.mockResolvedValue({
       avatar_color: "bg-emerald-500", avatar_icon: "brain", created_at: "2026-07-20T00:00:00Z", created_by: "user-1",
       id: agentId, is_active: true, is_default: false, model_name: "gemini-2.5-flash", name: "Research guide",
       system_prompt: "Answer using evidence.", temperature: 0.2, updated_at: "2026-07-24T00:00:00Z", workspace_id: workspaceId,
     });
-    agentsApi.listSessions.mockResolvedValue([
+    chatSessionsApi.listSessions.mockResolvedValue([
       { agent_id: agentId, created_at: "2026-07-24T08:00:00Z", created_by: "user-1", id: sessionId, title: "Benefits question", updated_at: "2026-07-24T08:00:00Z", workspace_id: workspaceId },
     ]);
-    agentsApi.listMessages.mockResolvedValue([
+    chatSessionsApi.listMessages.mockResolvedValue([
       { citations: [{ content: "Permanent employees are eligible.", score: 0.93, source_document: "Benefits.pdf" }], content: "Permanent employees are eligible.", created_at: "2026-07-24T08:30:00Z", created_by: "assistant", id: "33333333-3333-4333-8333-333333333333", role: "assistant", session_id: sessionId },
     ]);
-    agentsApi.createSession.mockResolvedValue(newSession);
-    agentsApi.deleteSession.mockResolvedValue(true);
+    chatSessionsApi.createSession.mockResolvedValue(newSession);
+    chatSessionsApi.deleteSession.mockResolvedValue(true);
     useWorkspaceStore.getState().reset();
     useWorkspaceStore.getState().setCurrentWorkspaceId(workspaceId);
     useWorkspaceStore.getState().setSelectionInitialized(true);
@@ -79,7 +83,7 @@ describe("AgentChatPage", () => {
 
   it("creates and selects a new session", async () => {
     const user = userEvent.setup();
-    agentsApi.listSessions
+    chatSessionsApi.listSessions
       .mockResolvedValueOnce([
         { agent_id: agentId, created_at: "2026-07-24T08:00:00Z", created_by: "user-1", id: sessionId, title: "Benefits question", updated_at: "2026-07-24T08:00:00Z", workspace_id: workspaceId },
       ])
@@ -88,7 +92,7 @@ describe("AgentChatPage", () => {
     await screen.findByText("Benefits question");
 
     await user.click(screen.getByRole("button", { name: /new conversation/i }));
-    await waitFor(() => expect(agentsApi.createSession).toHaveBeenCalledWith(workspaceId, agentId, {}));
+    await waitFor(() => expect(chatSessionsApi.createSession).toHaveBeenCalledWith(workspaceId, agentId, {}));
     await waitFor(() =>
       expect(screen.getAllByRole("button", { name: /^new conversation$/i })).toHaveLength(2),
     );
@@ -96,7 +100,7 @@ describe("AgentChatPage", () => {
 
   it("keeps the active session when backend deletion returns false", async () => {
     const user = userEvent.setup();
-    agentsApi.deleteSession.mockResolvedValueOnce(false);
+    chatSessionsApi.deleteSession.mockResolvedValueOnce(false);
     vi.spyOn(window, "confirm").mockReturnValue(true);
     renderPage();
     await screen.findByText("Benefits question");
@@ -109,7 +113,7 @@ describe("AgentChatPage", () => {
 
   it("uses safe copy without duplicating the global alert for a server mutation failure", async () => {
     const user = userEvent.setup();
-    agentsApi.deleteSession.mockRejectedValueOnce(new AppError({
+    chatSessionsApi.deleteSession.mockRejectedValueOnce(new AppError({
       kind: "server",
       message: "Raw service outage details",
       retryable: true,
@@ -128,7 +132,7 @@ describe("AgentChatPage", () => {
 
   it("selects the remaining state after a successful session deletion", async () => {
     const user = userEvent.setup();
-    agentsApi.listSessions.mockResolvedValueOnce([
+    chatSessionsApi.listSessions.mockResolvedValueOnce([
       { agent_id: agentId, created_at: "2026-07-24T08:00:00Z", created_by: "user-1", id: sessionId, title: "Benefits question", updated_at: "2026-07-24T08:00:00Z", workspace_id: workspaceId },
     ]).mockResolvedValueOnce([]);
     vi.spyOn(window, "confirm").mockReturnValue(true);
@@ -142,7 +146,7 @@ describe("AgentChatPage", () => {
 
   it("renders a retryable conversation-history error", async () => {
     const user = userEvent.setup();
-    agentsApi.listSessions
+    chatSessionsApi.listSessions
       .mockRejectedValueOnce(new Error("Raw conversation-history service details"))
       .mockResolvedValueOnce([]);
     renderPage();
@@ -157,7 +161,7 @@ describe("AgentChatPage", () => {
     const user = userEvent.setup();
     let onEvent: ((event: unknown) => void) | undefined;
     let resolveStream: (() => void) | undefined;
-    agentsApi.listMessages
+    chatSessionsApi.listMessages
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([{
         citations: [], content: "Persisted answer", created_at: "2026-07-24T09:00:00Z", created_by: "assistant",
@@ -181,13 +185,13 @@ describe("AgentChatPage", () => {
       resolveStream?.();
     });
     expect(await screen.findByText("Persisted answer")).toBeInTheDocument();
-    expect(agentsApi.listMessages).toHaveBeenCalledTimes(2);
+    expect(chatSessionsApi.listMessages).toHaveBeenCalledTimes(2);
   });
 
   it("does not lose a new input while terminal history reload is pending", async () => {
     const user = userEvent.setup();
     let resolveReload: ((messages: unknown[]) => void) | undefined;
-    agentsApi.listMessages
+    chatSessionsApi.listMessages
       .mockResolvedValueOnce([])
       .mockImplementationOnce(() => new Promise<unknown[]>((resolve) => {
         resolveReload = resolve;
@@ -214,7 +218,7 @@ describe("AgentChatPage", () => {
 
   it("shows connection fallback and retries a transport failure once", async () => {
     const user = userEvent.setup();
-    agentsApi.listMessages.mockResolvedValue([]);
+    chatSessionsApi.listMessages.mockResolvedValue([]);
     chatApi.streamChat
       .mockRejectedValueOnce(new AppError({
         code: "SSE_PROTOCOL_ERROR", kind: "server", message: "Invalid stream event.", retryable: true,
@@ -244,7 +248,7 @@ describe("AgentChatPage", () => {
       signals.push(options.signal);
       return new Promise<void>(() => undefined);
     });
-    agentsApi.listMessages.mockResolvedValue([]);
+    chatSessionsApi.listMessages.mockResolvedValue([]);
     const view = renderPage();
     await screen.findByText(/this conversation has no messages yet/i);
 

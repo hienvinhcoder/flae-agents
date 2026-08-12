@@ -1,10 +1,10 @@
 import { ChevronDown, ChevronUp, Database, User } from "lucide-react";
 import { useState } from "react";
 
-import type { ChatMessage as ChatMessageData } from "../types/agent";
+import type { ChatMessage as ChatMessageData } from "../types/chat";
 import { CitationList } from "./CitationList";
-import { AgentAvatarIcon } from "./agent-appearance";
-import { getAgentAvatarColor } from "./agent-avatar-color";
+import { AgentAvatarIcon } from "../../agents/ui/agent-appearance";
+import { getAgentAvatarColor } from "../../agents/ui/agent-avatar-color";
 
 interface ChatMessageProps {
   agentColor: string;

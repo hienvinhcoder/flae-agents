@@ -13,10 +13,14 @@ import viLocale from "../../../../public/assets/i18n/vi.json";
 import { ChatPage } from "./ChatPage";
 
 const agentsApi = vi.hoisted(() => ({
-  createSession: vi.fn(), deleteSession: vi.fn(), getDefaultAgent: vi.fn(), listMessages: vi.fn(), listSessions: vi.fn(),
+  getDefaultAgent: vi.fn(),
+}));
+const chatSessionsApi = vi.hoisted(() => ({
+  createSession: vi.fn(), deleteSession: vi.fn(), listMessages: vi.fn(), listSessions: vi.fn(),
 }));
 const chatApi = vi.hoisted(() => ({ streamChat: vi.fn() }));
 vi.mock("../../agents/api/agents-runtime-api", () => agentsApi);
+vi.mock("../api/chat-sessions-runtime-api", () => chatSessionsApi);
 vi.mock("../api/chat-api", () => chatApi);
 vi.mock("../../../core/auth/firebase", () => ({ getAuthToken: vi.fn().mockResolvedValue(null) }));
 vi.mock("../../../core/config/env", () => ({ env: { VITE_API_URL: "https://api.example.test" } }));
@@ -54,12 +58,13 @@ function renderPage(language: "en" | "vi" = "en") {
 describe("ChatPage", () => {
   beforeEach(() => {
     Object.values(agentsApi).forEach((mock) => mock.mockReset());
+    Object.values(chatSessionsApi).forEach((mock) => mock.mockReset());
     chatApi.streamChat.mockReset().mockResolvedValue(undefined);
     agentsApi.getDefaultAgent.mockResolvedValue(agent);
-    agentsApi.listSessions.mockResolvedValue(sessions);
-    agentsApi.listMessages.mockResolvedValue([]);
-    agentsApi.createSession.mockResolvedValue(createdSession);
-    agentsApi.deleteSession.mockResolvedValue(true);
+    chatSessionsApi.listSessions.mockResolvedValue(sessions);
+    chatSessionsApi.listMessages.mockResolvedValue([]);
+    chatSessionsApi.createSession.mockResolvedValue(createdSession);
+    chatSessionsApi.deleteSession.mockResolvedValue(true);
     useWorkspaceStore.getState().reset();
     useWorkspaceStore.getState().setCurrentWorkspaceId(workspaceId);
     useWorkspaceStore.getState().setSelectionInitialized(true);
@@ -87,8 +92,8 @@ describe("ChatPage", () => {
 
     expect(await screen.findByRole("heading", { name: "Workspace assistant" })).toBeInTheDocument();
     expect(await screen.findByRole("button", { name: /^first chat$/i })).toHaveAttribute("aria-current", "true");
-    expect(agentsApi.listSessions).toHaveBeenCalledWith(workspaceId, agentId, expect.any(AbortSignal));
-    expect(agentsApi.listMessages).toHaveBeenCalledWith(workspaceId, agentId, sessionId, expect.any(AbortSignal));
+    expect(chatSessionsApi.listSessions).toHaveBeenCalledWith(workspaceId, agentId, expect.any(AbortSignal));
+    expect(chatSessionsApi.listMessages).toHaveBeenCalledWith(workspaceId, agentId, sessionId, expect.any(AbortSignal));
   });
 
   it("exposes the chat workbench landmarks and named message viewport", async () => {
@@ -109,7 +114,7 @@ describe("ChatPage", () => {
 
   it("creates, prepends, and selects a new conversation", async () => {
     const user = userEvent.setup();
-    agentsApi.listSessions
+    chatSessionsApi.listSessions
       .mockResolvedValueOnce(sessions)
       .mockResolvedValueOnce([createdSession, ...sessions]);
     renderPage();
@@ -117,7 +122,7 @@ describe("ChatPage", () => {
 
     await user.click(screen.getByRole("button", { name: /new conversation/i }));
 
-    await waitFor(() => expect(agentsApi.createSession).toHaveBeenCalledWith(workspaceId, agentId, {}));
+    await waitFor(() => expect(chatSessionsApi.createSession).toHaveBeenCalledWith(workspaceId, agentId, {}));
     await waitFor(() => {
       const conversationButtons = screen.getAllByRole("button", { name: /^new conversation$/i });
       expect(conversationButtons.at(-1)).toHaveAttribute("aria-current", "true");
@@ -132,7 +137,7 @@ describe("ChatPage", () => {
 
     await user.click(screen.getByRole("button", { name: /delete first chat/i }));
 
-    await waitFor(() => expect(agentsApi.deleteSession).toHaveBeenCalledWith(workspaceId, agentId, sessionId));
+    await waitFor(() => expect(chatSessionsApi.deleteSession).toHaveBeenCalledWith(workspaceId, agentId, sessionId));
     expect(screen.getByRole("button", { name: /^second chat$/i })).toHaveAttribute("aria-current", "true");
   });
 

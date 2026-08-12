@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
-import type { ChatMessage as ChatMessageData } from "../types/agent";
+import type { ChatMessage as ChatMessageData } from "../types/chat";
 import { ChatMessage } from "./ChatMessage";
 
 const assistantMessage: ChatMessageData = {

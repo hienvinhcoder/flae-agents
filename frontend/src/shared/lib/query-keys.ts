@@ -41,9 +41,9 @@ export const queryKeys = {
     ["workspaces", workspaceId, "agents", "default"] as const,
   agentDetail: (workspaceId: string, agentId: string) =>
     ["workspaces", workspaceId, "agents", "detail", agentId] as const,
-  agentSessions: (workspaceId: string, agentId: string) =>
+  chatSessions: (workspaceId: string, agentId: string) =>
     ["workspaces", workspaceId, "agents", agentId, "sessions"] as const,
-  agentMessages: (
+  chatMessages: (
     workspaceId: string,
     agentId: string,
     sessionId: string,

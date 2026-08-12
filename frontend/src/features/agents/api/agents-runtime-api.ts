@@ -4,7 +4,6 @@ import { env } from "../../../core/config/env";
 import type {
   AgentCreatePayload,
   AgentUpdatePayload,
-  ChatSessionCreatePayload,
 } from "../types/agent";
 import * as agentsApi from "./agents-api";
 
@@ -35,24 +34,3 @@ export const updateAgent = (
 ) => agentsApi.updateAgent(workspaceId, agentId, payload, client);
 export const deleteAgent = (workspaceId: string, agentId: string) =>
   agentsApi.deleteAgent(workspaceId, agentId, client);
-export const listSessions = (
-  workspaceId: string,
-  agentId: string,
-  signal?: AbortSignal,
-) => agentsApi.listSessions(workspaceId, agentId, client, signal);
-export const createSession = (
-  workspaceId: string,
-  agentId: string,
-  payload: ChatSessionCreatePayload = {},
-) => agentsApi.createSession(workspaceId, agentId, payload, client);
-export const deleteSession = (
-  workspaceId: string,
-  agentId: string,
-  sessionId: string,
-) => agentsApi.deleteSession(workspaceId, agentId, sessionId, client);
-export const listMessages = (
-  workspaceId: string,
-  agentId: string,
-  sessionId: string,
-  signal?: AbortSignal,
-) => agentsApi.listMessages(workspaceId, agentId, sessionId, client, signal);

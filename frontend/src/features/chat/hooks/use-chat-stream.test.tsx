@@ -2,7 +2,7 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AppError } from "../../../core/api/errors";
-import type { ChatMessage } from "../../agents/types/agent";
+import type { ChatMessage } from "../types/chat";
 import type { StreamEvent } from "../types/stream";
 import { useChatStream } from "./use-chat-stream";
 

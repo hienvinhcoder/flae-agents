@@ -6,10 +6,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { queryKeys } from "../../../shared/lib/query-keys";
 import { useWorkspaceStore } from "../../../core/stores/workspace-store";
 import {
-  useMessages,
-  useSessionActions,
-  useSessions,
-} from "./use-sessions";
+  useConversationActions,
+  useConversationMessages,
+  useConversationSessions,
+} from "./use-conversations";
 
 const runtimeApi = vi.hoisted(() => ({
   createSession: vi.fn(),
@@ -18,7 +18,7 @@ const runtimeApi = vi.hoisted(() => ({
   listSessions: vi.fn(),
 }));
 
-vi.mock("../api/agents-runtime-api", () => runtimeApi);
+vi.mock("../api/chat-sessions-runtime-api", () => runtimeApi);
 
 const workspaceId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const otherWorkspaceId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
@@ -44,7 +44,7 @@ function createWrapper(queryClient: QueryClient) {
   };
 }
 
-describe("agent session queries", () => {
+describe("conversation queries", () => {
   beforeEach(() => {
     Object.values(runtimeApi).forEach((mock) => mock.mockReset());
     useWorkspaceStore.getState().reset();
@@ -57,10 +57,10 @@ describe("agent session queries", () => {
       defaultOptions: { queries: { retry: false } },
     });
 
-    renderHook(() => useSessions(null, agentId), {
+    renderHook(() => useConversationSessions(null, agentId), {
       wrapper: createWrapper(queryClient),
     });
-    renderHook(() => useSessions(workspaceId, null), {
+    renderHook(() => useConversationSessions(workspaceId, null), {
       wrapper: createWrapper(queryClient),
     });
 
@@ -73,7 +73,7 @@ describe("agent session queries", () => {
       defaultOptions: { queries: { retry: false } },
     });
     const { result } = renderHook(
-      () => useSessions(workspaceId, agentId),
+      () => useConversationSessions(workspaceId, agentId),
       { wrapper: createWrapper(queryClient) },
     );
 
@@ -84,7 +84,7 @@ describe("agent session queries", () => {
       expect.any(AbortSignal),
     );
     expect(
-      queryClient.getQueryData(queryKeys.agentSessions(workspaceId, agentId)),
+      queryClient.getQueryData(queryKeys.chatSessions(workspaceId, agentId)),
     ).toEqual([session]);
   });
 
@@ -94,21 +94,21 @@ describe("agent session queries", () => {
     const queryClient = new QueryClient();
     const invalidate = vi.spyOn(queryClient, "invalidateQueries");
     const { result } = renderHook(
-      () => useSessionActions(workspaceId, agentId),
+      () => useConversationActions(workspaceId, agentId),
       { wrapper: createWrapper(queryClient) },
     );
     queryClient.setQueryData(
-      queryKeys.agentSessions(workspaceId, agentId),
+      queryKeys.chatSessions(workspaceId, agentId),
       [],
     );
 
     await act(() => result.current.create.mutateAsync({ title: "Launch questions" }));
     expect(
-      queryClient.getQueryData(queryKeys.agentSessions(workspaceId, agentId)),
+      queryClient.getQueryData(queryKeys.chatSessions(workspaceId, agentId)),
     ).toEqual([session]);
     expect(invalidate).toHaveBeenCalledWith({
       exact: true,
-      queryKey: queryKeys.agentSessions(workspaceId, agentId),
+      queryKey: queryKeys.chatSessions(workspaceId, agentId),
     });
     invalidate.mockClear();
     await act(() => result.current.remove.mutateAsync(sessionId));
@@ -116,10 +116,10 @@ describe("agent session queries", () => {
     await act(() => result.current.remove.mutateAsync(sessionId));
     expect(invalidate).toHaveBeenCalledWith({
       exact: true,
-      queryKey: queryKeys.agentSessions(workspaceId, agentId),
+      queryKey: queryKeys.chatSessions(workspaceId, agentId),
     });
     expect(
-      queryClient.getQueryData(queryKeys.agentSessions(workspaceId, agentId)),
+      queryClient.getQueryData(queryKeys.chatSessions(workspaceId, agentId)),
     ).toEqual([]);
   });
 
@@ -140,7 +140,7 @@ describe("agent session queries", () => {
       defaultOptions: { queries: { retry: false } },
     });
     const { result } = renderHook(
-      () => useMessages(workspaceId, agentId, sessionId),
+      () => useConversationMessages(workspaceId, agentId, sessionId),
       { wrapper: createWrapper(queryClient) },
     );
 
@@ -153,7 +153,7 @@ describe("agent session queries", () => {
     );
     expect(
       queryClient.getQueryData(
-        queryKeys.agentMessages(workspaceId, agentId, sessionId),
+        queryKeys.chatMessages(workspaceId, agentId, sessionId),
       ),
     ).toEqual(messages);
   });
@@ -166,7 +166,7 @@ describe("agent session queries", () => {
     const queryClient = new QueryClient();
     const invalidate = vi.spyOn(queryClient, "invalidateQueries");
     const { rerender, result } = renderHook(
-      ({ selectedWorkspace }) => useSessionActions(selectedWorkspace, agentId),
+      ({ selectedWorkspace }) => useConversationActions(selectedWorkspace, agentId),
       {
         initialProps: { selectedWorkspace: workspaceId },
         wrapper: createWrapper(queryClient),
@@ -187,11 +187,11 @@ describe("agent session queries", () => {
 
     expect(invalidate).toHaveBeenCalledWith({
       exact: true,
-      queryKey: queryKeys.agentSessions(workspaceId, agentId),
+      queryKey: queryKeys.chatSessions(workspaceId, agentId),
     });
     expect(invalidate).not.toHaveBeenCalledWith({
       exact: true,
-      queryKey: queryKeys.agentSessions(otherWorkspaceId, agentId),
+      queryKey: queryKeys.chatSessions(otherWorkspaceId, agentId),
     });
   });
 });

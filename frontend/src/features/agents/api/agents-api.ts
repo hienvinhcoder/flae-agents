@@ -1,20 +1,10 @@
 import type { ApiClient, JsonValue } from "../../../core/api/client";
 import { AppError } from "../../../core/api/errors";
-import {
-  agentCreateSchema,
-  agentDetailSchema,
-  agentUpdateSchema,
-  chatMessageSchema,
-  chatSessionCreateSchema,
-  chatSessionSchema,
-} from "../schemas/agent-schema";
+import { agentCreateSchema, agentDetailSchema, agentUpdateSchema } from "../schemas/agent-schema";
 import type {
   AgentCreatePayload,
   AgentDetail,
   AgentUpdatePayload,
-  ChatMessage,
-  ChatSession,
-  ChatSessionCreatePayload,
 } from "../types/agent";
 
 function validationError(message: string) {
@@ -177,100 +167,4 @@ export async function deleteAgent(
     throw invalidData("The server returned invalid agent deletion data.");
   }
   return result;
-}
-
-export async function listSessions(
-  workspaceId: string | null,
-  agentId: string,
-  client: ApiClient,
-  signal?: AbortSignal,
-): Promise<ChatSession[]> {
-  const id = requireWorkspaceId(workspaceId);
-  const resourceId = requireResourceId(agentId, "An agent");
-  const result = chatSessionSchema.array().safeParse(
-    await client.request<unknown>({
-      auth: true,
-      method: "GET",
-      path: `${agentsPath(id)}/${resourceId}/sessions`,
-      signal,
-      workspaceId: id,
-    }),
-  );
-  if (!result.success) {
-    throw invalidData("The server returned invalid chat session data.");
-  }
-  return result.data;
-}
-
-export async function createSession(
-  workspaceId: string | null,
-  agentId: string,
-  payload: ChatSessionCreatePayload = {},
-  client: ApiClient,
-): Promise<ChatSession> {
-  const id = requireWorkspaceId(workspaceId);
-  const resourceId = requireResourceId(agentId, "An agent");
-  const parsed = chatSessionCreateSchema.safeParse(payload);
-  if (!parsed.success) {
-    throw validationError("The chat session configuration is invalid.");
-  }
-  const result = chatSessionSchema.safeParse(
-    await client.request<unknown>({
-      auth: true,
-      body: toJsonBody(parsed.data),
-      method: "POST",
-      path: `${agentsPath(id)}/${resourceId}/sessions`,
-      workspaceId: id,
-    }),
-  );
-  if (!result.success) {
-    throw invalidData("The server returned invalid chat session data.");
-  }
-  return result.data;
-}
-
-export async function deleteSession(
-  workspaceId: string | null,
-  agentId: string,
-  sessionId: string,
-  client: ApiClient,
-): Promise<boolean> {
-  const id = requireWorkspaceId(workspaceId);
-  const resourceId = requireResourceId(agentId, "An agent");
-  const chatSessionId = requireResourceId(sessionId, "A chat session");
-  const result = await client.request<unknown>({
-    auth: true,
-    method: "DELETE",
-    path: `${agentsPath(id)}/${resourceId}/sessions/${chatSessionId}`,
-    workspaceId: id,
-  });
-  if (typeof result !== "boolean") {
-    throw invalidData("The server returned invalid chat session deletion data.");
-  }
-  return result;
-}
-
-export async function listMessages(
-  workspaceId: string | null,
-  agentId: string,
-  sessionId: string,
-  client: ApiClient,
-  signal?: AbortSignal,
-): Promise<ChatMessage[]> {
-  const id = requireWorkspaceId(workspaceId);
-  const resourceId = requireResourceId(agentId, "An agent");
-  const chatSessionId = requireResourceId(sessionId, "A chat session");
-  const result = chatMessageSchema.array().safeParse(
-    await client.request<unknown>({
-      auth: true,
-      method: "GET",
-      path: `${agentsPath(id)}/${resourceId}/sessions/${chatSessionId}/messages`,
-      signal,
-      workspaceId: id,
-    }),
-  );
-  if (!result.success) {
-    throw invalidData("The server returned invalid chat message data.");
-  }
-  return result.data;
 }

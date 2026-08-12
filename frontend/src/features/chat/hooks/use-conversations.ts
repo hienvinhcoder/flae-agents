@@ -3,8 +3,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AppError } from "../../../core/api/errors";
 import { useWorkspaceStore } from "../../../core/stores/workspace-store";
 import { queryKeys } from "../../../shared/lib/query-keys";
-import * as runtimeApi from "../api/agents-runtime-api";
-import type { ChatSession, ChatSessionCreatePayload } from "../types/agent";
+import * as runtimeApi from "../api/chat-sessions-runtime-api";
+import type { ChatSession, ChatSessionCreatePayload } from "../types/chat";
 
 function hasId(value: string | null) {
   return Boolean(value?.trim());
@@ -32,7 +32,7 @@ function requireValidatedWorkspaceId(workspaceId: string | null) {
   return requireId(workspaceId, "A workspace");
 }
 
-export function useSessions(
+export function useConversationSessions(
   workspaceId: string | null,
   agentId: string | null,
 ) {
@@ -47,14 +47,14 @@ export function useSessions(
         agentId as string,
         signal,
       ),
-    queryKey: queryKeys.agentSessions(
+    queryKey: queryKeys.chatSessions(
       workspaceId ?? "none",
       agentId ?? "none",
     ),
   });
 }
 
-export function useMessages(
+export function useConversationMessages(
   workspaceId: string | null,
   agentId: string | null,
   sessionId: string | null,
@@ -75,7 +75,7 @@ export function useMessages(
         sessionId as string,
         signal,
       ),
-    queryKey: queryKeys.agentMessages(
+    queryKey: queryKeys.chatMessages(
       workspaceId ?? "none",
       agentId ?? "none",
       sessionId ?? "none",
@@ -83,7 +83,7 @@ export function useMessages(
   });
 }
 
-export function useSessionActions(
+export function useConversationActions(
   workspaceId: string | null,
   agentId: string | null,
 ) {
@@ -91,7 +91,7 @@ export function useSessionActions(
   const invalidateSessions = (workspace: string, resourceId: string) =>
     queryClient.invalidateQueries({
       exact: true,
-      queryKey: queryKeys.agentSessions(
+      queryKey: queryKeys.chatSessions(
         workspace,
         resourceId,
       ),
@@ -107,7 +107,7 @@ export function useSessionActions(
       workspace: string;
     }) => runtimeApi.createSession(workspace, resourceId, payload),
     onSuccess: (created, variables) => {
-      const queryKey = queryKeys.agentSessions(
+      const queryKey = queryKeys.chatSessions(
         variables.workspace,
         variables.resourceId,
       );
@@ -131,7 +131,7 @@ export function useSessionActions(
     onSuccess: (deleted, variables) => {
       if (!deleted) return undefined;
       queryClient.setQueryData<ChatSession[]>(
-        queryKeys.agentSessions(variables.workspace, variables.resourceId),
+        queryKeys.chatSessions(variables.workspace, variables.resourceId),
         (current = []) =>
           current.filter((session) => session.id !== variables.sessionId),
       );

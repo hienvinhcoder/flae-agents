@@ -5,14 +5,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { TestI18nProvider } from "../../../../tests/TestI18nProvider";
 import { useWorkspaceStore } from "../../../core/stores/workspace-store";
-import type { AgentDetail, ChatSession } from "../../agents/types/agent";
+import type { AgentDetail } from "../../agents/types/agent";
+import type { ChatSession } from "../types/chat";
 import { ChatExperience } from "./ChatExperience";
 
 const agentsApi = vi.hoisted(() => ({
   createSession: vi.fn(), deleteSession: vi.fn(), listMessages: vi.fn(), listSessions: vi.fn(),
 }));
 const chatApi = vi.hoisted(() => ({ streamChat: vi.fn() }));
-vi.mock("../../agents/api/agents-runtime-api", () => agentsApi);
+vi.mock("../api/chat-sessions-runtime-api", () => agentsApi);
 vi.mock("../api/chat-api", () => chatApi);
 
 const workspaceOne = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
