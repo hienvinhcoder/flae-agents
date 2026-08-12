@@ -13,9 +13,9 @@ from app.schemas.memory_query import (
 )
 from app.db.rag_repository import AuthorizationContext
 from app.schemas.discovery_catalog import CatalogListRequest
-from app.services.knowledge_catalog_service import KnowledgeCatalogService
-from app.services.knowalge_base.knowledge_query_service import KnowledgeQueryService
-from app.services.knowalge_base.tgs_models import TGSFeatures
+from app.services.knowledge.discovery.catalog_service import KnowledgeCatalogService
+from app.services.knowledge.retrieval.query_service import KnowledgeQueryService
+from app.services.knowledge.retrieval.models import TGSFeatures
 
 
 class MemoryToolInput(BaseModel):

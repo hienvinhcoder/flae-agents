@@ -6,7 +6,7 @@ import numpy as np
 
 from app.core.config import settings
 from app.db.rag_db import rag_db_manager
-from app.services.knowalge_base.cleanup import cleanup_rag_data as _cleanup_rag_data
+from app.services.knowledge.ingestion.cleanup import cleanup_rag_data as _cleanup_rag_data
 
 
 def _insert_revisioned_chunk(
@@ -153,7 +153,7 @@ async def test_cleanup_rag_data_recalculate():
     # Mock IngestionService.generate_embeddings để trả về vector giả lập mới
     new_emb = [0.9] * emb_dim
 
-    with patch("app.services.knowalge_base.ingestion_service.IngestionService.generate_embeddings") as mock_gen_emb:
+    with patch("app.services.knowledge.ingestion.service.IngestionService.generate_embeddings") as mock_gen_emb:
         mock_gen_emb.return_value = ([new_emb], 100)
 
         # Chạy dọn dẹp
@@ -293,7 +293,7 @@ async def test_cleanup_rag_data_with_topics():
     )
 
     # Mock trigger workflow của TopicService
-    with patch("app.services.srv_topic.TopicService.trigger_topic_updates_via_temporal", new_callable=AsyncMock) as mock_trigger:
+    with patch("app.services.knowledge.discovery.topics.TopicService.trigger_topic_updates_via_temporal", new_callable=AsyncMock) as mock_trigger:
         # Chạy dọn dẹp
         await _cleanup_rag_data(workspace_id, doc_to_delete)
 

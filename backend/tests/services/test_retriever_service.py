@@ -4,7 +4,7 @@ import pytest
 import pandas as pd
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from app.services.knowalge_base.retriever_service import RetrieverService
+from app.services.knowledge.retrieval.retriever import RetrieverService
 
 
 @pytest.mark.asyncio
@@ -21,8 +21,8 @@ async def test_get_embedding():
     # Mock aio.models.embed_content
     mock_client.aio.models.embed_content = AsyncMock(return_value=mock_response)
 
-    with patch("app.services.knowalge_base.retriever_service.genai.Client", return_value=mock_client):
-        with patch("app.services.knowalge_base.retriever_service.settings") as mock_settings:
+    with patch("app.services.knowledge.retrieval.retriever.genai.Client", return_value=mock_client):
+        with patch("app.services.knowledge.retrieval.retriever.settings") as mock_settings:
             mock_settings.GEMINI_API_KEY = "test_key"
             mock_settings.GEMINI_EMBEDDING_MODEL = "test_model"
             mock_settings.EMBEDDING_DIMENSIONS = 3
@@ -42,8 +42,8 @@ async def test_extract_entities_from_query():
 
     mock_client.aio.models.generate_content = AsyncMock(return_value=mock_response)
 
-    with patch("app.services.knowalge_base.retriever_service.genai.Client", return_value=mock_client):
-        with patch("app.services.knowalge_base.retriever_service.settings") as mock_settings:
+    with patch("app.services.knowledge.retrieval.retriever.genai.Client", return_value=mock_client):
+        with patch("app.services.knowledge.retrieval.retriever.settings") as mock_settings:
             mock_settings.GEMINI_API_KEY = "test_key"
             mock_settings.GEMINI_LLM_MODEL = "test_llm"
 
@@ -69,7 +69,7 @@ async def test_vector_search_sql():
 
     query_emb = np.array([0.1, 0.2, 0.3], dtype="float32")
 
-    with patch("app.services.knowalge_base.retriever_service.settings") as mock_settings:
+    with patch("app.services.knowledge.retrieval.retriever.settings") as mock_settings:
         mock_settings.EMBEDDING_DIMENSIONS = 3
         df = await RetrieverService._vector_search_sql(
             "test_ws", mock_session, "entities", query_emb, limit=5
@@ -173,7 +173,7 @@ async def test_retrieve_pipeline_flow():
                         mock_context.__aenter__.return_value = mock_session
 
                         with patch("app.db.rag_db.rag_db_manager.get_async_session", return_value=mock_context):
-                            with patch("app.services.knowalge_base.retriever_service.settings") as mock_settings:
+                            with patch("app.services.knowledge.retrieval.retriever.settings") as mock_settings:
                                 mock_settings.EMBEDDING_DIMENSIONS = 3
                                 mock_settings.RAG_SCORING_ENTITY_DEGREE_WEIGHT = 0.01
                                 mock_settings.RAG_SCORING_RELATION_DEGREE_WEIGHT = 0.01
@@ -234,7 +234,7 @@ async def test_graph_pathfinding_beam_search():
 
     mock_session.execute = AsyncMock(return_value=[mock_row_1])
 
-    with patch("app.services.knowalge_base.retriever_service.settings") as mock_settings:
+    with patch("app.services.knowledge.retrieval.retriever.settings") as mock_settings:
         mock_settings.RAG_RETRIEVAL_BFS_DEPTH = 1
         mock_settings.RAG_RETRIEVAL_BEAM_WIDTH = 2
         mock_settings.RAG_RETRIEVAL_MAX_NEIGHBORS = 5

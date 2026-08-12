@@ -192,7 +192,7 @@ Do not output any markdown formatting other than the JSON itself.
         if summary_text:
             try:
                 import asyncio
-                from app.services.knowalge_base.ingestion_service import IngestionService
+                from app.services.knowledge.ingestion.service import IngestionService
                 embs, _ = await asyncio.to_thread(
                     IngestionService.generate_embeddings,
                     [f"{topic.name}\n{summary_text}"],

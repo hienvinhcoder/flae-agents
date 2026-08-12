@@ -3,13 +3,13 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from app.core.exceptions import InvalidArgumentError
-from app.services.discovery_snapshot_repository import DiscoverySnapshotRepository
+from app.services.knowledge.discovery.snapshot_repository import DiscoverySnapshotRepository
 from tests.services.test_discovery_snapshot_service import (
     CHECKSUM,
     GRAPH_ID,
     _bundle,
 )
-from app.services.discovery_snapshot_service import DiscoverySnapshotService
+from app.services.knowledge.discovery.snapshot_service import DiscoverySnapshotService
 
 
 def _result(*, one=None):

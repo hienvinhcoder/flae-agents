@@ -4,10 +4,10 @@ from uuid import uuid4
 import pytest
 from pydantic import ValidationError
 
-from app.agents.extractor.evidence_nodes import parse_evidence_output
+from app.services.knowledge.extraction.agent.evidence_nodes import parse_evidence_output
 from app.core.exceptions import InvalidArgumentError
 from app.schemas.enrichment import EvidenceExtractionContext
-from app.services.knowalge_base.evidence_service import EvidenceService
+from app.services.knowledge.extraction.evidence_service import EvidenceService
 
 
 def _raw_extraction() -> str:

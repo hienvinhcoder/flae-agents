@@ -1,5 +1,5 @@
 from app.schemas.ingestion import ParsedBaseChunk
-from app.services.knowalge_base.chunking_service import ChunkingService
+from app.services.knowledge.ingestion.chunking import ChunkingService
 
 
 CHECKSUM = "sha256:" + "a" * 64

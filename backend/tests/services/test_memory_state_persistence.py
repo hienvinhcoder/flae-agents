@@ -9,7 +9,7 @@ from app.core.config import settings
 from app.db.rag_db import DBManager
 from app.schemas.agent_memory import SectionLocation
 from app.schemas.memory_state import MemoryStateProjection
-from app.services.memory_state_repository import MemoryStateRepository
+from app.services.knowledge.memory_state.repository import MemoryStateRepository
 
 
 def _connect():

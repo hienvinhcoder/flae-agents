@@ -16,8 +16,8 @@ from app.schemas.ingestion import (
     IngestionBootstrapInput,
     SourceRevisionReference,
 )
-from app.services.knowalge_base import ingestion_workflow_starter
-from app.services.knowalge_base.ingestion_start_service import (
+from app.services.knowledge.ingestion import workflow_starter as ingestion_workflow_starter
+from app.services.knowledge.ingestion.start_service import (
     IngestionStartService,
 )
 from app.temporal.workflows.discoverable_memory_ingestion import (

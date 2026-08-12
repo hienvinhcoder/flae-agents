@@ -1,7 +1,7 @@
 from uuid import uuid4
 
 from app.schemas.graph_enrichment import ResolutionObservation
-from app.services.knowalge_base.entity_resolution_service import (
+from app.services.knowledge.graph.entity_resolution_service import (
     EntityResolutionService,
 )
 

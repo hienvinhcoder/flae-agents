@@ -10,7 +10,7 @@ from app.schemas.graph_semantics import (
     EntitySemanticEvidence,
     RelationshipSemanticEvidence,
 )
-from app.services.knowalge_base.graph_semantic_service import GraphSemanticService
+from app.services.knowledge.graph.semantic_service import GraphSemanticService
 
 
 FIXTURE_PATH = Path(__file__).parent / "fixtures" / "tgs_ingestion_parity.json"

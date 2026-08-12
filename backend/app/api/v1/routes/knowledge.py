@@ -28,10 +28,10 @@ from app.schemas.knowledge import (
     KnowledgeSearchResponse,
 )
 from app.schemas.memory_query import MemoryQueryBudget, MemoryQueryRequest
-from app.services.knowledge_base_srv import KnowledgeBaseService
-from app.services.knowledge_graph_srv import KnowledgeGraphService
-from app.services.knowalge_base.knowledge_query_service import KnowledgeQueryService
-from app.services.knowalge_base.memory_query_factory import (
+from app.services.knowledge.documents import KnowledgeBaseService
+from app.services.knowledge.graph.api_service import KnowledgeGraphService
+from app.services.knowledge.retrieval.query_service import KnowledgeQueryService
+from app.services.knowledge.retrieval.query_factory import (
     create_memory_query_service,
 )
 from app.core.logger import get_logger

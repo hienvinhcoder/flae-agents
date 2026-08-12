@@ -18,8 +18,8 @@ from app.agents.memory.state import (
 from app.agents.memory.tools import build_catalog_tools, build_memory_tools
 from app.db.rag_repository import AuthorizationContext
 from app.core.langsmith import MemoryTraceSink
-from app.services.knowalge_base.knowledge_query_service import KnowledgeQueryService
-from app.services.knowledge_catalog_service import KnowledgeCatalogService
+from app.services.knowledge.retrieval.query_service import KnowledgeQueryService
+from app.services.knowledge.discovery.catalog_service import KnowledgeCatalogService
 
 
 SYSTEM_PROMPT = """You are the FLAE Company Memory agent.

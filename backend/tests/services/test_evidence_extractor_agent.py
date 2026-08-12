@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from langchain_core.messages import AIMessage
 
-from app.agents.extractor.evidence_graph import run_evidence_extraction_agent
+from app.services.knowledge.extraction.agent.evidence_graph import run_evidence_extraction_agent
 
 
 @pytest.mark.asyncio

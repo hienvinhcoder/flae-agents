@@ -15,7 +15,7 @@ from app.schemas.discovery_catalog import (
     AuthorizedCatalogSnapshot,
     CatalogListRequest,
 )
-from app.services.knowledge_catalog_service import KnowledgeCatalogService
+from app.services.knowledge.discovery.catalog_service import KnowledgeCatalogService
 from tests.services.test_discovery_snapshot_service import _bundle
 
 

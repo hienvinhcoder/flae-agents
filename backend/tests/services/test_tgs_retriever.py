@@ -1,7 +1,7 @@
 import pytest
 
 from app.core.exceptions import InvalidArgumentError
-from app.services.knowalge_base.tgs_models import (
+from app.services.knowledge.retrieval.models import (
     TGSChunkCandidate,
     TGSEntityCandidate,
     TGSFeatures,
@@ -9,7 +9,7 @@ from app.services.knowalge_base.tgs_models import (
     TGSRelationshipCandidate,
     TGSRetrievalConfig,
 )
-from app.services.knowalge_base.tgs_retriever import TGSRetriever
+from app.services.knowledge.retrieval.tgs_retriever import TGSRetriever
 
 
 def _graph() -> TGSGraph:

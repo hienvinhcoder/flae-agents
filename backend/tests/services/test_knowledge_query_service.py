@@ -1,10 +1,10 @@
 from app.schemas.agent_memory import FacetState
 from app.schemas.memory_query import MemoryQueryBudget, MemoryQueryRequest, MemoryReadiness
-from app.services.knowalge_base.knowledge_query_service import (
+from app.services.knowledge.retrieval.query_service import (
     KnowledgeQueryService,
     TGSQueryData,
 )
-from app.services.knowalge_base.tgs_models import (
+from app.services.knowledge.retrieval.models import (
     TGSChunkCandidate,
     TGSEntityCandidate,
     TGSGraph,

@@ -7,7 +7,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.schemas.agent_memory import AssertionPolarity, EvidenceProvenance, FacetState
-from app.services.knowalge_base.tgs_models import TGSFeatures
+from app.services.knowledge.retrieval.models import TGSFeatures
 
 
 class MemoryQueryModel(BaseModel):

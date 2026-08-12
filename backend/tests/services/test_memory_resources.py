@@ -18,7 +18,7 @@ from app.schemas.agent_memory import (
     SectionLocation,
     SourceLocation,
 )
-from app.services.knowalge_base.resource_service import (
+from app.services.knowledge.retrieval.resources import (
     ChunkIdentity,
     MemoryResourceService,
     ResourceSpan,

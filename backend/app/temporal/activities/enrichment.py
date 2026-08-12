@@ -6,7 +6,7 @@ from pydantic import ValidationError
 from temporalio import activity
 from temporalio.exceptions import ApplicationError
 
-from app.agents.extractor.evidence_graph import run_evidence_extraction_agent
+from app.services.knowledge.extraction.agent.evidence_graph import run_evidence_extraction_agent
 from app.core.config import settings
 from app.core.exceptions import InvalidArgumentError
 from app.db.rag_db import rag_db_manager
@@ -33,17 +33,17 @@ from app.schemas.graph_semantics import (
     GraphSemanticBuildInput,
     GraphSemanticBuildResult,
 )
-from app.services.knowalge_base.evidence_service import EvidenceService
-from app.services.knowalge_base.evidence_workflow_service import (
+from app.services.knowledge.extraction.evidence_service import EvidenceService
+from app.services.knowledge.extraction.workflow_service import (
     EvidenceWorkflowService,
 )
-from app.services.knowalge_base.entity_resolution_service import EntityResolutionService
-from app.services.knowalge_base.graph_projection_service import GraphProjectionService
-from app.services.knowalge_base.graph_semantic_projection_service import (
+from app.services.knowledge.graph.entity_resolution_service import EntityResolutionService
+from app.services.knowledge.graph.projection_service import GraphProjectionService
+from app.services.knowledge.graph.semantic_projection_service import (
     GraphSemanticProjectionService,
 )
-from app.services.knowalge_base.graph_snapshot_service import GraphSnapshotService
-from app.services.knowalge_base.ingestion_service import IngestionService
+from app.services.knowledge.graph.snapshot_service import GraphSnapshotService
+from app.services.knowledge.ingestion.service import IngestionService
 
 
 @activity.defn

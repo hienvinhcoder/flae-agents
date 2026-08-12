@@ -17,8 +17,8 @@ from app.schemas.ingestion import (
     SourceRevisionReference,
     StageEmbeddingInput,
 )
-from app.services.knowalge_base.publish_service import BasePublishService
-from app.services.knowalge_base.staging_service import BaseStagingService
+from app.services.knowledge.ingestion.publish import BasePublishService
+from app.services.knowledge.ingestion.staging import BaseStagingService
 
 
 def _connect_to_rag_test_database():

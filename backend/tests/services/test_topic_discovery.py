@@ -13,7 +13,7 @@ from app.schemas.topic_discovery import (
     TopicDiscoveryPolicy,
     TopicEvidenceWindow,
 )
-from app.services.topic_discovery_service import TopicDiscoveryService
+from app.services.knowledge.discovery.topic_service import TopicDiscoveryService
 
 
 WORKSPACE_ID = UUID("10000000-0000-0000-0000-000000000001")

@@ -1,7 +1,7 @@
 from typing_extensions import TypedDict
 from langchain_core.tools import tool
 from langchain_core.runnables import RunnableConfig
-from app.services.knowalge_base.retriever_service import RetrieverService
+from app.services.knowledge.retrieval.retriever import RetrieverService
 from app.core.logger import get_logger
 
 logger = get_logger(__name__)

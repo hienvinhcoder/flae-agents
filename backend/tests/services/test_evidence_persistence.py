@@ -18,24 +18,24 @@ from app.schemas.enrichment import (
     EvidenceExtractionCandidateBatch,
     EvidenceManifestVerificationInput,
 )
-from app.services.knowalge_base.evidence_service import EvidenceService
-from app.services.knowalge_base.evidence_workflow_service import (
+from app.services.knowledge.extraction.evidence_service import EvidenceService
+from app.services.knowledge.extraction.workflow_service import (
     EvidenceWorkflowService,
 )
-from app.services.knowalge_base.entity_resolution_service import (
+from app.services.knowledge.graph.entity_resolution_service import (
     EntityResolutionService,
 )
-from app.services.knowalge_base.graph_projection_service import (
+from app.services.knowledge.graph.projection_service import (
     GraphProjectionService,
 )
-from app.services.knowalge_base.graph_snapshot_service import GraphSnapshotService
-from app.services.knowalge_base.canonical_query_repository import (
+from app.services.knowledge.graph.snapshot_service import GraphSnapshotService
+from app.services.knowledge.retrieval.query_repository import (
     CanonicalQueryRepository,
 )
-from app.services.knowalge_base.knowledge_query_service import KnowledgeQueryService
+from app.services.knowledge.retrieval.query_service import KnowledgeQueryService
 from app.schemas.memory_query import MemoryQueryRequest
 from app.schemas.graph_semantics import DemoIngestionProfile, GraphSemanticBuildInput
-from app.services.knowalge_base.graph_semantic_projection_service import (
+from app.services.knowledge.graph.semantic_projection_service import (
     GraphSemanticProjectionService,
 )
 

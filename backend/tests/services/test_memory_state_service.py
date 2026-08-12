@@ -7,7 +7,7 @@ from app.schemas.memory_state import (
     MemoryStateAssertion,
     MemoryStateProjectionInput,
 )
-from app.services.memory_state_service import MemoryStateService
+from app.services.knowledge.memory_state.service import MemoryStateService
 
 
 WORKSPACE_ID = UUID("81000000-0000-0000-0000-000000000001")

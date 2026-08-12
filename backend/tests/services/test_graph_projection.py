@@ -6,7 +6,7 @@ from app.schemas.graph_enrichment import (
     ProjectionAssertion,
     ResolutionAssignment,
 )
-from app.services.knowalge_base.graph_projection_service import (
+from app.services.knowledge.graph.projection_service import (
     GraphProjectionService,
 )
 

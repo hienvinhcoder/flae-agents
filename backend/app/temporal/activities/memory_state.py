@@ -10,8 +10,8 @@ from app.schemas.memory_state import (
     MemoryStateActivityInput,
     MemoryStateProjectionResult,
 )
-from app.services.memory_state_repository import MemoryStateRepository
-from app.services.memory_state_service import MemoryStateService
+from app.services.knowledge.memory_state.repository import MemoryStateRepository
+from app.services.knowledge.memory_state.service import MemoryStateService
 
 
 @activity.defn

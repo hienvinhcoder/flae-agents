@@ -80,7 +80,7 @@ def test_get_topics():
         }
     ]
 
-    with patch("app.services.srv_topic.TopicService.get_topics", new_callable=AsyncMock) as mock_get:
+    with patch("app.services.knowledge.discovery.topics.TopicService.get_topics", new_callable=AsyncMock) as mock_get:
         mock_get.return_value = mock_topics
 
         response = client.get(f"/api/v1/workspaces/{workspace_id}/topics")
@@ -119,7 +119,7 @@ def test_get_topic_detail():
         ]
     }
 
-    with patch("app.services.srv_topic.TopicService.get_topic_detail", new_callable=AsyncMock) as mock_get:
+    with patch("app.services.knowledge.discovery.topics.TopicService.get_topic_detail", new_callable=AsyncMock) as mock_get:
         mock_get.return_value = mock_detail
 
         response = client.get(f"/api/v1/workspaces/{workspace_id}/topics/{topic_id}")
@@ -139,7 +139,7 @@ def test_update_topic():
         "status": "archived"
     }
 
-    with patch("app.services.srv_topic.TopicService.update_topic", new_callable=AsyncMock) as mock_update:
+    with patch("app.services.knowledge.discovery.topics.TopicService.update_topic", new_callable=AsyncMock) as mock_update:
         mock_update.return_value = {
             "workspace_id": workspace_id,
             "topic_id": topic_id,
@@ -163,7 +163,7 @@ def test_merge_topics():
         "source_topic_ids": ["topic-src1"]
     }
 
-    with patch("app.services.srv_topic.TopicService.merge_topics", new_callable=AsyncMock) as mock_merge:
+    with patch("app.services.knowledge.discovery.topics.TopicService.merge_topics", new_callable=AsyncMock) as mock_merge:
         mock_merge.return_value = True
 
         response = client.post(f"/api/v1/workspaces/{workspace_id}/topics/merge", json=payload)
@@ -178,7 +178,7 @@ def test_re_summarize_topic():
     workspace_id = "11111111-2222-3333-4444-555555555555"
     topic_id = "topic-1"
 
-    with patch("app.services.srv_topic.TopicService.request_re_summarize", new_callable=AsyncMock) as mock_request:
+    with patch("app.services.knowledge.discovery.topics.TopicService.request_re_summarize", new_callable=AsyncMock) as mock_request:
         response = client.post(f"/api/v1/workspaces/{workspace_id}/topics/{topic_id}/re-summarize")
 
         assert response.status_code == 200, response.text

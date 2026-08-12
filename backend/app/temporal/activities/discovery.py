@@ -5,7 +5,7 @@ from temporalio import activity
 from app.db.rag_db import rag_db_manager
 from app.schemas.discovery_catalog import DiscoverySnapshot
 from app.schemas.discovery_workflow import DiscoveryFailureInput, DiscoveryWorkflowInput
-from app.services.discovery_projection_service import DiscoveryProjectionService
+from app.services.knowledge.discovery.projection_service import DiscoveryProjectionService
 
 
 @activity.defn

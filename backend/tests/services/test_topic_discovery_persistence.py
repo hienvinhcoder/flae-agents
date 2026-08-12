@@ -7,8 +7,8 @@ import pytest
 from app.core.exceptions import InvalidArgumentError
 from app.schemas.agent_memory import MembershipDerivation, MembershipTargetKind
 from app.schemas.topic_discovery import TopicDiscoveryPolicy, TopicEvidenceWindow
-from app.services.topic_discovery_service import TopicDiscoveryService
-from app.services.topic_discovery_repository import TopicDiscoveryRepository
+from app.services.knowledge.discovery.topic_service import TopicDiscoveryService
+from app.services.knowledge.discovery.topic_repository import TopicDiscoveryRepository
 
 
 def _projection():

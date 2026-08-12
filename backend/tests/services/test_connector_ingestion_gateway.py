@@ -12,7 +12,7 @@ from app.connectors.base import (
 )
 from app.core.exceptions import InvalidArgumentError
 from app.schemas.ingestion import SourceRevisionReference
-from app.services.connector_ingestion_gateway import (
+from app.services.connectors.ingestion_gateway import (
     ConnectorGCSContentStore,
     ConnectorIngestionGateway,
 )
@@ -143,7 +143,7 @@ async def test_connector_content_store_uses_deterministic_non_pii_path(
 ) -> None:
     upload = AsyncMock(return_value="stored/path.md")
     monkeypatch.setattr(
-        "app.services.connector_ingestion_gateway.GCSStorageService.upload_file",
+        "app.services.connectors.ingestion_gateway.GCSStorageService.upload_file",
         upload,
     )
     event = _event()
@@ -167,7 +167,7 @@ async def test_connector_content_store_rejects_mismatched_checksum(
 ) -> None:
     upload = AsyncMock()
     monkeypatch.setattr(
-        "app.services.connector_ingestion_gateway.GCSStorageService.upload_file",
+        "app.services.connectors.ingestion_gateway.GCSStorageService.upload_file",
         upload,
     )
     event = _event().model_copy(

@@ -20,7 +20,7 @@ from app.schemas.topics import (
     TopicUpdate,
     TopicMergeRequest,
 )
-from app.services.srv_topic import TopicService
+from app.services.knowledge.discovery.topics import TopicService
 from app.core.logger import get_logger
 
 logger = get_logger(__name__)

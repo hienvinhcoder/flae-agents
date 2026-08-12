@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 
 def test_parse_extraction_output():
-    from app.services.knowalge_base.ingestion_helpers import parse_extraction_output
+    from app.services.knowledge.ingestion.helpers import parse_extraction_output
 
     # Chuỗi giả định kết quả trả về từ LLM
     raw_output = (
@@ -32,10 +32,10 @@ def test_parse_extraction_output():
 
 
 async def test_extract_entities_from_chunks_no_api_key():
-    from app.services.knowalge_base.ingestion_service import IngestionService
+    from app.services.knowledge.ingestion.service import IngestionService
 
     # Kiểm tra trường hợp GEMINI_API_KEY không có
-    with patch("app.services.knowalge_base.ingestion_service.settings") as mock_settings:
+    with patch("app.services.knowledge.ingestion.service.settings") as mock_settings:
         mock_settings.GEMINI_API_KEY = None
 
         entities, relations, tokens = await IngestionService.extract_entities_from_chunks([{"text": "Hello", "chunk_id": "1"}], "test-workspace-id")
@@ -46,10 +46,10 @@ async def test_extract_entities_from_chunks_no_api_key():
 
 @pytest.mark.asyncio
 async def test_extract_entities_from_chunks_passes_glean_max():
-    from app.services.knowalge_base.ingestion_service import IngestionService
+    from app.services.knowledge.ingestion.service import IngestionService
 
-    with patch("app.services.knowalge_base.ingestion_service.settings") as mock_settings, \
-         patch("app.agents.extractor.graph.run_extraction_agent") as mock_run_agent:
+    with patch("app.services.knowledge.ingestion.service.settings") as mock_settings, \
+         patch("app.services.knowledge.extraction.agent.graph.run_extraction_agent") as mock_run_agent:
 
         mock_settings.GEMINI_API_KEY = "fake-key"
         mock_settings.GEMINI_LLM_MODEL = "gemini-2.5-flash"
@@ -67,7 +67,7 @@ async def test_extract_entities_from_chunks_passes_glean_max():
 
 
 def test_fuse_and_save_success():
-    from app.services.knowalge_base.ingestion_service import IngestionService
+    from app.services.knowledge.ingestion.service import IngestionService
     from unittest.mock import patch
 
     workspace_id = "test-workspace-id"
@@ -83,7 +83,7 @@ def test_fuse_and_save_success():
     source_doc_id = "test-doc-id"
 
     with patch("app.db.rag_db.rag_db_manager") as mock_db_manager:
-        with patch("app.services.knowalge_base.ingestion_service.IngestionService.generate_embeddings") as mock_gen_embeddings:
+        with patch("app.services.knowledge.ingestion.service.IngestionService.generate_embeddings") as mock_gen_embeddings:
             mock_gen_embeddings.side_effect = [
                 ([[0.2] * 768, [0.2] * 768], 0), # entity embeddings (cho cả Apple và iPhone placeholder)
                 ([[0.3] * 768], 0), # relation embeddings
@@ -220,7 +220,7 @@ def test_save_df_sql_generation_with_overwrite():
 
 
 def test_fuse_and_save_with_summarization():
-    from app.services.knowalge_base.ingestion_service import IngestionService
+    from app.services.knowledge.ingestion.service import IngestionService
     from unittest.mock import patch
     import pandas as pd
     import numpy as np
@@ -245,8 +245,8 @@ def test_fuse_and_save_with_summarization():
             {"relation_id": "rel_1", "source_id": "ent_1", "source_name": "Apple", "target_id": "ent_2", "target_name": "iPhone", "keywords": "creates", "description": "creates phone consolidated summary", "source_chunk_ids": ["chunk_1"], "frequency": 2, "embedding": None, "degree": 0}
         ]
 
-        with patch("app.services.knowalge_base.fusion_service.run_incremental_fusion", return_value=(fused_entities, fused_relations, 50, {"ent_1"})) as mock_fusion:
-            with patch("app.services.knowalge_base.ingestion_service.IngestionService.generate_embeddings") as mock_gen_embeddings:
+        with patch("app.services.knowledge.extraction.fusion.run_incremental_fusion", return_value=(fused_entities, fused_relations, 50, {"ent_1"})) as mock_fusion:
+            with patch("app.services.knowledge.ingestion.service.IngestionService.generate_embeddings") as mock_gen_embeddings:
                 mock_gen_embeddings.side_effect = [
                     ([[0.2] * 768], 0), # entity embeddings
                     ([[0.3] * 768], 0), # relation embeddings
@@ -286,7 +286,7 @@ def test_fuse_and_save_with_summarization():
 
 
 def test_run_incremental_fusion_whitespace_and_meta_merge():
-    from app.services.knowalge_base.fusion_service import run_incremental_fusion
+    from app.services.knowledge.extraction.fusion import run_incremental_fusion
     import pandas as pd
     from unittest.mock import MagicMock, patch
 
@@ -349,7 +349,7 @@ def test_run_incremental_fusion_whitespace_and_meta_merge():
     mock_db_manager.load_df.side_effect = mock_load_df
 
     # Mock Gemini summarization call để tránh gọi LLM thực tế
-    with patch("app.services.knowalge_base.fusion_service._merge_and_summarize_group") as mock_summarize:
+    with patch("app.services.knowledge.extraction.fusion._merge_and_summarize_group") as mock_summarize:
         mock_summarize.side_effect = [
             ("Consolidated Apple desc", 0),      # entity summary
             ("Consolidated relation desc", 0),  # relation summary
@@ -381,7 +381,7 @@ def test_run_incremental_fusion_whitespace_and_meta_merge():
 
 
 def test_fuse_and_save_with_nan_and_zero_dim_embedding():
-    from app.services.knowalge_base.ingestion_service import IngestionService
+    from app.services.knowledge.ingestion.service import IngestionService
     from unittest.mock import patch, MagicMock
     import numpy as np
 
@@ -405,8 +405,8 @@ def test_fuse_and_save_with_nan_and_zero_dim_embedding():
             {"relation_id": "rel_1", "source_id": "ent_1", "source_name": "Apple", "target_id": "ent_2", "target_name": "iPhone", "keywords": "creates", "description": "creates phone", "source_chunk_ids": ["chunk_1"], "frequency": 2, "embedding": np.array(None), "degree": 0}
         ]
 
-        with patch("app.services.knowalge_base.fusion_service.run_incremental_fusion", return_value=(fused_entities, fused_relations, 50, {"ent_1"})) as mock_fusion:
-            with patch("app.services.knowalge_base.ingestion_service.IngestionService.generate_embeddings") as mock_gen_embeddings:
+        with patch("app.services.knowledge.extraction.fusion.run_incremental_fusion", return_value=(fused_entities, fused_relations, 50, {"ent_1"})) as mock_fusion:
+            with patch("app.services.knowledge.ingestion.service.IngestionService.generate_embeddings") as mock_gen_embeddings:
                 mock_gen_embeddings.side_effect = [
                     ([[0.2] * 768], 0), # entity embeddings
                     ([[0.3] * 768], 0), # relation embeddings
@@ -431,7 +431,7 @@ def test_fuse_and_save_with_nan_and_zero_dim_embedding():
 
 
 def test_run_incremental_fusion_case_insensitivity_and_newline():
-    from app.services.knowalge_base.fusion_service import run_incremental_fusion, clean_entity_name
+    from app.services.knowledge.extraction.fusion import run_incremental_fusion, clean_entity_name
     import pandas as pd
     from unittest.mock import MagicMock, patch
 
@@ -494,7 +494,7 @@ def test_run_incremental_fusion_case_insensitivity_and_newline():
     mock_db_manager.load_df.side_effect = mock_load_df
 
     # Mock Gemini summarization call
-    with patch("app.services.knowalge_base.fusion_service._merge_and_summarize_group") as mock_summarize:
+    with patch("app.services.knowledge.extraction.fusion._merge_and_summarize_group") as mock_summarize:
         mock_summarize.side_effect = [
             ("Consolidated cloud desc", 0),      # entity summary
             ("Consolidated relation desc", 0),  # relation summary

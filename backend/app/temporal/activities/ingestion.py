@@ -25,11 +25,11 @@ from app.schemas.ingestion import (
     StageEmbeddingInput,
 )
 from app.services.storage.gcs import GCSStorageService
-from app.services.knowalge_base.chunking_service import ChunkingService
-from app.services.knowalge_base.ingestion_service import IngestionService
-from app.services.knowalge_base.parser_service import ParserService
-from app.services.knowalge_base.publish_service import BasePublishService
-from app.services.knowalge_base.staging_service import BaseStagingService
+from app.services.knowledge.ingestion.chunking import ChunkingService
+from app.services.knowledge.ingestion.service import IngestionService
+from app.services.knowledge.ingestion.parser import ParserService
+from app.services.knowledge.ingestion.publish import BasePublishService
+from app.services.knowledge.ingestion.staging import BaseStagingService
 
 
 HEARTBEAT_INTERVAL_SECONDS = 10.0
@@ -161,7 +161,7 @@ async def update_document_status_activity(
     command: DocumentIngestionStatusInput,
 ) -> None:
     """Synchronize compact ingestion lifecycle state to core document metadata."""
-    from app.services.knowledge_base_srv import KnowledgeBaseService
+    from app.services.knowledge.documents import KnowledgeBaseService
 
     async with AsyncSessionLocal() as session:
         if command.status == "completed":

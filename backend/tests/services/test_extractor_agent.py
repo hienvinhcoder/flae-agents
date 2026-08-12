@@ -1,8 +1,8 @@
 import pytest
 from unittest.mock import MagicMock, AsyncMock, patch
 from langchain_core.messages import AIMessage
-from app.agents.extractor.graph import run_extraction_agent
-from app.agents.extractor.nodes import _parse_llm_output
+from app.services.knowledge.extraction.agent.graph import run_extraction_agent
+from app.services.knowledge.extraction.agent.nodes import _parse_llm_output
 
 
 def test_parse_llm_output():

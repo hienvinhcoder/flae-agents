@@ -1,7 +1,7 @@
 from langchain_core.messages import SystemMessage, AIMessage, HumanMessage
 from app.agents.qa.state import QAAgentState
 from app.agents.shared.models import get_gemini_llm
-from app.services.knowalge_base.retriever_service import RetrieverService
+from app.services.knowledge.retrieval.retriever import RetrieverService
 from app.core.logger import get_logger
 
 logger = get_logger(__name__)

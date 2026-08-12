@@ -12,7 +12,7 @@ from app.schemas.discovery_catalog import (
     DiscoverySnapshotBasis,
 )
 from app.schemas.topic_discovery import TopicDiscoveryResult
-from app.services.discovery_snapshot_service import DiscoverySnapshotService
+from app.services.knowledge.discovery.snapshot_service import DiscoverySnapshotService
 
 
 WORKSPACE_ID = UUID("70000000-0000-0000-0000-000000000001")

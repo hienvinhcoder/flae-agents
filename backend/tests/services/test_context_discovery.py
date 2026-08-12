@@ -8,7 +8,7 @@ from app.schemas.context_discovery import (
     ContextDiscoveryPolicy,
     ContextEvidenceSignal,
 )
-from app.services.context_discovery_service import ContextDiscoveryService
+from app.services.knowledge.discovery.context_service import ContextDiscoveryService
 
 
 WORKSPACE_ID = UUID("60000000-0000-0000-0000-000000000001")

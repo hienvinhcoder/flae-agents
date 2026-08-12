@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock, patch
-from app.services.knowalge_base.parser_service import ParserService
+from app.services.knowledge.ingestion.parser import ParserService
 
 
 def test_convert_pdf_to_markdown_returns_str_when_to_markdown_returns_str():

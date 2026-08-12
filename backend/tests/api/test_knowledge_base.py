@@ -22,7 +22,7 @@ from app.schemas.knowledge import (
     KnowledgeGraphResponse,
     ManualDocumentCreate,
 )
-from app.services.knowledge_base_srv import KnowledgeBaseService
+from app.services.knowledge.documents import KnowledgeBaseService
 
 # Khôi phục require_roles ngay lập tức để tránh làm hỏng các test case của file khác
 patcher.stop()
@@ -134,11 +134,11 @@ async def test_create_manual_document_uploads_exact_utf8_bytes_without_flag(
     upload = AsyncMock(return_value="workspace/manual/document.md")
     start_workflow = AsyncMock(return_value="knowledge-ingestion-v1-run")
     monkeypatch.setattr(
-        "app.services.knowledge_base_srv.GCSStorageService.upload_file",
+        "app.services.knowledge.documents.GCSStorageService.upload_file",
         upload,
     )
     monkeypatch.setattr(
-        "app.services.knowledge_base_srv._start_ingestion_workflow",
+        "app.services.knowledge.documents._start_ingestion_workflow",
         start_workflow,
     )
     db = FakeSession()

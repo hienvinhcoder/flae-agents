@@ -7,7 +7,7 @@ from app.schemas.enrichment import (
     EvidenceExtractionCandidateBatch,
     EvidenceExtractionContext,
 )
-from app.services.knowalge_base.evidence_service import EvidenceService
+from app.services.knowledge.extraction.evidence_service import EvidenceService
 
 
 def _payload() -> dict[str, object]:
