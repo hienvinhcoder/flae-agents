@@ -1,4 +1,4 @@
-from app.db.rag_models import RagBase
+from app.models.rag.records import RagBase
 
 
 def test_rag_model_metadata_contains_revision_provenance_and_evidence_tables() -> None:

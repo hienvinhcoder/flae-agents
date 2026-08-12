@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from app.db.rag_repository import AuthorizationContext
+from app.services.knowledge.repositories.tenant import AuthorizationContext
 from app.services.knowledge.discovery.catalog_repository import KnowledgeCatalogRepository
 from tests.services.test_knowledge_catalog_service import PUBLIC_EVIDENCE, _view
 

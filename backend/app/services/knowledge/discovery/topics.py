@@ -9,7 +9,7 @@ from app.core.config import settings
 from app.core.logger import get_logger
 from app.core.exceptions import ResourceNotFoundError
 from app.db.rag_db import rag_db_manager
-from app.models.topic import Topic, TopicMembership, TopicAlias, TopicUpdateQueue
+from app.models.rag.topics import Topic, TopicAlias, TopicMembership, TopicUpdateQueue
 from app.core.temporal import get_temporal_client
 from app.services.knowledge.discovery.topic_resolver import slugify
 

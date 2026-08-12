@@ -8,7 +8,7 @@ from sqlalchemy import text
 
 from app.core.config import settings
 from app.db.rag_db import DBManager
-from app.db.rag_repository import AuthorizationContext
+from app.services.knowledge.repositories.tenant import AuthorizationContext
 from app.schemas.memory_query import MemoryCitation, MemoryEvidenceExplanation
 from app.core.exceptions import ResourceNotFoundError
 from app.services.knowledge.retrieval.query_service import (

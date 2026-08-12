@@ -10,7 +10,7 @@ from sqlalchemy.engine import make_url
 from app.core.config import settings
 from app.core.exceptions import InvalidArgumentError
 from app.db.rag_db import DBManager
-from app.db.rag_repository import AuthorizationContext
+from app.services.knowledge.repositories.tenant import AuthorizationContext
 from app.schemas.agent_memory import FacetState
 from app.schemas.enrichment import (
     EvidenceBatchPlanInput,

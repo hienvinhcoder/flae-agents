@@ -12,7 +12,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.core.exceptions import InvalidArgumentError, ResourceNotFoundError
-from app.db.rag_repository import RagRepository
+from app.services.knowledge.repositories.tenant import RagRepository
 from app.schemas.agent_memory import ResourceKind, SourceLocation
 
 

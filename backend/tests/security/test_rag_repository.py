@@ -7,7 +7,7 @@ from sqlalchemy.engine import make_url
 
 from app.core.config import settings
 from app.db.rag_db import rag_db_manager
-from app.db.rag_repository import (
+from app.services.knowledge.repositories.tenant import (
     AuthorizationContext,
     CandidateBudget,
     RagRepository,

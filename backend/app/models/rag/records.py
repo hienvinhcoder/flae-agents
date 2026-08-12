@@ -406,5 +406,5 @@ class AssertionQualifierRecord(RagBase):
 
 
 # Register graph-version tables on the same RAG metadata without growing this file.
-from app.db import rag_graph_models as _rag_graph_models  # noqa: E402,F401
-from app.db import rag_memory_state_models as _rag_memory_state_models  # noqa: E402,F401
+from app.models.rag import graph as _graph  # noqa: E402,F401
+from app.models.rag import memory_state as _memory_state  # noqa: E402,F401

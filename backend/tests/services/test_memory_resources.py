@@ -8,7 +8,7 @@ from sqlalchemy.engine import make_url
 from app.core.config import settings
 from app.core.exceptions import ResourceNotFoundError
 from app.db.rag_db import DBManager
-from app.db.rag_repository import AuthorizationContext, RagRepository
+from app.services.knowledge.repositories.tenant import AuthorizationContext, RagRepository
 from app.schemas.agent_memory import (
     CodeLocation,
     EvidenceProvenance,

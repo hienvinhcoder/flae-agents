@@ -4,15 +4,14 @@ from typing import Optional, List, Dict, Any
 
 from sqlalchemy import String, Float, Integer, Text, DateTime
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import declarative_base, Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column
 from pgvector.sqlalchemy import Vector
 
 from app.core.config import settings
+from app.models.rag.records import RagBase
 
-RAGBase = declarative_base()
 
-
-class Topic(RAGBase):
+class Topic(RagBase):
     __tablename__ = "topics"
 
     workspace_id: Mapped[str] = mapped_column(String, primary_key=True)
@@ -34,7 +33,7 @@ class Topic(RAGBase):
     )
 
 
-class TopicMembership(RAGBase):
+class TopicMembership(RagBase):
     __tablename__ = "topic_memberships"
 
     workspace_id: Mapped[str] = mapped_column(String, primary_key=True)
@@ -48,7 +47,7 @@ class TopicMembership(RAGBase):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
-class TopicAlias(RAGBase):
+class TopicAlias(RagBase):
     __tablename__ = "topic_aliases"
 
     workspace_id: Mapped[str] = mapped_column(String, primary_key=True)
@@ -58,7 +57,7 @@ class TopicAlias(RAGBase):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
-class TopicUpdateQueue(RAGBase):
+class TopicUpdateQueue(RagBase):
     __tablename__ = "topic_update_queue"
 
     workspace_id: Mapped[str] = mapped_column(String, primary_key=True)

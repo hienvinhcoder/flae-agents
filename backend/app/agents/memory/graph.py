@@ -16,7 +16,7 @@ from app.agents.memory.state import (
     MemoryAgentRequest,
 )
 from app.agents.memory.tools import build_catalog_tools, build_memory_tools
-from app.db.rag_repository import AuthorizationContext
+from app.services.knowledge.repositories.tenant import AuthorizationContext
 from app.core.langsmith import MemoryTraceSink
 from app.services.knowledge.retrieval.query_service import KnowledgeQueryService
 from app.services.knowledge.discovery.catalog_service import KnowledgeCatalogService

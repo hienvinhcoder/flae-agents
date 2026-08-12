@@ -8,7 +8,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PostgreSQLUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.db.rag_models import RagBase
+from app.models.rag.records import RagBase
 
 
 class MemoryStateRuleRecord(RagBase):

@@ -5,7 +5,7 @@ from temporalio import activity
 from app.core.config import settings
 from app.core.logger import get_logger
 from app.db.rag_db import rag_db_manager
-from app.models.topic import Topic, TopicMembership, TopicUpdateQueue
+from app.models.rag.topics import Topic, TopicMembership, TopicUpdateQueue
 from sqlalchemy import select, update, and_, text
 
 logger = get_logger(__name__)

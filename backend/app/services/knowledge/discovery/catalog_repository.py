@@ -9,7 +9,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.core.exceptions import ExternalServiceError, ResourceNotFoundError
 from app.db.rag_db import DBManager
-from app.db.rag_repository import AuthorizationContext
+from app.services.knowledge.repositories.tenant import AuthorizationContext
 from app.schemas.context_discovery import ContextDiscoveryResult
 from app.schemas.discovery_catalog import AuthorizedCatalogSnapshot
 from app.schemas.topic_discovery import TopicDiscoveryResult

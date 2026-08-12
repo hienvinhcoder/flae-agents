@@ -5,7 +5,7 @@ from __future__ import annotations
 from uuid import UUID
 
 from app.db.rag_db import rag_db_manager
-from app.db.rag_repository import AuthorizationContext
+from app.services.knowledge.repositories.tenant import AuthorizationContext
 from app.services.knowledge.retrieval.query_repository import (
     CanonicalQueryRepository,
 )

@@ -9,7 +9,7 @@ from app.agents.memory.graph import (
     MemoryAgentRuntime,
 )
 from app.agents.memory.tools import build_catalog_tools, build_memory_tools
-from app.db.rag_repository import AuthorizationContext
+from app.services.knowledge.repositories.tenant import AuthorizationContext
 from app.schemas.memory_query import MemoryQueryRequest
 
 
