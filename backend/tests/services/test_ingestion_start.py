@@ -4,6 +4,7 @@ from uuid import NAMESPACE_URL, uuid4, uuid5
 
 import psycopg2
 import pytest
+from sqlalchemy import text
 from sqlalchemy.engine import make_url
 from temporalio.common import WorkflowIDConflictPolicy, WorkflowIDReusePolicy
 from temporalio.exceptions import WorkflowAlreadyStartedError
@@ -95,6 +96,92 @@ async def test_ingestion_bootstrap_is_idempotent_and_reference_only() -> None:
             (str(command.workspace_id), str(first.revision_id)),
         )
         assert cursor.fetchone() == (1, command.content_checksum)
+
+
+@pytest.mark.asyncio
+async def test_retry_preparation_resets_the_deterministic_revision_and_run() -> None:
+    command = IngestionBootstrapInput(
+        workspace_id=uuid4(),
+        document_id=uuid4(),
+        gcs_path="workspace/knowledge-base/retry.md",
+        source_name="Retry notes",
+        source_modified_at=datetime(2026, 7, 29, tzinfo=UTC),
+        content_checksum="sha256:" + "d" * 64,
+    )
+    manager = DBManager()
+    try:
+        service = IngestionStartService(manager)
+        initial = await service.prepare_reference(command)
+        async with manager.get_ingestion_session(str(command.workspace_id)) as session:
+            await session.execute(
+                text(
+                    """UPDATE document_revisions
+                       SET state = 'searchable', base_readiness = 'ready',
+                           graph_readiness = 'ready', discovery_readiness = 'ready'
+                       WHERE workspace_id = :workspace_id
+                         AND revision_id = :revision_id"""
+                ),
+                {
+                    "workspace_id": str(command.workspace_id),
+                    "revision_id": initial.revision_id,
+                },
+            )
+            await session.execute(
+                text(
+                    """UPDATE ingestion_runs
+                       SET status = 'completed'
+                       WHERE workspace_id = :workspace_id
+                         AND run_id = :run_id"""
+                ),
+                {
+                    "workspace_id": str(command.workspace_id),
+                    "run_id": initial.ingestion_run_id,
+                },
+            )
+            await session.commit()
+
+        retry = await service.prepare_retry_reference(command)
+
+        async with manager.get_ingestion_session(str(command.workspace_id)) as session:
+            revision = (
+                await session.execute(
+                    text(
+                        """SELECT state, base_readiness, graph_readiness,
+                                  discovery_readiness
+                           FROM document_revisions
+                           WHERE workspace_id = :workspace_id
+                             AND revision_id = :revision_id"""
+                    ),
+                    {
+                        "workspace_id": str(command.workspace_id),
+                        "revision_id": initial.revision_id,
+                    },
+                )
+            ).mappings().one()
+            run_status = await session.scalar(
+                text(
+                    """SELECT status FROM ingestion_runs
+                       WHERE workspace_id = :workspace_id
+                         AND run_id = :run_id"""
+                ),
+                {
+                    "workspace_id": str(command.workspace_id),
+                    "run_id": initial.ingestion_run_id,
+                },
+            )
+    finally:
+        await manager.close()
+
+    assert retry.ingestion_run_id == initial.ingestion_run_id
+    assert retry.revision_id == initial.revision_id
+    assert retry.expected_previous_revision_id is None
+    assert dict(revision) == {
+        "state": "staging",
+        "base_readiness": "pending",
+        "graph_readiness": "pending",
+        "discovery_readiness": "pending",
+    }
+    assert run_status == "pending"
 
 
 @pytest.mark.asyncio
@@ -223,6 +310,81 @@ async def test_document_start_always_uses_the_canonical_knowledge_workflow(
         call.kwargs["id_reuse_policy"]
         is WorkflowIDReusePolicy.REJECT_DUPLICATE
     )
+
+
+@pytest.mark.asyncio
+async def test_document_retry_allows_reusing_a_closed_workflow_id(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source = SourceRevisionReference(
+        workspace_id=uuid4(),
+        source_id=uuid4(),
+        document_id=uuid4(),
+        revision_id=uuid4(),
+        ingestion_run_id=uuid4(),
+        source_uri=f"gcs://{settings.GCS_BUCKET_NAME}/workspace/document.md",
+        source_name="Architecture notes",
+        source_type="knowledge_base",
+        source_modified_at=datetime(2026, 7, 29, tzinfo=UTC),
+        content_checksum="sha256:" + "a" * 64,
+        acl_checksum="sha256:" + "b" * 64,
+        acl_scope="workspace",
+        parser_version="markdown-v1",
+        chunker_version="structure-v1",
+        pipeline_version="v1",
+    )
+    document = MagicMock(
+        id=source.document_id,
+        workspace_id=source.workspace_id,
+        gcs_path="workspace/document.md",
+        content_checksum=source.content_checksum,
+        file_name="document.md",
+        title="Architecture notes",
+        updated_at=source.source_modified_at,
+    )
+    temporal_client = MagicMock()
+    events: list[str] = []
+
+    async def start_workflow(*args, **kwargs):
+        del args, kwargs
+        events.append("start")
+
+    temporal_client.start_workflow = AsyncMock(side_effect=start_workflow)
+
+    async def prepare_retry_reference(command):
+        del command
+        events.append("reset")
+        return source
+
+    async def cleanup_rag_data(workspace_id: str, document_id: str) -> None:
+        del workspace_id, document_id
+        events.append("cleanup")
+
+    monkeypatch.setattr(
+        ingestion_workflow_starter,
+        "get_temporal_client",
+        AsyncMock(return_value=temporal_client),
+    )
+    monkeypatch.setattr(
+        ingestion_workflow_starter.IngestionStartService,
+        "prepare_retry_reference",
+        AsyncMock(side_effect=prepare_retry_reference),
+    )
+    monkeypatch.setattr(
+        ingestion_workflow_starter,
+        "cleanup_rag_data",
+        AsyncMock(side_effect=cleanup_rag_data),
+        raising=False,
+    )
+
+    await ingestion_workflow_starter.retry_ingestion_workflow(document)
+
+    call = temporal_client.start_workflow.call_args
+    assert (
+        call.kwargs["id_reuse_policy"]
+        is WorkflowIDReusePolicy.ALLOW_DUPLICATE
+    )
+    assert events == ["reset", "cleanup", "start"]
 
 
 @pytest.mark.asyncio

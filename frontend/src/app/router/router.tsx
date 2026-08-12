@@ -35,7 +35,7 @@ export function createRouteObjects(appShell: ReactElement = runtimeAppShell): Ro
               { path: 'agents', element: createLazyElement(() => import('../../features/agents/pages/AgentListPage').then(({ AgentListPage }) => ({ default: AgentListPage }))) },
               { path: 'agents/new', element: createLazyElement(() => import('../../features/agents/pages/AgentConfigPage').then(({ AgentConfigPage }) => ({ default: AgentConfigPage }))) },
               { path: 'agents/:agentId/edit', element: createLazyElement(() => import('../../features/agents/pages/AgentConfigPage').then(({ AgentConfigPage }) => ({ default: AgentConfigPage }))) },
-              { path: 'agents/:agentId/chat', element: createLazyElement(() => import('../../features/agents/pages/AgentChatPage').then(({ AgentChatPage }) => ({ default: AgentChatPage }))) },
+              { path: 'agents/:agentId/chat', element: createLazyElement(() => import('../pages/AgentChatPage').then(({ AgentChatPage }) => ({ default: AgentChatPage }))) },
               { path: 'knowledge', element: createLazyElement(() => import('../../features/knowledge/pages/KnowledgeListPage').then(({ KnowledgeListPage }) => ({ default: KnowledgeListPage }))) },
               { path: 'knowledge/graph', element: createLazyElement(() => import('../../features/knowledge/pages/KnowledgeGraphPage').then(({ KnowledgeGraphPage }) => ({ default: KnowledgeGraphPage }))) },
               { path: 'topics', element: createLazyElement(() => import('../../features/topics/pages/TopicListPage').then(({ TopicListPage }) => ({ default: TopicListPage }))) },

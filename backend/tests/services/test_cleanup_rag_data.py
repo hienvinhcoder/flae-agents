@@ -5,8 +5,24 @@ from unittest.mock import AsyncMock, patch, MagicMock
 import numpy as np
 
 from app.core.config import settings
+from app.core.exceptions import ExternalServiceError
 from app.db.rag_db import rag_db_manager
 from app.services.knowledge.ingestion.cleanup import cleanup_rag_data as _cleanup_rag_data
+
+
+@pytest.mark.asyncio
+async def test_cleanup_rag_data_raises_when_cleanup_cannot_start(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(rag_db_manager, "initialize", MagicMock())
+    monkeypatch.setattr(
+        rag_db_manager,
+        "get_conn",
+        MagicMock(side_effect=RuntimeError("database unavailable")),
+    )
+
+    with pytest.raises(ExternalServiceError, match="Không thể dọn dẹp dữ liệu RAG"):
+        await _cleanup_rag_data(str(uuid.uuid4()), str(uuid.uuid4()))
 
 
 def _insert_revisioned_chunk(

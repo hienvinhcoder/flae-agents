@@ -22,6 +22,7 @@ from app.schemas.knowledge import (
     KnowledgeGraphResponse,
     ManualDocumentCreate,
 )
+from app.models.knowledge_base import DocumentStatus
 from app.services.knowledge.documents import KnowledgeBaseService
 
 # Khôi phục require_roles ngay lập tức để tránh làm hỏng các test case của file khác
@@ -159,3 +160,34 @@ async def test_create_manual_document_uploads_exact_utf8_bytes_without_flag(
     )
     assert db.added.gcs_path == "workspace/manual/document.md"
     assert db.added.content_checksum == "sha256:" + sha256(content_bytes).hexdigest()
+
+
+@pytest.mark.asyncio
+async def test_retry_ingestion_allows_reusing_the_closed_workflow_id(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    document = MagicMock(
+        id=uuid.uuid4(),
+        workspace_id=uuid.uuid4(),
+        title="Architecture notes",
+        status=DocumentStatus.failed,
+    )
+    result = MagicMock()
+    result.scalar_one_or_none.return_value = document
+    db = MagicMock()
+    db.execute = AsyncMock(return_value=result)
+    db.commit = AsyncMock()
+    start_workflow = AsyncMock(return_value="knowledge-ingestion-v1-run")
+    monkeypatch.setattr(
+        "app.services.knowledge.documents._retry_ingestion_workflow",
+        start_workflow,
+    )
+
+    response = await KnowledgeBaseService.retry_ingestion(
+        db,
+        document.workspace_id,
+        document.id,
+    )
+
+    assert response is not None
+    start_workflow.assert_awaited_once_with(document)

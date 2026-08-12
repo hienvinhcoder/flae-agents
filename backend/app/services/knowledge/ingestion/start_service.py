@@ -173,3 +173,100 @@ class IngestionStartService:
             pipeline_version=command.pipeline_version,
             expected_previous_revision_id=current_revision_id,
         )
+
+    async def prepare_retry_reference(
+        self, command: IngestionBootstrapInput
+    ) -> SourceRevisionReference:
+        """Reset one deterministic ingestion identity for a deliberate retry."""
+        source = await self.prepare_reference(command)
+        workspace_id = str(command.workspace_id)
+        try:
+            async with self._manager.get_ingestion_session(workspace_id) as session:
+                try:
+                    await session.execute(
+                        text(
+                            "SELECT pg_advisory_xact_lock("
+                            "hashtextextended(:workspace_id, 41721))"
+                        ),
+                        {"workspace_id": workspace_id},
+                    )
+                    current_revision_id = await session.scalar(
+                        text(
+                            """SELECT revision_id FROM document_revisions
+                               WHERE workspace_id = :workspace_id
+                                 AND document_id = :document_id
+                                 AND state = 'searchable'
+                               FOR UPDATE"""
+                        ),
+                        {
+                            "workspace_id": workspace_id,
+                            "document_id": command.document_id,
+                        },
+                    )
+                    if current_revision_id not in (None, source.revision_id):
+                        raise InvalidArgumentError(
+                            "A newer searchable revision cannot be replaced by retry."
+                        )
+                    revision = await session.execute(
+                        text(
+                            """UPDATE document_revisions
+                               SET state = 'staging', base_readiness = 'pending',
+                                   updated_at = now()
+                               WHERE workspace_id = :workspace_id
+                                 AND revision_id = :revision_id
+                                 AND state IN ('staging', 'searchable')
+                               RETURNING revision_id"""
+                        ),
+                        {
+                            "workspace_id": workspace_id,
+                            "revision_id": source.revision_id,
+                        },
+                    )
+                    if revision.scalar_one_or_none() is None:
+                        raise InvalidArgumentError(
+                            "Ingestion revision cannot be retried from its current state."
+                        )
+                    run = await session.execute(
+                        text(
+                            """UPDATE ingestion_runs
+                               SET status = 'pending', error_code = NULL,
+                                   updated_at = now()
+                               WHERE workspace_id = :workspace_id
+                                 AND run_id = :run_id
+                                 AND revision_id = :revision_id
+                               RETURNING run_id"""
+                        ),
+                        {
+                            "workspace_id": workspace_id,
+                            "run_id": source.ingestion_run_id,
+                            "revision_id": source.revision_id,
+                        },
+                    )
+                    if run.scalar_one_or_none() is None:
+                        raise InvalidArgumentError(
+                            "Ingestion run cannot be prepared for retry."
+                        )
+                    # State changes invalidate graph/discovery snapshots through
+                    # database triggers. Reset readiness after those triggers run.
+                    await session.execute(
+                        text(
+                            """UPDATE document_revisions
+                               SET graph_readiness = 'pending',
+                                   discovery_readiness = 'pending',
+                                   readiness_reason = NULL, updated_at = now()
+                               WHERE workspace_id = :workspace_id
+                                 AND revision_id = :revision_id"""
+                        ),
+                        {
+                            "workspace_id": workspace_id,
+                            "revision_id": source.revision_id,
+                        },
+                    )
+                    await session.commit()
+                except Exception:
+                    await session.rollback()
+                    raise
+        except SQLAlchemyError as error:
+            raise ExternalServiceError("Không thể chuẩn bị ingestion retry.") from error
+
+        return source.model_copy(update={"expected_previous_revision_id": None})

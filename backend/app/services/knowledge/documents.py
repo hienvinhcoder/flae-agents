@@ -29,6 +29,7 @@ from app.schemas.knowledge import (
 from app.services.storage.gcs import GCSStorageService
 from app.services.knowledge.ingestion.cleanup import cleanup_rag_data as _cleanup_rag_data
 from app.services.knowledge.ingestion.workflow_starter import (
+    retry_ingestion_workflow as _retry_ingestion_workflow,
     start_ingestion_workflow as _start_ingestion_workflow,
 )
 
@@ -279,9 +280,6 @@ class KnowledgeBaseService:
                 f"hiện tại: {doc.status.value}"
             )
 
-        # Cleanup rag data cũ trước khi retry
-        await _cleanup_rag_data(str(workspace_id), str(doc_id))
-
         # Reset metrics
         doc.status = DocumentStatus.pending
         doc.error_message = None
@@ -291,7 +289,7 @@ class KnowledgeBaseService:
         doc.token_usage = None
         doc.processing_time_seconds = None
 
-        workflow_id = await _start_ingestion_workflow(doc)
+        workflow_id = await _retry_ingestion_workflow(doc)
         doc.temporal_workflow_id = workflow_id
         await db.commit()
 

@@ -21,6 +21,14 @@ describe("feature boundaries", () => {
     expect(violations).toEqual([]);
   });
 
+  it("keeps agents independent from the chat feature", () => {
+    const violations = Object.entries(agentSources)
+      .filter(([, source]) => /from\s+["'][^"']*features\/chat|from\s+["']\.\.\/\.\.\/chat\//.test(source))
+      .map(([file]) => file);
+
+    expect(violations).toEqual([]);
+  });
+
   it("keeps app bootstrap and layout dependencies acyclic", () => {
     expect(appSources["./App.tsx"]).not.toContain("./router/router");
     expect(appSources["./layout/HeaderUtilities.tsx"]).not.toContain(

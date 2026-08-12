@@ -6,6 +6,7 @@ from typing import Any
 from psycopg2.extras import execute_values
 
 from app.core.config import settings
+from app.core.exceptions import ExternalServiceError
 from app.core.logger import get_logger
 from app.db.rag_db import rag_db_manager
 from app.services.knowledge.extraction.fusion import _merge_and_summarize_group
@@ -378,4 +379,5 @@ async def cleanup_rag_data(workspace_id: str, document_id: str) -> None:
                 conn.close()
             except Exception:
                 pass
-        logger.warning(f"Failed to cleanup RAG data: {e}")
+        logger.exception("Failed to cleanup RAG data")
+        raise ExternalServiceError("Không thể dọn dẹp dữ liệu RAG.") from e

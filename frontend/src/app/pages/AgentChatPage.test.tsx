@@ -4,9 +4,9 @@ import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { AppError } from "../../../core/api/errors";
-import { useWorkspaceStore } from "../../../core/stores/workspace-store";
-import { TestI18nProvider } from "../../../../tests/TestI18nProvider";
+import { AppError } from "../../core/api/errors";
+import { useWorkspaceStore } from "../../core/stores/workspace-store";
+import { TestI18nProvider } from "../../../tests/TestI18nProvider";
 import { AgentChatPage } from "./AgentChatPage";
 
 const agentsApi = vi.hoisted(() => ({
@@ -16,10 +16,10 @@ const chatSessionsApi = vi.hoisted(() => ({
   createSession: vi.fn(), deleteSession: vi.fn(), listMessages: vi.fn(), listSessions: vi.fn(),
 }));
 const chatApi = vi.hoisted(() => ({ streamChat: vi.fn() }));
-vi.mock("../api/agents-runtime-api", () => agentsApi);
-vi.mock("../../chat/api/chat-sessions-runtime-api", () => chatSessionsApi);
-vi.mock("../../chat/api/chat-api", () => chatApi);
-vi.mock("../../settings/api/workspace-runtime-api", () => ({ listWorkspaceMembers: vi.fn() }));
+vi.mock("../../features/agents/api/agents-runtime-api", () => agentsApi);
+vi.mock("../../features/chat/api/chat-sessions-runtime-api", () => chatSessionsApi);
+vi.mock("../../features/chat/api/chat-api", () => chatApi);
+vi.mock("../../features/settings/api/workspace-runtime-api", () => ({ listWorkspaceMembers: vi.fn() }));
 
 const workspaceId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const agentId = "11111111-1111-4111-8111-111111111111";

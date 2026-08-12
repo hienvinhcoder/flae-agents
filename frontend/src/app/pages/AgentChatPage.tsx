@@ -2,9 +2,9 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 
-import { useWorkspaceStore } from "../../../core/stores/workspace-store";
-import { ChatExperience } from "../../chat/ui/ChatExperience";
-import { useAgentDetail } from "../hooks/use-agents";
+import { useWorkspaceStore } from "../../core/stores/workspace-store";
+import { useAgentDetail } from "../../features/agents/hooks/use-agents";
+import { ChatExperience } from "../../features/chat/ui/ChatExperience";
 
 export function AgentChatPage() {
   const { t } = useTranslation();
