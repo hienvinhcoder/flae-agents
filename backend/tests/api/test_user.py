@@ -43,7 +43,7 @@ def setup_dependencies():
 
 @pytest.fixture
 def mock_workspace_service():
-    with patch("app.api.v1.endpoints.user.WorkspaceService.update_current_workspace", new_callable=AsyncMock) as mock_update:
+    with patch("app.api.v1.routes.users.WorkspaceService.update_current_workspace", new_callable=AsyncMock) as mock_update:
         mock_user = MagicMock()
         mock_user.id = uuid.UUID("11111111-2222-3333-4444-555555555555")
         mock_user.firebase_uid = "mock_firebase_uid_123"
@@ -58,7 +58,7 @@ def mock_workspace_service():
 
 @pytest.fixture
 def mock_user_service():
-    with patch("app.api.v1.endpoints.user.UserService.create_user", new_callable=AsyncMock) as mock_create:
+    with patch("app.api.v1.routes.users.UserService.create_user", new_callable=AsyncMock) as mock_create:
         mock_user = MagicMock()
         mock_user.id = uuid.UUID("11111111-2222-3333-4444-555555555555")
         mock_user.firebase_uid = "mock_firebase_uid_123"

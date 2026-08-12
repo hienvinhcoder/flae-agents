@@ -3,7 +3,7 @@ from fastapi.exceptions import RequestValidationError
 from starlette.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
-from app.api.v1.api_router import router as api_router_v1
+from app.api.v1.router import router as api_router_v1
 from app.core.logger import setup_logging
 from app.core.exceptions import (
     ApplicationError,

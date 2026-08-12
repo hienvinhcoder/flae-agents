@@ -33,7 +33,7 @@ app.dependency_overrides[get_current_workspace_id] = override_get_current_worksp
 
 @pytest.fixture
 def mock_agent_service():
-    with patch("app.api.v1.endpoints.agent.AgentService") as mock_srv:
+    with patch("app.api.v1.routes.agents.AgentService") as mock_srv:
         yield mock_srv
 
 

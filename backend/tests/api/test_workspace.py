@@ -34,7 +34,7 @@ app.dependency_overrides[get_current_workspace_id] = override_get_current_worksp
 
 @pytest.fixture
 def mock_workspace_service():
-    with patch("app.api.v1.endpoints.workspace.WorkspaceService.create_manual_workspace", new_callable=AsyncMock) as mock_create:
+    with patch("app.api.v1.routes.workspaces.WorkspaceService.create_manual_workspace", new_callable=AsyncMock) as mock_create:
         mock_workspace = MagicMock()
         mock_workspace.id = uuid.UUID("11111111-2222-3333-4444-555555555555")
         mock_workspace.name = "My Shop"
@@ -45,12 +45,12 @@ def mock_workspace_service():
 
 @pytest.fixture
 def mock_workspace_service_all():
-    with patch("app.api.v1.endpoints.workspace.WorkspaceService") as mock_srv:
+    with patch("app.api.v1.routes.workspaces.WorkspaceService") as mock_srv:
         yield mock_srv
 
 @pytest.fixture
 def mock_workspace_member_service_all():
-    with patch("app.api.v1.endpoints.workspace.WorkspaceMemberService") as mock_srv:
+    with patch("app.api.v1.routes.workspaces.WorkspaceMemberService") as mock_srv:
         yield mock_srv
 
 def test_create_manual_workspace_success(mock_workspace_service):
@@ -187,5 +187,4 @@ async def test_invite_member_rejects_owner_role():
 
     assert exc_info.value.status_code == 400
     assert "Cannot invite a member with the owner role" in exc_info.value.message
-
 

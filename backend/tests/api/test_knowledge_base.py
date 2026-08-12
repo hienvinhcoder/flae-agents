@@ -45,7 +45,7 @@ app.dependency_overrides[get_current_workspace_id] = override_get_current_worksp
 
 @pytest.fixture
 def mock_graph_service():
-    with patch("app.api.v1.endpoints.knowledge_base.KnowledgeGraphService.get_graph", new_callable=AsyncMock) as mock_get:
+    with patch("app.api.v1.routes.knowledge.KnowledgeGraphService.get_graph", new_callable=AsyncMock) as mock_get:
         mock_response = KnowledgeGraphResponse(
             nodes=[
                 GraphNode(

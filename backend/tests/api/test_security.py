@@ -322,7 +322,7 @@ async def test_require_roles_cache_miss_db_not_member():
 
 
 from app.core.security import verify_token
-from app.api.v1.endpoints.chat_stream import verify_token_stream
+from app.api.v1.routes.chat import verify_token_stream
 from fastapi.security import HTTPAuthorizationCredentials
 
 @pytest.mark.asyncio
@@ -350,7 +350,7 @@ async def test_verify_token_stream_header_success():
     mock_credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials="test_token_123")
     mock_decoded = {"uid": "user_123"}
 
-    with patch("app.api.v1.endpoints.chat_stream.auth.verify_id_token", return_value=mock_decoded) as mock_verify:
+    with patch("app.api.v1.routes.chat.auth.verify_id_token", return_value=mock_decoded) as mock_verify:
         from app.core.config import settings
         res = await verify_token_stream(credentials=mock_credentials, token=None)
         assert res == "user_123"
@@ -360,7 +360,7 @@ async def test_verify_token_stream_header_success():
 async def test_verify_token_stream_query_success():
     mock_decoded = {"uid": "user_456"}
 
-    with patch("app.api.v1.endpoints.chat_stream.auth.verify_id_token", return_value=mock_decoded) as mock_verify:
+    with patch("app.api.v1.routes.chat.auth.verify_id_token", return_value=mock_decoded) as mock_verify:
         from app.core.config import settings
         res = await verify_token_stream(credentials=None, token="query_token_456")
         assert res == "user_456"

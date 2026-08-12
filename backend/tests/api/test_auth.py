@@ -14,7 +14,7 @@ app.dependency_overrides[get_current_user_uid] = override_get_current_user_uid
 
 @pytest.fixture
 def mock_auth_service():
-    with patch("app.api.v1.endpoints.auth.auth_service.sync_firebase_user") as mock_sync:
+    with patch("app.api.v1.routes.auth.auth_service.sync_firebase_user") as mock_sync:
         mock_user = MagicMock()
         mock_user.id = "mock_firestore_id_123"
         mock_user.firebase_uid = "mock_firebase_uid_123"

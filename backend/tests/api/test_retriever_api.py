@@ -78,7 +78,7 @@ def test_search_knowledge_base_api_success():
     service.search = AsyncMock(return_value=canonical_result)
 
     with patch(
-        "app.api.v1.endpoints.knowledge_base.create_memory_query_service",
+        "app.api.v1.routes.knowledge.create_memory_query_service",
         return_value=service,
     ) as factory:
 
