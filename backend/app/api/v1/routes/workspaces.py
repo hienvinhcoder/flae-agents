@@ -13,8 +13,8 @@ from app.schemas.workspaces import (
     WorkspaceMemberUpdateRequest,
     InvitationAcceptRequest
 )
-from app.services.workspace_srv import WorkspaceService
-from app.services.workspace_member_srv import WorkspaceMemberService
+from app.services.workspaces.members import WorkspaceMemberService
+from app.services.workspaces.service import WorkspaceService
 from app.models.workspace import WorkspaceRole
 
 router = APIRouter()

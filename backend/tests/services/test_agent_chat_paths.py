@@ -7,8 +7,8 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.schemas.chat import ChatSessionCreate
-from app.services.agent_srv import AgentService
-from app.services.chat_srv import ChatService
+from app.services.agents.service import AgentService
+from app.services.chat.service import ChatService
 
 
 def scalar_result(value: object) -> MagicMock:
@@ -128,7 +128,7 @@ def stream_args() -> dict[str, object]:
 async def test_chat_stream_reports_missing_agent_and_session() -> None:
     context = SessionContext()
     with (
-        patch("app.services.chat_srv.AsyncSessionLocal", return_value=context),
+        patch("app.services.chat.service.AsyncSessionLocal", return_value=context),
         patch.object(AgentService, "get_agent", new=AsyncMock(return_value=None)),
     ):
         payloads = await collect_stream(**stream_args())
@@ -136,7 +136,7 @@ async def test_chat_stream_reports_missing_agent_and_session() -> None:
 
     agent = SimpleNamespace(model_name="model", temperature=0.2, system_prompt="prompt")
     with (
-        patch("app.services.chat_srv.AsyncSessionLocal", return_value=context),
+        patch("app.services.chat.service.AsyncSessionLocal", return_value=context),
         patch.object(AgentService, "get_agent", new=AsyncMock(return_value=agent)),
         patch.object(AgentService, "get_chat_session", new=AsyncMock(return_value=None)),
     ):
@@ -164,13 +164,13 @@ async def test_chat_stream_emits_citations_tokens_and_persists_answer() -> None:
     ])
     create_message = AsyncMock()
     with (
-        patch("app.services.chat_srv.AsyncSessionLocal", return_value=context),
+        patch("app.services.chat.service.AsyncSessionLocal", return_value=context),
         patch.object(AgentService, "get_agent", new=AsyncMock(return_value=agent)),
         patch.object(
             AgentService, "get_chat_session", new=AsyncMock(return_value=session)
         ),
         patch.object(AgentService, "create_message", new=create_message),
-        patch("app.services.chat_srv.get_qa_agent_graph", return_value=graph),
+        patch("app.services.chat.service.get_qa_agent_graph", return_value=graph),
     ):
         payloads = await collect_stream(**stream_args())
     assert [payload["type"] for payload in payloads] == ["citations", "token", "done"]
@@ -184,13 +184,13 @@ async def test_chat_stream_does_not_leak_internal_errors() -> None:
     agent = SimpleNamespace(model_name="model", temperature=0.2, system_prompt="prompt")
     graph = EventGraph([RuntimeError("private provider detail")])
     with (
-        patch("app.services.chat_srv.AsyncSessionLocal", return_value=context),
+        patch("app.services.chat.service.AsyncSessionLocal", return_value=context),
         patch.object(AgentService, "get_agent", new=AsyncMock(return_value=agent)),
         patch.object(
             AgentService, "get_chat_session", new=AsyncMock(return_value=object())
         ),
         patch.object(AgentService, "create_message", new=AsyncMock()),
-        patch("app.services.chat_srv.get_qa_agent_graph", return_value=graph),
+        patch("app.services.chat.service.get_qa_agent_graph", return_value=graph),
     ):
         payloads = await collect_stream(**stream_args())
     assert payloads == [{"type": "error", "detail": "Không thể xử lý hội thoại."}]

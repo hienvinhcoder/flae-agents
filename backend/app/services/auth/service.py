@@ -62,7 +62,7 @@ class AuthService:
         if not user.current_workspace_id:
             logger.info(f"User {firebase_uid} has no current workspace. Creating a default one.")
             try:
-                from app.services.workspace_srv import WorkspaceService
+                from app.services.workspaces.service import WorkspaceService
                 await WorkspaceService.create_default_workspace(db, firebase_uid)
                 # Refresh user sau khi workspace service đã commit current_workspace_id
                 await db.refresh(user)
@@ -77,4 +77,3 @@ class AuthService:
 
 
 auth_service = AuthService()
-

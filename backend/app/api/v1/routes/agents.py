@@ -17,7 +17,7 @@ from app.schemas.chat import (
     ChatSessionResponse,
     ChatMessageResponse,
 )
-from app.services.agent_srv import AgentService
+from app.services.agents.service import AgentService
 
 router = APIRouter()
 

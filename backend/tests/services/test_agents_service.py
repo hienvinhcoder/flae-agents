@@ -3,7 +3,7 @@ import uuid
 from unittest.mock import AsyncMock, MagicMock
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.agent_srv import AgentService
+from app.services.agents.service import AgentService
 from app.schemas.agents import AgentCreate, AgentUpdate
 from app.schemas.chat import ChatSessionCreate
 from app.models.agent import Agent, ChatSession, ChatMessage

@@ -26,7 +26,7 @@ from app.schemas.knowledge import (
     ManualDocumentCreate,
     IngestionStatusResponse,
 )
-from app.services.gcs_storage_srv import GCSStorageService
+from app.services.storage.gcs import GCSStorageService
 from app.services.knowalge_base.cleanup import cleanup_rag_data as _cleanup_rag_data
 from app.services.knowalge_base.ingestion_workflow_starter import (
     start_ingestion_workflow as _start_ingestion_workflow,

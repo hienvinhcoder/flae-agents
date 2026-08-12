@@ -166,7 +166,7 @@ def test_get_pending_invitations(mock_workspace_service_all):
 
 @pytest.mark.asyncio
 async def test_invite_member_rejects_owner_role():
-    from app.services.workspace_srv import WorkspaceService
+    from app.services.workspaces.service import WorkspaceService
     from app.schemas.workspaces import WorkspaceInvitationRequest
     from app.models.workspace import WorkspaceRole
     from app.core.exceptions import ApplicationError

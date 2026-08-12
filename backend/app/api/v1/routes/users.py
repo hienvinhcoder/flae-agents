@@ -6,8 +6,8 @@ from app.core.security import verify_token, get_current_user
 from app.core.logger import get_logger
 from app.schemas.common import DataResponse
 from app.schemas.users import UserCreateRequest, UserItemResponse, UserCurrentWorkspaceUpdateRequest
-from app.services.srv_user import UserService
-from app.services.workspace_srv import WorkspaceService
+from app.services.users.service import UserService
+from app.services.workspaces.service import WorkspaceService
 
 logger = get_logger(__name__)
 router = APIRouter()

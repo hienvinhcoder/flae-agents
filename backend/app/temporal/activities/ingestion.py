@@ -24,7 +24,7 @@ from app.schemas.ingestion import (
     StageBatchResult,
     StageEmbeddingInput,
 )
-from app.services.gcs_storage_srv import GCSStorageService
+from app.services.storage.gcs import GCSStorageService
 from app.services.knowalge_base.chunking_service import ChunkingService
 from app.services.knowalge_base.ingestion_service import IngestionService
 from app.services.knowalge_base.parser_service import ParserService

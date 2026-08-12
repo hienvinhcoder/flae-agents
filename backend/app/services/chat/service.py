@@ -6,7 +6,7 @@ from langchain_core.messages import HumanMessage
 from app.agents.qa.graph import get_qa_agent_graph
 from app.db.checkpoint import checkpointer
 from app.db.database import AsyncSessionLocal
-from app.services.agent_srv import AgentService
+from app.services.agents.service import AgentService
 from app.core.logger import get_logger
 
 logger = get_logger(__name__)

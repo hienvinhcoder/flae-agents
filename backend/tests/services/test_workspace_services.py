@@ -12,8 +12,8 @@ from app.schemas.workspaces import (
     WorkspaceInvitationRequest,
     WorkspaceManualCreateRequest,
 )
-from app.services.workspace_member_srv import WorkspaceMemberService
-from app.services.workspace_srv import WorkspaceService, _encrypt_token
+from app.services.workspaces.members import WorkspaceMemberService
+from app.services.workspaces.service import WorkspaceService, _encrypt_token
 
 
 def scalar_result(value: object) -> MagicMock:
@@ -70,12 +70,12 @@ async def test_create_manual_workspace_persists_owner_and_invalidates_cache() ->
     db = AsyncMock(spec=AsyncSession)
     workspace = SimpleNamespace(id=uuid4(), name="Platform", owner_uid="user-1")
     with (
-        patch("app.services.workspace_srv.Workspace", return_value=workspace),
-        patch("app.services.workspace_srv.WorkspaceMember"),
+        patch("app.services.workspaces.service.Workspace", return_value=workspace),
+        patch("app.services.workspaces.service.WorkspaceMember"),
         patch.object(
             WorkspaceService, "update_current_workspace", new=AsyncMock()
         ) as update_current,
-        patch("app.services.workspace_srv.redis_client.delete", new=AsyncMock()) as delete,
+        patch("app.services.workspaces.service.redis_client.delete", new=AsyncMock()) as delete,
     ):
         result = await WorkspaceService.create_manual_workspace(
             db, WorkspaceManualCreateRequest(name="Platform"), "user-1"
@@ -99,10 +99,10 @@ async def test_default_workspace_handles_missing_and_existing_users() -> None:
     workspace = SimpleNamespace(id=uuid4(), name="Linh's Workspace")
     db = db_with_results(user)
     with (
-        patch("app.services.workspace_srv.Workspace", return_value=workspace),
-        patch("app.services.workspace_srv.WorkspaceMember"),
+        patch("app.services.workspaces.service.Workspace", return_value=workspace),
+        patch("app.services.workspaces.service.WorkspaceMember"),
         patch(
-            "app.services.workspace_srv.redis_client.delete",
+            "app.services.workspaces.service.redis_client.delete",
             new=AsyncMock(side_effect=RuntimeError("redis unavailable")),
         ),
     ):
@@ -160,7 +160,7 @@ async def test_invite_member_persists_and_tolerates_temporal_failure() -> None:
     invitation = SimpleNamespace(id=uuid4())
     db = db_with_results(None)
     with (
-        patch("app.services.workspace_srv.WorkspaceInvitation", return_value=invitation),
+        patch("app.services.workspaces.service.WorkspaceInvitation", return_value=invitation),
         patch(
             "app.core.temporal.get_temporal_client",
             new=AsyncMock(side_effect=RuntimeError("temporal unavailable")),
@@ -221,7 +221,7 @@ async def test_accept_invitation_activates_existing_member() -> None:
     existing = member("user-1", WorkspaceRole.member)
     db = db_with_results(invitation, user, existing)
     with patch(
-        "app.services.workspace_srv.redis_client.delete", new=AsyncMock()
+        "app.services.workspaces.service.redis_client.delete", new=AsyncMock()
     ) as delete:
         result = await WorkspaceService.accept_invitation(db, "valid", "user-1")
     assert result is user
@@ -282,7 +282,7 @@ async def test_workspace_member_listing_and_owner_transfer() -> None:
     workspace = SimpleNamespace(owner_uid="owner-1")
     db = db_with_results(owner, target, workspace)
     with patch(
-        "app.services.workspace_member_srv.redis_client.delete", new=AsyncMock()
+        "app.services.workspaces.members.redis_client.delete", new=AsyncMock()
     ):
         returned = await WorkspaceMemberService.update_member_role(
             db,
@@ -331,7 +331,7 @@ async def test_remove_member_updates_current_workspace_fallback() -> None:
     fallback = member("target", WorkspaceRole.member)
     db = db_with_results(owner, target, user, fallback)
     with patch(
-        "app.services.workspace_member_srv.redis_client.delete", new=AsyncMock()
+        "app.services.workspaces.members.redis_client.delete", new=AsyncMock()
     ) as delete:
         removed = await WorkspaceMemberService.remove_member(
             db, workspace_id, "target", "owner"

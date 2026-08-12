@@ -47,7 +47,7 @@ class UserService:
 
         # Tự động tạo workspace mặc định cho user mới
         try:
-            from app.services.workspace_srv import WorkspaceService
+            from app.services.workspaces.service import WorkspaceService
             await WorkspaceService.create_default_workspace(db, firebase_uid)
             await db.refresh(new_user)
         except Exception as e:

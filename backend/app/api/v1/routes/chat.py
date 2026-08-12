@@ -11,8 +11,8 @@ from app.core.exceptions import ApplicationError
 from app.core.config import settings
 from app.core.security import ensure_firebase_initialized
 from app.db.database import get_db
-from app.services.workspace_srv import WorkspaceService
-from app.services.chat_srv import ChatService
+from app.services.chat.service import ChatService
+from app.services.workspaces.service import WorkspaceService
 
 logger = get_logger(__name__)
 

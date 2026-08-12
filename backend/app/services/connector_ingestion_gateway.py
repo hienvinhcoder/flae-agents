@@ -18,7 +18,7 @@ from app.schemas.ingestion import (
     IngestionBootstrapInput,
     SourceRevisionReference,
 )
-from app.services.gcs_storage_srv import GCSStorageService
+from app.services.storage.gcs import GCSStorageService
 from app.services.knowalge_base.ingestion_start_service import (
     IngestionStartService,
 )

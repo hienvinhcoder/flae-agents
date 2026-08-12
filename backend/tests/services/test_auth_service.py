@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.auth_service import AuthService
+from app.services.auth.service import AuthService
 from app.schemas.auth import UserSyncRequest
 from app.models.user import User
 
@@ -19,7 +19,7 @@ async def test_sync_firebase_user_new_user_success():
     db.execute = AsyncMock(return_value=mock_execute_result)
 
     # Mock WorkspaceService.create_default_workspace
-    with patch("app.services.workspace_srv.WorkspaceService.create_default_workspace", new_callable=AsyncMock) as mock_create_ws:
+    with patch("app.services.workspaces.service.WorkspaceService.create_default_workspace", new_callable=AsyncMock) as mock_create_ws:
         sync_data = UserSyncRequest(
             email="new_user@example.com",
             full_name="New User",
@@ -72,7 +72,7 @@ async def test_sync_firebase_user_existing_user_no_update():
     mock_execute_result.scalar_one.return_value = existing_user
     db.execute = AsyncMock(return_value=mock_execute_result)
 
-    with patch("app.services.workspace_srv.WorkspaceService.create_default_workspace", new_callable=AsyncMock) as mock_create_ws:
+    with patch("app.services.workspaces.service.WorkspaceService.create_default_workspace", new_callable=AsyncMock) as mock_create_ws:
         sync_data = UserSyncRequest(
             email="existing@example.com",
             full_name="Existing User",
@@ -112,7 +112,7 @@ async def test_sync_firebase_user_existing_user_needs_update():
     mock_execute_result.scalar_one.return_value = existing_user
     db.execute = AsyncMock(return_value=mock_execute_result)
 
-    with patch("app.services.workspace_srv.WorkspaceService.create_default_workspace", new_callable=AsyncMock) as mock_create_ws:
+    with patch("app.services.workspaces.service.WorkspaceService.create_default_workspace", new_callable=AsyncMock) as mock_create_ws:
         sync_data = UserSyncRequest(
             email="existing@example.com",
             full_name="Updated Name",
@@ -156,7 +156,7 @@ async def test_sync_firebase_user_existing_user_no_workspace():
     mock_execute_result.scalar_one.return_value = existing_user
     db.execute = AsyncMock(return_value=mock_execute_result)
 
-    with patch("app.services.workspace_srv.WorkspaceService.create_default_workspace", new_callable=AsyncMock) as mock_create_ws:
+    with patch("app.services.workspaces.service.WorkspaceService.create_default_workspace", new_callable=AsyncMock) as mock_create_ws:
         sync_data = UserSyncRequest(
             email="existing@example.com",
             full_name="Existing User",
@@ -186,7 +186,7 @@ async def test_sync_firebase_user_create_workspace_exception_logged():
     db.execute = AsyncMock(return_value=mock_execute_result)
 
     # Giả lập workspace creation throw exception
-    with patch("app.services.workspace_srv.WorkspaceService.create_default_workspace", new_callable=AsyncMock) as mock_create_ws:
+    with patch("app.services.workspaces.service.WorkspaceService.create_default_workspace", new_callable=AsyncMock) as mock_create_ws:
         mock_create_ws.side_effect = Exception("Database error creating workspace")
 
         sync_data = UserSyncRequest(
