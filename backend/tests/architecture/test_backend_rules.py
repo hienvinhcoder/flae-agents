@@ -39,3 +39,32 @@ def test_async_temporal_activities_isolate_sync_io() -> None:
     )
 
     assert "asyncio.to_thread" in source
+
+
+def test_backend_has_no_legacy_module_names() -> None:
+    forbidden = ("knowalge_base", "sche_", "srv_")
+    violations = [
+        str(path.relative_to(BACKEND_ROOT))
+        for path in APP_ROOT.rglob("*.py")
+        if any(token in str(path.relative_to(APP_ROOT)) for token in forbidden)
+    ]
+    assert violations == []
+
+
+def test_temporal_activities_do_not_execute_database_transactions() -> None:
+    violations: list[str] = []
+    for path in (APP_ROOT / "temporal" / "activities").rglob("*.py"):
+        source = path.read_text(encoding="utf-8")
+        if re.search(r"\b(?:db|session)\.(?:execute|commit|delete|add)\s*\(", source):
+            violations.append(str(path.relative_to(BACKEND_ROOT)))
+    assert violations == []
+
+
+def test_rag_records_live_under_models() -> None:
+    forbidden = [
+        APP_ROOT / "db" / "rag_models.py",
+        APP_ROOT / "db" / "rag_graph_models.py",
+        APP_ROOT / "db" / "rag_staging_models.py",
+        APP_ROOT / "db" / "rag_memory_state_models.py",
+    ]
+    assert [str(path) for path in forbidden if path.exists()] == []

@@ -1,6 +1,10 @@
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-import uuid
-from unittest.mock import MagicMock, AsyncMock, patch
+
+from app.core.exceptions import ExternalServiceError
+from app.services.knowledge.discovery.topic_summary import TopicSummaryService
 from app.services.knowledge.discovery.topics import TopicService
 
 
@@ -11,6 +15,215 @@ class MockRow:
         self.type = type
         self.summary = summary
         self.similarity = similarity
+
+
+def scalar_result(value: object) -> MagicMock:
+    result = MagicMock()
+    result.scalar_one_or_none.return_value = value
+    return result
+
+
+def memberships_result(*values: object) -> MagicMock:
+    result = MagicMock()
+    result.scalars.return_value.all.return_value = list(values)
+    return result
+
+
+def rag_session(*results: object) -> tuple[AsyncMock, MagicMock]:
+    session = AsyncMock()
+    session.execute.side_effect = list(results)
+    manager = MagicMock()
+    manager.schema = "rag"
+    manager.get_async_session.return_value.__aenter__.return_value = session
+    manager.get_async_session.return_value.__aexit__.return_value = False
+    return session, manager
+
+
+@pytest.mark.asyncio
+async def test_topic_summary_skips_missing_topic() -> None:
+    session, manager = rag_session(scalar_result(None))
+
+    with patch(
+        "app.services.knowledge.discovery.topic_summary.rag_db_manager", manager
+    ):
+        result = await TopicSummaryService().update("workspace-1", "topic-1")
+
+    assert result == {"status": "skipped", "reason": "Topic not found"}
+    session.commit.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_topic_summary_completes_queue_when_evidence_is_missing() -> None:
+    topic = SimpleNamespace(name="Architecture")
+    session, manager = rag_session(
+        scalar_result(topic),
+        MagicMock(),
+        memberships_result(),
+        MagicMock(),
+    )
+
+    with patch(
+        "app.services.knowledge.discovery.topic_summary.rag_db_manager", manager
+    ):
+        result = await TopicSummaryService().update("workspace-1", "topic-1")
+
+    assert result == {"status": "skipped", "reason": "No evidence"}
+    assert session.commit.await_count == 2
+    assert session.execute.await_count == 4
+    assert "completed" in str(session.execute.await_args_list[-1].args[0].compile().params)
+
+
+@pytest.mark.asyncio
+async def test_topic_summary_marks_queue_failed_on_provider_error() -> None:
+    topic = SimpleNamespace(name="Architecture")
+    membership = SimpleNamespace(member_type="chunk", member_id="chunk-1")
+    chunks = [("Evidence",)]
+    session, manager = rag_session(
+        scalar_result(topic),
+        MagicMock(),
+        memberships_result(membership),
+        chunks,
+        MagicMock(),
+    )
+    provider_error = RuntimeError("provider unavailable")
+
+    with (
+        patch(
+            "app.services.knowledge.discovery.topic_summary.rag_db_manager", manager
+        ),
+        patch.object(
+            TopicSummaryService,
+            "_generate_summary",
+            side_effect=provider_error,
+        ),
+        pytest.raises(ExternalServiceError) as error,
+    ):
+        await TopicSummaryService().update("workspace-1", "topic-1")
+
+    assert error.value.__cause__ is provider_error
+    assert session.commit.await_count == 2
+    assert "failed" in str(session.execute.await_args_list[-1].args[0].compile().params)
+
+
+@pytest.mark.asyncio
+async def test_topic_summary_preserves_provider_application_error() -> None:
+    topic = SimpleNamespace(name="Architecture")
+    membership = SimpleNamespace(member_type="chunk", member_id="chunk-1")
+    session, manager = rag_session(
+        scalar_result(topic),
+        MagicMock(),
+        memberships_result(membership),
+        [("Evidence",)],
+        MagicMock(),
+    )
+    provider_error = ExternalServiceError("Gemini unavailable")
+
+    with (
+        patch(
+            "app.services.knowledge.discovery.topic_summary.rag_db_manager", manager
+        ),
+        patch.object(
+            TopicSummaryService,
+            "_generate_summary",
+            side_effect=provider_error,
+        ),
+        pytest.raises(ExternalServiceError) as error,
+    ):
+        await TopicSummaryService().update("workspace-1", "topic-1")
+
+    assert error.value is provider_error
+    assert session.commit.await_count == 2
+    assert "failed" in str(session.execute.await_args_list[-1].args[0].compile().params)
+
+
+@pytest.mark.asyncio
+async def test_topic_summary_updates_topic_embedding_and_queue() -> None:
+    events: list[str] = []
+    topic = SimpleNamespace(
+        name="Architecture",
+        summary=None,
+        current_state=None,
+        updated_at=None,
+        embedding=None,
+    )
+    membership = SimpleNamespace(member_type="chunk", member_id="chunk-1")
+    results = iter(
+        [
+            scalar_result(topic),
+            MagicMock(),
+            memberships_result(membership),
+            [("Evidence",)],
+            MagicMock(),
+        ]
+    )
+    session = AsyncMock()
+
+    async def execute(*args: object, **kwargs: object) -> object:
+        del args, kwargs
+        events.append("execute")
+        return next(results)
+
+    async def commit() -> None:
+        events.append("commit")
+
+    session.execute.side_effect = execute
+    session.commit.side_effect = commit
+    manager = MagicMock(schema="rag")
+    manager.get_async_session.return_value.__aenter__.return_value = session
+    manager.get_async_session.return_value.__aexit__.return_value = False
+
+    def generate_summary(prompt: str) -> tuple[str, str]:
+        assert "Evidence" in prompt
+        events.append("provider")
+        return "Summary", "Current state"
+
+    async def generate_embedding(name: str, summary: str) -> list[float]:
+        assert (name, summary) == ("Architecture", "Summary")
+        events.append("embedding")
+        return [0.1, 0.2]
+
+    async def run_in_thread(function: object, *args: object) -> object:
+        events.append("to_thread")
+        return function(*args)  # type: ignore[operator]
+
+    with (
+        patch(
+            "app.services.knowledge.discovery.topic_summary.rag_db_manager", manager
+        ),
+        patch.object(
+            TopicSummaryService,
+            "_generate_summary",
+            side_effect=generate_summary,
+        ),
+        patch.object(
+            TopicSummaryService,
+            "_generate_embedding",
+            new=AsyncMock(side_effect=generate_embedding),
+        ),
+        patch(
+            "app.services.knowledge.discovery.topic_summary.asyncio.to_thread",
+            new=AsyncMock(side_effect=run_in_thread),
+        ),
+    ):
+        result = await TopicSummaryService().update("workspace-1", "topic-1")
+
+    assert result == {"status": "completed", "topic_id": "topic-1"}
+    assert topic.summary == "Summary"
+    assert topic.current_state == "Current state"
+    assert topic.embedding == [0.1, 0.2]
+    assert topic.updated_at is not None
+    assert events == [
+        "execute",
+        "execute",
+        "commit",
+        "execute",
+        "execute",
+        "to_thread",
+        "provider",
+        "embedding",
+        "execute",
+        "commit",
+    ]
 
 
 @pytest.mark.asyncio

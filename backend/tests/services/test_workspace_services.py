@@ -6,13 +6,14 @@ from uuid import uuid4
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import ApplicationError
+from app.core.exceptions import ApplicationError, ResourceNotFoundError
 from app.models.workspace import WorkspaceMemberStatus, WorkspaceRole
 from app.schemas.workspaces import (
     WorkspaceInvitationRequest,
     WorkspaceManualCreateRequest,
 )
 from app.services.workspaces.members import WorkspaceMemberService
+from app.services.workspaces.invitations import InvitationNotificationService
 from app.services.workspaces.service import WorkspaceService, _encrypt_token
 
 
@@ -36,6 +37,70 @@ def member(uid: str, role: WorkspaceRole) -> SimpleNamespace:
         user_uid=uid,
         workspace_id=uuid4(),
     )
+
+
+@pytest.mark.asyncio
+async def test_invitation_email_requires_invitation_and_workspace() -> None:
+    invitation_id = uuid4()
+    with pytest.raises(ResourceNotFoundError, match="Workspace invitation not found"):
+        await InvitationNotificationService.build_email(
+            db_with_results(None), invitation_id
+        )
+
+    invitation = SimpleNamespace(workspace_id=uuid4())
+    with pytest.raises(ResourceNotFoundError, match="Invitation workspace not found"):
+        await InvitationNotificationService.build_email(
+            db_with_results(invitation, None), invitation_id
+        )
+
+
+@pytest.mark.asyncio
+async def test_invitation_email_builds_safe_delivery_message() -> None:
+    invitation_id = uuid4()
+    expires_at = datetime(2026, 8, 20, 9, 30, tzinfo=timezone.utc)
+    invitation = SimpleNamespace(
+        workspace_id=uuid4(),
+        invited_by="firebase-admin-1",
+        role=WorkspaceRole.admin,
+        token="secret-invitation-token",
+        expires_at=expires_at,
+        email="new.member@example.com",
+    )
+    workspace = SimpleNamespace(name="Platform")
+    inviter = SimpleNamespace(full_name="Linh Nguyen", email="linh@example.com")
+
+    message = await InvitationNotificationService.build_email(
+        db_with_results(invitation, workspace, inviter), invitation_id
+    )
+
+    assert message.recipient == "new.member@example.com"
+    assert message.subject == "Invitation to Platform"
+    assert message.body == (
+        'You have been invited to join the "Platform" workspace on FLAE Agents '
+        "by Linh Nguyen (linh@example.com) with the role: admin.\n\n"
+        "Accept the invitation: "
+        "http://localhost:4200/invite?token=secret-invitation-token\n\n"
+        "Expires: 2026-08-20T09:30:00+00:00"
+    )
+
+
+@pytest.mark.asyncio
+async def test_invitation_email_uses_safe_inviter_fallback() -> None:
+    invitation = SimpleNamespace(
+        workspace_id=uuid4(),
+        invited_by="firebase-admin-1",
+        role=WorkspaceRole.member,
+        token="secret-token",
+        expires_at=datetime(2026, 8, 20, tzinfo=timezone.utc),
+        email="new.member@example.com",
+    )
+
+    message = await InvitationNotificationService.build_email(
+        db_with_results(invitation, SimpleNamespace(name="Platform"), None),
+        uuid4(),
+    )
+
+    assert "A workspace administrator (firebase-admin-1)" in message.body
 
 
 @pytest.mark.asyncio
