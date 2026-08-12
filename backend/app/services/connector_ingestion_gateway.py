@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from hashlib import sha256
-from typing import Protocol
+from typing import Protocol, cast
 from uuid import UUID
 
 from app.connectors.base import (
@@ -24,6 +24,7 @@ from app.services.knowalge_base.ingestion_start_service import (
 )
 from app.services.knowalge_base.ingestion_workflow_starter import (
     IngestionWorkflowStarter,
+    TemporalWorkflowClient,
 )
 from app.services.knowalge_base.publish_service import BasePublishService
 
@@ -144,6 +145,8 @@ async def build_connector_ingestion_gateway() -> ConnectorIngestionGateway:
     temporal_client = await get_temporal_client()
     return ConnectorIngestionGateway(
         start_service=IngestionStartService(rag_db_manager),
-        workflow_starter=IngestionWorkflowStarter(temporal_client),
+        workflow_starter=IngestionWorkflowStarter(
+            cast(TemporalWorkflowClient, temporal_client)
+        ),
         publisher=BasePublishService(rag_db_manager),
     )

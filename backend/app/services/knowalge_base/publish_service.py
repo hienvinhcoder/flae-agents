@@ -148,18 +148,32 @@ class BasePublishService:
     async def tombstone_revision(
         self, source: SourceRevisionReference, *, reason: str
     ) -> bool:
+        return await self.tombstone_revision_id(
+            source.workspace_id,
+            source.revision_id,
+            reason=reason,
+        )
+
+    async def tombstone_revision_id(
+        self,
+        workspace_id: UUID,
+        revision_id: UUID,
+        *,
+        reason: str,
+    ) -> bool:
+        """Hide one revision by tenant-scoped identity."""
         if not reason.strip() or len(reason) > 500:
             raise InvalidArgumentError("Tombstone reason must be 1-500 characters.")
-        workspace_id = str(source.workspace_id)
+        workspace_key = str(workspace_id)
         try:
-            async with self._manager.get_ingestion_session(workspace_id) as session:
+            async with self._manager.get_ingestion_session(workspace_key) as session:
                 try:
                     await session.execute(
                         text(
                             "SELECT pg_advisory_xact_lock("
                             "hashtextextended(:workspace_id, 41721))"
                         ),
-                        {"workspace_id": workspace_id},
+                        {"workspace_id": workspace_key},
                     )
                     result = await session.execute(
                         text(
@@ -172,8 +186,8 @@ class BasePublishService:
                                RETURNING revision_id"""
                         ),
                         {
-                            "workspace_id": workspace_id,
-                            "revision_id": source.revision_id,
+                            "workspace_id": workspace_key,
+                            "revision_id": revision_id,
                             "reason": reason,
                         },
                     )

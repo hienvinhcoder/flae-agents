@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Callable
 from hashlib import sha256
-from typing import ParamSpec, TypeVar
+from typing import TypeVar
 from urllib.parse import unquote, urlsplit
 
 from temporalio import activity
@@ -34,13 +34,12 @@ from app.services.knowalge_base.staging_service import BaseStagingService
 
 HEARTBEAT_INTERVAL_SECONDS = 10.0
 
-P = ParamSpec("P")
 R = TypeVar("R")
 
 
 async def _run_sync_with_heartbeats(
-    function: Callable[P, R],
-    *args: P.args,
+    function: Callable[..., R],
+    *args: object,
     heartbeat_details: object,
 ) -> R:
     task = asyncio.create_task(asyncio.to_thread(function, *args))
