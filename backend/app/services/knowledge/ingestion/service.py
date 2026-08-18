@@ -6,7 +6,7 @@ Tất cả các hàm trong module này là sync (sử dụng trong Temporal acti
 """
 import re
 import numpy as np
-from typing import Dict, List, Tuple, Any
+from typing import Dict, List, Optional, Tuple, Any
 
 from app.core.config import settings
 from app.core.logger import get_logger
@@ -33,6 +33,7 @@ class IngestionService:
         entities: List[Dict],
         relations: List[Dict],
         source_doc_id: str,
+        domains: Optional[List[Dict]] = None,
     ) -> Dict[str, Any]:
         """
         Fusion & lưu chunks/entities/relations vào RAG database.
@@ -181,6 +182,25 @@ class IngestionService:
             )
             relation_count = len(rels_df)
 
+        # 4b. Save knowledge_domains
+        domain_count = 0
+        if domains:
+            domain_df = pd.DataFrame(domains)
+            if not domain_df.empty:
+                for col in ["embedding", "source_chunk_ids"]:
+                    if col not in domain_df.columns:
+                        domain_df[col] = None
+                rag_db_manager.save_df(
+                    domain_df, "knowledge_domains", pk_col="domain_id",
+                    workspace_id=workspace_id, overwrite=True
+                )
+                # Link domains to topics
+                rag_db_manager.save_df(
+                    domain_df[["domain_id"]], "topics",
+                    pk_col="topic_id", workspace_id=workspace_id, overwrite=True
+                )
+                domain_count = len(domain_df)
+
         # 5. Cập nhật Degree cho Entities và Relationships bị ảnh hưởng trong DB bằng SQL
         if touched_entity_ids:
             update_graph_degrees(rag_db_manager, workspace_id, touched_entity_ids)
@@ -209,6 +229,7 @@ class IngestionService:
             "chunk_count": chunk_count,
             "entity_count": entity_count,
             "relation_count": relation_count,
+            "domain_count": domain_count,
             "affected_topic_ids": list(set(affected_topics))
         }
 
@@ -305,8 +326,8 @@ class IngestionService:
         chunks: List[Dict],
         workspace_id: str,
         entity_types: list[str] | None = None,
-    ) -> Tuple[List[Dict], List[Dict], int]:
-        """Trích xuất entities & relations từ chunks qua LangGraph agent."""
+    ) -> Tuple[List[Dict], List[Dict], List[Dict], int]:
+        """Trích xuất entities, relations & domains từ chunks qua LangGraph agent."""
         import asyncio
         from app.services.knowledge.extraction.agent.graph import run_extraction_agent
         from app.services.knowledge.discovery.topics import TopicService
@@ -316,7 +337,7 @@ class IngestionService:
 
         if not api_key:
             logger.warning("GEMINI_API_KEY not set. Skipping extraction.")
-            return [], [], 0
+            return [], [], [], 0
 
         if entity_types is None:
             entity_types = settings.RAG_ENTITY_TYPES
@@ -325,6 +346,7 @@ class IngestionService:
         total_tokens = 0
         all_entities: list[dict] = []
         all_relations: list[dict] = []
+        all_domains: list[dict] = []
 
         async def process_chunk(chunk: dict) -> dict:
             nonlocal total_tokens
@@ -366,6 +388,7 @@ class IngestionService:
             total_tokens += tokens
             all_entities.extend(res.get("entities", []))
             all_relations.extend(res.get("relations", []))
+            all_domains.extend(res.get("domains", []))
 
         # Merge duplicates
         merged_entities = merge_entities(all_entities)
@@ -373,6 +396,6 @@ class IngestionService:
 
         logger.info(
             f"Extraction complete via LangGraph: {len(merged_entities)} entities, "
-            f"{len(merged_relations)} relations, {total_tokens} tokens"
+            f"{len(merged_relations)} relations, {len(all_domains)} domains, {total_tokens} tokens"
         )
-        return merged_entities, merged_relations, total_tokens
+        return merged_entities, merged_relations, all_domains, total_tokens

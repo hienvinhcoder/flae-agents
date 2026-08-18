@@ -59,9 +59,10 @@ async def test_extract_entities_from_chunks_no_api_key():
     with patch("app.services.knowledge.ingestion.service.settings") as mock_settings:
         mock_settings.GEMINI_API_KEY = None
 
-        entities, relations, tokens = await IngestionService.extract_entities_from_chunks([{"text": "Hello", "chunk_id": "1"}], "test-workspace-id")
+        entities, relations, domains, tokens = await IngestionService.extract_entities_from_chunks([{"text": "Hello", "chunk_id": "1"}], "test-workspace-id")
         assert entities == []
         assert relations == []
+        assert domains == []
         assert tokens == 0
 
 
@@ -549,3 +550,43 @@ def test_run_incremental_fusion_case_insensitivity_and_newline():
         assert clean_entity_name(rel["source_name"]).lower() == "điện toán đám mây"
         assert rel["target_name"] == "Doanh nghiệp"
         assert set(rel["source_chunk_ids"]) == {"chunk_old", "chunk_new"}
+
+
+def test_fuse_and_save_includes_domain_upsert():
+    """Verify fuse_and_save calls knowledge_domains upsert when domains are present."""
+    from unittest.mock import patch, MagicMock
+    import pandas as pd
+    from app.services.knowledge.ingestion.service import IngestionService
+
+    entities = [{"entity_id": "ent-abc", "entity_name": "Apple", "entity_type": "org", "description": "Tech",
+                 "source_chunk_ids": ["c1"], "frequency": 1, "embedding": [0.1] * 32, "degree": 0,
+                 "chunk_descriptions": {}}]
+    relations = []
+    chunks = [{"chunk_id": "c1", "text": "Apple makes iPhone", "token_count": 5, "embedding": [0.1] * 32,
+               "source_document_name": "doc.md"}]
+    domains = [{"name": "Technology", "description": "Tech industry", "source_chunk_ids": ["c1"],
+                "frequency": 1, "embedding": None, "slug": "technology",
+                "domain_id": "dom-abc123"}]
+
+    with patch("app.db.rag_db.rag_db_manager") as mock_db, \
+         patch("app.services.knowledge.extraction.fusion.run_incremental_fusion", return_value=(entities, relations, 0, set())), \
+         patch.object(IngestionService, "generate_embeddings", return_value=([], 0)), \
+         patch("app.services.knowledge.extraction.utils.update_graph_degrees"):
+        mock_db.initialize = MagicMock()
+        mock_db.save_df = MagicMock()
+        mock_db.get_conn.return_value = MagicMock()
+
+        result = IngestionService.fuse_and_save(
+            workspace_id="ws-1",
+            chunks=chunks,
+            entities=entities,
+            relations=relations,
+            domains=domains,
+            source_doc_id="doc-1",
+        )
+
+        # Verify knowledge_domains was saved
+        calls = mock_db.save_df.call_args_list
+        domain_call = [c for c in calls if len(c.args) > 1 and c.args[1] == "knowledge_domains"]
+        assert len(domain_call) >= 1, "knowledge_domains table should be saved"
+        assert result["domain_count"] == 1
