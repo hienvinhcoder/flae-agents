@@ -1,33 +1,53 @@
-import logging
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from starlette.middleware.cors import CORSMiddleware
 
-from app.api.api_router import router
 from app.core.config import settings
-from app.helpers.exception_handler import (
-    CustomException,
+from app.api.v1.router import router as api_router_v1
+from app.core.logger import setup_logging
+from app.core.exceptions import (
+    ApplicationError,
     http_exception_handler,
     validation_exception_handler,
-    fastapi_error_handler,
+    unhandled_exception_handler,
+    sqlalchemy_not_found_handler,
+    starlette_http_exception_handler,
 )
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from sqlalchemy.exc import NoResultFound
 from app.db.database import setup_database
 
-# Configure database (Firestore & firedantic)
+# Configure logging
+setup_logging()
+
+# Configure database
 setup_database()
+
+
+from contextlib import asynccontextmanager
+from app.db.checkpoint import init_checkpoint_db, close_checkpoint_db
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Khởi tạo database checkpoint cho LangGraph
+    await init_checkpoint_db()
+    yield
+    # Shutdown: Đóng kết nối
+    await close_checkpoint_db()
 
 
 def get_application() -> FastAPI:
     application = FastAPI(
         title=settings.PROJECT_NAME,
+        lifespan=lifespan,
         docs_url="/docs",
         redoc_url="/redoc",
-        openapi_url=f"{settings.API_PREFIX}/openapi.json",
+        openapi_url=f"{settings.API_V1_STR}/openapi.json",
         description="""
-        FastAPI Base configured for Firestore and Firebase Auth
+        FastAPI Base configured for PostgreSQL and Firebase Auth
         - Firebase Authentication (JWT) via Depends
-        - Firestore connection via firedantic
-        - No GET endpoints (Frontend queries directly)
+        - PostgreSQL connection via SQLAlchemy AsyncSession
         """,
     )
 
@@ -40,12 +60,14 @@ def get_application() -> FastAPI:
     )
 
     # Routers
-    application.include_router(router, prefix=settings.API_PREFIX)
+    application.include_router(api_router_v1, prefix=settings.API_V1_STR)
 
     # Exception Handlers
-    application.add_exception_handler(CustomException, http_exception_handler)
+    application.add_exception_handler(ApplicationError, http_exception_handler)
     application.add_exception_handler(RequestValidationError, validation_exception_handler)
-    application.add_exception_handler(Exception, fastapi_error_handler)
+    application.add_exception_handler(NoResultFound, sqlalchemy_not_found_handler)
+    application.add_exception_handler(StarletteHTTPException, starlette_http_exception_handler)
+    application.add_exception_handler(Exception, unhandled_exception_handler)
 
     return application
 

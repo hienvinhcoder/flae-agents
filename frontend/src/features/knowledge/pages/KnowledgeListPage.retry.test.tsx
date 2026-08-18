@@ -1,0 +1,372 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { I18nextProvider } from "react-i18next";
+import { MemoryRouter } from "react-router-dom";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { TestI18nProvider } from "../../../../tests/TestI18nProvider";
+import en from "../../../../public/assets/i18n/en.json";
+import viMessages from "../../../../public/assets/i18n/vi.json";
+import { useWorkspaceStore } from "../../../core/stores/workspace-store";
+import { createI18n } from "../../../shared/i18n";
+import type { KnowledgeDocument } from "../types/knowledge";
+import { KnowledgeListPage } from "./KnowledgeListPage";
+
+const runtimeApi = vi.hoisted(() => ({
+  createManualDocument: vi.fn(),
+  deleteDocument: vi.fn(),
+  getDocument: vi.fn(),
+  listDocuments: vi.fn(),
+  retryIngestion: vi.fn(),
+  uploadDocument: vi.fn(),
+}));
+
+vi.mock("../api/knowledge-runtime-api", () => runtimeApi);
+
+const vietnameseI18n = await createI18n(
+  { en: { translation: en }, vi: { translation: viMessages } },
+  "vi",
+);
+
+const incident: KnowledgeDocument = {
+  chunk_count: null,
+  created_at: "2026-07-24T00:00:00Z",
+  description: "Incident response notes",
+  document_type: "manual_input",
+  entity_count: null,
+  file_name: null,
+  file_size: null,
+  id: "22222222-2222-4222-8222-222222222222",
+  relation_count: null,
+  status: "failed",
+  title: "Incident handbook",
+  updated_at: "2026-07-24T00:05:00Z",
+  uploaded_by: "owner@example.com",
+};
+
+const policy: KnowledgeDocument = {
+  ...incident,
+  id: "33333333-3333-4333-8333-333333333333",
+  title: "Security policy",
+};
+
+const workspaceTwoIncident: KnowledgeDocument = {
+  ...incident,
+  title: "Workspace two handbook",
+};
+
+function deferred<T>() {
+  let reject!: (reason?: unknown) => void;
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    reject = rejectPromise;
+    resolve = resolvePromise;
+  });
+  return { promise, reject, resolve };
+}
+
+function renderPage(language: "en" | "vi" = "en") {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  const page = (
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <KnowledgeListPage />
+        </MemoryRouter>
+      </QueryClientProvider>
+  );
+  render(
+    language === "vi" ? (
+      <I18nextProvider i18n={vietnameseI18n}>{page}</I18nextProvider>
+    ) : (
+      <TestI18nProvider>{page}</TestI18nProvider>
+    ),
+  );
+}
+
+describe("KnowledgeListPage retry errors", () => {
+  beforeEach(() => {
+    Object.values(runtimeApi).forEach((mock) => mock.mockReset());
+    runtimeApi.listDocuments.mockResolvedValue([incident, policy]);
+    useWorkspaceStore.getState().reset();
+    useWorkspaceStore.getState().setCurrentWorkspaceId("ws-1");
+  });
+
+  it("preserves document-specific retry errors across concurrent requests", async () => {
+    const user = userEvent.setup();
+    const requests = new Map<
+      string,
+      { reject: (reason?: unknown) => void; resolve: (value: unknown) => void }
+    >();
+    runtimeApi.retryIngestion.mockImplementation(
+      (_workspaceId: string, documentId: string) =>
+        new Promise((resolve, reject) => {
+          requests.set(documentId, { reject, resolve });
+        }),
+    );
+    renderPage();
+    const table = within(
+      await screen.findByRole("table", { name: /knowledge documents/i }),
+    );
+
+    await user.click(
+      table.getByRole("button", { name: /retry incident handbook/i }),
+    );
+    await user.click(
+      table.getByRole("button", { name: /retry security policy/i }),
+    );
+
+    requests.get(incident.id)?.reject(new Error("Private ingestion failure"));
+    expect(
+      await screen.findByText("Could not retry Incident handbook."),
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole("alert")).toHaveLength(1);
+    expect(
+      table.getByRole("button", { name: /retry security policy/i }),
+    ).toBeDisabled();
+
+    requests.get(policy.id)?.resolve({
+      id: policy.id,
+      status: "pending",
+      temporal_workflow_id: "workflow-policy",
+      title: policy.title,
+    });
+    await waitFor(() =>
+      expect(
+        table.getByRole("button", { name: /retry security policy/i }),
+      ).not.toBeDisabled(),
+    );
+    expect(
+      screen.getByText("Could not retry Incident handbook."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Private ingestion failure")).not.toBeInTheDocument();
+  });
+
+  it("clears a retry error on a new attempt and when the workspace changes", async () => {
+    const user = userEvent.setup();
+    runtimeApi.retryIngestion
+      .mockRejectedValueOnce(new Error("First failure"))
+      .mockResolvedValueOnce({
+        id: incident.id,
+        status: "pending",
+        temporal_workflow_id: "workflow-retry",
+        title: incident.title,
+      })
+      .mockRejectedValueOnce(new Error("Second failure"));
+    renderPage();
+    const table = within(
+      await screen.findByRole("table", { name: /knowledge documents/i }),
+    );
+    const retryButton = table.getByRole("button", {
+      name: /retry incident handbook/i,
+    });
+
+    await user.click(retryButton);
+    expect(
+      await screen.findByText("Could not retry Incident handbook."),
+    ).toBeInTheDocument();
+
+    await user.click(retryButton);
+    await waitFor(() =>
+      expect(
+        screen.queryByText("Could not retry Incident handbook."),
+      ).not.toBeInTheDocument(),
+    );
+
+    await user.click(retryButton);
+    expect(
+      await screen.findByText("Could not retry Incident handbook."),
+    ).toBeInTheDocument();
+    act(() => useWorkspaceStore.getState().setCurrentWorkspaceId("ws-2"));
+    await waitFor(() =>
+      expect(
+        screen.queryByText("Could not retry Incident handbook."),
+      ).not.toBeInTheDocument(),
+    );
+  });
+
+  it("keeps a current workspace retry pending when an old retry completes", async () => {
+    const user = userEvent.setup();
+    const requests = new Map<string, ReturnType<typeof deferred<unknown>>>();
+    runtimeApi.listDocuments.mockImplementation((workspaceId: string) =>
+      Promise.resolve(
+        workspaceId === "ws-2" ? [workspaceTwoIncident] : [incident],
+      ),
+    );
+    runtimeApi.retryIngestion.mockImplementation((workspaceId: string) => {
+      const request = deferred<unknown>();
+      requests.set(workspaceId, request);
+      return request.promise;
+    });
+    renderPage();
+
+    const table = within(
+      await screen.findByRole("table", { name: /knowledge documents/i }),
+    );
+    await user.click(
+      table.getByRole("button", { name: "Retry Incident handbook" }),
+    );
+    act(() => useWorkspaceStore.getState().setCurrentWorkspaceId("ws-2"));
+    expect(await screen.findAllByText("Workspace two handbook")).toHaveLength(2);
+    const workspaceTwoTable = within(
+      screen.getByRole("table", { name: /knowledge documents/i }),
+    );
+    const workspaceTwoRetry = workspaceTwoTable.getByRole("button", {
+      name: "Retry Workspace two handbook",
+    });
+
+    expect(workspaceTwoRetry).not.toBeDisabled();
+    await user.click(workspaceTwoRetry);
+    expect(runtimeApi.retryIngestion).toHaveBeenCalledWith("ws-2", incident.id);
+    expect(workspaceTwoRetry).toBeDisabled();
+
+    requests.get("ws-1")?.resolve({});
+    await act(async () => Promise.resolve());
+    expect(workspaceTwoRetry).toBeDisabled();
+
+    requests.get("ws-2")?.resolve({});
+    await waitFor(() => expect(workspaceTwoRetry).not.toBeDisabled());
+  });
+
+  it("preserves a current workspace error when an old retry rejects", async () => {
+    const user = userEvent.setup();
+    const requests = new Map<string, ReturnType<typeof deferred<unknown>>>();
+    runtimeApi.listDocuments.mockImplementation((workspaceId: string) =>
+      Promise.resolve(
+        workspaceId === "ws-2" ? [workspaceTwoIncident] : [incident],
+      ),
+    );
+    runtimeApi.retryIngestion.mockImplementation((workspaceId: string) => {
+      const request = deferred<unknown>();
+      requests.set(workspaceId, request);
+      return request.promise;
+    });
+    renderPage();
+
+    const table = within(
+      await screen.findByRole("table", { name: /knowledge documents/i }),
+    );
+    await user.click(
+      table.getByRole("button", { name: "Retry Incident handbook" }),
+    );
+    act(() => useWorkspaceStore.getState().setCurrentWorkspaceId("ws-2"));
+    expect(await screen.findAllByText("Workspace two handbook")).toHaveLength(2);
+    const workspaceTwoTable = within(
+      screen.getByRole("table", { name: /knowledge documents/i }),
+    );
+    const workspaceTwoRetry = workspaceTwoTable.getByRole("button", {
+      name: "Retry Workspace two handbook",
+    });
+    await user.click(workspaceTwoRetry);
+
+    requests.get("ws-2")?.reject(new Error("Current workspace failure"));
+    expect(
+      await screen.findByText("Could not retry Workspace two handbook."),
+    ).toBeInTheDocument();
+    expect(workspaceTwoRetry).not.toBeDisabled();
+
+    await act(async () => {
+      requests.get("ws-1")?.reject(new Error("Old workspace failure"));
+      await Promise.resolve();
+    });
+    expect(
+      screen.getByText("Could not retry Workspace two handbook."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Old workspace failure")).not.toBeInTheDocument();
+    expect(workspaceTwoRetry).not.toBeDisabled();
+  });
+
+  it("retains each workspace pending retry when revisiting workspaces", async () => {
+    const user = userEvent.setup();
+    const requests = new Map<string, ReturnType<typeof deferred<unknown>>>();
+    runtimeApi.listDocuments.mockImplementation((workspaceId: string) =>
+      Promise.resolve(
+        workspaceId === "ws-2" ? [workspaceTwoIncident] : [incident],
+      ),
+    );
+    runtimeApi.retryIngestion.mockImplementation((workspaceId: string) => {
+      const request = deferred<unknown>();
+      requests.set(workspaceId, request);
+      return request.promise;
+    });
+    renderPage();
+
+    const workspaceOneTable = within(
+      await screen.findByRole("table", { name: /knowledge documents/i }),
+    );
+    const initialWorkspaceOneRetry = workspaceOneTable.getByRole("button", {
+      name: "Retry Incident handbook",
+    });
+    await user.click(initialWorkspaceOneRetry);
+    expect(initialWorkspaceOneRetry).toBeDisabled();
+    const workspaceOneRequest = requests.get("ws-1");
+
+    act(() => useWorkspaceStore.getState().setCurrentWorkspaceId("ws-2"));
+    expect(await screen.findAllByText("Workspace two handbook")).toHaveLength(2);
+    const workspaceTwoTable = within(
+      screen.getByRole("table", { name: /knowledge documents/i }),
+    );
+    const workspaceTwoRetry = workspaceTwoTable.getByRole("button", {
+      name: "Retry Workspace two handbook",
+    });
+    await user.click(workspaceTwoRetry);
+    expect(workspaceTwoRetry).toBeDisabled();
+    const workspaceTwoRequest = requests.get("ws-2");
+
+    act(() => useWorkspaceStore.getState().setCurrentWorkspaceId("ws-1"));
+    expect(await screen.findAllByText("Incident handbook")).toHaveLength(2);
+    const revisitedWorkspaceOneTable = within(
+      screen.getByRole("table", { name: /knowledge documents/i }),
+    );
+    const revisitedWorkspaceOneRetry = revisitedWorkspaceOneTable.getByRole(
+      "button",
+      { name: "Retry Incident handbook" },
+    );
+    expect(revisitedWorkspaceOneRetry).toBeDisabled();
+    await user.click(revisitedWorkspaceOneRetry);
+    expect(runtimeApi.retryIngestion).toHaveBeenCalledTimes(2);
+
+    workspaceOneRequest?.resolve({});
+    await waitFor(() => expect(revisitedWorkspaceOneRetry).not.toBeDisabled());
+
+    act(() => useWorkspaceStore.getState().setCurrentWorkspaceId("ws-2"));
+    expect(await screen.findAllByText("Workspace two handbook")).toHaveLength(2);
+    const revisitedWorkspaceTwoRetry = within(
+      screen.getByRole("table", { name: /knowledge documents/i }),
+    ).getByRole("button", { name: "Retry Workspace two handbook" });
+    expect(revisitedWorkspaceTwoRetry).toBeDisabled();
+
+    workspaceTwoRequest?.resolve({});
+    await waitFor(() => expect(revisitedWorkspaceTwoRetry).not.toBeDisabled());
+  });
+
+  it("localizes the knowledge list retry action", async () => {
+    runtimeApi.listDocuments.mockRejectedValue(new Error("Không thể kết nối"));
+
+    renderPage("vi");
+
+    expect(
+      await screen.findByRole("button", { name: "Thử lại" }),
+    ).toBeInTheDocument();
+  });
+
+  it("renders the Vietnamese page title without an empty-readiness card", async () => {
+    runtimeApi.listDocuments.mockResolvedValue([]);
+    renderPage("vi");
+
+    expect(
+      await screen.findAllByRole("heading", {
+        level: 1,
+        name: "Bộ nhớ doanh nghiệp",
+      }),
+    ).toHaveLength(1);
+    expect(
+      screen.queryByRole("heading", {
+        level: 2,
+        name: "Bắt đầu xây bộ nhớ doanh nghiệp",
+      }),
+    ).not.toBeInTheDocument();
+  });
+});

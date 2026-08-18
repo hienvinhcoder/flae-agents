@@ -1,0 +1,255 @@
+{
+  "dataset_name": "flae-company-memory",
+  "version": "2026-07-29.v1",
+  "scenarios": [
+    {
+      "scenario_id": "aurora",
+      "failure_mode": "pseudo_evidence_rejection",
+      "query": "Incident của Customer Aurora bắt nguồn từ PR nào, implement ADR nào, và ai phê duyệt?",
+      "expected_source_ids": [
+        "aurora-incident-postmortem",
+        "aurora-pr-1842",
+        "aurora-adr-007",
+        "aurora-approval-thread"
+      ],
+      "expected_chunk_ids": [
+        "aurora-postmortem-root-cause",
+        "aurora-pr-1842-description",
+        "aurora-adr-007-decision",
+        "aurora-approval-thread-message"
+      ],
+      "expected_paths": [
+        {
+          "entity_ids": [
+            "customer-aurora",
+            "incident-aurora-2026-04",
+            "pr-1842",
+            "adr-007",
+            "person-lan-nguyen"
+          ],
+          "assertion_evidence_ids": [
+            "assert-aurora-customer-had-incident",
+            "assert-aurora-incident-caused-by-pr",
+            "assert-aurora-pr-implements-adr",
+            "assert-aurora-adr-approved-by-lan"
+          ]
+        }
+      ],
+      "expected_assertion_evidence_ids": [
+        "assert-aurora-customer-had-incident",
+        "assert-aurora-incident-caused-by-pr",
+        "assert-aurora-pr-implements-adr",
+        "assert-aurora-adr-approved-by-lan"
+      ],
+      "distractors": [
+        {
+          "resource_id": "aurora-topic-summary-pseudo",
+          "rationale": "Derived topic summary repeats PR and approver names but is not source evidence."
+        },
+        {
+          "resource_id": "aurora-pr-1842-release-note",
+          "rationale": "Release note mentions the PR but does not support root cause or approval."
+        }
+      ],
+      "acl_negative_ids": [
+        "aurora-private-legal-review"
+      ],
+      "discovery": {
+        "expected_memberships": [
+          {
+            "context_id": "context-customer-aurora",
+            "topic_id": "topic-aurora-incident-response",
+            "target_kind": "source",
+            "target_id": "aurora-pr-1842"
+          },
+          {
+            "context_id": "context-payments-platform",
+            "topic_id": "topic-architecture-decisions",
+            "target_kind": "source",
+            "target_id": "aurora-pr-1842"
+          },
+          {
+            "context_id": "context-customer-aurora",
+            "topic_id": "topic-architecture-decisions",
+            "target_kind": "assertion",
+            "target_id": "assert-aurora-pr-implements-adr"
+          }
+        ],
+        "stable_identity_ids": [
+          "context-customer-aurora",
+          "context-payments-platform",
+          "topic-aurora-incident-response",
+          "topic-architecture-decisions"
+        ],
+        "baseline_taxonomy_size": 4
+      }
+    },
+    {
+      "scenario_id": "helios",
+      "failure_mode": "orphan_path_recovery",
+      "query": "Yêu cầu compliance của Helios tắt feature nào và qua dependency nào dẫn đến billing incident?",
+      "expected_source_ids": [
+        "helios-compliance-policy",
+        "helios-feature-runbook",
+        "helios-dependency-manifest",
+        "helios-billing-postmortem"
+      ],
+      "expected_chunk_ids": [
+        "helios-policy-disable-export",
+        "helios-runbook-feature-flag",
+        "helios-manifest-ledger-sdk",
+        "helios-postmortem-billing-impact"
+      ],
+      "expected_paths": [
+        {
+          "entity_ids": [
+            "requirement-helios-data-residency",
+            "feature-cross-region-export",
+            "dependency-ledger-sdk",
+            "incident-helios-billing-2026-05"
+          ],
+          "assertion_evidence_ids": [
+            "assert-helios-requirement-disables-feature",
+            "assert-helios-feature-uses-ledger-sdk",
+            "assert-helios-ledger-sdk-led-to-incident"
+          ]
+        }
+      ],
+      "expected_assertion_evidence_ids": [
+        "assert-helios-requirement-disables-feature",
+        "assert-helios-feature-uses-ledger-sdk",
+        "assert-helios-ledger-sdk-led-to-incident"
+      ],
+      "distractors": [
+        {
+          "resource_id": "helios-context-summary-pseudo",
+          "rationale": "Context summary describes compliance generally but has no hop-level evidence."
+        },
+        {
+          "resource_id": "helios-feature-notification-export",
+          "rationale": "A similarly named export feature is unrelated to the billing dependency."
+        }
+      ],
+      "acl_negative_ids": [
+        "helios-board-audit-private"
+      ],
+      "discovery": {
+        "expected_memberships": [
+          {
+            "context_id": "context-customer-helios",
+            "topic_id": "topic-compliance-controls",
+            "target_kind": "source",
+            "target_id": "helios-compliance-policy"
+          },
+          {
+            "context_id": "context-customer-helios",
+            "topic_id": "topic-billing-incidents",
+            "target_kind": "source",
+            "target_id": "helios-billing-postmortem"
+          },
+          {
+            "context_id": "context-billing-platform",
+            "topic_id": "topic-billing-incidents",
+            "target_kind": "source",
+            "target_id": "helios-billing-postmortem"
+          }
+        ],
+        "stable_identity_ids": [
+          "context-customer-helios",
+          "context-billing-platform",
+          "topic-compliance-controls",
+          "topic-billing-incidents"
+        ],
+        "baseline_taxonomy_size": 4
+      }
+    },
+    {
+      "scenario_id": "atlas",
+      "failure_mode": "semantic_drift_entity_ambiguity",
+      "query": "Trong hai project Atlas, project nào dùng library của Minh, vì ADR nào chọn Vendor Nova, và security exception hết hạn khi nào?",
+      "expected_source_ids": [
+        "atlas-edge-repository",
+        "atlas-edge-adr-012",
+        "atlas-edge-security-exception"
+      ],
+      "expected_chunk_ids": [
+        "atlas-edge-manifest-minh-library",
+        "atlas-edge-adr-012-vendor-nova",
+        "atlas-edge-exception-expiry"
+      ],
+      "expected_paths": [
+        {
+          "entity_ids": [
+            "project-atlas-edge",
+            "library-minh-stream",
+            "adr-atlas-edge-012",
+            "vendor-nova",
+            "exception-atlas-edge-sec-44"
+          ],
+          "assertion_evidence_ids": [
+            "assert-atlas-edge-uses-minh-library",
+            "assert-atlas-edge-adr-selects-nova",
+            "assert-atlas-edge-nova-exception",
+            "assert-atlas-edge-exception-expires"
+          ]
+        }
+      ],
+      "expected_assertion_evidence_ids": [
+        "assert-atlas-edge-uses-minh-library",
+        "assert-atlas-edge-adr-selects-nova",
+        "assert-atlas-edge-nova-exception",
+        "assert-atlas-edge-exception-expires"
+      ],
+      "distractors": [
+        {
+          "resource_id": "atlas-analytics-repository",
+          "rationale": "The other project named Atlas does not use Minh's library."
+        },
+        {
+          "resource_id": "atlas-analytics-adr-012",
+          "rationale": "Same ADR number belongs to the other Atlas project and selects a different vendor."
+        }
+      ],
+      "acl_negative_ids": [
+        "atlas-edge-unredacted-security-review"
+      ],
+      "discovery": {
+        "expected_memberships": [
+          {
+            "context_id": "context-project-atlas-edge",
+            "topic_id": "topic-atlas-edge-dependencies",
+            "target_kind": "source",
+            "target_id": "atlas-edge-repository"
+          },
+          {
+            "context_id": "context-platform-security",
+            "topic_id": "topic-security-exceptions",
+            "target_kind": "source",
+            "target_id": "atlas-edge-security-exception"
+          },
+          {
+            "context_id": "context-project-atlas-edge",
+            "topic_id": "topic-security-exceptions",
+            "target_kind": "source",
+            "target_id": "atlas-edge-security-exception"
+          },
+          {
+            "context_id": "context-project-atlas-analytics",
+            "topic_id": "topic-atlas-analytics-dependencies",
+            "target_kind": "source",
+            "target_id": "atlas-analytics-repository"
+          }
+        ],
+        "stable_identity_ids": [
+          "context-project-atlas-edge",
+          "context-project-atlas-analytics",
+          "context-platform-security",
+          "topic-atlas-edge-dependencies",
+          "topic-atlas-analytics-dependencies",
+          "topic-security-exceptions"
+        ],
+        "baseline_taxonomy_size": 6
+      }
+    }
+  ]
+}

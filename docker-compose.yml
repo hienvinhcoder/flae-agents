@@ -1,53 +1,207 @@
-version: '3.8'
 
 services:
+  postgres:
+    image: pgvector/pgvector:pg15
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: flae_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d flae_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+    logging:
+      driver: "none"
+    command: ["postgres", "-c", "log_min_messages=panic", "-c", "log_min_error_statement=panic", "-c", "log_statement=none"]
+
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
   firebase-emulator:
     build:
       context: ./firebase
       dockerfile: Dockerfile
+    restart: unless-stopped
     ports:
-      - "4000:4000" # UI
-      - "8080:8080" # Firestore
-      - "9099:9099" # Auth
-      - "9199:9199" # Storage
+      - "4000:4000"
+      - "9099:9099"
+      - "9199:9199"
     volumes:
       - ./firebase/data:/firebase/data
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - fetch('http://127.0.0.1:9099/emulator/v1/projects/flae-agents/config').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))
+      interval: 3s
+      timeout: 3s
+      retries: 40
     networks:
       - app-network
-
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    command: /bin/bash -c "uv run python -m scripts.prestart && uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload --reload-dir app --reload-dir ."
     ports:
       - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      # Override các biến cần dùng hostname nội bộ Docker network
+      - POSTGRES_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/flae_db
+      - RAG_DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/rag_db
+      - AGENT_STATE_DATABASE_URL=postgresql://postgres:postgres@postgres:5432/flae_agent_state_db
+      - REDIS_URL=redis://redis:6379/0
+      - TEMPORAL_HOST=temporal:7233
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/firebaseadmin.json
+      - GOOGLE_CLOUD_PROJECT=flae-agents
+      - FIREBASE_AUTH_EMULATOR_HOST=firebase-emulator:9099
+      - STORAGE_EMULATOR_HOST=http://firebase-emulator:9199
+      - GCS_BUCKET_NAME=flae-agents.appspot.com
+      - UV_LINK_MODE=copy
     volumes:
       - ./backend:/app
       - /app/.venv # Tránh mount đè thư mục virtual environment của uv
-    environment:
-      - FIRESTORE_EMULATOR_HOST=firebase-emulator:8080
-      - FIREBASE_AUTH_EMULATOR_HOST=firebase-emulator:9099
-      - FIREBASE_STORAGE_EMULATOR_HOST=firebase-emulator:9199
-      - GOOGLE_CLOUD_PROJECT=demo-project
     depends_on:
-      - firebase-emulator
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      temporal:
+        condition: service_started
+      firebase-emulator:
+        condition: service_healthy
     networks:
       - app-network
 
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+
+  temporal:
+    image: temporalio/auto-setup:1.24.2
     ports:
-      - "4200:4200"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules # Tránh mount đè thư mục node_modules
+      - "7233:7233"
+    environment:
+      - DB=postgres12
+      - DB_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PWD=postgres
+      - POSTGRES_SEEDS=postgres
+      - LOG_LEVEL=error
     depends_on:
-      - backend
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+    logging:
+      driver: "none"
+    entrypoint: ["/bin/sh", "-c", "/etc/temporal/entrypoint.sh autosetup > /dev/null 2>&1"]
+
+
+  temporal-ui:
+    image: temporalio/ui:2.24.0
+    ports:
+      - "8233:8080"
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+    depends_on:
+      - temporal
+    networks:
+      - app-network
+    logging:
+      driver: "none"
+    entrypoint: ["/bin/sh", "-c", "./start-ui-server.sh > /dev/null 2>&1"]
+
+
+  application-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: uv run watchfiles application-worker app workers
+    env_file:
+      - .env
+    environment:
+      # Override các biến cần dùng hostname nội bộ Docker network
+      - POSTGRES_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/flae_db
+      - RAG_DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/rag_db
+      - AGENT_STATE_DATABASE_URL=postgresql://postgres:postgres@postgres:5432/flae_agent_state_db
+      - REDIS_URL=redis://redis:6379/0
+      - TEMPORAL_HOST=temporal:7233
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/firebaseadmin.json
+      - GOOGLE_CLOUD_PROJECT=flae-agents
+      - FIREBASE_AUTH_EMULATOR_HOST=firebase-emulator:9099
+      - STORAGE_EMULATOR_HOST=http://firebase-emulator:9199
+      - GCS_BUCKET_NAME=flae-agents.appspot.com
+      - UV_LINK_MODE=copy
+    volumes:
+      - ./backend:/app
+      - /app/.venv # Tránh mount đè thư mục virtual environment của uv
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      temporal:
+        condition: service_started
+      firebase-emulator:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  knowledge-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: uv run watchfiles knowledge-worker app workers
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/flae_db
+      - RAG_DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/rag_db
+      - AGENT_STATE_DATABASE_URL=postgresql://postgres:postgres@postgres:5432/flae_agent_state_db
+      - REDIS_URL=redis://redis:6379/0
+      - TEMPORAL_HOST=temporal:7233
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/firebaseadmin.json
+      - GOOGLE_CLOUD_PROJECT=flae-agents
+      - FIREBASE_AUTH_EMULATOR_HOST=firebase-emulator:9099
+      - STORAGE_EMULATOR_HOST=http://firebase-emulator:9199
+      - GCS_BUCKET_NAME=flae-agents.appspot.com
+      - UV_LINK_MODE=copy
+    volumes:
+      - ./backend:/app
+      - /app/.venv
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      temporal:
+        condition: service_started
+      firebase-emulator:
+        condition: service_healthy
     networks:
       - app-network
 
 networks:
   app-network:
     driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:

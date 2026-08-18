@@ -1,0 +1,70 @@
+{
+  "profile": {
+    "profile_version": "demo-reference-v1",
+    "chunk_size_tokens": 1200,
+    "chunk_overlap_tokens": 100,
+    "description_threshold": 3,
+    "embedding_model": "fixture-embedding-v1",
+    "embedding_dimension": 3,
+    "embedding_policy_version": "semantic-input-v1"
+  },
+  "entity_evidence": [
+    {
+      "observation_id": "00000000-0000-0000-0000-000000000101",
+      "canonical_entity_id": "00000000-0000-0000-0000-000000000201",
+      "canonical_name": "Atlas",
+      "entity_type": "project",
+      "description": "Atlas Edge owns the event gateway.",
+      "revision_id": "00000000-0000-0000-0000-000000000301",
+      "chunk_id": "chunk-edge-1"
+    },
+    {
+      "observation_id": "00000000-0000-0000-0000-000000000102",
+      "canonical_entity_id": "00000000-0000-0000-0000-000000000201",
+      "canonical_name": "Atlas",
+      "entity_type": "project",
+      "description": "Atlas Edge serves the platform team.",
+      "revision_id": "00000000-0000-0000-0000-000000000302",
+      "chunk_id": "chunk-edge-2"
+    },
+    {
+      "observation_id": "00000000-0000-0000-0000-000000000103",
+      "canonical_entity_id": "00000000-0000-0000-0000-000000000202",
+      "canonical_name": "Atlas",
+      "entity_type": "dataset",
+      "description": "Atlas is the finance analytics dataset.",
+      "revision_id": "00000000-0000-0000-0000-000000000303",
+      "chunk_id": "chunk-analytics-1"
+    }
+  ],
+  "relationship_evidence": [
+    {
+      "assertion_id": "00000000-0000-0000-0000-000000000401",
+      "relationship_id": "00000000-0000-0000-0000-000000000501",
+      "subject_entity_id": "00000000-0000-0000-0000-000000000201",
+      "subject_name": "Atlas",
+      "predicate": "publishes_to",
+      "object_entity_id": "00000000-0000-0000-0000-000000000202",
+      "object_name": "Atlas",
+      "polarity": "affirmed",
+      "keywords": ["publishes", "analytics"],
+      "description": "Atlas Edge publishes events to the Atlas dataset.",
+      "revision_id": "00000000-0000-0000-0000-000000000301",
+      "chunk_id": "chunk-edge-1"
+    },
+    {
+      "assertion_id": "00000000-0000-0000-0000-000000000402",
+      "relationship_id": "00000000-0000-0000-0000-000000000502",
+      "subject_entity_id": "00000000-0000-0000-0000-000000000201",
+      "subject_name": "Atlas",
+      "predicate": "does_not_replace",
+      "object_entity_id": "00000000-0000-0000-0000-000000000202",
+      "object_name": "Atlas",
+      "polarity": "negated",
+      "keywords": ["replace"],
+      "description": "Atlas Edge does not replace the Atlas dataset.",
+      "revision_id": "00000000-0000-0000-0000-000000000302",
+      "chunk_id": "chunk-edge-2"
+    }
+  ]
+}

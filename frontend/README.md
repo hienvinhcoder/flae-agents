@@ -1,59 +1,63 @@
-# Frontend
+# FLAE Agents Frontend
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.3.23.
+The frontend is a React application built with Vite and TypeScript. The local development server runs at `http://localhost:4200`.
 
-## Development server
+## Local development
 
-To start a local development server, run:
-
-```bash
-ng serve
-```
-
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+Use Node.js 20.19.0 or a compatible version declared in `package.json`, then install dependencies and create the local environment file:
 
 ```bash
-ng generate component component-name
+npm ci
+cp .env.example .env
+npm run dev
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+The example environment enables Firebase Authentication and Storage emulators for project `flae-agents`. The Vite development server listens on all interfaces and uses port 4200.
+
+When starting from the repository root with `./start.sh`, the script creates `frontend/.env` from `.env.example` if needed and follows the Docker Compose `firebase-emulator`, `backend`, `application-worker`, and `knowledge-worker` logs. Emulator UI is available at `http://localhost:4000`, Auth at port `9099`, and Storage at port `9199`.
+
+For production, set `VITE_USE_FIREBASE_EMULATORS=false` and provide the real Firebase Web SDK values. Do not expose emulator host variables to production Backend or Worker services.
+
+## Application architecture
+
+- React Router owns application routing and lazy-loads feature pages.
+- TanStack Query owns server state, Zustand is reserved for shared client state, and component-local state stays in React.
+- Feature API modules provide typed request/response boundaries; UI components do not call network transports directly.
+- Timers, subscriptions, streams, sockets, listeners, and cancellable requests created by effects must be cleaned up when their owner unmounts.
+
+## Tailwind theme
+
+The frontend uses Tailwind CSS v4 with the `@tailwindcss/vite` integration registered in `vite.config.ts`. The application entry point imports `src/styles.css`, which loads Tailwind and defines the project-wide design tokens through CSS-first `:root` values and semantic `@theme inline` mappings.
+
+Do not add a Tailwind v3-style `tailwind.config.js`. Prefer semantic utilities such as `bg-ui-canvas`, `text-ui-ink`, `border-ui-line`, and `rounded-ui-panel` so components consume the shared theme instead of hard-coded design values.
+
+## Quality checks
+
+Run the checks independently as needed:
 
 ```bash
-ng generate --help
+npm run test
+npm run typecheck
+npm run lint
+npm run test:coverage
+npm run check:file-size
+npm run test:e2e
 ```
 
-## Building
+Vitest and React Testing Library cover unit/integration behavior. Playwright covers critical browser flows and accessibility. Coverage thresholds require at least 75% statements and branches, and source files are limited to 450 lines.
 
-To build the project run:
+Playwright E2E tests require Chromium. Install it once with:
 
 ```bash
-ng build
+npx playwright install chromium
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+## Production build
 
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
+Set the required `VITE_*` environment variables, then create an optimized build:
 
 ```bash
-ng test
+npm run build
 ```
 
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+The build output is written to `dist/`. Deploy that directory to a static web host or CDN. Configure the host to serve `index.html` as the fallback for routes that do not match a static file so client-side navigation works correctly.

@@ -1,10 +1,28 @@
-from google.cloud import firestore
-import firedantic
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from redis.asyncio import Redis
+from app.core.config import settings
+from app.core.logger import get_logger
+
+logger = get_logger(__name__)
+
+# SQLAlchemy engine setup
+engine = create_async_engine(settings.POSTGRES_URL, echo=False)
+AsyncSessionLocal = async_sessionmaker(
+    bind=engine, class_=AsyncSession, expire_on_commit=False
+)
+
+# Redis setup
+redis_client = Redis.from_url(settings.REDIS_URL, decode_responses=True)
+
+async def get_db():
+    """Dependency to get the database session"""
+    async with AsyncSessionLocal() as session:
+        yield session
 
 def setup_database():
     """
-    Initialize Firestore client and configure firedantic.
-    It automatically uses GOOGLE_APPLICATION_CREDENTIALS from environment variables.
+    Initialize database components.
+    Since we are using async SQLAlchemy, the engine is already created globally.
+    Redis connection is also managed lazily.
     """
-    db = firestore.Client()
-    firedantic.configure(db)
+    logger.debug("Database engines configured; schema migrations run in prestart.")
