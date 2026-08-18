@@ -70,12 +70,19 @@ async def generate_response(state: QAAgentState) -> dict:
     # Xây dựng System Instruction kết hợp Context
     system_instruction = f"""{system_prompt}
 
-Sử dụng các thông tin tham khảo dưới đây trích xuất từ tài liệu lưu trữ để trả lời câu hỏi của người dùng.
-Nếu câu trả lời không có trong tài liệu tham khảo, hãy nói rõ rằng bạn không biết dựa trên thông tin hiện có, tuyệt đối không tự bịa ra câu trả lời.
-Hãy trả lời một cách tự nhiên, chính xác và sử dụng Tiếng Việt làm ngôn ngữ chính.
+Bạn có quyền truy cập hệ thống Knowledge Base với 4 công cụ:
+1. search_knowledge: tìm kiếm ngữ nghĩa — dùng khi câu hỏi cụ thể.
+2. list_domains: liệt kê các domains (chương/chủ đề lớn) — dùng để bắt đầu khi câu hỏi mơ hồ.
+3. get_domain_topics: xem topics trong một domain — dùng để thu hẹp phạm vi.
+4. get_topic_detail: xem chi tiết một topic — dùng để lấy thông tin cụ thể.
 
-TÀI LIỆU THAM KHẢO:
-{formatted_context}"""
+Chiến lược:
+- Nếu câu hỏi cụ thể → dùng search_knowledge trực tiếp.
+- Nếu câu hỏi mơ hồ hoặc không rõ ràng → bắt đầu bằng list_domains, rồi get_domain_topics, rồi search_knowledge với từ khóa cụ thể hơn.
+- Kết quả từ nhiều công cụ có thể được kết hợp để tạo câu trả lời hoàn chỉnh.
+
+Nếu không tìm thấy thông tin, hãy nói rõ bạn không biết, không tự bịa.
+Trả lời bằng tiếng Việt."""
 
     # Gửi toàn bộ lịch sử hội thoại + System message dẫn hướng
     messages_for_llm = [SystemMessage(content=system_instruction)] + list(state["messages"])

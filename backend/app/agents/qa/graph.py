@@ -1,6 +1,7 @@
 from langchain.agents import create_agent
-from app.agents.qa.tools import query_knowledge_base
+from app.agents.qa.tools import search_knowledge, list_domains, get_domain_topics, get_topic_detail
 from app.agents.shared.models import get_gemini_llm
+
 
 def get_qa_agent_graph(
     checkpointer=None,
@@ -9,13 +10,13 @@ def get_qa_agent_graph(
     system_prompt: str | None = None,
 ):
     """
-    Biên dịch đồ thị LangGraph ReAct Agent sử dụng create_agent và tool query_knowledge_base.
+    Biên dịch đồ thị LangGraph ReAct Agent sử dụng create_agent và 4 tools điều hướng.
     """
     llm = get_gemini_llm(model_name=model_name, temperature=temperature)
 
     agent_graph = create_agent(
         model=llm,
-        tools=[query_knowledge_base],
+        tools=[search_knowledge, list_domains, get_domain_topics, get_topic_detail],
         system_prompt=system_prompt,
         checkpointer=checkpointer,
     )
