@@ -17,6 +17,7 @@ class Topic(RagBase):
     workspace_id: Mapped[str] = mapped_column(String, primary_key=True)
     topic_id: Mapped[str] = mapped_column(String, primary_key=True)
     parent_topic_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    domain_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
     slug: Mapped[str] = mapped_column(String, nullable=False)
     type: Mapped[str] = mapped_column(String, nullable=False)  # 'domain' | 'topic' | 'subtopic'
