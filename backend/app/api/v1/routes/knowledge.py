@@ -34,6 +34,7 @@ from app.services.knowledge.retrieval.query_service import KnowledgeQueryService
 from app.services.knowledge.retrieval.query_factory import (
     create_memory_query_service,
 )
+from app.services.knowledge.retrieval.retriever import RetrieverService
 from app.schemas.knowledge_navigation import DomainPage, DomainDetail
 from app.services.knowledge_base.domain_service import DomainService
 from app.core.logger import get_logger
@@ -265,30 +266,21 @@ async def search_knowledge_base(
     workspace_id: uuid.UUID = Depends(get_current_workspace_id),
 ):
     try:
-        result = await create_memory_query_service(
-            workspace_id, user_uid
-        ).search(
-            MemoryQueryRequest(
-                query=payload.query,
-                budget=MemoryQueryBudget(
-                    max_chunks=payload.top_k_chunks,
-                    max_paths=payload.top_k_paths,
-                ),
-            )
+        results, diagnostics = await RetrieverService.retrieve(
+            workspace_id=str(workspace_id),
+            query=payload.query,
+            top_k_chunks=payload.top_k_chunks,
+            top_k_paths=payload.top_k_paths,
         )
-        legacy = KnowledgeQueryService.to_legacy_result(result)
         return DataResponse[KnowledgeSearchResponse].success_response(
             data=KnowledgeSearchResponse(
-                top_chunks=legacy["top_chunks"],
-                top_paths=legacy["top_paths"],
-                diagnostics={
-                    "readiness": result.readiness.model_dump(mode="json"),
-                    "truncation": result.truncation.model_dump(mode="json"),
-                },
+                top_chunks=results.get("top_chunks", []),
+                top_paths=results.get("top_paths", []),
+                diagnostics=diagnostics,
             )
         )
     except Exception as error:
-        logger.error("Knowledge Base canonical search failed")
+        logger.error("Knowledge Base search failed: %s", error)
         raise ApplicationError(
             status_code=500, code="INTERNAL_ERROR", message="Tìm kiếm thất bại."
         ) from error

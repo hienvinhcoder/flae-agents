@@ -115,3 +115,31 @@ def test_get_domain(mock_get):
     assert resp.status_code == 200
     assert resp.json()["data"]["domain_id"] == "dom-abc"
     assert len(resp.json()["data"]["topics"]) == 1
+
+
+@patch("app.api.v1.routes.knowledge.RetrieverService.retrieve",
+       new_callable=AsyncMock)
+def test_search_uses_retriever(mock_retrieve):
+    mock_retrieve.return_value = (
+        {
+            "top_chunks": [
+                {
+                    "id": "c1",
+                    "score": 0.9,
+                    "type": "chunk",
+                    "name": "Test Chunk",
+                    "source_document": "test.pdf",
+                    "content": "Test content",
+                }
+            ],
+            "top_paths": [],
+        },
+        {"time": 0.1},
+    )
+    resp = client.post(
+        "/api/v1/knowledge-base/search",
+        json={"query": "test", "top_k_chunks": 5, "top_k_paths": 10},
+    )
+    assert resp.status_code == 200
+    assert "top_chunks" in resp.json()["data"]
+    mock_retrieve.assert_called_once()
