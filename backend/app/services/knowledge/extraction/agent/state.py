@@ -32,4 +32,5 @@ class ExtractionState(TypedDict):
     candidate_topics: List[dict]
     topic_assignments: List[dict]
     topic_candidates: List[dict]
+    domain_assignments: List[dict]
     tokens_used: int

@@ -14,7 +14,7 @@ def test_parse_extraction_output():
         "<|COMPLETE|>"
     )
 
-    entities, relations = parse_extraction_output(raw_output, "chunk_1")
+    entities, relations, domains = parse_extraction_output(raw_output, "chunk_1")
 
     assert len(entities) == 1
     assert entities[0]["entity_name"] == "Apple"
@@ -29,6 +29,27 @@ def test_parse_extraction_output():
     assert relations[0]["keywords"] == "creates, develops"
     assert relations[0]["description"] == "Apple manufactures iPhone"
     assert relations[0]["source_chunk_id"] == "chunk_1"
+
+    assert len(domains) == 0
+
+
+def test_parse_extraction_output_with_domain():
+    from app.services.knowledge.ingestion.helpers import parse_extraction_output
+
+    raw_output = (
+        "entity<|#|>Apple<|#|>organization<|#|>A technology company\n"
+        "relation<|#|>Apple<|#|>iPhone<|#|>creates<|#|>Apple makes iPhone\n"
+        "domain<|#|>Technology<|#|>Companies and products in the tech industry\n"
+        "<|COMPLETE|>"
+    )
+    entities, relations, domains = parse_extraction_output(raw_output, "chunk-1")
+
+    assert len(entities) == 1
+    assert len(relations) == 1
+    assert len(domains) == 1
+    assert domains[0]["name"] == "Technology"
+    assert domains[0]["description"] == "Companies and products in the tech industry"
+    assert domains[0]["source_chunk_id"] == "chunk-1"
 
 
 async def test_extract_entities_from_chunks_no_api_key():

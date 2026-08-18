@@ -21,11 +21,12 @@ def _get_unique_id(text: str, prefix: str = "") -> str:
 def _parse_llm_output(
     raw_text: str,
     chunk_id: str
-) -> Tuple[List[Dict], List[Dict], List[Dict], List[Dict]]:
+) -> Tuple[List[Dict], List[Dict], List[Dict], List[Dict], List[Dict]]:
     entities = []
     relations = []
     topic_assignments = []
     topic_candidates = []
+    domain_assignments = []
 
     # split by COMPLETION_DELIMITER to ignore any trailing text
     lines = [
@@ -84,8 +85,14 @@ def _parse_llm_output(
                 "confidence": confidence,
                 "reason": parts[3].strip()
             })
+        elif category == 'domain' and len(parts) == 3:
+            domain_assignments.append({
+                "name": parts[1].strip(),
+                "description": parts[2].strip(),
+                "source_chunk_id": chunk_id
+            })
 
-    return entities, relations, topic_assignments, topic_candidates
+    return entities, relations, topic_assignments, topic_candidates, domain_assignments
 
 
 def prepare_prompts_node(state: ExtractionState) -> dict:
@@ -131,7 +138,7 @@ async def extract_first_pass_node(state: ExtractionState) -> dict:
     if response.response_metadata and "token_usage" in response.response_metadata:
         tokens = response.response_metadata["token_usage"].get("total_tokens", 0)
 
-    ents, rels, topic_assigns, topic_cands = _parse_llm_output(raw_text, state["chunk_id"])
+    ents, rels, topic_assigns, topic_cands, domain_assigns = _parse_llm_output(raw_text, state["chunk_id"])
 
     return {
         "first_pass_result": raw_text,
@@ -139,6 +146,7 @@ async def extract_first_pass_node(state: ExtractionState) -> dict:
         "relations": rels,
         "topic_assignments": topic_assigns,
         "topic_candidates": topic_cands,
+        "domain_assignments": domain_assigns,
         "tokens_used": tokens,
         "messages": [
             HumanMessage(content=state["user_prompt"]),
@@ -164,12 +172,13 @@ async def extract_gleaning_node(state: ExtractionState) -> dict:
     if response.response_metadata and "token_usage" in response.response_metadata:
         tokens = response.response_metadata["token_usage"].get("total_tokens", 0)
 
-    gleaned_ents, gleaned_rels, gleaned_assigns, gleaned_cands = _parse_llm_output(raw_text, state["chunk_id"])
+    gleaned_ents, gleaned_rels, gleaned_assigns, gleaned_cands, gleaned_domains = _parse_llm_output(raw_text, state["chunk_id"])
 
     all_ents = state["entities"] + gleaned_ents
     all_rels = state["relations"] + gleaned_rels
     all_assigns = state.get("topic_assignments", []) + gleaned_assigns
     all_cands = state.get("topic_candidates", []) + gleaned_cands
+    all_domains = state.get("domain_assignments", []) + gleaned_domains
 
     return {
         "second_pass_result": raw_text,
@@ -177,5 +186,6 @@ async def extract_gleaning_node(state: ExtractionState) -> dict:
         "relations": all_rels,
         "topic_assignments": all_assigns,
         "topic_candidates": all_cands,
+        "domain_assignments": all_domains,
         "tokens_used": state["tokens_used"] + tokens
     }

@@ -9,10 +9,11 @@ from app.services.knowledge.extraction.utils import get_entity_id, get_relation_
 
 def parse_extraction_output(
     raw_text: str, chunk_id: str
-) -> Tuple[List[Dict], List[Dict]]:
-    """Parse LLM output thành entities và relations."""
+) -> Tuple[List[Dict], List[Dict], List[Dict]]:
+    """Parse LLM output thành entities, relations và domains."""
     entities: list[dict] = []
     relations: list[dict] = []
+    domains: list[dict] = []
 
     lines = [line.strip() for line in raw_text.split(COMPLETION_DELIMITER)[0].split("\n") if line.strip()]
 
@@ -39,8 +40,15 @@ def parse_extraction_output(
                 "description": parts[4].strip(),
                 "source_chunk_id": chunk_id,
             })
+        elif parts[0].lower() == "domain" and len(parts) == 3:
+            name = clean_entity_name(parts[1])
+            domains.append({
+                "name": name,
+                "description": parts[2].strip(),
+                "source_chunk_id": chunk_id,
+            })
 
-    return entities, relations
+    return entities, relations, domains
 
 
 def merge_entities(entities: List[Dict]) -> List[Dict]:
