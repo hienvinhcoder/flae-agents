@@ -34,6 +34,8 @@ from app.services.knowledge.retrieval.query_service import KnowledgeQueryService
 from app.services.knowledge.retrieval.query_factory import (
     create_memory_query_service,
 )
+from app.schemas.knowledge_navigation import DomainPage, DomainDetail
+from app.services.knowledge_base.domain_service import DomainService
 from app.core.logger import get_logger
 
 logger = get_logger(__name__)
@@ -134,6 +136,35 @@ async def get_knowledge_graph(
         raise ApplicationError(
             status_code=500, code="INTERNAL_ERROR", message="Không thể lấy đồ thị tri thức."
         ) from e
+
+
+@router.get("/domains", response_model=DataResponse[DomainPage])
+async def list_knowledge_domains(
+    limit: int = 20,
+    user_uid: str = Depends(get_current_user_uid),
+    workspace_id: uuid.UUID = Depends(get_current_workspace_id),
+):
+    page = await DomainService.list_domains(
+        workspace_id=str(workspace_id), limit=limit
+    )
+    return DataResponse[DomainPage].success_response(data=DomainPage(**page))
+
+
+@router.get("/domains/{domain_id}", response_model=DataResponse[DomainDetail])
+async def get_knowledge_domain(
+    domain_id: str,
+    user_uid: str = Depends(get_current_user_uid),
+    workspace_id: uuid.UUID = Depends(get_current_workspace_id),
+):
+    detail = await DomainService.get_domain(
+        workspace_id=str(workspace_id), domain_id=domain_id
+    )
+    if not detail:
+        raise ApplicationError(
+            status_code=404, code="NOT_FOUND",
+            message="Domain không tồn tại."
+        )
+    return DataResponse[DomainDetail].success_response(data=DomainDetail(**detail))
 
 
 @router.get(
@@ -261,3 +292,5 @@ async def search_knowledge_base(
         raise ApplicationError(
             status_code=500, code="INTERNAL_ERROR", message="Tìm kiếm thất bại."
         ) from error
+
+
