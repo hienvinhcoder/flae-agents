@@ -90,5 +90,6 @@ async def run_extraction_agent(
         "relations": result.get("relations", []),
         "topic_assignments": result.get("topic_assignments", []),
         "topic_candidates": result.get("topic_candidates", []),
+        "domain_assignments": result.get("domain_assignments", []),
     }
     return output, result.get("tokens_used", 0)

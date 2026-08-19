@@ -1,18 +1,11 @@
-"""References-only contracts for the complete Company Memory ingestion path."""
+"""Minimal company memory ingestion schemas retained for the workflow starter."""
 
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field
 
-from app.schemas.enrichment import EvidenceExtractionWorkflowResult
-from app.schemas.graph_enrichment import (
-    GraphSnapshotPublishResult,
-    SemanticGraphEnrichmentWorkflowInput,
-)
-from app.schemas.ingestion import (
-    IngestionWorkflowInput,
-    IngestionWorkflowOutput,
-)
+from app.schemas.ingestion import IngestionWorkflowInput
+from app.schemas.graph_enrichment import SemanticGraphEnrichmentWorkflowInput
 
 
 class CompanyMemoryIngestionModel(BaseModel):
@@ -22,23 +15,6 @@ class CompanyMemoryIngestionModel(BaseModel):
 class CompanyMemoryIngestionWorkflowInput(CompanyMemoryIngestionModel):
     base: IngestionWorkflowInput
     semantic_graph: SemanticGraphEnrichmentWorkflowInput
-    evidence_extractor_version: str = Field(
-        default="evidence-v2", min_length=1, max_length=200
-    )
     evidence_model_name: str = Field(min_length=1, max_length=200)
     evidence_glean_max: int = Field(default=1, ge=0, le=2)
-    evidence_batch_size: int = Field(default=20, ge=1, le=100)
     max_parallel_evidence_chunks: int = Field(default=4, ge=1, le=16)
-    max_evidence_chunks: int = Field(default=5_000, ge=1, le=10_000)
-
-    @model_validator(mode="after")
-    def validate_workspace(self) -> CompanyMemoryIngestionWorkflowInput:
-        if self.base.source.workspace_id != self.semantic_graph.workspace_id:
-            raise ValueError("Base and semantic graph workspace IDs must match.")
-        return self
-
-
-class CompanyMemoryIngestionWorkflowResult(CompanyMemoryIngestionModel):
-    base: IngestionWorkflowOutput
-    evidence: EvidenceExtractionWorkflowResult
-    graph: GraphSnapshotPublishResult

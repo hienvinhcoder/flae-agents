@@ -1,1 +1,0 @@
-"""Knowledge memory-state services."""

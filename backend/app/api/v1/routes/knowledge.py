@@ -27,13 +27,8 @@ from app.schemas.knowledge import (
     KnowledgeSearchRequest,
     KnowledgeSearchResponse,
 )
-from app.schemas.memory_query import MemoryQueryBudget, MemoryQueryRequest
 from app.services.knowledge.documents import KnowledgeBaseService
 from app.services.knowledge.graph.api_service import KnowledgeGraphService
-from app.services.knowledge.retrieval.query_service import KnowledgeQueryService
-from app.services.knowledge.retrieval.query_factory import (
-    create_memory_query_service,
-)
 from app.services.knowledge.retrieval.retriever import RetrieverService
 from app.schemas.knowledge_navigation import DomainPage, DomainDetail
 from app.services.knowledge_base.domain_service import DomainService

@@ -194,11 +194,6 @@ class IngestionService:
                     domain_df, "knowledge_domains", pk_col="domain_id",
                     workspace_id=workspace_id, overwrite=True
                 )
-                # Link domains to topics
-                rag_db_manager.save_df(
-                    domain_df[["domain_id"]], "topics",
-                    pk_col="topic_id", workspace_id=workspace_id, overwrite=True
-                )
                 domain_count = len(domain_df)
 
         # 5. Cập nhật Degree cho Entities và Relationships bị ảnh hưởng trong DB bằng SQL

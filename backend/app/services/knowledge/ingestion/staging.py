@@ -23,7 +23,7 @@ from app.schemas.ingestion import (
     StageBatchResult,
     StageEmbeddingInput,
 )
-from app.services.knowledge.retrieval.resources import (
+from app.services.knowledge.ingestion.resources import (
     ChunkIdentity,
     build_stable_chunk_id,
 )
