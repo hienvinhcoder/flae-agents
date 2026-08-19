@@ -18,6 +18,8 @@ from app.db.rag_db import rag_db_manager
 from app.schemas.ingestion import (
     BaseStagePlan,
     DocumentIngestionStatusInput,
+    ExtractAndFuseInput,
+    ExtractAndFuseResult,
     PrepareBaseStageInput,
     PublishBaseInput,
     PublishBaseResult,
@@ -183,6 +185,84 @@ async def update_document_status_activity(
             status=command.status,
             error_message=command.error_code,
         )
+
+
+@activity.defn
+async def extract_and_fuse_activity(
+    command: ExtractAndFuseInput,
+) -> ExtractAndFuseResult:
+    """Extract entities, relations, domains from chunks and fuse into knowledge graph."""
+    from sqlalchemy import text as sql_text
+
+    activity.heartbeat({"stage": "load_chunks", "completed": 0})
+
+    # 1. Load chunks from current_chunks (already published with embeddings)
+    rag_db_manager.initialize()
+    schema = rag_db_manager.schema
+    async with rag_db_manager.get_async_session(command.workspace_id) as session:
+        result = await session.execute(
+            sql_text(
+                f"SELECT chunk_id, text, embedding FROM {schema}.current_chunks "
+                "WHERE workspace_id = :workspace_id AND source_id = :source_id"
+            ),
+            {"workspace_id": command.workspace_id, "source_id": command.source_doc_id},
+        )
+        rows = result.fetchall()
+
+    if not rows:
+        logger.warning("No chunks found for extraction. Skipping.")
+        return ExtractAndFuseResult(
+            entity_count=0, relation_count=0, domain_count=0, tokens_used=0
+        )
+
+    # 2. Convert rows to dicts for extraction
+    chunks = []
+    for row in rows:
+        embedding = None
+        if row.embedding is not None:
+            import json
+            if isinstance(row.embedding, str):
+                embedding = json.loads(row.embedding)
+            else:
+                embedding = list(row.embedding)
+        chunks.append({
+            "chunk_id": row.chunk_id,
+            "text": row.text,
+            "embedding": embedding,
+        })
+
+    activity.heartbeat({"stage": "extract", "completed": 0, "total": len(chunks)})
+
+    # 3. Extract entities, relations, domains
+    entities, relations, domains, tokens = await IngestionService.extract_entities_from_chunks(
+        chunks=chunks,
+        workspace_id=command.workspace_id,
+    )
+
+    activity.heartbeat({"stage": "fuse", "completed": len(chunks)})
+
+    # 4. Fuse and save to knowledge graph
+    if entities or relations or domains:
+        IngestionService.fuse_and_save(
+            workspace_id=command.workspace_id,
+            chunks=chunks,
+            entities=entities,
+            relations=relations,
+            source_doc_id=command.source_doc_id,
+            domains=domains if domains else None,
+        )
+
+    logger.info(
+        f"Extraction+fusion complete: {len(entities)} entities, "
+        f"{len(relations)} relations, {len(domains) if domains else 0} domains, "
+        f"{tokens} tokens"
+    )
+    return ExtractAndFuseResult(
+        entity_count=len(entities),
+        relation_count=len(relations),
+        domain_count=len(domains) if domains else 0,
+        tokens_used=tokens,
+    )
 
 
 def _validated_gcs_path(uri: str) -> str:

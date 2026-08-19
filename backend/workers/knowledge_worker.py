@@ -10,6 +10,7 @@ from app.core.config import settings
 from app.core.logger import get_logger, setup_logging
 from app.core.temporal import get_temporal_client
 from app.temporal.activities.ingestion import (
+    extract_and_fuse_activity,
     prepare_base_stage_activity,
     publish_base_activity,
     stage_embedding_batch_activity,
@@ -32,6 +33,7 @@ def create_knowledge_worker(
             IngestionWorkflow,
         ],
         activities=[
+            extract_and_fuse_activity,
             prepare_base_stage_activity,
             stage_embedding_batch_activity,
             publish_base_activity,

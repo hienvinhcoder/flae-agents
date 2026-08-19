@@ -13,6 +13,7 @@ with workflow.unsafe.imports_passed_through():
     from app.schemas.ingestion import (
         BaseStagePlan,
         DocumentIngestionStatusInput,
+        ExtractAndFuseInput,
         IngestionWorkflowInput,
         IngestionWorkflowOutput,
         ManifestExpectation,
@@ -22,6 +23,7 @@ with workflow.unsafe.imports_passed_through():
         StageEmbeddingInput,
     )
     from app.temporal.activities.ingestion import (
+        extract_and_fuse_activity,
         prepare_base_stage_activity,
         publish_base_activity,
         stage_embedding_batch_activity,
@@ -108,6 +110,21 @@ class IngestionWorkflow:
         )
         if published.revision_id != command.source.revision_id:
             raise RuntimeError("Published revision does not match workflow input.")
+
+        # Extract entities/relations/domains and fuse into knowledge graph
+        await workflow.execute_activity(
+            extract_and_fuse_activity,
+            ExtractAndFuseInput(
+                workspace_id=str(command.source.workspace_id),
+                source_doc_id=str(command.source.document_id),
+                chunk_count=published.chunk_count,
+            ),
+            start_to_close_timeout=timedelta(minutes=30),
+            schedule_to_close_timeout=timedelta(hours=1),
+            heartbeat_timeout=timedelta(seconds=30),
+            retry_policy=TRANSIENT_RETRY,
+        )
+
         return IngestionWorkflowOutput(
             revision_id=published.revision_id,
             chunk_count=published.chunk_count,

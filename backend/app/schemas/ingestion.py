@@ -177,6 +177,21 @@ class IngestionWorkflowOutput(IngestionModel):
     manifest_checksum: Checksum = Field(pattern=r"^sha256:[0-9a-f]{64}$")
 
 
+class ExtractAndFuseInput(IngestionModel):
+    """Input for the extract-and-fuse activity that runs after publish."""
+    workspace_id: str
+    source_doc_id: str
+    chunk_count: int = Field(ge=0)
+
+
+class ExtractAndFuseResult(IngestionModel):
+    """Output from the extract-and-fuse activity."""
+    entity_count: int = Field(ge=0)
+    relation_count: int = Field(ge=0)
+    domain_count: int = Field(ge=0)
+    tokens_used: int = Field(ge=0)
+
+
 class DocumentIngestionStatusInput(IngestionModel):
     document_id: UUID
     status: Literal["processing", "completed", "failed"]
