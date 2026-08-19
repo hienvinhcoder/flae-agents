@@ -2,7 +2,7 @@ import pytest
 import uuid
 from unittest.mock import patch, AsyncMock, MagicMock
 
-# Mock require_roles decorator dependency TRƯỚC KHI import main/app
+# Mock require_roles decorator BEFORE importing main/app
 def mock_require_roles(roles):
     async def dummy_dep(*args, **kwargs):
         return "admin"
@@ -17,14 +17,6 @@ from app.core.security import (
     get_current_user,
     get_current_user_uid,
     get_current_workspace_id,
-)
-from app.schemas.agent_memory import FacetState
-from app.schemas.memory_query import (
-    MemoryQueryRequest,
-    MemoryReadiness,
-    MemorySearchResult,
-    MemoryTextHit,
-    MemoryTruncation,
 )
 
 patcher.stop()
@@ -47,45 +39,34 @@ app.dependency_overrides[get_current_workspace_id] = override_get_current_worksp
 
 
 def test_search_knowledge_base_api_success():
-    canonical_result = MemorySearchResult(
-        query="Ai sản xuất iPhone?",
-        text_hits=(
-            MemoryTextHit(
-                chunk_id="chunk-1",
-                source_id="source-1",
-                source_name="apple_info.txt",
-                resource_uri="flae://workspace/ws/chunks/chunk-1",
-                content="Apple manufactures iPhone.",
-                score=0.85,
-                token_count=4,
-                match_signals=("semantic",),
-            ),
-        ),
-        graph_paths=(),
-        readiness=MemoryReadiness(
-            base=FacetState.ready,
-            graph=FacetState.pending,
-        ),
-        truncation=MemoryTruncation(
-            chunks_truncated=False,
-            paths_truncated=False,
-            citations_truncated=False,
-            context_tokens_used=4,
-            citations_used=0,
-        ),
-    )
-    service = MagicMock()
-    service.search = AsyncMock(return_value=canonical_result)
+    results = {
+        "top_chunks": [
+            {
+                "id": "chunk-1",
+                "score": 0.85,
+                "type": "chunk",
+                "name": "apple_info.txt",
+                "source_document": "apple_info.txt",
+                "content": "Apple manufactures iPhone.",
+            }
+        ],
+        "top_paths": [],
+    }
+    diagnostics = {
+        "readiness": {"base": "ready"},
+        "timings_ms": {"total": 100},
+    }
 
     with patch(
-        "app.api.v1.routes.knowledge.create_memory_query_service",
-        return_value=service,
-    ) as factory:
+        "app.api.v1.routes.knowledge.RetrieverService.retrieve",
+        new_callable=AsyncMock,
+        return_value=(results, diagnostics),
+    ) as mock_retrieve:
 
         payload = {
             "query": "Ai sản xuất iPhone?",
             "top_k_chunks": 5,
-            "top_k_paths": 10
+            "top_k_paths": 10,
         }
 
         response = client.post("/api/v1/knowledge-base/search", json=payload)
@@ -105,12 +86,9 @@ def test_search_knowledge_base_api_success():
         assert search_data["top_paths"] == []
         assert search_data["diagnostics"]["readiness"]["base"] == "ready"
 
-        factory.assert_called_once_with(
-            uuid.UUID("11111111-2222-3333-4444-555555555555"),
-            "mock_firebase_uid_123",
+        mock_retrieve.assert_called_once_with(
+            workspace_id="11111111-2222-3333-4444-555555555555",
+            query="Ai sản xuất iPhone?",
+            top_k_chunks=5,
+            top_k_paths=10,
         )
-        request = service.search.await_args.args[0]
-        assert isinstance(request, MemoryQueryRequest)
-        assert request.query == "Ai sản xuất iPhone?"
-        assert request.budget.max_chunks == 5
-        assert request.budget.max_paths == 10
