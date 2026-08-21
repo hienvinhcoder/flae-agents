@@ -124,7 +124,8 @@ def test_fuse_and_save_success():
             assert res["relation_count"] == 1
 
             mock_db_manager.initialize.assert_called_once()
-            assert mock_db_manager.save_df.call_count == 3
+            mock_db_manager.update_chunks_graph_references.assert_called_once()
+            assert mock_db_manager.save_df.call_count == 2
 
 
 def test_save_df_sql_generation():
@@ -298,11 +299,11 @@ def test_fuse_and_save_with_summarization():
                     db_manager=mock_db_manager
                 )
 
+                mock_db_manager.update_chunks_graph_references.assert_called_once()
                 save_df_calls = mock_db_manager.save_df.call_args_list
-                assert len(save_df_calls) == 3
+                assert len(save_df_calls) == 2
                 assert save_df_calls[0][1]["overwrite"] is True
                 assert save_df_calls[1][1]["overwrite"] is True
-                assert save_df_calls[2][1]["overwrite"] is True
 
                 assert mock_cur.execute.call_count >= 3
 
@@ -590,3 +591,39 @@ def test_fuse_and_save_includes_domain_upsert():
         domain_call = [c for c in calls if len(c.args) > 1 and c.args[1] == "knowledge_domains"]
         assert len(domain_call) >= 1, "knowledge_domains table should be saved"
         assert result["domain_count"] == 1
+
+
+def test_update_chunks_graph_references_sql_generation():
+    from unittest.mock import MagicMock, patch
+    from app.db.rag_db import DBManager
+
+    mock_conn = MagicMock()
+    mock_cur = MagicMock()
+    mock_conn.cursor.return_value = mock_cur
+
+    db_manager = DBManager(db_url="postgresql+asyncpg://user:pass@host:5432/db", schema="public")
+    db_manager.get_conn = MagicMock(return_value=mock_conn)
+    db_manager.initialize = MagicMock()
+
+    with patch("psycopg2.extras.execute_values") as mock_execute_values:
+        chunk_updates = [
+            {"chunk_id": "chunk_1", "entity_ids": ["ent_1"], "relation_ids": ["rel_1"]},
+            {"chunk_id": "chunk_2", "entity_ids": ["ent_2"], "relation_ids": []},
+        ]
+        count = db_manager.update_chunks_graph_references("test_ws", chunk_updates)
+        assert count == 2
+
+        mock_cur.execute.assert_any_call("SET LOCAL ROLE flae_rag_app;")
+        mock_cur.execute.assert_any_call("SET LOCAL app.current_workspace_id = %s;", ("test_ws",))
+
+        args, kwargs = mock_execute_values.call_args
+        sql_query = args[1]
+        values = args[2]
+
+        assert "UPDATE public.chunks AS c" in sql_query
+        assert "SET entity_ids = v.entity_ids::jsonb" in sql_query
+        assert "relation_ids = v.relation_ids::jsonb" in sql_query
+        assert "WHERE c.workspace_id = v.workspace_id AND c.chunk_id = v.chunk_id" in sql_query
+        assert len(values) == 2
+        assert values[0][0] == "chunk_1"
+        assert values[0][3] == "test_ws"

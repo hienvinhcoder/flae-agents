@@ -8,7 +8,7 @@ from sqlalchemy import select, update, and_, or_, text
 from app.core.config import settings
 from app.core.logger import get_logger
 from app.db.rag_db import rag_db_manager
-from app.models.rag.topics import Topic, TopicAlias, TopicMembership, TopicUpdateQueue
+from app.models.rag.topics import Topic, TopicAlias, TopicMembership
 
 logger = get_logger(__name__)
 
@@ -284,16 +284,6 @@ def resolve_topic_assignments(
                 link_entities_and_relations(topic_id, confidence)
 
                 affected_topics.append(topic_id)
-
-        # 3. Đẩy các topics bị ảnh hưởng vào hàng đợi cập nhật
-        for topic_id in set(affected_topics):
-            queue_id = f"q-{uuid.uuid4()}"
-            cur.execute(f"""
-                INSERT INTO {rag_db_manager.schema}.topic_update_queue
-                (workspace_id, queue_id, topic_id, reason, status)
-                VALUES (%s, %s, %s, 'Chunk ingested/updated', 'pending')
-                ON CONFLICT (workspace_id, queue_id) DO NOTHING;
-            """, (workspace_id, queue_id, topic_id))
 
         conn.commit()
     except Exception as e:

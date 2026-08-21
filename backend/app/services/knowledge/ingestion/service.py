@@ -27,6 +27,39 @@ logger = get_logger(__name__)
 
 class IngestionService:
     @staticmethod
+    async def load_published_chunks(workspace_id: str, document_id: str) -> list[dict]:
+        """Tải các chunks đã được publish để phục vụ trích xuất entity/relation."""
+        import json
+        from sqlalchemy import text as sql_text
+        from app.db.rag_db import rag_db_manager
+
+        rag_db_manager.initialize()
+        schema = rag_db_manager.schema
+        chunks = []
+        async with rag_db_manager.get_async_session(workspace_id) as session:
+            result = await session.execute(
+                sql_text(
+                    f"SELECT chunk_id, text, embedding FROM {schema}.current_chunks "
+                    "WHERE workspace_id = :workspace_id AND document_id = :document_id"
+                ),
+                {"workspace_id": workspace_id, "document_id": document_id},
+            )
+            rows = result.fetchall()
+            for row in rows:
+                embedding = None
+                if row.embedding is not None:
+                    if isinstance(row.embedding, str):
+                        embedding = json.loads(row.embedding)
+                    else:
+                        embedding = list(row.embedding)
+                chunks.append({
+                    "chunk_id": row.chunk_id,
+                    "text": row.text,
+                    "embedding": embedding,
+                })
+        return chunks
+
+    @staticmethod
     def fuse_and_save(
         workspace_id: str,
         chunks: List[Dict],
@@ -70,48 +103,63 @@ class IngestionService:
 
         chunk_count = 0
         if not valid_chunks.empty:
-            valid_chunks = valid_chunks.copy()
-            valid_chunks["entity_ids"] = [[] for _ in range(len(valid_chunks))]
-            valid_chunks["relation_ids"] = [[] for _ in range(len(valid_chunks))]
-
-            chunk_index = {
-                cid: idx
-                for idx, cid in enumerate(valid_chunks["chunk_id"])
-            }
+            chunk_entity_map = {cid: [] for cid in valid_chunks["chunk_id"]}
+            chunk_relation_map = {cid: [] for cid in valid_chunks["chunk_id"]}
 
             for ent in final_entities:
-                src_chunks = ent.get("source_chunk_ids", [])
-                if isinstance(src_chunks, list):
-                    for cid in src_chunks:
-                        if cid in chunk_index:
-                            idx = chunk_index[cid]
-                            valid_chunks.iloc[idx]["entity_ids"].append(
-                                ent["entity_id"]
-                            )
+                for cid in ent.get("source_chunk_ids", []) or []:
+                    if cid in chunk_entity_map:
+                        chunk_entity_map[cid].append(ent["entity_id"])
 
             for rel in final_relations:
-                src_chunks = rel.get("source_chunk_ids", [])
-                if isinstance(src_chunks, list):
-                    for cid in src_chunks:
-                        if cid in chunk_index:
-                            idx = chunk_index[cid]
-                            valid_chunks.iloc[idx]["relation_ids"].append(
-                                rel["relation_id"]
-                            )
+                for cid in rel.get("source_chunk_ids", []) or []:
+                    if cid in chunk_relation_map:
+                        chunk_relation_map[cid].append(rel["relation_id"])
 
-            # Loại bỏ các cột tạm phục vụ Classify Topic trước khi lưu database
-            for col in ["topic_assignments", "topic_candidates"]:
-                if col in valid_chunks.columns:
-                    valid_chunks = valid_chunks.drop(columns=[col])
+            chunk_updates = [
+                {
+                    "chunk_id": cid,
+                    "entity_ids": list(set(chunk_entity_map[cid])),
+                    "relation_ids": list(set(chunk_relation_map[cid])),
+                }
+                for cid in valid_chunks["chunk_id"]
+            ]
 
-            rag_db_manager.save_df(
-                valid_chunks, "chunks", pk_col="chunk_id",
-                workspace_id=workspace_id, overwrite=True
+            rag_db_manager.update_chunks_graph_references(
+                workspace_id=workspace_id,
+                chunk_updates=chunk_updates,
             )
             chunk_count = len(valid_chunks)
 
+        # Lấy danh sách chunk_id hợp lệ từ DB và batch hiện tại để thỏa mãn RLS policy
+        valid_chunk_ids = {c["chunk_id"] for c in chunks if isinstance(c.get("chunk_id"), str) and c["chunk_id"].strip()}
+        try:
+            with rag_db_manager.get_conn() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        f"SELECT chunk_id FROM {rag_db_manager.schema}.chunks WHERE workspace_id = %s",
+                        (workspace_id,)
+                    )
+                    valid_chunk_ids.update(row[0] for row in cur.fetchall())
+        except Exception as e:
+            logger.warning(f"Không thể query valid_chunk_ids: {e}")
+
+        fallback_chunk = next(iter(valid_chunk_ids), None)
+
         # 3. Tạo vector embeddings gia tăng cho entities có embedding = None
         entity_count = 0
+        sanitized_entities = []
+        for e in final_entities:
+            cids = [cid for cid in e.get("source_chunk_ids", []) if isinstance(cid, str) and cid in valid_chunk_ids]
+            if not cids and fallback_chunk:
+                cids = [fallback_chunk]
+            if cids:
+                e["source_chunk_ids"] = list(dict.fromkeys(cids))
+                if isinstance(e.get("chunk_descriptions"), dict):
+                    e["chunk_descriptions"] = {k: v for k, v in e["chunk_descriptions"].items() if k in cids}
+                sanitized_entities.append(e)
+        final_entities = sanitized_entities
+
         if final_entities:
             final_entities_df = pd.DataFrame(final_entities)
 
@@ -142,6 +190,17 @@ class IngestionService:
 
         # 4. Tạo vector embeddings gia tăng cho relationships có embedding = None
         relation_count = 0
+        sanitized_relations = []
+        for r in final_relations:
+            cids = [cid for cid in r.get("source_chunk_ids", []) if isinstance(cid, str) and cid in valid_chunk_ids]
+            if not cids and fallback_chunk:
+                cids = [fallback_chunk]
+            if cids:
+                r["source_chunk_ids"] = list(dict.fromkeys(cids))
+                if isinstance(r.get("chunk_meta"), dict):
+                    r["chunk_meta"] = {k: v for k, v in r["chunk_meta"].items() if k in cids}
+                sanitized_relations.append(r)
+        final_relations = sanitized_relations
         if final_relations:
             rels_df = pd.DataFrame(final_relations)
 

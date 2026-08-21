@@ -56,16 +56,3 @@ class TopicAlias(RagBase):
     topic_id: Mapped[str] = mapped_column(String, nullable=False)
     alias: Mapped[str] = mapped_column(String, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-
-
-class TopicUpdateQueue(RagBase):
-    __tablename__ = "topic_update_queue"
-
-    workspace_id: Mapped[str] = mapped_column(String, primary_key=True)
-    queue_id: Mapped[str] = mapped_column(String, primary_key=True)
-    topic_id: Mapped[str] = mapped_column(String, nullable=False)
-    reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    changed_member_ids: Mapped[Optional[List[Dict[str, Any]]]] = mapped_column(JSONB, nullable=True)
-    status: Mapped[str] = mapped_column(String, nullable=False)  # 'pending' | 'processing' | 'completed' | 'failed'
-    scheduled_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))

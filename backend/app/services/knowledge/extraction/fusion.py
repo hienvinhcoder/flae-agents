@@ -413,13 +413,18 @@ def run_incremental_fusion(
                 name_clean = clean_entity_name(name)
                 eid = get_entity_id(name_clean)
                 name_to_id[name_clean] = eid
-                touched_entity_ids.add(eid)
+                rel_chunks = [
+                    c for r in final_relations
+                    if name_clean in (clean_entity_name(r.get("source_name", "")), clean_entity_name(r.get("target_name", "")))
+                    for c in r.get("source_chunk_ids", [])
+                    if isinstance(c, str) and c.strip()
+                ]
                 new_placeholders.append({
                     "entity_id": eid,
                     "entity_name": name_clean,
                     "entity_type": "UNKNOWN",
                     "description": "",
-                    "source_chunk_ids": [],
+                    "source_chunk_ids": list(dict.fromkeys(rel_chunks)),
                     "frequency": 0,
                     "degree": 0,
                     "embedding": None

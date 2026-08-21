@@ -13,6 +13,7 @@ from temporalio.exceptions import ApplicationError
 
 from app.core.config import settings
 from app.core.exceptions import InvalidArgumentError
+from app.core.logger import get_logger
 from app.db.database import AsyncSessionLocal
 from app.db.rag_db import rag_db_manager
 from app.schemas.ingestion import (
@@ -33,6 +34,8 @@ from app.services.knowledge.ingestion.parser import ParserService
 from app.services.knowledge.ingestion.publish import BasePublishService
 from app.services.knowledge.ingestion.staging import BaseStagingService
 
+
+logger = get_logger(__name__)
 
 HEARTBEAT_INTERVAL_SECONDS = 10.0
 
@@ -196,40 +199,17 @@ async def extract_and_fuse_activity(
 
     activity.heartbeat({"stage": "load_chunks", "completed": 0})
 
-    # 1. Load chunks from current_chunks (already published with embeddings)
-    rag_db_manager.initialize()
-    schema = rag_db_manager.schema
-    async with rag_db_manager.get_async_session(command.workspace_id) as session:
-        result = await session.execute(
-            sql_text(
-                f"SELECT chunk_id, text, embedding FROM {schema}.current_chunks "
-                "WHERE workspace_id = :workspace_id AND source_id = :source_id"
-            ),
-            {"workspace_id": command.workspace_id, "source_id": command.source_doc_id},
-        )
-        rows = result.fetchall()
+    # 1. Load chunks from current_chunks (already published with embeddings) via Service
+    chunks = await IngestionService.load_published_chunks(
+        workspace_id=command.workspace_id,
+        document_id=command.source_doc_id,
+    )
 
-    if not rows:
+    if not chunks:
         logger.warning("No chunks found for extraction. Skipping.")
         return ExtractAndFuseResult(
             entity_count=0, relation_count=0, domain_count=0, tokens_used=0
         )
-
-    # 2. Convert rows to dicts for extraction
-    chunks = []
-    for row in rows:
-        embedding = None
-        if row.embedding is not None:
-            import json
-            if isinstance(row.embedding, str):
-                embedding = json.loads(row.embedding)
-            else:
-                embedding = list(row.embedding)
-        chunks.append({
-            "chunk_id": row.chunk_id,
-            "text": row.text,
-            "embedding": embedding,
-        })
 
     activity.heartbeat({"stage": "extract", "completed": 0, "total": len(chunks)})
 

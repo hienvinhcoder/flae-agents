@@ -9,7 +9,7 @@ from app.core.config import settings
 from app.core.logger import get_logger
 from app.core.exceptions import ResourceNotFoundError
 from app.db.rag_db import rag_db_manager
-from app.models.rag.topics import Topic, TopicAlias, TopicMembership, TopicUpdateQueue
+from app.models.rag.topics import Topic, TopicAlias, TopicMembership
 from app.core.temporal import get_temporal_client
 from app.services.knowledge.discovery.topic_resolver import slugify
 
@@ -319,20 +319,9 @@ class TopicService:
                 # 5. Xóa topic nguồn
                 await session.delete(src)
 
-            # 6. Đẩy target_topic vào hàng đợi cập nhật
-            queue_id = f"q-{uuid.uuid4()}"
-            queue_entry = TopicUpdateQueue(
-                workspace_id=workspace_id,
-                queue_id=queue_id,
-                topic_id=target_topic_id,
-                reason="Merged topics",
-                status="pending"
-            )
-            session.add(queue_entry)
-
             await session.commit()
 
-        # 7. Kích hoạt Temporal Workflow cập nhật tóm tắt topic đích
+        # 6. Kích hoạt Temporal Workflow cập nhật tóm tắt topic đích
         await TopicService.trigger_topic_updates_via_temporal(workspace_id, [target_topic_id])
         return True
 
@@ -392,15 +381,5 @@ class TopicService:
 
     @staticmethod
     async def request_re_summarize(workspace_id: str, topic_id: str) -> None:
-        """Đẩy yêu cầu tóm tắt lại topic vào hàng đợi và trigger Temporal workflow."""
-        async with rag_db_manager.get_async_session(workspace_id) as session:
-            queue_id = f"q-{uuid.uuid4()}"
-            await session.execute(
-                text(f"INSERT INTO {rag_db_manager.schema}.topic_update_queue "
-                     "(workspace_id, queue_id, topic_id, reason, status) "
-                     "VALUES (:ws_id, :q_id, :t_id, 'User requested re-summarize', 'pending')"),
-                {"ws_id": workspace_id, "q_id": queue_id, "t_id": topic_id}
-            )
-            await session.commit()
-
+        """Trigger Temporal workflow to re-summarize topic."""
         await TopicService.trigger_topic_updates_via_temporal(workspace_id, [topic_id])

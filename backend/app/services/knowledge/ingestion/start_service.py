@@ -23,6 +23,10 @@ class IngestionStartService:
     async def prepare_reference(
         self, command: IngestionBootstrapInput
     ) -> SourceRevisionReference:
+        # Ensure rag_db partitions exist for this workspace before any writes.
+        # The function uses CREATE TABLE IF NOT EXISTS so repeated calls are safe.
+        await self._manager.create_workspace_partition(str(command.workspace_id))
+
         source_id = command.source_id or uuid5(
             NAMESPACE_URL, f"flae:knowledge-base:{command.workspace_id}"
         )

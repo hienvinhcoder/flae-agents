@@ -26,19 +26,34 @@ async def cleanup_rag_data(workspace_id: str, document_id: str) -> None:
         cur = conn.cursor()
         schema = rag_db_manager.schema
 
+        # 0. Dọn dẹp staged chunks và manifests của document này trong rag_db
+        cur.execute(
+            f"DELETE FROM {schema}.staged_base_chunks WHERE workspace_id = %s AND (document_id::text = %s)",
+            (workspace_id, document_id),
+        )
+        cur.execute(
+            f"DELETE FROM {schema}.stage_manifests WHERE workspace_id = %s AND ingestion_run_id IN ("
+            f"  SELECT run_id FROM {schema}.ingestion_runs WHERE workspace_id = %s AND revision_id IN ("
+            f"    SELECT revision_id FROM {schema}.document_revisions WHERE workspace_id = %s AND (document_id::text = %s)"
+            f"  )"
+            f")",
+            (workspace_id, workspace_id, workspace_id, document_id),
+        )
+
         # 1. Lấy tất cả các chunk_id thuộc về document bị xóa trong workspace này
         cur.execute(
             f"SELECT chunk_id FROM {schema}.chunks "
-            f"WHERE workspace_id = %s AND source_document_id = %s",
-            (workspace_id, document_id),
+            f"WHERE workspace_id = %s AND (source_document_id = %s OR document_id::text = %s)",
+            (workspace_id, document_id, document_id),
         )
         deleted_chunk_ids = [row[0] for row in cur.fetchall()]
 
-        # Nếu tài liệu này chưa được tạo bất kỳ chunk nào, dừng xử lý dọn dẹp
+        # Nếu tài liệu này chưa được tạo bất kỳ chunk nào trong bảng chunks, commit phần staged cleanup rồi return
         if not deleted_chunk_ids:
+            conn.commit()
             cur.close()
             conn.close()
-            logger.info(f"Không tìm thấy chunks nào cho document {document_id} trong workspace {workspace_id}")
+            logger.info(f"Đã dọn dẹp staged data cho document {document_id} trong workspace {workspace_id}")
             return
 
         deleted_chunk_ids_set = set(deleted_chunk_ids)

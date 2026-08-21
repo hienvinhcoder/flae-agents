@@ -294,12 +294,9 @@ async def test_document_start_always_uses_the_canonical_knowledge_workflow(
     assert workflow_id == f"knowledge-ingestion-v1-{source.ingestion_run_id}"
     temporal_client.start_workflow.assert_awaited_once()
     call = temporal_client.start_workflow.call_args
-    assert call.args[0] == "DiscoverableMemoryIngestionWorkflow"
-    assert call.args[1].memory.base.source == source
-    assert call.args[1].memory.base.update_core_document_status is True
-    assert call.args[1].memory.semantic_graph.workspace_id == source.workspace_id
-    assert call.args[1].memory.semantic_graph.resolver_version == "resolver-v1"
-    assert call.args[1].memory.semantic_graph.projection_version == "projection-v1"
+    assert call.args[0] == "KnowledgeIngestionWorkflowV1"
+    assert call.args[1].source == source
+    assert call.args[1].update_core_document_status is True
     assert call.kwargs["id"] == workflow_id
     assert call.kwargs["task_queue"] == settings.TEMPORAL_KNOWLEDGE_TASK_QUEUE
     assert (
@@ -411,7 +408,7 @@ async def test_canonical_starter_returns_workflow_id_when_closed_id_exists() -> 
     temporal_client.start_workflow = AsyncMock(
         side_effect=WorkflowAlreadyStartedError(
             workflow_id,
-            "DiscoverableMemoryIngestionWorkflow",
+            "KnowledgeIngestionWorkflowV1",
         )
     )
 

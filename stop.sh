@@ -12,7 +12,7 @@ echo "=========================================================="
 
 # 1. Tắt các container trong Docker Compose
 echo "📦 Đang tắt các dịch vụ Docker Compose..."
-docker compose down
+docker compose down --remove-orphans
 
 # 2. Tìm và tắt tiến trình Frontend đang chạy trên port 4200 (nếu có)
 echo "🌐 Đang tìm kiếm và tắt các tiến trình Frontend..."

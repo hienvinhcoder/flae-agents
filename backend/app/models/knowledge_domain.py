@@ -39,17 +39,3 @@ class KnowledgeDomain(RAGBase):
     )
 
 
-class DomainUpdateQueue(RAGBase):
-    __tablename__ = "domain_update_queue"
-
-    workspace_id: Mapped[str] = mapped_column(String, primary_key=True)
-    queue_id: Mapped[str] = mapped_column(String, primary_key=True)
-    domain_id: Mapped[str] = mapped_column(String, nullable=False)
-    reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    status: Mapped[str] = mapped_column(String, nullable=False, default="pending")
-    scheduled_at: Mapped[Optional[datetime]] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
-    )

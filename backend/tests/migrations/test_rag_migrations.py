@@ -26,6 +26,10 @@ def _connect_to_rag_test_database():
 
 
 def test_rag_database_is_upgraded_to_head_with_base_tables() -> None:
+    # After rag_0023 drops unused tables and partitions everything by workspace,
+    # only the active core tables remain.  Dropped tables include the old
+    # evidence, entity-resolution, graph-snapshot, topic-discovery, memory-state,
+    # and semantic-projection tables.
     expected_tables = {
         "chunks",
         "entities",
@@ -33,25 +37,12 @@ def test_rag_database_is_upgraded_to_head_with_base_tables() -> None:
         "topics",
         "topic_memberships",
         "topic_aliases",
-        "topic_update_queue",
-        "entity_resolution_runs",
-        "canonical_entity_versions",
-        "entity_resolution_assignments",
-        "entity_resolution_lineage",
-        "relationship_projection_versions",
-        "canonical_relationship_versions",
-        "graph_mappings",
-        "graph_snapshots",
-        "graph_snapshot_revisions",
-        "topic_discovery_runs",
-        "topic_versions",
-        "topic_membership_versions",
-        "topic_membership_revision_evidence",
-        "topic_lineage_events",
-        "discovery_snapshots",
-        "discovery_snapshot_payloads",
-        "memory_state_rules",
-        "memory_state_projections",
+        "document_revisions",
+        "document_sections",
+        "ingestion_runs",
+        "stage_manifests",
+        "staged_base_chunks",
+        "knowledge_domains",
     }
 
     with _connect_to_rag_test_database() as connection, connection.cursor() as cursor:
@@ -130,10 +121,10 @@ def test_disposable_database_clean_install_and_legacy_upgrade(
             cursor.execute(
                 """SELECT column_name FROM information_schema.columns
                     WHERE table_schema = 'public'
-                      AND table_name = 'topic_membership_revision_evidence'
-                      AND column_name = 'supporting_evidence_ids'"""
+                      AND table_name = 'knowledge_domains'
+                      AND column_name = 'domain_id'"""
             )
-            assert cursor.fetchone() == ("supporting_evidence_ids",)
+            assert cursor.fetchone() == ("domain_id",)
         database.close()
     finally:
         with admin.cursor() as cursor:

@@ -42,9 +42,11 @@ def test_revision_run_and_manifest_idempotency_constraints() -> None:
                 INSERT INTO document_revisions (
                     workspace_id, revision_id, source_id, document_id,
                     source_external_id, source_version_key, content_checksum,
-                    acl_checksum, state, base_readiness, graph_readiness,
+                    acl_checksum, acl_scope, acl_principal_ids,
+                    state, base_readiness, graph_readiness,
                     discovery_readiness
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s,
+                          'workspace', '[]'::jsonb,
                           'staging', 'pending', 'pending', 'pending')
                 ON CONFLICT (
                     workspace_id, source_id, source_external_id, source_version_key
@@ -116,9 +118,11 @@ def test_searchable_revision_requires_ready_base() -> None:
                 INSERT INTO document_revisions (
                     workspace_id, revision_id, source_id, document_id,
                     source_external_id, source_version_key, content_checksum,
-                    acl_checksum, state, base_readiness, graph_readiness,
+                    acl_checksum, acl_scope, acl_principal_ids,
+                    state, base_readiness, graph_readiness,
                     discovery_readiness
                 ) VALUES (%s, %s, %s, %s, 'doc', 'v1', %s, %s,
+                          'workspace', '[]'::jsonb,
                           'searchable', 'pending', 'pending', 'pending')
                 """,
                 (

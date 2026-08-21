@@ -88,9 +88,15 @@ run_start_script "$existing_env_fixture"
 [[ "$(< "$existing_env_fixture/frontend/.env")" == "VITE_API_URL=https://custom.example.test" ]] || \
   fail "start.sh overwrote an existing frontend/.env"
 
+build_flag_fixture="$TEST_TMP_DIR/build-flag"
+prepare_fixture "$build_flag_fixture"
+PATH="$build_flag_fixture/bin:$PATH" START_TEST_COMMAND_LOG="$build_flag_fixture/commands.log" "$build_flag_fixture/start.sh" --build
+grep -Fqx "compose up -d --build" "$build_flag_fixture/commands.log" || \
+  fail "start.sh --build did not pass --build to docker compose"
+
 grep -Fq 'href="/favicon.svg"' "$REPOSITORY_ROOT/frontend/index.html" || \
   fail "frontend/index.html does not reference the favicon"
 [[ -f "$REPOSITORY_ROOT/frontend/public/favicon.svg" ]] || \
   fail "frontend/public/favicon.svg does not exist"
 
-echo "PASS: start.sh bootstraps emulator config, preserves overrides, follows service logs, and serves a favicon"
+echo "PASS: start.sh bootstraps emulator config, preserves overrides, supports --build, follows service logs, and serves a favicon"

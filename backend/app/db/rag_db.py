@@ -21,22 +21,10 @@ from app.core.logger import get_logger
 logger = get_logger(__name__)
 
 # Đăng ký bộ chuyển đổi mảng numpy để tương thích với pgvector
-def adapt_numpy_float64(numpy_float64):
-    return AsIs(numpy_float64)
-
-def adapt_numpy_int64(numpy_int64):
-    return AsIs(numpy_int64)
-
-def adapt_numpy_float32(numpy_float32):
-    return AsIs(numpy_float32)
-
-def adapt_numpy_array(numpy_array):
-    return AsIs(str(numpy_array.tolist()))
-
-register_adapter(np.float64, adapt_numpy_float64)
-register_adapter(np.int64, adapt_numpy_int64)
-register_adapter(np.float32, adapt_numpy_float32)
-register_adapter(np.ndarray, adapt_numpy_array)
+register_adapter(np.float64, lambda x: AsIs(x))
+register_adapter(np.int64, lambda x: AsIs(x))
+register_adapter(np.float32, lambda x: AsIs(x))
+register_adapter(np.ndarray, lambda x: AsIs(str(x.tolist())))
 
 
 class DBManager:
@@ -182,45 +170,26 @@ class DBManager:
             # Gán cột định danh workspace_id
             df_to_save["workspace_id"] = workspace_id
 
-            def robust_json_dumps(x):
-                if isinstance(x, np.ndarray):
-                    return json.dumps(x.tolist())
-                return json.dumps(x)
+            def to_vector_str(x):
+                if x is None or (isinstance(x, float) and pd.isna(x)):
+                    return None
+                return json.dumps(x.tolist()) if isinstance(x, np.ndarray) else (json.dumps(x) if isinstance(x, list) else str(x))
 
-            def to_list(x: Any) -> Any:
-                if isinstance(x, np.ndarray):
-                    return x.tolist()
-                return x
+            def to_json_str(x):
+                if x is None or (isinstance(x, float) and pd.isna(x)):
+                    return None
+                return json.dumps(x.tolist()) if isinstance(x, np.ndarray) else json.dumps(x)
 
             for col in df_to_save.columns:
                 if col == "embedding":
-                    def to_vector_str(x):
-                        if x is None or (isinstance(x, float) and pd.isna(x)):
-                            return None
-                        if isinstance(x, np.ndarray):
-                            return json.dumps(x.tolist())
-                        if isinstance(x, list):
-                            return json.dumps(x)
-                        return str(x)
                     df_to_save[col] = df_to_save[col].apply(to_vector_str)
                 elif col in ["source_chunk_ids", "entity_ids", "relation_ids", "chunk_descriptions", "chunk_meta"]:
-                    def to_json_str(x):
-                        if x is None or (isinstance(x, float) and pd.isna(x)):
-                            return None
-                        return robust_json_dumps(x)
                     df_to_save[col] = df_to_save[col].apply(to_json_str)
 
             columns = list(df_to_save.columns)
-
             def safe_sql_val(x):
-                if isinstance(x, (list, tuple, dict, np.ndarray)):
-                    return x
-                if pd.isna(x):
-                    return None
-                return x
-
+                return None if (not isinstance(x, (list, tuple, dict, np.ndarray)) and pd.isna(x)) else x
             values = [tuple(safe_sql_val(x) for x in row) for row in df_to_save.to_numpy()]
-
             cols_str = ", ".join(columns)
 
             # Khóa chính của bảng partition là (workspace_id, pk_col)
@@ -300,6 +269,46 @@ class DBManager:
         except Exception as e:
             conn.rollback()
             logger.error(f"❌ Lỗi khi lưu vào {table_name} cho workspace {workspace_id}: {e}")
+            raise e
+        finally:
+            cur.close()
+            conn.close()
+
+    def update_chunks_graph_references(
+        self, workspace_id: str, chunk_updates: List[Dict[str, Any]]
+    ) -> int:
+        """Cập nhật entity_ids và relation_ids cho chunks đã tồn tại trong DB."""
+        if not chunk_updates:
+            return 0
+        self.initialize()
+        conn = self.get_conn()
+        cur = conn.cursor()
+        try:
+            cur.execute(f"SET LOCAL ROLE {self.app_role};")
+            cur.execute("SET LOCAL app.current_workspace_id = %s;", (workspace_id,))
+            values = [
+                (
+                    item["chunk_id"],
+                    json.dumps(item.get("entity_ids", [])),
+                    json.dumps(item.get("relation_ids", [])),
+                    workspace_id,
+                )
+                for item in chunk_updates
+            ]
+            sql = f"""
+                UPDATE {self.schema}.chunks AS c
+                SET entity_ids = v.entity_ids::jsonb,
+                    relation_ids = v.relation_ids::jsonb
+                FROM (VALUES %s) AS v(chunk_id, entity_ids, relation_ids, workspace_id)
+                WHERE c.workspace_id = v.workspace_id AND c.chunk_id = v.chunk_id;
+            """
+            psycopg2.extras.execute_values(cur, sql, values, page_size=100)
+            conn.commit()
+            logger.info(f"🔗 Đã cập nhật graph refs cho {len(chunk_updates)} chunks (workspace_id: {workspace_id})")
+            return len(chunk_updates)
+        except Exception as e:
+            conn.rollback()
+            logger.error(f"❌ Lỗi khi cập nhật graph refs cho chunks (workspace {workspace_id}): {e}")
             raise e
         finally:
             cur.close()
@@ -396,8 +405,35 @@ class DBManager:
             return chunks
 
     async def create_workspace_partition(self, workspace_id: str) -> None:
-        """Compatibility no-op; tenant tables are provisioned by Alembic."""
-        logger.debug("RAG schema already provisioned for workspace %s", workspace_id)
+        """Create LIST partitions for all rag_db tables for the given workspace.
+
+        Calls the ``public.create_workspace_partitions()`` PL/pgSQL function
+        installed by migration rag_0022.  Uses ``IF NOT EXISTS`` so repeated
+        calls are safe and idempotent.  Silently skips if the function does
+        not exist yet (pre-migration environments).
+        """
+        try:
+            async with self.async_session_factory() as session:
+                await session.execute(
+                    text(
+                        "SELECT public.create_workspace_partitions(:workspace_id)"
+                    ),
+                    {"workspace_id": workspace_id},
+                )
+                await session.commit()
+            logger.info(
+                "Ensured rag_db partitions exist for workspace %s", workspace_id
+            )
+        except Exception as exc:
+            # Gracefully handle pre-migration environments where the
+            # create_workspace_partitions() function does not exist yet.
+            if "does not exist" in str(exc):
+                logger.debug(
+                    "Partition function not available yet, skipping for workspace %s",
+                    workspace_id,
+                )
+            else:
+                raise
 
     async def close(self):
         """Đóng tất cả các engine kết nối."""

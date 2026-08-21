@@ -9,13 +9,28 @@ set -e
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$PROJECT_DIR"
 
+BUILD_FLAG=""
+
+for arg in "$@"; do
+  case "$arg" in
+    --build|-b)
+      BUILD_FLAG="--build"
+      ;;
+  esac
+done
+
 echo "=========================================================="
 echo "🚀 Đang khởi động hệ thống FLAE Agents..."
 echo "=========================================================="
 
 # 1. Khởi động Docker Compose
-echo "📦 Khởi động Backend, Firebase Emulator, DB, Redis và Temporal..."
-docker compose up -d
+if [ -n "$BUILD_FLAG" ]; then
+  echo "📦 Khởi động và Build lại Backend, Firebase Emulator, DB, Redis và Temporal..."
+  docker compose up -d --build
+else
+  echo "📦 Khởi động Backend, Firebase Emulator, DB, Redis và Temporal..."
+  docker compose up -d
+fi
 
 # 2. Khởi tạo cấu hình local cho Frontend nếu chưa có
 FRONTEND_DIR="$PROJECT_DIR/frontend"
