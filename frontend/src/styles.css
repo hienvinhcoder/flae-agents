@@ -117,6 +117,25 @@
   --motion-normal: 200ms;
   --motion-slow: 300ms;
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+
+  /* --- Glassmorphism system (dark warm field) --- */
+  --glass-canvas: #141009;
+  --glass-ink: #f5f0e8;
+  --glass-ink-secondary: #b7ab9a;
+  --glass-ink-muted: rgb(245 240 232 / 0.55);
+  --glass-surface: rgb(255 251 245 / 0.06);
+  --glass-surface-strong: rgb(255 251 245 / 0.1);
+  --glass-line: rgb(255 251 245 / 0.14);
+  --glass-highlight: rgb(255 251 245 / 0.08);
+  --glass-danger: #f87171;
+  --glass-blur: 20px;
+  --glass-blur-lg: 32px;
+  --orb-primary: #f97316;
+  --orb-amber: #fb923c;
+  --orb-ember: #7c2d12;
+  --shadow-glass: 0 8px 32px rgb(0 0 0 / 0.35), inset 0 1px 0 var(--glass-highlight);
+  --shadow-glass-pop: 0 16px 48px -12px rgb(0 0 0 / 0.5), inset 0 1px 0 var(--glass-highlight);
+  --glow-primary: 0 0 24px rgb(249 115 22 / 0.35);
 }
 
 @theme inline {
@@ -213,6 +232,21 @@
   --shadow-ui-panel: var(--shadow-panel);
   --shadow-ui-overlay: var(--shadow-overlay);
   --shadow-ui-focus: var(--focus-ring);
+  --color-glass-canvas: var(--glass-canvas);
+  --color-glass-ink: var(--glass-ink);
+  --color-glass-ink-secondary: var(--glass-ink-secondary);
+  --color-glass-ink-muted: var(--glass-ink-muted);
+  --color-glass-surface: var(--glass-surface);
+  --color-glass-surface-strong: var(--glass-surface-strong);
+  --color-glass-line: var(--glass-line);
+  --color-glass-danger: var(--glass-danger);
+  --color-orb-primary: var(--orb-primary);
+  --color-orb-amber: var(--orb-amber);
+  --color-orb-ember: var(--orb-ember);
+  --blur-glass: var(--glass-blur);
+  --blur-glass-lg: var(--glass-blur-lg);
+  --shadow-ui-glass: var(--shadow-glass);
+  --shadow-ui-glass-pop: var(--shadow-glass-pop);
   --breakpoint-sm: 40rem;
   --breakpoint-md: 48rem;
   --breakpoint-lg: 64rem;
@@ -345,10 +379,10 @@
   }
 
   .memory-flow {
-    stroke: color-mix(in oklch, var(--primary) 58%, transparent);
-    stroke-dasharray: 7 12;
+    stroke: color-mix(in oklch, var(--primary) 65%, transparent);
+    stroke-dasharray: 4 8;
     stroke-linecap: round;
-    stroke-width: 1.6;
+    stroke-width: 1.25;
     vector-effect: non-scaling-stroke;
     animation: memory-flow 12s linear infinite;
   }
@@ -357,8 +391,29 @@
     animation-delay: -4s;
   }
 
+  .memory-flow-muted {
+    stroke: color-mix(in srgb, var(--glass-ink) 22%, transparent);
+  }
+
   .memory-pulse {
     animation: memory-pulse 4.8s ease-in-out infinite;
+  }
+
+  .memory-ring {
+    transform: translate(-50%, -50%);
+    animation: memory-ring 4.8s ease-in-out infinite;
+  }
+
+  .memory-ring-delay {
+    animation-delay: -2.4s;
+  }
+
+  .memory-orbital-spin {
+    animation: memory-orbital-spin 28s linear infinite;
+  }
+
+  .memory-orbital-spin-reverse {
+    animation: memory-orbital-spin-reverse 36s linear infinite;
   }
 
   .knowledge-graph-atmosphere {
@@ -395,17 +450,189 @@
     outline-offset: 3px;
     box-shadow: var(--focus-ring);
   }
+
+  /* --- Glassmorphism surfaces (see DESIGN.md §5) --- */
+  .glass-field {
+    position: relative;
+    isolation: isolate;
+    background: var(--glass-canvas);
+    color: var(--glass-ink);
+  }
+
+  .glass-field::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(42rem 42rem at 12% 8%, rgb(249 115 22 / 0.32), transparent 62%),
+      radial-gradient(36rem 36rem at 88% 18%, rgb(251 146 60 / 0.2), transparent 60%),
+      radial-gradient(52rem 52rem at 68% 96%, rgb(124 45 18 / 0.42), transparent 64%);
+  }
+
+  .glass-panel {
+    border: 1px solid var(--glass-line);
+    border-radius: var(--radius-card);
+    background: var(--glass-surface);
+    box-shadow: var(--shadow-glass);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+  }
+
+  .glass-panel-strong {
+    background: var(--glass-surface-strong);
+    backdrop-filter: blur(var(--glass-blur-lg));
+    -webkit-backdrop-filter: blur(var(--glass-blur-lg));
+  }
+
+  .glass-chip {
+    border: 1px solid var(--glass-line);
+    border-radius: var(--radius-control);
+    background: var(--glass-surface);
+    box-shadow: var(--shadow-glass);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+  }
+
+  .glass-input {
+    border: 1px solid var(--glass-line);
+    background: rgb(20 16 9 / 0.35);
+    color: var(--glass-ink);
+    transition:
+      border-color var(--motion-fast) var(--ease-standard),
+      box-shadow var(--motion-fast) var(--ease-standard);
+  }
+
+  .glass-input::placeholder {
+    color: var(--glass-ink-muted);
+  }
+
+  .glass-input:hover:not(:disabled) {
+    border-color: rgb(255 251 245 / 0.24);
+  }
+
+  .glass-input:focus-visible {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow:
+      0 0 0 3px rgb(249 115 22 / 0.25),
+      var(--glow-primary);
+  }
+
+  .glass-input[aria-invalid="true"] {
+    border-color: var(--glass-danger);
+  }
+
+  .glass-input:disabled {
+    opacity: 0.5;
+  }
+
+  .glass-cta {
+    border: 1px solid transparent;
+    background: var(--primary);
+    color: var(--primary-foreground);
+    box-shadow: var(--glow-primary);
+    transition:
+      background-color var(--motion-fast) var(--ease-standard),
+      box-shadow var(--motion-fast) var(--ease-standard);
+  }
+
+  .glass-cta:hover:not(:disabled) {
+    background: color-mix(in oklch, var(--primary), white 8%);
+    box-shadow: 0 0 32px rgb(249 115 22 / 0.45);
+  }
+
+  .glass-cta:active:not(:disabled) {
+    background: color-mix(in oklch, var(--primary), black 8%);
+  }
+
+  .glass-cta:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .glass-cta:focus-visible,
+  .glass-button:focus-visible,
+  .glass-link:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+
+  .glass-button {
+    border: 1px solid var(--glass-line);
+    background: var(--glass-surface);
+    color: var(--glass-ink);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    transition:
+      background-color var(--motion-fast) var(--ease-standard),
+      border-color var(--motion-fast) var(--ease-standard);
+  }
+
+  .glass-button:hover:not(:disabled) {
+    background: var(--glass-surface-strong);
+    border-color: rgb(255 251 245 / 0.24);
+  }
+
+  .glass-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .glass-link {
+    color: var(--orb-amber);
+    border-radius: var(--radius-sm);
+  }
+
+  .glass-link:hover {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  .glass-divider {
+    height: 1px;
+    background: var(--glass-line);
+  }
+
+  .glass-error {
+    border: 1px solid rgb(248 113 113 / 0.4);
+    background: rgb(127 29 29 / 0.28);
+    color: var(--glass-danger);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+  }
+
+  .glass-grid {
+    background-image:
+      linear-gradient(rgb(255 251 245 / 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(255 251 245 / 0.05) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
 }
 
 @keyframes auth-enter {
   from {
     opacity: 0;
     transform: translateY(12px);
+    filter: blur(8px);
   }
 
   to {
     opacity: 1;
     transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes orb-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(3rem, -2rem, 0) scale(1.06);
   }
 }
 
@@ -415,14 +642,70 @@
   }
 }
 
-@keyframes memory-pulse {
+@keyframes constellation-node-pulse {
   0%,
   100% {
-    box-shadow: 0 18px 45px color-mix(in oklch, var(--primary) 20%, transparent);
+    box-shadow: 0 0 0 0 rgb(249 115 22 / 0);
+    transform: scale(1);
   }
 
   50% {
-    box-shadow: 0 18px 58px color-mix(in oklch, var(--primary) 32%, transparent);
+    box-shadow: 0 0 20px 6px rgb(249 115 22 / 0.3);
+    transform: scale(1.05);
+  }
+}
+
+@keyframes constellation-hub-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 32px 4px rgb(249 115 22 / 0.35);
+  }
+
+  50% {
+    box-shadow: 0 0 52px 10px rgb(249 115 22 / 0.55);
+  }
+}
+
+@keyframes memory-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 35px 4px rgb(249 115 22 / 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  50% {
+    box-shadow: 0 0 58px 10px rgb(249 115 22 / 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    transform: translate(-50%, -50%) scale(1.025);
+  }
+}
+
+@keyframes memory-ring {
+  0% {
+    transform: translate(-50%, -50%) scale(0.72);
+    opacity: 0.6;
+  }
+
+  100% {
+    transform: translate(-50%, -50%) scale(1.48);
+    opacity: 0;
+  }
+}
+
+@keyframes memory-orbital-spin {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+@keyframes memory-orbital-spin-reverse {
+  from {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(0deg);
   }
 }
 

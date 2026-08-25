@@ -32,7 +32,7 @@ export function configureFirebaseEmulators({
 
   const connected = emulatorRegistry();
   if (!connected.auth.has(auth)) {
-    connectAuthEmulator(auth, 'http://127.0.0.1:9099');
+    connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
     connected.auth.add(auth);
   }
   if (!connected.storage.has(storage)) {

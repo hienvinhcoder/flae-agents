@@ -11,7 +11,7 @@ export function RequireAnonymousRoute() {
     return (
       <div
         aria-label="Checking your session"
-        className="flex min-h-screen items-center justify-center bg-ui-canvas text-ui-ink-secondary"
+        className="glass-field flex min-h-screen items-center justify-center text-glass-ink-secondary"
         role="status"
       >
         <span className="h-2 w-48 animate-pulse rounded-full bg-brand-soft" />

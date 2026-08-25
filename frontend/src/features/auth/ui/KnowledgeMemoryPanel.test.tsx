@@ -10,17 +10,24 @@ describe('KnowledgeMemoryPanel', () => {
 
     const panel = screen.getByTestId('knowledge-memory-panel');
     const labels = [
-      'Company Memory',
-      'Documents',
-      'Code',
-      'Decisions',
-      'People',
-      'Agents',
+      'Knowledge synthesis',
+      'Sources',
+      'AI agents',
+      'Notion',
+      'Google Drive',
+      'Google Meet',
+      'Company docs',
+      'Slack',
+      'Cursor',
+      'Claude',
+      'Codex',
+      'Any MCP agent',
+      'FLAE',
+      'Company memory',
       'Knowledge sync',
       'Active',
-      'Connected sources',
-      '12 live',
-      'Living knowledge graph',
+      'Agents connected',
+      '4 live',
     ];
 
     expect(panel).toHaveAttribute('aria-hidden', 'true');
@@ -30,17 +37,6 @@ describe('KnowledgeMemoryPanel', () => {
     for (const label of labels) {
       expect(screen.getByText(label)).toBeInTheDocument();
     }
-  });
-
-  it('aligns the Agents node with its SVG connection endpoint', () => {
-    render(<KnowledgeMemoryPanel />);
-
-    expect(screen.getByText('Agents').parentElement).toHaveClass(
-      'left-1/2',
-      'top-[83%]',
-      '-translate-x-1/2',
-      '-translate-y-1/2',
-    );
   });
 
   it('keeps connection-line weight stable when the SVG scales', () => {

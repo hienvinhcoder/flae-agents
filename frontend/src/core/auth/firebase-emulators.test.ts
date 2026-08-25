@@ -76,6 +76,7 @@ describe('Firebase emulator routing', () => {
     expect(firebaseMocks.connectAuthEmulator).toHaveBeenCalledWith(
       firebaseMocks.auth,
       'http://127.0.0.1:9099',
+      { disableWarnings: true },
     );
     expect(firebaseMocks.connectStorageEmulator).toHaveBeenCalledOnce();
     expect(firebaseMocks.connectStorageEmulator).toHaveBeenCalledWith(

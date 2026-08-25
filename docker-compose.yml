@@ -38,6 +38,8 @@ services:
       context: ./firebase
       dockerfile: Dockerfile
     restart: unless-stopped
+    stop_signal: SIGINT
+    stop_grace_period: 30s
     ports:
       - "4000:4000"
       - "9099:9099"

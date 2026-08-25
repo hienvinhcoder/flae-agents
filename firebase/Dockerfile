@@ -21,4 +21,4 @@ RUN mkdir -p /firebase/data
 EXPOSE 4000 8080 9099 9199
 
 # Start only the services used by the application, with local persistence.
-CMD ["firebase", "emulators:start", "--project", "flae-agents", "--only", "auth,storage", "--import=/firebase/data", "--export-on-exit=/firebase/data"]
+CMD ["firebase", "emulators:start", "--project", "flae-agents", "--only", "auth,storage", "--import=/firebase/data/export", "--export-on-exit=/firebase/data/export"]

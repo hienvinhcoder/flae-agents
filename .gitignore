@@ -7,3 +7,12 @@ demo-app/
 
 # Local isolated worktrees used by coding agents
 .worktrees/
+
+# Coverage and caches
+.coverage
+.pytest_cache/
+.DS_Store
+
+# Dependencies and editor artifacts
+node_modules/
+.cursor/
