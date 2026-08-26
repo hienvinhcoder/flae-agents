@@ -167,34 +167,6 @@ describe("KnowledgeListPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("summarizes memory readiness and lets users review failed sources", async () => {
-    const user = userEvent.setup();
-    renderPage();
-
-    expect(
-      await screen.findByRole("heading", {
-        level: 2,
-        name: "1 of 2 sources ready",
-      }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("progressbar", { name: "Memory readiness" }),
-    ).toHaveAttribute("aria-valuenow", "1");
-
-    await user.click(
-      screen.getByRole("button", { name: "Review 1 failed source" }),
-    );
-
-    expect(screen.getByRole("combobox", { name: /status/i })).toHaveValue(
-      "failed",
-    );
-    const table = within(
-      screen.getByRole("table", { name: /knowledge documents/i }),
-    );
-    expect(table.queryByText("Product roadmap")).not.toBeInTheDocument();
-    expect(table.getByText("Incident handbook")).toBeInTheDocument();
-  });
-
   it("loads a selected document detail and exposes processing metrics", async () => {
     const user = userEvent.setup();
     renderPage();

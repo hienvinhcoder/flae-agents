@@ -1,4 +1,4 @@
-import { Pause, Play } from "lucide-react";
+import { Filter, Pause, Play } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 interface GraphFiltersProps {
@@ -19,41 +19,56 @@ export function GraphFilters({
   const { t } = useTranslation();
   const Icon = physicsEnabled ? Pause : Play;
   const physicsLabel = t(physicsEnabled ? "GRAPH.PHYSICS_ON" : "GRAPH.PHYSICS_OFF");
+
   return (
-    <div className="flex flex-wrap items-end gap-2">
-      <div className="grid gap-1">
-        <label className="font-code text-[0.68rem] uppercase tracking-wider text-ui-ink-muted" htmlFor="graph-node-type">
+    <div className="flex flex-wrap items-center gap-2.5">
+      <div className="relative flex items-center">
+        <label
+          className="sr-only"
+          htmlFor="graph-node-type"
+        >
           {t("GRAPH.ENTITY_TYPE")}
         </label>
+        <div className="pointer-events-none absolute left-3 flex items-center text-ui-ink-muted">
+          <Filter aria-hidden="true" className="h-3.5 w-3.5" />
+        </div>
         <select
-          className="min-h-11 min-w-11 min-w-[12rem] max-w-52 cursor-pointer rounded-ui-control border border-ui-line bg-ui-raised px-3 text-ui-ink shadow-sm transition-colors duration-200 hover:border-ui-line-strong focus:border-ui-focus focus:outline-none focus:ring-2 focus:ring-ui-focus/25 motion-reduce:transition-none"
+          className="min-h-11 min-w-11 min-w-[12rem] max-w-56 cursor-pointer appearance-none rounded-xl border border-ui-line/60 bg-ui-raised/80 pl-8 pr-8 text-xs font-medium text-ui-ink shadow-sm backdrop-blur-md transition-all duration-200 hover:border-ui-line-strong focus:border-ui-focus focus:outline-none focus:ring-2 focus:ring-ui-focus/25 motion-reduce:transition-none"
           id="graph-node-type"
           onChange={(event) => onNodeTypeChange(event.target.value)}
           value={nodeType}
         >
           <option value="all">{t("GRAPH.ALL_ENTITY_TYPES")}</option>
-          {nodeTypes.map((type) => <option key={type} value={type}>{type || "-"}</option>)}
+          {nodeTypes.map((type) => (
+            <option key={type} value={type}>
+              {type || "-"}
+            </option>
+          ))}
         </select>
+        <div className="pointer-events-none absolute right-3 flex items-center font-code text-[0.65rem] text-ui-ink-muted">
+          ▼
+        </div>
       </div>
+
       <button
         aria-label={physicsLabel}
         aria-pressed={physicsEnabled}
-        className={`inline-flex min-h-11 min-w-11 items-center gap-2 rounded-ui-control border px-4.5 font-semibold shadow-sm transition-colors duration-200 motion-reduce:transition-none ${
+        className={`inline-flex min-h-11 min-w-11 items-center gap-2 rounded-xl border px-3.5 font-semibold text-xs shadow-sm backdrop-blur-md transition-all duration-200 active:scale-95 motion-reduce:transition-none ${
           physicsEnabled
-            ? "border-brand-text bg-brand-soft/80 text-brand-text font-bold"
-            : "border-ui-line bg-ui-raised text-ui-ink-secondary hover:bg-ui-interactive hover:text-ui-ink"
+            ? "border-brand-text/60 bg-brand-soft/80 text-brand-text shadow-glow-primary"
+            : "border-ui-line/60 bg-ui-raised/80 text-ui-ink-secondary hover:border-ui-line-strong hover:bg-ui-interactive hover:text-ui-ink"
         }`}
         onClick={() => onPhysicsChange(!physicsEnabled)}
         type="button"
       >
-        <Icon aria-hidden className={`h-4 w-4 ${physicsEnabled ? "animate-pulse" : ""}`} />
+        <Icon aria-hidden="true" className={`h-3.5 w-3.5 ${physicsEnabled ? "animate-pulse" : ""}`} />
         <span>{physicsLabel}</span>
-        {physicsEnabled && (
-          <span className="relative flex h-2 w-2 ml-1">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-chart-2 opacity-75"></span>
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-chart-2"></span>
+        {physicsEnabled ? (
+          <span className="relative flex h-2 w-2 ml-0.5">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-chart-2 opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-chart-2" />
           </span>
-        )}
+        ) : null}
       </button>
     </div>
   );

@@ -344,7 +344,7 @@ export function AdminSidebar({
   return (
     <>
       <aside
-        className={`fixed inset-y-0 left-0 z-40 hidden w-[72px] border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 motion-reduce:transition-none md:flex md:flex-col ${
+        className={`fixed inset-y-0 left-0 z-40 hidden w-[72px] border-r border-sidebar-border bg-sidebar text-sidebar-foreground backdrop-blur-glass transition-[width] duration-200 motion-reduce:transition-none md:flex md:flex-col ${
           desktopLayout === "expanded" ? "lg:w-64" : "lg:w-[72px]"
         }`}
         data-desktop-layout={desktopLayout}
@@ -369,7 +369,7 @@ export function AdminSidebar({
           <div
             aria-label={t("SHELL.PRIMARY_NAV")}
             aria-modal="true"
-            className="fixed inset-y-0 left-0 z-40 w-64 rounded-r-ui-panel border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-ui-overlay md:hidden"
+            className="fixed inset-y-0 left-0 z-40 w-64 rounded-r-ui-panel border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-ui-overlay backdrop-blur-glass md:hidden"
             onKeyDown={handleDialogKeyDown}
             ref={dialogRef}
             role="dialog"

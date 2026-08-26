@@ -54,7 +54,7 @@ export function AppShell({ fetchWorkspaces, logoutController, syncSelection }: A
           : null;
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="glass-field min-h-screen bg-background text-foreground">
       <a className="fixed left-4 top-3 z-[60] -translate-y-20 rounded-ui-control bg-primary-control px-4 py-2 font-semibold text-primary-control-foreground transition-transform duration-200 focus:translate-y-0" href="#main-content">{t('SHELL.SKIP_CONTENT')}</a>
       <AdminSidebar
         desktopLayout={sidebarLayout}

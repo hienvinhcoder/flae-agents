@@ -22,6 +22,13 @@ function normalized(value: string) {
 
 export function graphNodeColor(type: string) {
   const value = normalized(type);
+  if (
+    value.includes("doc") ||
+    value.includes("tai lieu") ||
+    value.includes("file") ||
+    value.includes("van ban")
+  )
+    return "var(--chart-2)";
   if (value.includes("person") || value.includes("nguoi")) return "var(--chart-1)";
   if (
     value.includes("org") ||

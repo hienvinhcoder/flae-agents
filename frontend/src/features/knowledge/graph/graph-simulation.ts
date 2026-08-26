@@ -34,8 +34,8 @@ export function stepGraphPhysics(
       if (!a || !b) continue;
       const dx = b.x - a.x || 0.01;
       const dy = b.y - a.y || 0.01;
-      const distance = Math.max(Math.hypot(dx, dy), 10);
-      const force = 500 / (distance * distance);
+      const distance = Math.max(Math.hypot(dx, dy), 12);
+      const force = Math.min(2200 / (distance * distance), 12);
       if (a.fx === null) {
         a.vx -= (dx / distance) * force;
         a.vy -= (dy / distance) * force;
@@ -53,7 +53,7 @@ export function stepGraphPhysics(
     const dx = target.x - source.x;
     const dy = target.y - source.y;
     const distance = Math.max(Math.hypot(dx, dy), 1);
-    const force = (distance - 130) * 0.0025;
+    const force = (distance - 170) * 0.003;
     if (source.fx === null) {
       source.vx += (dx / distance) * force;
       source.vy += (dy / distance) * force;
@@ -72,8 +72,8 @@ export function stepGraphPhysics(
       node.vy = 0;
       return;
     }
-    node.vx += (width / 2 - node.x) * 0.0008;
-    node.vy += (height / 2 - node.y) * 0.0008;
+    node.vx += (width / 2 - node.x) * 0.00035;
+    node.vy += (height / 2 - node.y) * 0.00035;
     node.x += node.vx;
     node.y += node.vy;
     node.vx *= 0.88;

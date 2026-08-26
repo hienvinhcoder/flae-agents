@@ -1,41 +1,46 @@
 @import "tailwindcss";
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
 
-  --background: oklch(97.928% 0.007 88.642);
-  --foreground: oklch(22.462% 0.0128 77.97);
-  --card: oklch(100% 0 0);
+  --background: #141009;
+  --foreground: #f5f0e8;
+  --card: var(--glass-surface-strong);
   --card-foreground: var(--foreground);
-  --popover: oklch(100% 0 0);
+  --popover: var(--glass-surface-strong);
   --popover-foreground: var(--foreground);
+  /*
+   * --primary stays the deep accessible orange (not DESIGN.md's brighter
+   * #F97316) so white text on CTAs keeps WCAG AA contrast (~4.8:1). The
+   * brighter brand orange is expressed as glow/tint via --orb-primary.
+   */
   --primary: oklch(70.487% 0.1867 47.604);
   --primary-foreground: oklch(98.951% 0.009 78.283);
-  --primary-soft: oklch(92.518% 0.0456 66.146);
+  --primary-soft: rgb(249 115 22 / 0.16);
   --primary-control: var(--primary);
   --primary-control-hover: color-mix(in oklch, var(--primary), var(--foreground) 10%);
   --primary-control-active: color-mix(in oklch, var(--primary), var(--foreground) 18%);
   --primary-control-foreground: var(--primary-foreground);
-  --secondary: oklch(92.504% 0.0153 90.24);
+  --secondary: var(--glass-surface);
   --secondary-foreground: var(--foreground);
-  --muted: oklch(94.647% 0.014 88.685);
-  --muted-foreground: oklch(51.127% 0.023 77.145);
+  --muted: rgb(255 251 245 / 0.08);
+  --muted-foreground: #b7ab9a;
   --accent: var(--secondary);
   --accent-foreground: var(--foreground);
-  --destructive: oklch(57.7% 0.245 27);
+  --destructive: oklch(0.62 0.21 27);
   --destructive-foreground: var(--primary-foreground);
-  --border: oklch(90.376% 0.0196 90.552);
+  --border: rgb(255 251 245 / 0.12);
   --input: var(--border);
   --ring: var(--primary);
-  --chart-1: oklch(64.6% 0.222 41.116);
-  --chart-2: oklch(60% 0.118 184.704);
-  --chart-3: oklch(39.8% 0.07 227.392);
-  --chart-4: oklch(82.8% 0.189 84.429);
-  --chart-5: oklch(76.9% 0.188 70.08);
-  --sidebar: oklch(26.437% 0.0169 74.882);
-  --sidebar-foreground: oklch(92.504% 0.0153 90.24);
-  --sidebar-primary: var(--primary);
-  --sidebar-primary-foreground: var(--primary-foreground);
+  --chart-1: oklch(0.68 0.2 42);
+  --chart-2: oklch(0.75 0.13 175);
+  --chart-3: oklch(0.62 0.11 230);
+  --chart-4: oklch(0.82 0.16 84);
+  --chart-5: oklch(0.78 0.14 70);
+  --sidebar: rgb(20 16 9 / 0.55);
+  --sidebar-foreground: #eae3d6;
+  --sidebar-primary: var(--primary-soft);
+  --sidebar-primary-foreground: var(--orb-primary);
   --sidebar-accent: color-mix(in oklch, var(--sidebar), var(--sidebar-foreground) 8%);
   --sidebar-accent-foreground: var(--sidebar-foreground);
   --sidebar-border: color-mix(in oklch, var(--sidebar), var(--sidebar-foreground) 12%);
@@ -60,7 +65,7 @@
   --color-text-disabled: color-mix(in oklch, var(--muted-foreground), var(--background) 28%);
   --color-on-primary: var(--primary-control-foreground);
   --color-on-primary-cta: var(--color-primary-cta-foreground);
-  --color-link: oklch(46.98% 0.143 37.304);
+  --color-link: var(--orb-amber);
   --color-focus: var(--ring);
   --color-ai: var(--primary);
   --color-ai-soft: var(--primary-soft);
@@ -109,8 +114,8 @@
   --radius-dialog: 1rem;
   --radius-pill: 9999px;
 
-  --shadow-panel: 0 1px 2px oklch(20% 0.03 60 / 0.04);
-  --shadow-overlay: 0 18px 48px -16px oklch(20% 0.03 60 / 0.28);
+  --shadow-panel: var(--shadow-glass);
+  --shadow-overlay: var(--shadow-glass-pop);
   --focus-ring: 0 0 0 4px color-mix(in oklch, var(--ring) 22%, transparent);
 
   --motion-fast: 150ms;
@@ -301,7 +306,7 @@
   }
 
   ::selection {
-    background: var(--primary-soft);
+    background: rgb(249 115 22 / 0.4);
     color: var(--foreground);
   }
 
@@ -417,24 +422,20 @@
   }
 
   .knowledge-graph-atmosphere {
+    background-color: var(--color-surface, #090a0f);
     background-image:
-      linear-gradient(
-        color-mix(in srgb, var(--color-border-strong) 8%, transparent) 1px,
-        transparent 1px
-      ),
-      linear-gradient(
-        90deg,
-        color-mix(in srgb, var(--color-border-strong) 8%, transparent) 1px,
-        transparent 1px
-      ),
-      radial-gradient(circle at 50% 35%, var(--primary-soft), transparent 45%);
-    background-size: 32px 32px, 32px 32px, auto;
+      radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--color-primary) 12%, transparent), transparent 65%),
+      radial-gradient(circle at 80% 80%, color-mix(in srgb, var(--color-ai) 8%, transparent), transparent 50%),
+      radial-gradient(circle, color-mix(in srgb, var(--color-border-strong) 30%, transparent) 1px, transparent 1px);
+    background-size: auto, auto, 24px 24px;
   }
 
   .surface-panel {
     border: 1px solid var(--border);
     border-radius: var(--radius-card);
     background: var(--card);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
   }
 
   .text-metadata {

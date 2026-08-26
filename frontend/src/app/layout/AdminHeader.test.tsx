@@ -245,4 +245,47 @@ describe("AdminHeader", () => {
     expect(logoutButton).toHaveAttribute("aria-busy", "true");
     expect(logoutButton).toHaveTextContent("Signing out");
   });
+
+  it("closes the profile menu when pressing Escape and restores focus to avatar button", async () => {
+    await renderHeader(createProps());
+
+    const avatarButton = screen.getByRole("button", { name: "WO" });
+    await userEvent.click(avatarButton);
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(avatarButton).toHaveAttribute("aria-expanded", "true");
+
+    await userEvent.keyboard("{Escape}");
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(avatarButton).toHaveAttribute("aria-expanded", "false");
+    expect(avatarButton).toHaveFocus();
+  });
+
+  it("closes the profile menu when clicking outside", async () => {
+    await renderHeader(createProps());
+
+    const avatarButton = screen.getByRole("button", { name: "WO" });
+    await userEvent.click(avatarButton);
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+    await userEvent.click(document.body);
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(avatarButton).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("displays user information cleanly in the profile menu header", async () => {
+    await renderHeader(
+      createProps({
+        user: { ...user, full_name: "Nguyen Vinh", email: "vinh@flae.ai" },
+      }),
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "NV" }));
+
+    expect(screen.getByText("Nguyen Vinh")).toBeInTheDocument();
+    expect(screen.getByText("vinh@flae.ai")).toBeInTheDocument();
+  });
 });

@@ -1,4 +1,4 @@
-import { Database, FilePlus2, PencilLine } from "lucide-react";
+import { FilePlus2, Network, PencilLine } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
@@ -13,7 +13,6 @@ import { DocumentDetailPanel } from "../ui/DocumentDetailPanel";
 import { DocumentGrid } from "../ui/DocumentGrid";
 import { DocumentTable } from "../ui/DocumentTable";
 import { KnowledgeLibraryToolbar } from "../ui/KnowledgeLibraryToolbar";
-import { KnowledgeReadiness } from "../ui/KnowledgeReadiness";
 import { TextInputDialog } from "../ui/TextInputDialog";
 import { UploadDialog } from "../ui/UploadDialog";
 
@@ -77,16 +76,6 @@ export function KnowledgeListPage() {
   const knowledge = useKnowledge(workspaceId, selectedDocumentId);
   const documents = knowledge.documents.data ?? EMPTY_DOCUMENTS;
 
-  const stats = useMemo(() => {
-    const total = documents.length;
-    const totalChunks = documents.reduce((sum, doc) => sum + (doc.chunk_count ?? 0), 0);
-    const completed = documents.filter((doc) => doc.status === "completed").length;
-    const processing = documents.filter(
-      (doc) => doc.status === "processing" || doc.status === "pending",
-    ).length;
-    const failed = documents.filter((doc) => doc.status === "failed").length;
-    return { completed, failed, processing, total, totalChunks };
-  }, [documents]);
   const pendingRetryIds = workspaceId
     ? (pendingRetryIdsByWorkspace.get(workspaceId) ?? EMPTY_PENDING_RETRY_IDS)
     : EMPTY_PENDING_RETRY_IDS;
@@ -213,7 +202,7 @@ export function KnowledgeListPage() {
               className="inline-flex min-h-10 items-center gap-2 rounded-ui-control border border-ui-line bg-ui-raised px-4 py-2 font-semibold text-ui-ink no-underline transition-colors duration-150 hover:border-ui-line-strong hover:bg-ui-interactive motion-reduce:transition-none"
               to="graph"
             >
-              <Database aria-hidden className="h-4 w-4" strokeWidth={1.75} />
+              <Network aria-hidden className="h-4 w-4 text-brand-text" strokeWidth={1.75} />
               {t("KNOWLEDGE.OPEN_GRAPH")}
             </Link>
             <Button onClick={() => setTextOpen(true)} variant="secondary">
@@ -232,15 +221,6 @@ export function KnowledgeListPage() {
         description={t("KNOWLEDGE.DESCRIPTION")}
         eyebrow={t("KNOWLEDGE.EYEBROW")}
         title={t("KNOWLEDGE.TITLE")}
-      />
-
-      <KnowledgeReadiness
-        completed={stats.completed}
-        failed={stats.failed}
-        onReviewFailed={() => setStatus("failed")}
-        processing={stats.processing}
-        total={stats.total}
-        totalChunks={stats.totalChunks}
       />
 
       <section

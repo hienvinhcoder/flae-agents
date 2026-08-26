@@ -54,11 +54,7 @@ export function createGraphRenderer(
 ): GraphRenderer {
   const context = canvas.getContext("2d");
   if (!context) throw new Error("Canvas 2D rendering is unavailable.");
-  let state: RendererState = {
-    graph: { edges: [], nodes: [] },
-    physicsEnabled: true,
-    selection: null,
-  };
+  let state: RendererState = { graph: { edges: [], nodes: [] }, physicsEnabled: true, selection: null };
   let index = buildGraphIndex(state.graph);
   let view = { k: 1, x: 0, y: 0 };
   let rafId: number | null = null;
@@ -67,11 +63,7 @@ export function createGraphRenderer(
   let draggingView = false;
   let draggedNode: RendererNode | null = null;
   let dragStart = { clientX: 0, clientY: 0, x: 0, y: 0 };
-  let pinchStart: {
-    distance: number;
-    graphX: number;
-    graphY: number;
-  } | null = null;
+  let pinchStart: { distance: number; graphX: number; graphY: number } | null = null;
   let activeIndex = -1;
   const pointers = new Map<number, { x: number; y: number }>();
   const palette = resolveGraphPalette(canvas);
@@ -101,17 +93,9 @@ export function createGraphRenderer(
     const maxY = Math.max(...ys);
     const scale = Math.max(
       0.2,
-      Math.min(
-        (canvas.width - 80) / (maxX - minX || 100),
-        (canvas.height - 80) / (maxY - minY || 100),
-        1.2,
-      ),
+      Math.min((canvas.width - 120) / (maxX - minX || 100), (canvas.height - 120) / (maxY - minY || 100), 1.2),
     );
-    view = {
-      k: scale,
-      x: canvas.width / 2 - ((minX + maxX) / 2) * scale,
-      y: canvas.height / 2 - ((minY + maxY) / 2) * scale,
-    };
+    view = { k: scale, x: canvas.width / 2 - ((minX + maxX) / 2) * scale, y: canvas.height / 2 - ((minY + maxY) / 2) * scale };
   };
   const zoomAt = (x: number, y: number, nextZoom: number) => {
     const graphX = (x - view.x) / view.k;
@@ -125,59 +109,86 @@ export function createGraphRenderer(
     const target = index.nodesById.get(edge.target);
     if (!source || !target) return;
     const selected = state.selection?.kind === "edge" && state.selection.id === edge.id;
-    const related =
-      state.selection?.kind === "node" &&
-      (state.selection.id === edge.source || state.selection.id === edge.target);
+    const related = state.selection?.kind === "node" && (state.selection.id === edge.source || state.selection.id === edge.target);
+    const hasSelection = state.selection !== null;
+    const dimmed = hasSelection && !selected && !related;
+
+    context.save();
+    if (dimmed) context.globalAlpha = 0.15;
+
     context.beginPath();
     context.moveTo(source.x, source.y);
     context.lineTo(target.x, target.y);
-    context.strokeStyle = selected
-      ? palette.primaryActive
-      : related
-        ? palette.primaryActive
-        : resolveEdgeColor(edge, palette);
-    context.lineWidth = selected ? 3 : related ? 2 : 1;
-    context.setLineDash(edge.dashed && !selected && !related ? [5, 5] : []);
+    context.strokeStyle = selected || related ? palette.primaryActive : resolveEdgeColor(edge, palette);
+    context.lineWidth = selected ? 3.5 : related ? 2.2 : 1;
+    context.setLineDash(edge.dashed && !selected && !related ? [4, 4] : []);
     context.stroke();
     context.setLineDash([]);
-    if (view.k <= 0.7 && !selected) return;
-    const x = (source.x + target.x) / 2;
-    const y = (source.y + target.y) / 2;
-    context.font = "10px monospace";
-    context.textAlign = "center";
-    context.textBaseline = "bottom";
-    const width = context.measureText(edge.displayLabel).width;
-    context.fillStyle = palette.surfaceRaised;
-    context.fillRect(x - width / 2 - 4, y - 13, width + 8, 15);
-    context.fillStyle = selected ? palette.link : palette.textSecondary;
-    context.fillText(edge.displayLabel, x, y);
+
+    if ((view.k > 0.8 || selected || related) && edge.displayLabel) {
+      const x = (source.x + target.x) / 2;
+      const y = (source.y + target.y) / 2;
+      context.font = selected || related ? "bold 10px monospace" : "9px monospace";
+      context.textAlign = "center";
+      context.textBaseline = "bottom";
+      const width = context.measureText(edge.displayLabel).width;
+      context.fillStyle = palette.surfaceRaised;
+      context.fillRect(x - width / 2 - 4, y - 12, width + 8, 14);
+      context.fillStyle = selected ? palette.link : palette.textSecondary;
+      context.fillText(edge.displayLabel, x, y);
+    }
+    context.restore();
   };
+
   const drawNode = (node: RendererNode) => {
     const selected = state.selection?.kind === "node" && state.selection.id === node.id;
-    const neighbor =
-      state.selection?.kind === "node" &&
-      index.neighborsById.get(state.selection.id)?.has(node.id);
-    context.beginPath();
-    context.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
+    const neighbor = state.selection?.kind === "node" && index.neighborsById.get(state.selection.id)?.has(node.id);
+    const hasSelection = state.selection !== null;
+    const dimmed = hasSelection && !selected && !neighbor;
+
+    context.save();
+    if (dimmed) context.globalAlpha = 0.2;
+
     const nodeColor = resolveNodeColor(node.color, palette);
+    const drawRadius = Math.max(8, Math.min(node.radius * 0.7, 18));
+
+    if (selected) {
+      context.beginPath();
+      context.arc(node.x, node.y, drawRadius + 7, 0, Math.PI * 2);
+      context.strokeStyle = palette.primaryActive;
+      context.lineWidth = 2;
+      context.setLineDash([4, 4]);
+      context.stroke();
+      context.setLineDash([]);
+    }
+
+    context.beginPath();
+    context.arc(node.x, node.y, drawRadius, 0, Math.PI * 2);
     context.fillStyle = nodeColor;
     context.shadowColor = nodeColor;
-    context.shadowBlur = selected ? 18 : neighbor ? 9 : 0;
+    context.shadowBlur = selected ? 24 : neighbor ? 14 : 8;
     context.fill();
-    context.strokeStyle = selected
-      ? palette.focus
-      : neighbor
-        ? palette.borderControl
-        : palette.borderStrong;
-    context.lineWidth = selected ? 3 : neighbor ? 2 : 1;
+    context.strokeStyle = selected ? palette.focus : neighbor ? palette.borderControl : palette.borderStrong;
+    context.lineWidth = selected ? 3 : neighbor ? 2 : 1.25;
     context.stroke();
     context.shadowBlur = 0;
-    context.font = selected ? "bold 12px sans-serif" : "11px sans-serif";
-    context.fillStyle = selected ? palette.text : palette.textSecondary;
-    context.textAlign = "center";
-    context.textBaseline = "top";
-    context.fillText(node.name, node.x, node.y + node.radius + 7);
+
+    // Show label if zoomed in, or if selected, or if high degree/frequency
+    const showLabel = view.k > 0.65 || selected || neighbor || (node.degree && node.degree > 1);
+    if (showLabel) {
+      context.font = selected ? "bold 11px sans-serif" : "10px sans-serif";
+      context.textAlign = "center";
+      context.textBaseline = "top";
+      const textY = node.y + drawRadius + 5;
+      const textWidth = context.measureText(node.name).width;
+      context.fillStyle = palette.surfaceRaised;
+      context.fillRect(node.x - textWidth / 2 - 3, textY - 1, textWidth + 6, 14);
+      context.fillStyle = selected ? palette.text : palette.textSecondary;
+      context.fillText(node.name, node.x, textY);
+    }
+    context.restore();
   };
+
   const draw = () => {
     if (destroyed) return;
     context.clearRect(0, 0, canvas.width, canvas.height);
@@ -195,12 +206,7 @@ export function createGraphRenderer(
   const tick = () => {
     rafId = null;
     if (destroyed || !state.physicsEnabled || !state.graph.nodes.length) return;
-    const motion = stepGraphPhysics(
-      state.graph,
-      index,
-      canvas.width,
-      canvas.height,
-    );
+    const motion = stepGraphPhysics(state.graph, index, canvas.width, canvas.height);
     simulationFrames += 1;
     draw();
     if (simulationFrames < MAX_SIMULATION_FRAMES && motion > SETTLED_MOTION) {
@@ -219,61 +225,33 @@ export function createGraphRenderer(
     draw();
   };
   const hitNode = (point: { x: number; y: number }) =>
-    [...state.graph.nodes]
-      .reverse()
-      .find((node) => Math.hypot(point.x - node.x, point.y - node.y) <= node.radius);
+    [...state.graph.nodes].reverse().find((node) => Math.hypot(point.x - node.x, point.y - node.y) <= node.radius);
   const hitEdge = (point: { x: number; y: number }) =>
     state.graph.edges.find((edge) => {
       const source = index.nodesById.get(edge.source);
       const target = index.nodesById.get(edge.target);
-      return Boolean(
-        source &&
-          target &&
-          distanceToSegment(point.x, point.y, source.x, source.y, target.x, target.y) <
-            6 / view.k,
-      );
+      return Boolean(source && target && distanceToSegment(point.x, point.y, source.x, source.y, target.x, target.y) < 6 / view.k);
     });
   const startPinch = () => {
     const points = [...pointers.values()];
-    const first = points[0];
-    const second = points[1];
+    const [first, second] = points;
     if (!first || !second) return;
     const midpoint = { x: (first.x + second.x) / 2, y: (first.y + second.y) / 2 };
     const graphMidpoint = graphPoint(midpoint);
-    pinchStart = {
-      distance: Math.max(Math.hypot(second.x - first.x, second.y - first.y), 1),
-      graphX: graphMidpoint.x,
-      graphY: graphMidpoint.y,
-    };
-    if (draggedNode) {
-      draggedNode.fx = null;
-      draggedNode.fy = null;
-      draggedNode = null;
-    }
+    pinchStart = { distance: Math.max(Math.hypot(second.x - first.x, second.y - first.y), 1), graphX: graphMidpoint.x, graphY: graphMidpoint.y };
+    if (draggedNode) { draggedNode.fx = null; draggedNode.fy = null; draggedNode = null; }
     draggingView = false;
   };
   const onPointerDown = (event: PointerEvent) => {
     const point = canvasPoint(event);
     pointers.set(event.pointerId, point);
     canvas.setPointerCapture(event.pointerId);
-    if (pointers.size === 2) {
-      startPinch();
-      return;
-    }
+    if (pointers.size === 2) { startPinch(); return; }
     const graphPosition = graphPoint(point);
     const node = hitNode(graphPosition);
-    if (node) {
-      draggedNode = node;
-      node.fx = node.x;
-      node.fy = node.y;
-      select({ id: node.id, kind: "node" });
-      return;
-    }
+    if (node) { draggedNode = node; node.fx = node.x; node.fy = node.y; select({ id: node.id, kind: "node" }); return; }
     const edge = hitEdge(graphPosition);
-    if (edge) {
-      select({ id: edge.id, kind: "edge" });
-      return;
-    }
+    if (edge) { select({ id: edge.id, kind: "edge" }); return; }
     draggingView = true;
     dragStart = { clientX: point.x, clientY: point.y, x: view.x, y: view.y };
     select(null);
@@ -283,21 +261,12 @@ export function createGraphRenderer(
     const point = canvasPoint(event);
     pointers.set(event.pointerId, point);
     if (pointers.size === 2 && pinchStart) {
-      const points = [...pointers.values()];
-      const first = points[0];
-      const second = points[1];
+      const [first, second] = [...pointers.values()];
       if (!first || !second) return;
       const midpoint = { x: (first.x + second.x) / 2, y: (first.y + second.y) / 2 };
       const distance = Math.max(Math.hypot(second.x - first.x, second.y - first.y), 1);
-      const k = Math.max(
-        MIN_ZOOM,
-        Math.min(MAX_ZOOM, view.k * (distance / pinchStart.distance)),
-      );
-      view = {
-        k,
-        x: midpoint.x - pinchStart.graphX * k,
-        y: midpoint.y - pinchStart.graphY * k,
-      };
+      const k = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, view.k * (distance / pinchStart.distance)));
+      view = { k, x: midpoint.x - pinchStart.graphX * k, y: midpoint.y - pinchStart.graphY * k };
       pinchStart = { ...pinchStart, distance };
       draw();
       return;
@@ -311,23 +280,14 @@ export function createGraphRenderer(
       draw();
       wakeSimulation();
     } else if (draggingView) {
-      view = {
-        ...view,
-        x: dragStart.x + point.x - dragStart.clientX,
-        y: dragStart.y + point.y - dragStart.clientY,
-      };
+      view = { ...view, x: dragStart.x + point.x - dragStart.clientX, y: dragStart.y + point.y - dragStart.clientY };
       draw();
     }
   };
   const finishPointer = (event: PointerEvent) => {
     pointers.delete(event.pointerId);
     canvas.releasePointerCapture(event.pointerId);
-    if (draggedNode) {
-      draggedNode.fx = null;
-      draggedNode.fy = null;
-      draggedNode = null;
-      wakeSimulation();
-    }
+    if (draggedNode) { draggedNode.fx = null; draggedNode.fy = null; draggedNode = null; wakeSimulation(); }
     draggingView = false;
     if (pointers.size < 2) pinchStart = null;
   };
@@ -350,9 +310,7 @@ export function createGraphRenderer(
       if (!items.length) return;
       event.preventDefault();
       const step = event.key === "ArrowRight" ? 1 : -1;
-      activeIndex = activeIndex < 0
-        ? step > 0 ? 0 : items.length - 1
-        : (activeIndex + step + items.length) % items.length;
+      activeIndex = activeIndex < 0 ? (step > 0 ? 0 : items.length - 1) : (activeIndex + step + items.length) % items.length;
       options.onActiveItemChange?.(items[activeIndex] ?? null);
       return;
     }
@@ -364,11 +322,7 @@ export function createGraphRenderer(
       if (active.kind === "node") {
         const node = index.nodesById.get(active.id);
         if (node) {
-          view = {
-            k: 1.5,
-            x: canvas.width / 2 - node.x * 1.5,
-            y: canvas.height / 2 - node.y * 1.5,
-          };
+          view = { k: 1.5, x: canvas.width / 2 - node.x * 1.5, y: canvas.height / 2 - node.y * 1.5 };
           draw();
         }
       }
@@ -410,11 +364,7 @@ export function createGraphRenderer(
       if (command.type === "focus") {
         const node = index.nodesById.get(command.nodeId ?? "");
         if (node) {
-          view = {
-            k: 1.5,
-            x: canvas.width / 2 - node.x * 1.5,
-            y: canvas.height / 2 - node.y * 1.5,
-          };
+          view = { k: 1.5, x: canvas.width / 2 - node.x * 1.5, y: canvas.height / 2 - node.y * 1.5 };
         }
       }
       draw();

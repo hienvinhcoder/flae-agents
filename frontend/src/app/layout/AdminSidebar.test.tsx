@@ -180,7 +180,7 @@ describe("AdminSidebar", () => {
     const sidebar = screen.getByTestId("admin-sidebar");
     expect(sidebar).toHaveAttribute("data-desktop-layout", "collapsed");
     expect(
-      within(sidebar).getByRole("link", { name: "Knowledge Graph" }),
+      within(sidebar).getByRole("link", { name: "Topics" }),
     ).toBeInTheDocument();
     expect(
       within(sidebar).getByRole("button", { name: "Expand navigation" }),
@@ -199,7 +199,7 @@ describe("AdminSidebar", () => {
       name: "Primary navigation",
     });
     const link = within(sidebar).getByRole("link", {
-      name: "Knowledge Graph",
+      name: "Topics",
     });
     vi.spyOn(link, "getBoundingClientRect").mockReturnValue({
       bottom: 144,
@@ -215,11 +215,11 @@ describe("AdminSidebar", () => {
 
     expect(navigation).toHaveClass("overflow-y-auto");
     expect(link).not.toHaveAttribute("aria-describedby");
-    expect(screen.queryByText("Knowledge Graph")).not.toBeInTheDocument();
+    expect(screen.queryByText("Topics")).not.toBeInTheDocument();
 
     await user.hover(link);
     const hoveredTooltip = screen.getByTestId("admin-sidebar-tooltip");
-    expect(hoveredTooltip).toHaveTextContent("Knowledge Graph");
+    expect(hoveredTooltip).toHaveTextContent("Topics");
     expect(hoveredTooltip).toHaveAttribute("aria-hidden", "true");
     expect(hoveredTooltip).toHaveClass("fixed");
     expect(hoveredTooltip).not.toHaveClass("admin-shell-theme");
@@ -227,12 +227,12 @@ describe("AdminSidebar", () => {
     expect(sidebar).not.toContainElement(hoveredTooltip);
 
     await user.unhover(link);
-    expect(screen.queryByText("Knowledge Graph")).not.toBeInTheDocument();
+    expect(screen.queryByText("Topics")).not.toBeInTheDocument();
 
     fireEvent.focus(link);
-    expect(screen.getByText("Knowledge Graph")).toBeInTheDocument();
+    expect(screen.getByText("Topics")).toBeInTheDocument();
     fireEvent.blur(link);
-    expect(screen.queryByText("Knowledge Graph")).not.toBeInTheDocument();
+    expect(screen.queryByText("Topics")).not.toBeInTheDocument();
   });
 
   it("keeps a focused rail tooltip visible when the pointer leaves", async () => {
@@ -241,16 +241,16 @@ describe("AdminSidebar", () => {
 
     const sidebar = screen.getByTestId("admin-sidebar");
     const link = within(sidebar).getByRole("link", {
-      name: "Knowledge Graph",
+      name: "Topics",
     });
 
     fireEvent.focus(link);
     await user.hover(link);
     await user.unhover(link);
-    expect(screen.getByText("Knowledge Graph")).toBeInTheDocument();
+    expect(screen.getByText("Topics")).toBeInTheDocument();
 
     fireEvent.blur(link);
-    expect(screen.queryByText("Knowledge Graph")).not.toBeInTheDocument();
+    expect(screen.queryByText("Topics")).not.toBeInTheDocument();
   });
 
   it("keeps a hovered rail tooltip visible when the link blurs", async () => {
@@ -259,16 +259,16 @@ describe("AdminSidebar", () => {
 
     const sidebar = screen.getByTestId("admin-sidebar");
     const link = within(sidebar).getByRole("link", {
-      name: "Knowledge Graph",
+      name: "Topics",
     });
 
     await user.hover(link);
     fireEvent.focus(link);
     fireEvent.blur(link);
-    expect(screen.getByText("Knowledge Graph")).toBeInTheDocument();
+    expect(screen.getByText("Topics")).toBeInTheDocument();
 
     await user.unhover(link);
-    expect(screen.queryByText("Knowledge Graph")).not.toBeInTheDocument();
+    expect(screen.queryByText("Topics")).not.toBeInTheDocument();
   });
 
   it("clears mixed rail tooltip state when the desktop layout changes", async () => {
@@ -277,7 +277,7 @@ describe("AdminSidebar", () => {
 
     const sidebar = screen.getByTestId("admin-sidebar");
     const link = within(sidebar).getByRole("link", {
-      name: "Knowledge Graph",
+      name: "Topics",
     });
 
     fireEvent.focus(link);
@@ -304,14 +304,14 @@ describe("AdminSidebar", () => {
       name: "Primary navigation",
     });
     const link = within(sidebar).getByRole("link", {
-      name: "Knowledge Graph",
+      name: "Topics",
     });
 
     await user.hover(link);
-    expect(screen.getByText("Knowledge Graph")).toBeInTheDocument();
+    expect(screen.getByText("Topics")).toBeInTheDocument();
 
     fireEvent.scroll(navigation);
-    expect(screen.queryByText("Knowledge Graph")).not.toBeInTheDocument();
+    expect(screen.queryByText("Topics")).not.toBeInTheDocument();
   });
 
   it("clears a visible rail tooltip when the viewport resizes", async () => {
@@ -320,14 +320,14 @@ describe("AdminSidebar", () => {
 
     const sidebar = screen.getByTestId("admin-sidebar");
     const link = within(sidebar).getByRole("link", {
-      name: "Knowledge Graph",
+      name: "Topics",
     });
 
     await user.hover(link);
-    expect(screen.getByText("Knowledge Graph")).toBeInTheDocument();
+    expect(screen.getByText("Topics")).toBeInTheDocument();
 
     fireEvent(window, new Event("resize"));
-    expect(screen.queryByText("Knowledge Graph")).not.toBeInTheDocument();
+    expect(screen.queryByText("Topics")).not.toBeInTheDocument();
   });
 
   it("omits workspace chrome from the collapsed reference rail", async () => {
@@ -421,15 +421,15 @@ describe("AdminSidebar", () => {
     expect(onCloseMobile).toHaveBeenCalledOnce();
   });
 
-  it("marks only the most-specific matching destination as current", async () => {
+  it("marks the parent destination as current when visiting nested sub-routes", async () => {
     await renderSidebar({}, "/dashboard/knowledge/graph/entity-1");
 
     const sidebar = screen.getByTestId("admin-sidebar");
     expect(
-      within(sidebar).getByRole("link", { name: "Knowledge Graph" }),
+      within(sidebar).getByRole("link", { name: "Knowledge" }),
     ).toHaveAttribute("aria-current", "page");
     expect(
-      within(sidebar).getByRole("link", { name: "Knowledge" }),
+      within(sidebar).getByRole("link", { name: "Topics" }),
     ).not.toHaveAttribute("aria-current");
   });
 });

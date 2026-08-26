@@ -41,7 +41,7 @@ export function AdminHeader({
   const { t } = useTranslation();
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center gap-4 border-b border-border bg-background/80 px-3 backdrop-blur-md sm:px-4 md:px-6 lg:px-8">
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-border bg-background/80 px-3 backdrop-blur-glass sm:px-4 md:px-6 lg:px-8">
       <button
         aria-label={t('SHELL.OPEN_NAV')}
         className="grid min-h-10 min-w-10 place-items-center rounded-ui-control border border-border bg-card md:hidden"

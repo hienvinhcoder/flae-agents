@@ -2,7 +2,6 @@ import {
   BookOpen,
   Bot,
   MessageSquare,
-  Network,
   Settings,
   Tags,
 } from "lucide-react";
@@ -48,11 +47,6 @@ export const navigationGroups: readonly AdminNavigationGroup[] = [
         key: "NAV.KNOWLEDGE",
         to: "/dashboard/knowledge",
         icon: BookOpen,
-      },
-      {
-        key: "SHELL.KNOWLEDGE_GRAPH",
-        to: "/dashboard/knowledge/graph",
-        icon: Network,
       },
       {
         key: "NAV.TOPICS",

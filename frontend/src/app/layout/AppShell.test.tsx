@@ -80,14 +80,14 @@ describe('AppShell', () => {
     vi.unstubAllGlobals();
   });
 
-  it('uses the shared approved light theme without a feature-local token cascade', () => {
+  it('uses the shared approved dark glass theme without a feature-local token cascade', () => {
     expect(appShellSource).not.toMatch(/admin-shell-theme/);
     expect(Object.keys(adminShellThemeStylesheets)).toHaveLength(0);
-    expect(sharedStylesheet).toMatch(/:root\s*\{[^}]*color-scheme:\s*light;/s);
+    expect(sharedStylesheet).toMatch(/:root\s*\{[^}]*color-scheme:\s*dark;/s);
     expect(sharedStylesheet).toContain('--color-primary:');
     expect(sharedStylesheet).toContain('--color-primary-foreground:');
-    expect(sharedStylesheet).toContain('--background: oklch(97.928% 0.007 88.642);');
-    expect(sharedStylesheet).toContain('--card: oklch(100% 0 0);');
+    expect(sharedStylesheet).toContain('--background: #141009;');
+    expect(sharedStylesheet).toContain('--card: var(--glass-surface-strong);');
     expect(sharedStylesheet).toMatch(/--font-sans:\s*ui-sans-serif,/);
     expect(sharedStylesheet).toMatch(/--font-mono:\s*ui-monospace,/);
     expect(sharedStylesheet).toMatch(/--radius-control:\s*0\.5rem;/);
@@ -155,6 +155,7 @@ describe('AppShell', () => {
     expect(within(sidebar).getByRole('link', { name: 'AI Chat' })).toHaveAttribute('aria-current', 'page');
     expect(screen.getByRole('heading', { name: 'Current page' })).toBeInTheDocument();
 
+    await userEvent.click(within(header).getByRole('button', { name: 'O' }));
     await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Không gian làm việc' }), 'ws-2');
 
     await waitFor(() => expect(syncSelection).toHaveBeenCalledWith('ws-2'));

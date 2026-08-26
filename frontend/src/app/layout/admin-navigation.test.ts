@@ -2,7 +2,6 @@ import {
   BookOpen,
   Bot,
   MessageSquare,
-  Network,
   Settings,
   Tags,
 } from "lucide-react";
@@ -51,11 +50,6 @@ describe("admin navigation", () => {
             icon: BookOpen,
           },
           {
-            key: "SHELL.KNOWLEDGE_GRAPH",
-            to: "/dashboard/knowledge/graph",
-            icon: Network,
-          },
-          {
             key: "NAV.TOPICS",
             to: "/dashboard/topics",
             icon: Tags,
@@ -80,10 +74,10 @@ describe("admin navigation", () => {
     ["/dashboard/chat", "NAV.CHAT"],
     ["/dashboard/agents/agent-1", "NAV.AGENTS"],
     ["/dashboard/knowledge", "NAV.KNOWLEDGE"],
-    ["/dashboard/knowledge/graph", "SHELL.KNOWLEDGE_GRAPH"],
+    ["/dashboard/knowledge/graph", "NAV.KNOWLEDGE"],
     [
       "/dashboard/knowledge/graph/entities/entity-1?panel=details",
-      "SHELL.KNOWLEDGE_GRAPH",
+      "NAV.KNOWLEDGE",
     ],
     ["/dashboard/topics/topic-1#activity", "NAV.TOPICS"],
   ])("finds the most-specific item for %s", (pathname, key) => {

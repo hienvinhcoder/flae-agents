@@ -79,6 +79,8 @@ describe("graph adapter", () => {
   });
 
   it("GRAPH-01 handles aliases and unknown node types with stable colors", () => {
+    expect(graphNodeColor("document")).toBe("var(--chart-2)");
+    expect(graphNodeColor("tai lieu")).toBe("var(--chart-2)");
     expect(graphNodeColor("person")).toBe("var(--chart-1)");
     expect(graphNodeColor("cong ty company")).toBe("var(--chart-3)");
     expect(graphNodeColor("city location")).toBe("var(--chart-2)");
