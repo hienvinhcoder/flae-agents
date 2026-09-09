@@ -22,8 +22,6 @@ const resources = {
         LOGGING_OUT: "Signing out",
         NO_WORKSPACE: "No workspace",
         OPEN_NAV: "Open navigation",
-        SEARCH_MEMORY: "Search company memory",
-        SEARCH_PLACEHOLDER: "Ask FLAE anything about your company…",
         WORKSPACE: "Workspace",
       },
     },
@@ -85,13 +83,11 @@ async function renderHeader(props: AdminHeaderProps) {
 }
 
 describe("AdminHeader", () => {
-  it("renders a search-led header and marks unavailable actions as inert", async () => {
+  it("renders the header without a search input and marks unavailable actions as inert", async () => {
     await renderHeader(createProps());
 
     expect(screen.getByRole("banner")).toHaveClass("h-16");
-    expect(
-      screen.getByRole("searchbox", { name: "Search company memory" }),
-    ).toHaveAttribute("readonly");
+    expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "MCP" })).toBeDisabled();
     const addSourceButton = screen.getByRole("button", { name: "Add source" });
     expect(addSourceButton).toBeDisabled();

@@ -23,7 +23,7 @@ from app.schemas.knowledge import (
     ManualDocumentCreate,
 )
 from app.models.knowledge_base import DocumentStatus
-from app.services.knowledge.documents import KnowledgeBaseService
+from app.services.knowledge.documents import DocumentService
 
 # Khôi phục require_roles ngay lập tức để tránh làm hỏng các test case của file khác
 patcher.stop()
@@ -144,7 +144,7 @@ async def test_create_manual_document_uploads_exact_utf8_bytes_without_flag(
     )
     db = FakeSession()
 
-    await KnowledgeBaseService.create_manual_document(
+    await DocumentService.create_manual_document(
         db,
         workspace_id,
         "user-1",
@@ -183,7 +183,7 @@ async def test_retry_ingestion_allows_reusing_the_closed_workflow_id(
         start_workflow,
     )
 
-    response = await KnowledgeBaseService.retry_ingestion(
+    response = await DocumentService.retry_ingestion(
         db,
         document.workspace_id,
         document.id,

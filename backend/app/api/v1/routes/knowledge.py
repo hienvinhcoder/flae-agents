@@ -27,11 +27,11 @@ from app.schemas.knowledge import (
     KnowledgeSearchRequest,
     KnowledgeSearchResponse,
 )
-from app.services.knowledge.documents import KnowledgeBaseService
+from app.services.knowledge.documents import DocumentService
 from app.services.knowledge.graph.api_service import KnowledgeGraphService
 from app.services.knowledge.retrieval.retriever import RetrieverService
 from app.schemas.knowledge_navigation import DomainPage, DomainDetail
-from app.services.knowledge_base.domain_service import DomainService
+from app.services.knowledge.discovery.domains import DomainService
 from app.core.logger import get_logger
 
 logger = get_logger(__name__)
@@ -56,7 +56,7 @@ async def upload_document(
     ),
 ):
     try:
-        result = await KnowledgeBaseService.upload_document(
+        result = await DocumentService.upload_document(
             db=db,
             workspace_id=workspace_id,
             user_uid=user_uid,
@@ -88,7 +88,7 @@ async def create_manual_document(
     ),
 ):
     try:
-        result = await KnowledgeBaseService.create_manual_document(
+        result = await DocumentService.create_manual_document(
             db=db,
             workspace_id=workspace_id,
             user_uid=user_uid,
@@ -112,7 +112,7 @@ async def list_documents(
     db: AsyncSession = Depends(get_db),
     workspace_id: uuid.UUID = Depends(get_current_workspace_id),
 ):
-    docs = await KnowledgeBaseService.list_documents(db, workspace_id)
+    docs = await DocumentService.list_documents(db, workspace_id)
     return DataResponse[list[DocumentListItem]].success_response(data=docs)
 
 
@@ -173,7 +173,7 @@ async def get_document(
     db: AsyncSession = Depends(get_db),
     workspace_id: uuid.UUID = Depends(get_current_workspace_id),
 ):
-    doc = await KnowledgeBaseService.get_document(db, workspace_id, doc_id)
+    doc = await DocumentService.get_document(db, workspace_id, doc_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
     return DataResponse[DocumentDetail].success_response(data=doc)
@@ -192,7 +192,7 @@ async def delete_document(
         require_roles([WorkspaceRole.owner, WorkspaceRole.admin])
     ),
 ):
-    success = await KnowledgeBaseService.delete_document(
+    success = await DocumentService.delete_document(
         db, workspace_id, doc_id
     )
     if not success:
@@ -214,7 +214,7 @@ async def retry_ingestion(
     ),
 ):
     try:
-        result = await KnowledgeBaseService.retry_ingestion(
+        result = await DocumentService.retry_ingestion(
             db, workspace_id, doc_id
         )
         if not result:
@@ -240,7 +240,7 @@ async def get_ingestion_status(
     db: AsyncSession = Depends(get_db),
     workspace_id: uuid.UUID = Depends(get_current_workspace_id),
 ):
-    status = await KnowledgeBaseService.get_ingestion_status(
+    status = await DocumentService.get_ingestion_status(
         db, workspace_id, doc_id
     )
     if not status:

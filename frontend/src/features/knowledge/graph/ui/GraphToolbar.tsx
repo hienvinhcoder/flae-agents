@@ -27,7 +27,7 @@ export function GraphToolbar({
 
   return (
     <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2.5">
-      <div className="relative min-w-[15rem] flex-1 sm:max-w-md">
+      <div className="relative min-w-60 flex-1 sm:max-w-md">
         <label className="sr-only" htmlFor="graph-search">
           {t("GRAPH.SEARCH_LABEL")}
         </label>
@@ -58,7 +58,7 @@ export function GraphToolbar({
 
         {suggestions.length ? (
           <div
-            className="absolute inset-x-0 top-full z-40 mt-2 max-h-[17rem] overflow-y-auto rounded-xl border border-ui-line bg-ui-raised/95 backdrop-blur-md shadow-ui-overlay animate-in fade-in-50 zoom-in-95 duration-150"
+            className="absolute inset-x-0 top-full z-40 mt-2 max-h-68 overflow-y-auto rounded-xl border border-ui-line bg-ui-raised/95 backdrop-blur-md shadow-ui-overlay animate-in fade-in-50 zoom-in-95 duration-150"
             id="graph-search-results"
             role="listbox"
           >

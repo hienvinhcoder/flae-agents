@@ -43,7 +43,7 @@ async def test_run_extraction_agent_no_gleaning():
     # Asynchronously returning response
     mock_model_instance.ainvoke = AsyncMock(return_value=mock_response)
 
-    with patch("app.agents.shared.models.ChatGoogleGenerativeAI", return_value=mock_model_instance):
+    with patch("app.agents.shared.llm.ChatGoogleGenerativeAI", return_value=mock_model_instance):
         chunk = {"chunk_id": "chunk_abc", "text": "OpenAI makes ChatGPT."}
 
         result, tokens = await run_extraction_agent(
@@ -88,7 +88,7 @@ async def test_run_extraction_agent_with_gleaning():
     mock_model_instance.ainvoke = AsyncMock()
     mock_model_instance.ainvoke.side_effect = [mock_response_1, mock_response_2]
 
-    with patch("app.agents.shared.models.ChatGoogleGenerativeAI", return_value=mock_model_instance):
+    with patch("app.agents.shared.llm.ChatGoogleGenerativeAI", return_value=mock_model_instance):
         chunk = {"chunk_id": "chunk_xyz", "text": "Microsoft developed Windows OS."}
 
         result, tokens = await run_extraction_agent(

@@ -60,13 +60,13 @@ function BrandIdentity({
     <div className="flex min-w-0 items-center gap-2.5 text-sidebar-foreground">
       <span
         aria-hidden="true"
-        className="grid h-9 w-9 shrink-0 place-items-center rounded-ui-control bg-primary text-primary-foreground"
+        className="grid h-9 w-9 shrink-0 place-items-center rounded-ui-control bg-primary text-primary-foreground shadow-[var(--glow-primary)]"
       >
         <Sparkles className="h-5 w-5" />
       </span>
       {expanded ? (
         <span className={`min-w-0 ${responsive ? "hidden lg:block" : ""}`}>
-          <strong className="block truncate font-semibold leading-tight tracking-tight">
+          <strong className="block truncate font-display font-semibold leading-tight tracking-tight">
             FLAE
           </strong>
           <small className="block truncate text-[11px] leading-tight text-sidebar-foreground/60">
@@ -110,7 +110,7 @@ function NavigationItems({
       <div className="group relative" key={item.to}>
         <NavLink
           aria-label={label}
-          className={`relative flex min-h-11 min-w-0 items-center rounded-ui-control py-2 text-sm no-underline transition-colors duration-200 motion-reduce:transition-none md:min-h-10 ${
+          className={`relative flex min-h-11 min-w-0 items-center rounded-ui-control border-l-2 py-2 text-sm no-underline transition-colors duration-200 motion-reduce:transition-none md:min-h-10 ${
             expanded && presentation === "desktop"
               ? "justify-center px-2 lg:justify-start lg:gap-3 lg:px-3"
               : expanded
@@ -118,8 +118,8 @@ function NavigationItems({
                 : "justify-center px-2"
           } ${
             isActive
-              ? "bg-sidebar-primary font-medium text-sidebar-primary-foreground"
-              : "bg-transparent text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+              ? "border-orb-primary bg-sidebar-primary font-medium text-sidebar-primary-foreground"
+              : "border-transparent bg-transparent text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground"
           }`}
           end
           onBlur={(event) => hideTooltip?.(event.currentTarget, "focus")}

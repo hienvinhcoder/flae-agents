@@ -478,8 +478,6 @@
     "LOGGING_OUT": "Đang đăng xuất",
     "LOGOUT_ERROR": "Không thể đăng xuất. Vui lòng thử lại.",
     "LOADING_ROUTE": "Đang tải trang",
-    "SEARCH_MEMORY": "Tìm kiếm bộ nhớ doanh nghiệp",
-    "SEARCH_PLACEHOLDER": "Hỏi FLAE bất kỳ điều gì về doanh nghiệp của bạn…",
     "ADD_SOURCE": "Thêm nguồn",
     "DEMO_ONLY": "Chỉ là bản xem trước; thao tác này chưa được kết nối."
   },

@@ -1,6 +1,6 @@
 from langchain.agents import create_agent
 from app.agents.qa.tools import search_knowledge, list_domains, get_domain_topics, get_topic_detail
-from app.agents.shared.models import get_gemini_llm
+from app.agents.shared.llm import get_gemini_llm
 
 
 def get_qa_agent_graph(

@@ -54,6 +54,7 @@ frontend/src/
 
 ### Core Architecture Rules
 
+- **Design System First (Mandatory)**: You MUST read and strictly adhere to [DESIGN.md](DESIGN.md) before creating, modifying, or refactoring any UI component, page, layout, or visual styling. Ensure all color tokens, typography, surfaces, glassmorphism, animations, and component patterns strictly comply with the design specification.
 - **Feature Organization**: Each business domain must reside in its own directory under `frontend/src/features/<feature-name>/`. Avoid creating generic catch-all features containing unrelated business logic.
 - **shared/ui Boundaries**: Components in `shared/ui/` must be strictly presentational. They should only receive data via `props` and emit signals via `callbacks`. They must never make API calls, read/write to the global store (Zustand), or contain feature-specific business logic.
 - **State & Data Management**:

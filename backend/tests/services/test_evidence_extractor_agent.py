@@ -34,7 +34,7 @@ async def test_evidence_agent_returns_topic_free_typed_candidates() -> None:
     model.ainvoke = AsyncMock(return_value=response)
 
     with patch(
-        "app.agents.shared.models.ChatGoogleGenerativeAI", return_value=model
+        "app.agents.shared.llm.ChatGoogleGenerativeAI", return_value=model
     ):
         result, tokens = await run_evidence_extraction_agent(
             chunk={"chunk_id": "chk_nova", "text": "Nova is approved."},
@@ -82,7 +82,7 @@ async def test_evidence_agent_runs_every_configured_glean_pass() -> None:
         side_effect=(response("Atlas", 10), response("Helios", 11), response("Orion", 12))
     )
     with patch(
-        "app.agents.shared.models.ChatGoogleGenerativeAI", return_value=model
+        "app.agents.shared.llm.ChatGoogleGenerativeAI", return_value=model
     ):
         result, tokens = await run_evidence_extraction_agent(
             chunk={"chunk_id": "chunk-glean", "text": "Atlas Helios Orion"},

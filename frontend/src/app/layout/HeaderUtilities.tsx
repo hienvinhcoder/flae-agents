@@ -103,7 +103,7 @@ export function HeaderUtilities({
       {profileMenuOpen ? (
         <div
           aria-label={`${t('SHELL.WORKSPACE')} · ${t('COMMON.LANGUAGE')}`}
-          className="absolute right-0 top-12 z-50 w-72 rounded-ui-dialog border border-border/80 bg-[#18130c]/98 p-4 text-foreground shadow-2xl shadow-black/80 backdrop-blur-2xl transition-all"
+          className="absolute right-0 top-12 z-50 w-72 rounded-ui-dialog border border-glass-line bg-glass-surface-strong p-4 text-foreground shadow-ui-overlay backdrop-blur-glass-lg transition-all"
           id="admin-profile-menu-panel"
           ref={menuRef}
           role="dialog"
@@ -131,7 +131,7 @@ export function HeaderUtilities({
             ) : (
               <div className="relative">
                 <select
-                  className="min-h-10 w-full appearance-none truncate rounded-ui-control border border-border/80 bg-secondary/70 py-2 pl-3 pr-9 text-sm font-medium text-foreground outline-none transition-colors hover:bg-secondary/90 focus:border-primary focus:bg-secondary focus:ring-1 focus:ring-primary/40 [&>option]:bg-[#18130c] [&>option]:text-foreground"
+                  className="min-h-10 w-full appearance-none truncate rounded-ui-control border border-glass-line bg-glass-surface py-2 pl-3 pr-9 text-sm font-medium text-foreground outline-none transition-colors hover:bg-glass-surface-strong focus:border-primary focus:bg-glass-surface-strong focus:ring-1 focus:ring-primary/40 [&>option]:bg-glass-canvas [&>option]:text-foreground"
                   disabled={workspaces.length === 0 || syncStatus === 'syncing'}
                   id="admin-header-workspace"
                   onChange={(event) => onSelectWorkspace(event.target.value)}
@@ -167,7 +167,7 @@ export function HeaderUtilities({
             </label>
             <div className="relative">
               <select
-                className="min-h-10 w-full appearance-none rounded-ui-control border border-border/80 bg-secondary/70 py-2 pl-3 pr-9 text-sm font-medium text-foreground outline-none transition-colors hover:bg-secondary/90 focus:border-primary focus:bg-secondary focus:ring-1 focus:ring-primary/40 [&>option]:bg-[#18130c] [&>option]:text-foreground"
+                className="min-h-10 w-full appearance-none rounded-ui-control border border-glass-line bg-glass-surface py-2 pl-3 pr-9 text-sm font-medium text-foreground outline-none transition-colors hover:bg-glass-surface-strong focus:border-primary focus:bg-glass-surface-strong focus:ring-1 focus:ring-primary/40 [&>option]:bg-glass-canvas [&>option]:text-foreground"
                 id="admin-header-language"
                 onChange={(event) => onChangeLanguage(event.target.value)}
                 value={language}

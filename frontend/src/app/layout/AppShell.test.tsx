@@ -88,10 +88,10 @@ describe('AppShell', () => {
     expect(sharedStylesheet).toContain('--color-primary-foreground:');
     expect(sharedStylesheet).toContain('--background: #141009;');
     expect(sharedStylesheet).toContain('--card: var(--glass-surface-strong);');
-    expect(sharedStylesheet).toMatch(/--font-sans:\s*ui-sans-serif,/);
-    expect(sharedStylesheet).toMatch(/--font-mono:\s*ui-monospace,/);
-    expect(sharedStylesheet).toMatch(/--radius-control:\s*0\.5rem;/);
-    expect(sharedStylesheet).toMatch(/--radius-card:\s*0\.75rem;/);
+    expect(sharedStylesheet).toMatch(/--font-sans:\s*"Inter",/);
+    expect(sharedStylesheet).toMatch(/--font-mono:\s*"JetBrains Mono",/);
+    expect(sharedStylesheet).toMatch(/--radius-control:\s*0\.625rem;/);
+    expect(sharedStylesheet).toMatch(/--radius-card:\s*0\.875rem;/);
   });
 
   it('offers responsive navigation and switches workspace without losing page context', async () => {

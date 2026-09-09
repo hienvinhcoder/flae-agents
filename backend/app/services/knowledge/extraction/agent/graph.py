@@ -8,7 +8,7 @@ from app.services.knowledge.extraction.agent.nodes import (
     extract_first_pass_node,
     extract_gleaning_node,
 )
-from app.agents.shared.models import get_gemini_llm
+from app.agents.shared.llm import get_gemini_llm
 
 
 def should_glean(state: ExtractionState) -> str:

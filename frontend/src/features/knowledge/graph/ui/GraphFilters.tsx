@@ -33,7 +33,7 @@ export function GraphFilters({
           <Filter aria-hidden="true" className="h-3.5 w-3.5" />
         </div>
         <select
-          className="min-h-11 min-w-11 min-w-[12rem] max-w-56 cursor-pointer appearance-none rounded-xl border border-ui-line/60 bg-ui-raised/80 pl-8 pr-8 text-xs font-medium text-ui-ink shadow-sm backdrop-blur-md transition-all duration-200 hover:border-ui-line-strong focus:border-ui-focus focus:outline-none focus:ring-2 focus:ring-ui-focus/25 motion-reduce:transition-none"
+          className="min-h-11 min-w-48 max-w-56 cursor-pointer appearance-none rounded-xl border border-ui-line/60 bg-ui-raised/80 pl-8 pr-8 text-xs font-medium text-ui-ink shadow-sm backdrop-blur-md transition-all duration-200 hover:border-ui-line-strong focus:border-ui-focus focus:outline-none focus:ring-2 focus:ring-ui-focus/25 motion-reduce:transition-none"
           id="graph-node-type"
           onChange={(event) => onNodeTypeChange(event.target.value)}
           value={nodeType}

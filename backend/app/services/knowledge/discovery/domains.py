@@ -1,4 +1,4 @@
-"""Knowledge Domain service: resolve, merge, fuse, and list domains."""
+"""Knowledge domain discovery: resolve, merge, and list domains."""
 
 import hashlib
 from typing import Optional
@@ -33,14 +33,22 @@ def merge_domains(domains: list[dict]) -> list[dict]:
         # Pick name from most frequent or first
         name = clean_entity_name(group[0]["name"])
         source_chunks = list({d["source_chunk_id"] for d in group if d.get("source_chunk_id")})
-        descriptions = list({d["description"].strip() for d in group if d.get("description") and d["description"].strip()})
+        descriptions = list(
+            {
+                d["description"].strip()
+                for d in group
+                if d.get("description") and d["description"].strip()
+            }
+        )
 
-        merged.append({
-            "name": name,
-            "descriptions": descriptions,
-            "source_chunk_ids": source_chunks,
-            "frequency": len(group),
-        })
+        merged.append(
+            {
+                "name": name,
+                "descriptions": descriptions,
+                "source_chunk_ids": source_chunks,
+                "frequency": len(group),
+            }
+        )
 
     return merged
 

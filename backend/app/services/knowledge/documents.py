@@ -1,7 +1,7 @@
 """
-Service nghiệp vụ chính cho Knowledge Base.
-Xử lý logic: upload, create, list, delete, retry documents.
-Tất cả thao tác DB đều nằm trong service layer.
+Document metadata service for the knowledge base.
+Handles upload, create, list, delete, and retry of documents.
+All DB operations live in the service layer.
 """
 import uuid
 from hashlib import sha256
@@ -60,7 +60,7 @@ def _validate_upload(file: UploadFile) -> None:
 # ── Service Class ──────────────────────────────────────────────────
 
 
-class KnowledgeBaseService:
+class DocumentService:
     @staticmethod
     async def upload_document(
         db: AsyncSession,

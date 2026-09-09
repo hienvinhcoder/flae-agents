@@ -22,7 +22,7 @@ Use `uv` for all dependency and virtual-environment operations. Do **not** use `
 
 | Layer | Directory | Responsibilities |
 |-------|-----------|-----------------|
-| API Endpoint | `app/api/v1/endpoints/` | Receive request, validate transport payload, enforce auth via DI, call Service, return Pydantic schema. **Never** query DB directly. |
+| API Endpoint | `app/api/v1/routes/` | Receive request, validate transport payload, enforce auth via DI, call Service, return Pydantic schema. **Never** query DB directly. |
 | Service | `app/services/` | All business logic, DB transactions, domain rules. |
 | Model | `app/models/` | SQLAlchemy ORM table definitions. |
 
@@ -40,16 +40,16 @@ Use `uv` for all dependency and virtual-environment operations. Do **not** use `
 backend/app/
 ├── agents/                  # LangGraph agents
 │   ├── qa/                  #   Q&A agent with tool routing
-│   └── shared/              #   Shared models, prompts, utils
-├── api/v1/endpoints/        # FastAPI routers (auth, knowledge_base, chat_stream, topic …)
+│   └── shared/              #   Shared LLM factory, prompts, utils
+├── api/v1/routes/           # FastAPI routers (auth, knowledge, chat, topics …)
 ├── core/                    # Config, security, logger, exceptions, telemetry_redaction, langsmith
-├── connectors/              # External adapters (Google Drive pilot)
-├── db/                      # Session factory, RAG ORM models, repositories, checkpoint
-├── models/                  # flae_db ORM models (user, workspace, knowledge_base, topic …)
+├── connectors/              # External adapter contracts (e.g. Google Drive)
+├── db/                      # Session factory, RAG DB manager, checkpoint
+├── models/                  # flae_db + rag ORM models
 ├── schemas/                 # Pydantic request/response schemas
 ├── services/                # Business logic
-│   ├── knowledge_base/      #   Core: ingestion, publish, retrieval, fusion
-│   ├── domain_service.py    #   Domain navigation (list_domains, get_domain, get_domain_topics)
+│   ├── knowledge/           #   Ingestion, extraction, retrieval, graph, discovery
+│   ├── agents/              #   Agent/chat session CRUD
 │   └── …
 ├── temporal/                # Workflows and activities
 │   ├── workflows/           #   Temporal workflow definitions

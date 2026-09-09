@@ -24,7 +24,7 @@ export function GraphSelectionPanel({
   return (
     <aside
       aria-label={t(selectedNode ? "GRAPH.ENTITY_DETAILS" : "GRAPH.RELATIONSHIP_DETAILS")}
-      className="absolute inset-x-3 bottom-3 z-30 max-h-[60%] overflow-y-auto rounded-2xl border border-ui-line/60 bg-ui-panel/95 shadow-ui-overlay backdrop-blur-xl transition-all duration-200 md:inset-y-3 md:left-auto md:max-h-none md:w-[23rem]"
+      className="absolute inset-x-3 bottom-3 z-30 max-h-[60%] overflow-y-auto rounded-2xl border border-ui-line/60 bg-ui-panel/95 shadow-ui-overlay backdrop-blur-xl transition-all duration-200 md:inset-y-3 md:left-auto md:max-h-none md:w-92"
     >
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-ui-divider bg-ui-panel/95 px-4.5 py-3.5 backdrop-blur-md">
         <div className="flex items-center gap-2">
@@ -73,7 +73,7 @@ export function GraphSelectionPanel({
                 <span>Focus</span>
               </button>
             </div>
-            <h2 className="mt-2.5 text-xl font-bold text-ui-ink tracking-tight break-words">
+            <h2 className="mt-2.5 text-xl font-bold text-ui-ink tracking-tight wrap-break-word">
               {selectedNode.name}
             </h2>
           </div>

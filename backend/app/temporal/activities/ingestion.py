@@ -166,11 +166,11 @@ async def update_document_status_activity(
     command: DocumentIngestionStatusInput,
 ) -> None:
     """Synchronize compact ingestion lifecycle state to core document metadata."""
-    from app.services.knowledge.documents import KnowledgeBaseService
+    from app.services.knowledge.documents import DocumentService
 
     async with AsyncSessionLocal() as session:
         if command.status == "completed":
-            await KnowledgeBaseService.finalize_document_ingestion_db(
+            await DocumentService.finalize_document_ingestion_db(
                 db=session,
                 doc_id=command.document_id,
                 metrics={
@@ -182,7 +182,7 @@ async def update_document_status_activity(
                 },
             )
             return
-        await KnowledgeBaseService.update_document_status_db(
+        await DocumentService.update_document_status_db(
             db=session,
             doc_id=command.document_id,
             status=command.status,

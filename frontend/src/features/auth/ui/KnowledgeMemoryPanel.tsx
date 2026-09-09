@@ -133,7 +133,7 @@ function SourceCard({ chip }: { chip: SourceChip }) {
   return (
     <div
       className={[
-        'absolute left-0 z-10 w-[30%] items-center justify-between gap-2.5 rounded-xl border border-white/10 bg-white/[0.05]',
+        'absolute left-0 z-10 w-[30%] items-center justify-between gap-2.5 rounded-xl border border-white/10 bg-white/5',
         'px-3 py-2 text-xs font-medium text-glass-ink backdrop-blur-md transition-all sm:text-sm',
         'shadow-[0_4px_16px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.08)]',
         chip.top,
@@ -159,7 +159,7 @@ function AgentCard({ chip }: { chip: AgentChip }) {
   return (
     <div
       className={[
-        'absolute right-0 z-10 w-[30%] items-center justify-between gap-2.5 rounded-xl border border-white/10 bg-white/[0.05]',
+        'absolute right-0 z-10 w-[30%] items-center justify-between gap-2.5 rounded-xl border border-white/10 bg-white/5',
         'px-3 py-2 text-xs font-medium text-glass-ink backdrop-blur-md transition-all sm:text-sm',
         'shadow-[0_4px_16px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.08)]',
         chip.top,
@@ -184,7 +184,7 @@ export function KnowledgeMemoryPanel() {
   return (
     <section
       aria-hidden="true"
-      className="glass-panel glass-grid pointer-events-none relative isolate flex min-h-[22rem] flex-col justify-between overflow-hidden p-5 sm:p-6 md:min-h-full"
+      className="glass-panel glass-grid pointer-events-none relative isolate flex min-h-88 flex-col justify-between overflow-hidden p-5 sm:p-6 md:min-h-full"
       data-testid="knowledge-memory-panel"
     >
       {/* Soft ambient center glow */}
@@ -199,8 +199,8 @@ export function KnowledgeMemoryPanel() {
           </p>
         </div>
 
-        <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.05] px-3 py-1 shadow-sm backdrop-blur-md">
-          <span className="h-1.5 w-1.5 rounded-full bg-orb-primary shadow-[0_0_6px_rgb(249_115_22_/_0.8)]" />
+        <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 shadow-sm backdrop-blur-md">
+          <span className="h-1.5 w-1.5 rounded-full bg-orb-primary shadow-[0_0_6px_rgb(249_115_22/0.8)]" />
           <span className="font-code text-[10px] font-semibold uppercase tracking-[0.14em] text-glass-ink">
             Knowledge synthesis
           </span>
@@ -266,8 +266,8 @@ export function KnowledgeMemoryPanel() {
         ))}
 
         {/* Central FLAE Memory Core */}
-        <div className="absolute left-1/2 top-1/2 z-20 flex w-[32%] max-w-[210px] -translate-x-1/2 -translate-y-1/2 flex-col items-center rounded-2xl border border-orange-400/30 bg-gradient-to-b from-white/[0.08] via-orange-950/25 to-black/60 p-4 text-center shadow-[0_8px_32px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.25)] backdrop-blur-2xl">
-          <div className="pointer-events-none absolute -inset-0.5 rounded-2xl bg-gradient-to-b from-orange-500/20 to-transparent opacity-40 blur-sm" />
+        <div className="absolute left-1/2 top-1/2 z-20 flex w-[32%] max-w-52.5 -translate-x-1/2 -translate-y-1/2 flex-col items-center rounded-2xl border border-orange-400/30 bg-linear-to-b from-white/8 via-orange-950/25 to-black/60 p-4 text-center shadow-[0_8px_32px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.25)] backdrop-blur-2xl">
+          <div className="pointer-events-none absolute -inset-0.5 rounded-2xl bg-linear-to-b from-orange-500/20 to-transparent opacity-40 blur-sm" />
 
           <div className="relative mb-1.5 grid h-9 w-9 place-items-center rounded-xl border border-amber-300/30 bg-orange-500/20 shadow-[0_0_14px_rgba(249,115,22,0.35)]">
             <Network className="h-4.5 w-4.5 text-amber-200" strokeWidth={2} />

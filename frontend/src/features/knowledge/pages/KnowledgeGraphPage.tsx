@@ -68,7 +68,7 @@ export function KnowledgeGraphPage() {
       className={`mx-auto w-full transition-all duration-300 ${
         isFullscreen
           ? "fixed inset-0 z-50 bg-ui-canvas p-3 sm:p-4 flex flex-col"
-          : "max-w-[96rem] px-4 sm:px-6 lg:px-8 py-5 sm:py-6"
+          : "max-w-384 px-4 sm:px-6 lg:px-8 py-5 sm:py-6"
       }`}
     >
       {/* Top Breadcrumb & Page Header */}
@@ -176,8 +176,8 @@ export function KnowledgeGraphPage() {
         <div
           className={`knowledge-graph-atmosphere relative overflow-hidden bg-ui-canvas ${
             isFullscreen
-              ? "flex-1 h-full min-h-[30rem]"
-              : "h-[calc(100dvh-18rem)] min-h-[32rem]"
+              ? "flex-1 h-full min-h-120"
+              : "h-[calc(100dvh-18rem)] min-h-128"
           }`}
         >
           <GraphCanvas

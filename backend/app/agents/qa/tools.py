@@ -5,7 +5,7 @@ from langchain_core.runnables import RunnableConfig
 from typing_extensions import TypedDict
 
 from app.services.knowledge.retrieval.retriever import RetrieverService
-from app.services.knowledge_base.domain_service import DomainService
+from app.services.knowledge.discovery.domains import DomainService
 from app.services.knowledge.discovery.topics import TopicService
 from app.core.logger import get_logger
 

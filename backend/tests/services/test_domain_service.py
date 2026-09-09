@@ -6,7 +6,7 @@ from unittest.mock import patch, AsyncMock, MagicMock
 
 
 def test_get_domain_id_normalization():
-    from app.services.knowledge_base.domain_service import get_domain_id
+    from app.services.knowledge.discovery.domains import get_domain_id
 
     assert get_domain_id("Technology") == get_domain_id("technology")
     assert get_domain_id("  Tech  ") == get_domain_id("Tech")
@@ -14,7 +14,7 @@ def test_get_domain_id_normalization():
 
 
 def test_get_domain_id_format():
-    from app.services.knowledge_base.domain_service import get_domain_id
+    from app.services.knowledge.discovery.domains import get_domain_id
 
     did = get_domain_id("Technology")
     assert did.startswith("dom-")
@@ -22,7 +22,7 @@ def test_get_domain_id_format():
 
 
 def test_merge_domains_groups_and_counts():
-    from app.services.knowledge_base.domain_service import merge_domains
+    from app.services.knowledge.discovery.domains import merge_domains
 
     domains = [
         {"name": "Tech", "description": "First", "source_chunk_id": "c1"},
@@ -39,7 +39,7 @@ def test_merge_domains_groups_and_counts():
 
 
 def test_merge_domains_empty():
-    from app.services.knowledge_base.domain_service import merge_domains
+    from app.services.knowledge.discovery.domains import merge_domains
 
     assert merge_domains([]) == []
 
@@ -49,7 +49,7 @@ def test_merge_domains_empty():
 
 @pytest.mark.asyncio
 async def test_list_domains():
-    from app.services.knowledge_base.domain_service import DomainService
+    from app.services.knowledge.discovery.domains import DomainService
 
     mock_session = AsyncMock()
     mock_result = MagicMock()
@@ -72,7 +72,7 @@ async def test_list_domains():
     mock_db.get_async_session.return_value = mock_cm
 
     with patch(
-        "app.services.knowledge_base.domain_service.rag_db_manager", mock_db
+        "app.services.knowledge.discovery.domains.rag_db_manager", mock_db
     ):
         page = await DomainService.list_domains(workspace_id="ws-1", limit=20)
 
@@ -85,7 +85,7 @@ async def test_list_domains():
 
 @pytest.mark.asyncio
 async def test_list_domains_pagination():
-    from app.services.knowledge_base.domain_service import DomainService
+    from app.services.knowledge.discovery.domains import DomainService
 
     mock_session = AsyncMock()
     mock_result = MagicMock()
@@ -104,7 +104,7 @@ async def test_list_domains_pagination():
     mock_db.get_async_session.return_value = mock_cm
 
     with patch(
-        "app.services.knowledge_base.domain_service.rag_db_manager", mock_db
+        "app.services.knowledge.discovery.domains.rag_db_manager", mock_db
     ):
         page = await DomainService.list_domains(workspace_id="ws-1", limit=5)
 
@@ -114,7 +114,7 @@ async def test_list_domains_pagination():
 
 @pytest.mark.asyncio
 async def test_list_domains_empty():
-    from app.services.knowledge_base.domain_service import DomainService
+    from app.services.knowledge.discovery.domains import DomainService
 
     mock_session = AsyncMock()
     mock_result = MagicMock()
@@ -128,7 +128,7 @@ async def test_list_domains_empty():
     mock_db.get_async_session.return_value = mock_cm
 
     with patch(
-        "app.services.knowledge_base.domain_service.rag_db_manager", mock_db
+        "app.services.knowledge.discovery.domains.rag_db_manager", mock_db
     ):
         page = await DomainService.list_domains(workspace_id="ws-1", limit=20)
 
@@ -138,7 +138,7 @@ async def test_list_domains_empty():
 
 @pytest.mark.asyncio
 async def test_get_domain():
-    from app.services.knowledge_base.domain_service import DomainService
+    from app.services.knowledge.discovery.domains import DomainService
 
     mock_session = AsyncMock()
 
@@ -183,7 +183,7 @@ async def test_get_domain():
     mock_db.get_async_session.return_value = mock_cm
 
     with patch(
-        "app.services.knowledge_base.domain_service.rag_db_manager", mock_db
+        "app.services.knowledge.discovery.domains.rag_db_manager", mock_db
     ):
         detail = await DomainService.get_domain(
             workspace_id="ws-1", domain_id="dom-abc"
@@ -199,7 +199,7 @@ async def test_get_domain():
 
 @pytest.mark.asyncio
 async def test_get_domain_not_found():
-    from app.services.knowledge_base.domain_service import DomainService
+    from app.services.knowledge.discovery.domains import DomainService
 
     mock_session = AsyncMock()
     domain_result = MagicMock()
@@ -213,7 +213,7 @@ async def test_get_domain_not_found():
     mock_db.get_async_session.return_value = mock_cm
 
     with patch(
-        "app.services.knowledge_base.domain_service.rag_db_manager", mock_db
+        "app.services.knowledge.discovery.domains.rag_db_manager", mock_db
     ):
         detail = await DomainService.get_domain(
             workspace_id="ws-1", domain_id="dom-nonexistent"
@@ -224,7 +224,7 @@ async def test_get_domain_not_found():
 
 @pytest.mark.asyncio
 async def test_get_domain_no_topics():
-    from app.services.knowledge_base.domain_service import DomainService
+    from app.services.knowledge.discovery.domains import DomainService
 
     mock_session = AsyncMock()
 
@@ -261,7 +261,7 @@ async def test_get_domain_no_topics():
     mock_db.get_async_session.return_value = mock_cm
 
     with patch(
-        "app.services.knowledge_base.domain_service.rag_db_manager", mock_db
+        "app.services.knowledge.discovery.domains.rag_db_manager", mock_db
     ):
         detail = await DomainService.get_domain(
             workspace_id="ws-1", domain_id="dom-abc"

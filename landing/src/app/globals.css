@@ -1,0 +1,232 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+
+  /* Canvas & Elevated Containers */
+  --flae-canvas: #141009;
+  --flae-canvas-elevated: #1c1710;
+  --flae-surface: rgb(255 251 245 / 0.06);
+  --flae-surface-hover: rgb(255 251 245 / 0.10);
+  --flae-surface-raised: rgb(255 251 245 / 0.08);
+  --flae-hairline: rgb(255 251 245 / 0.14);
+  --flae-highlight: rgb(255 251 245 / 0.08);
+
+  /* Typography / Ink */
+  --flae-ink: #f5f0e8;
+  --flae-ink-secondary: #eae3d6;
+  --flae-ink-muted: #b7ab9a;
+  --flae-ink-faint: #6e6457;
+
+  /* Brand / Radiant Orange */
+  --flae-primary: #ff5b26;
+  --flae-primary-vivid: #f97316;
+  --flae-primary-deep: #7c2d12;
+  --flae-primary-mid: #fb923c;
+  --flae-primary-soft: rgb(249 115 22 / 0.16);
+
+  /* Harmonious Accents */
+  --flae-accent-teal: #14b8a6;
+  --flae-accent-indigo: #6366f1;
+  --flae-accent-amber: #f59e0b;
+  --flae-destructive: #ef4444;
+
+  /* Radii */
+  --flae-radius-xs: 4px;
+  --flae-radius-sm: 6px;
+  --flae-radius-md: 10px;
+  --flae-radius-card: 14px;
+  --flae-radius-nav: 18px;
+  --flae-radius-hero: 24px;
+  --flae-radius-pill: 9999px;
+
+  /* Glows & Shadows */
+  --flae-shadow-glass: 0 8px 32px rgb(0 0 0 / 0.35), inset 0 1px 0 var(--flae-highlight);
+  --flae-shadow-pop: 0 16px 48px -12px rgb(0 0 0 / 0.50), inset 0 1px 0 var(--flae-highlight);
+  --flae-glow-primary: 0 0 24px rgb(249 115 22 / 0.35);
+  --flae-glow-primary-hover: 0 0 36px rgb(249 115 22 / 0.55);
+  --flae-glow-teal: 0 0 20px rgb(20 184 166 / 0.30);
+  --flae-glow-indigo: 0 0 20px rgb(99 102 241 / 0.30);
+
+  /* Ambient Orbs */
+  --orb-primary: #f97316;
+  --orb-amber: #fb923c;
+  --orb-ember: #7c2d12;
+}
+
+@theme {
+  --color-canvas: var(--flae-canvas);
+  --color-canvas-elevated: var(--flae-canvas-elevated);
+  --color-surface: var(--flae-surface);
+  --color-surface-hover: var(--flae-surface-hover);
+  --color-hairline: var(--flae-hairline);
+  --color-highlight: var(--flae-highlight);
+
+  --color-ink: var(--flae-ink);
+  --color-ink-secondary: var(--flae-ink-secondary);
+  --color-ink-muted: var(--flae-ink-muted);
+  --color-ink-faint: var(--flae-ink-faint);
+
+  --color-primary: var(--flae-primary);
+  --color-primary-vivid: var(--flae-primary-vivid);
+  --color-primary-deep: var(--flae-primary-deep);
+  --color-primary-mid: var(--flae-primary-mid);
+  --color-primary-soft: var(--flae-primary-soft);
+
+  --color-accent-teal: var(--flae-accent-teal);
+  --color-accent-indigo: var(--flae-accent-indigo);
+  --color-accent-amber: var(--flae-accent-amber);
+
+  --font-display: var(--font-display);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  --radius-card: 14px;
+  --radius-nav: 18px;
+  --radius-hero: 24px;
+}
+
+body {
+  background-color: var(--flae-canvas);
+  color: var(--flae-ink);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+  selection-background-color: var(--flae-primary-soft);
+  selection-color: var(--flae-ink);
+}
+
+::selection {
+  background-color: rgba(249, 115, 22, 0.28);
+  color: #ffffff;
+}
+
+/* Glassmorphism primitives */
+.glass-panel {
+  background: var(--flae-surface);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--flae-hairline);
+  box-shadow: var(--flae-shadow-glass);
+}
+
+.glass-panel-interactive {
+  background: var(--flae-surface);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--flae-hairline);
+  box-shadow: var(--flae-shadow-glass);
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.glass-panel-interactive:hover {
+  background: var(--flae-surface-hover);
+  border-color: rgba(255, 251, 245, 0.22);
+  box-shadow: var(--flae-shadow-pop);
+}
+
+.glass-panel-strong {
+  background: var(--flae-surface-hover);
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px);
+  border: 1px solid var(--flae-hairline);
+  box-shadow: var(--flae-shadow-pop);
+}
+
+.pill-cta {
+  background: var(--flae-primary);
+  color: #ffffff;
+  border-radius: 9999px;
+  box-shadow: var(--flae-glow-primary);
+  font-weight: 500;
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.pill-cta:hover {
+  background: var(--flae-primary-vivid);
+  box-shadow: var(--flae-glow-primary-hover);
+  transform: translateY(-1px);
+}
+
+.pill-cta:active {
+  transform: scale(0.98);
+}
+
+.pill-secondary {
+  background: var(--flae-surface);
+  color: var(--flae-ink);
+  border: 1px solid var(--flae-hairline);
+  border-radius: 9999px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.pill-secondary:hover {
+  background: var(--flae-surface-hover);
+  border-color: rgba(255, 251, 245, 0.25);
+  color: #ffffff;
+}
+
+.pill-secondary:active {
+  transform: scale(0.98);
+}
+
+/* Monospace & Tabular figures */
+.font-tabular {
+  font-feature-settings: "tnum" 1;
+}
+
+/* Ambient glow orb animations */
+@keyframes orb-float-1 {
+  0%, 100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  50% {
+    transform: translate(30px, 20px) scale(1.05);
+  }
+}
+
+@keyframes orb-float-2 {
+  0%, 100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  50% {
+    transform: translate(-25px, -15px) scale(0.95);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.animate-orb-1 {
+  animation: orb-float-1 12s ease-in-out infinite;
+}
+
+.animate-orb-2 {
+  animation: orb-float-2 15s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 4s ease-in-out infinite;
+}
+
+/* Synaptic connection line beam animation */
+@keyframes beam-flow {
+  0% {
+    stroke-dashoffset: 100;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-beam {
+  stroke-dasharray: 8 16;
+  animation: beam-flow 3s linear infinite;
+}
