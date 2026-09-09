@@ -72,11 +72,17 @@ describe("ChatPage", () => {
 
   it("keeps the chat translation namespace limited to the approved keys", () => {
     const approvedKeys = [
-      "ASK_AGENT", "BACK_TO_AGENTS", "CHOOSE_CONVERSATION", "CHOOSE_DESCRIPTION", "CONVERSATION_HISTORY",
-      "CREATE_FAILED", "CREATING_CONVERSATION", "DEFAULT_AGENT_ERROR", "DELETE_CONFIRM", "DELETE_CONVERSATION",
-      "DELETE_FAILED", "HISTORY_LOAD_ERROR", "HISTORY_UNAVAILABLE", "MESSAGES_ARIA", "MESSAGE_AGENT",
-      "MESSAGE_HISTORY_UNAVAILABLE", "MESSAGE_LOAD_ERROR", "NEW_CONVERSATION", "NO_CONVERSATIONS", "NO_MESSAGES",
-      "READY_ON_MODEL", "RETRY_MESSAGE", "SEARCH_CONVERSATIONS", "SEND_MESSAGE", "START_WITH_AGENT", "STOP_RESPONSE",
+      "ASK_AGENT", "BACK_TO_AGENTS", "CHOOSE_CONVERSATION", "CHOOSE_DESCRIPTION", "CITATIONS_ARIA",
+      "CITATION_SCORE", "CLOSE_HISTORY", "CLOSE_HISTORY_OVERLAY", "COLLAPSE_CITATION", "COLLAPSE_HISTORY_PANEL",
+      "CONVERSATION_HISTORY", "CREATE_FAILED", "CREATING_CONVERSATION", "DEFAULT_AGENT_ERROR", "DELETE_CONFIRM",
+      "DELETE_CONVERSATION", "DELETE_FAILED", "EXPAND_CITATION", "EXPAND_HISTORY_PANEL", "HISTORY_LOAD_ERROR",
+      "HISTORY_UNAVAILABLE", "ICON_RAIL_ARIA", "MEMORY_EMPTY_HINT", "MESSAGES_ARIA", "MESSAGE_AGENT",
+      "MESSAGE_HISTORY_UNAVAILABLE", "MESSAGE_LOAD_ERROR", "NEW_CONVERSATION", "NO_CONVERSATIONS",
+      "NO_MESSAGES", "OPEN_HISTORY", "PROMPT_FIND_POLICY", "PROMPT_KEY_DECISIONS", "PROMPT_WHAT_CHANGED",
+      "PROMPT_WHO_OWNS", "READY_ON_MODEL", "RETRY_MESSAGE", "ROLE_ASSISTANT", "ROLE_YOU",
+      "SEARCH_CONVERSATIONS", "SEND_MESSAGE", "START_WITH_AGENT", "STOP_RESPONSE", "STREAMING_ARIA",
+      "TOOL_GENERIC", "TOOL_GET_DOMAIN_TOPICS", "TOOL_GET_TOPIC_DETAIL", "TOOL_LIST_DOMAINS",
+      "TOOL_SEARCH_KNOWLEDGE",
     ];
 
     expect(Object.keys(en.CHAT_UI).sort()).toEqual(approvedKeys);
@@ -88,20 +94,25 @@ describe("ChatPage", () => {
   });
 
   it("loads the default agent, then opens its first session", async () => {
+    const user = userEvent.setup();
     renderPage();
 
     expect(await screen.findByRole("heading", { name: "Workspace assistant" })).toBeInTheDocument();
+    await user.click(await screen.findByRole("button", { name: "Open conversation history" }));
     expect(await screen.findByRole("button", { name: /^first chat$/i })).toHaveAttribute("aria-current", "true");
     expect(chatSessionsApi.listSessions).toHaveBeenCalledWith(workspaceId, agentId, expect.any(AbortSignal));
     expect(chatSessionsApi.listMessages).toHaveBeenCalledWith(workspaceId, agentId, sessionId, expect.any(AbortSignal));
   });
 
   it("exposes the chat workbench landmarks and named message viewport", async () => {
+    const user = userEvent.setup();
     renderPage();
 
     expect(await screen.findByRole("region", { name: "Workspace assistant chat" })).toBeInTheDocument();
-    expect(screen.getByRole("complementary", { name: "Conversation history" })).toBeInTheDocument();
+    expect(screen.queryByRole("complementary", { name: "Conversation history" })).not.toBeInTheDocument();
     expect(screen.getByTestId("message-viewport")).toHaveAccessibleName("Conversation messages");
+    await user.click(screen.getByRole("button", { name: "Open conversation history" }));
+    expect(screen.getByRole("complementary", { name: "Conversation history" })).toBeInTheDocument();
   });
 
   it("uses localized safe copy for a default-agent failure", async () => {
@@ -118,14 +129,14 @@ describe("ChatPage", () => {
       .mockResolvedValueOnce(sessions)
       .mockResolvedValueOnce([createdSession, ...sessions]);
     renderPage();
-    await screen.findByRole("button", { name: /^first chat$/i });
+    await screen.findByRole("heading", { name: "Workspace assistant" });
 
     await user.click(screen.getByRole("button", { name: /new conversation/i }));
 
     await waitFor(() => expect(chatSessionsApi.createSession).toHaveBeenCalledWith(workspaceId, agentId, {}));
+    await user.click(screen.getByRole("button", { name: "Open conversation history" }));
     await waitFor(() => {
-      const conversationButtons = screen.getAllByRole("button", { name: /^new conversation$/i });
-      expect(conversationButtons.at(-1)).toHaveAttribute("aria-current", "true");
+      expect(screen.getByRole("button", { name: /^new conversation$/i, current: true })).toBeInTheDocument();
     });
   });
 
@@ -133,6 +144,8 @@ describe("ChatPage", () => {
     const user = userEvent.setup();
     vi.spyOn(window, "confirm").mockReturnValue(true);
     renderPage();
+    await screen.findByRole("heading", { name: "Workspace assistant" });
+    await user.click(screen.getByRole("button", { name: "Open conversation history" }));
     await screen.findByRole("button", { name: /^first chat$/i });
 
     await user.click(screen.getByRole("button", { name: /delete first chat/i }));
@@ -149,7 +162,7 @@ describe("ChatPage", () => {
       return new Promise<void>(() => undefined);
     });
     renderPage();
-    await screen.findByRole("button", { name: /^first chat$/i });
+    await screen.findByRole("textbox", { name: /message workspace assistant/i });
     await user.type(screen.getByRole("textbox", { name: /message workspace assistant/i }), "Question");
     await user.click(screen.getByRole("button", { name: /send message/i }));
 
