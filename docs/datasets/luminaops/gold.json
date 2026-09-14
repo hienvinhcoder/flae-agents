@@ -1,0 +1,1078 @@
+{
+  "dataset_name": "flae-luminaops",
+  "version": "2026-09-11.v2",
+  "company": "LuminaOps",
+  "description": "Synthetic operating-company corpus for FLAE quality eval, sized to exercise TGS fixed (1200/100) and semantic (900/150, hard_limit 500) chunking. Offline gold is the source of truth; LangSmith is optional.",
+  "expected_canonical_entities": [
+    "LuminaOps",
+    "ShelfFlow",
+    "DockSync",
+    "Trần Minh Khang",
+    "Phạm Đức Long",
+    "Lê Hà An",
+    "Nguyễn Quỳnh Chi",
+    "Võ Minh Tâm",
+    "Công ty TNHH Thương mại Khang Minh",
+    "Nhật An Logistics",
+    "ADR-014",
+    "INC-2026-04-12"
+  ],
+  "documents": [
+    {
+      "doc_id": "handbook",
+      "path": "documents/01-handbook.md",
+      "title": "Sổ tay công ty LuminaOps",
+      "source_type": "drive",
+      "is_current": false,
+      "is_distractor": false,
+      "superseded_by": "leadership-hq-2026-06",
+      "min_tokens": 2400,
+      "min_fixed_chunks": 2,
+      "min_semantic_chunks": 2,
+      "chunk_probe": null
+    },
+    {
+      "doc_id": "org",
+      "path": "documents/02-org.md",
+      "title": "Sơ đồ tổ chức và trách nhiệm",
+      "source_type": "notion",
+      "is_current": true,
+      "is_distractor": false,
+      "superseded_by": null,
+      "min_tokens": 2400,
+      "min_fixed_chunks": 2,
+      "min_semantic_chunks": 2,
+      "chunk_probe": null
+    },
+    {
+      "doc_id": "product-spec",
+      "path": "documents/03-product-shelfflow.md",
+      "title": "Đặc tả ShelfFlow và DockSync",
+      "source_type": "notion",
+      "is_current": true,
+      "is_distractor": false,
+      "superseded_by": null,
+      "min_tokens": 2400,
+      "min_fixed_chunks": 2,
+      "min_semantic_chunks": 2,
+      "chunk_probe": null
+    },
+    {
+      "doc_id": "adr-014",
+      "path": "documents/04-adr-014-pgvector.md",
+      "title": "ADR-014 pgvector",
+      "source_type": "notion",
+      "is_current": true,
+      "is_distractor": false,
+      "superseded_by": null,
+      "min_tokens": 2400,
+      "min_fixed_chunks": 2,
+      "min_semantic_chunks": 2,
+      "chunk_probe": "oversized_section"
+    },
+    {
+      "doc_id": "contract-khang-minh",
+      "path": "documents/05-contract-khang-minh.md",
+      "title": "Hợp đồng Khang Minh",
+      "source_type": "drive",
+      "is_current": true,
+      "is_distractor": false,
+      "superseded_by": null,
+      "min_tokens": 2400,
+      "min_fixed_chunks": 2,
+      "min_semantic_chunks": 2,
+      "chunk_probe": "hard_limit_unit"
+    },
+    {
+      "doc_id": "contract-nhat-an",
+      "path": "documents/06-contract-nhat-an.md",
+      "title": "Hợp đồng Nhật An Logistics",
+      "source_type": "drive",
+      "is_current": true,
+      "is_distractor": false,
+      "superseded_by": null,
+      "min_tokens": 2400,
+      "min_fixed_chunks": 2,
+      "min_semantic_chunks": 2,
+      "chunk_probe": null
+    },
+    {
+      "doc_id": "slack-docksync",
+      "path": "documents/07-slack-docksync-khang-minh.md",
+      "title": "Slack bật DockSync cho Khang Minh",
+      "source_type": "slack",
+      "is_current": true,
+      "is_distractor": false,
+      "superseded_by": null,
+      "min_tokens": 2400,
+      "min_fixed_chunks": 2,
+      "min_semantic_chunks": 2,
+      "chunk_probe": null
+    },
+    {
+      "doc_id": "incident-khang-minh",
+      "path": "documents/08-incident-2026-04-khang-minh.md",
+      "title": "Postmortem INC-2026-04-12",
+      "source_type": "notion",
+      "is_current": true,
+      "is_distractor": false,
+      "superseded_by": null,
+      "min_tokens": 2400,
+      "min_fixed_chunks": 2,
+      "min_semantic_chunks": 2,
+      "chunk_probe": null
+    },
+    {
+      "doc_id": "runbook-search",
+      "path": "documents/09-runbook-oncall.md",
+      "title": "Runbook search ShelfFlow",
+      "source_type": "upload",
+      "is_current": true,
+      "is_distractor": false,
+      "superseded_by": null,
+      "min_tokens": 2400,
+      "min_fixed_chunks": 2,
+      "min_semantic_chunks": 2,
+      "chunk_probe": null
+    },
+    {
+      "doc_id": "roadmap-q3",
+      "path": "documents/10-roadmap-q3.md",
+      "title": "Roadmap Q3 2026",
+      "source_type": "notion",
+      "is_current": true,
+      "is_distractor": false,
+      "superseded_by": null,
+      "min_tokens": 2400,
+      "min_fixed_chunks": 2,
+      "min_semantic_chunks": 2,
+      "chunk_probe": null
+    },
+    {
+      "doc_id": "leadership-hq-2026-06",
+      "path": "documents/11-update-2026-06-leadership-hq.md",
+      "title": "Cập nhật lãnh đạo và trụ sở 2026-06-15",
+      "source_type": "drive",
+      "is_current": true,
+      "is_distractor": false,
+      "superseded_by": null,
+      "min_tokens": 2400,
+      "min_fixed_chunks": 2,
+      "min_semantic_chunks": 2,
+      "chunk_probe": null
+    },
+    {
+      "doc_id": "topic-summary-pseudo",
+      "path": "documents/12-topic-summary-pseudo.md",
+      "title": "Tóm tắt chủ đề giả (distractor)",
+      "source_type": "notion",
+      "is_current": false,
+      "is_distractor": true,
+      "superseded_by": null,
+      "min_tokens": 2400,
+      "min_fixed_chunks": 2,
+      "min_semantic_chunks": 2,
+      "chunk_probe": null
+    }
+  ],
+  "questions": [
+    {
+      "id": "l1-01",
+      "difficulty": "l1_extractive",
+      "question": "Trụ sở chính hiện tại của LuminaOps ở đâu?",
+      "answerable": true,
+      "gold_answer": "Tầng 12, tòa nhà Skyline, 123 Trần Duy Hưng, Cầu Giấy, Hà Nội, kể từ 15/06/2026. Địa chỉ Quận 3 trong sổ tay đã bị thay thế.",
+      "supporting_doc_ids": [
+        "leadership-hq-2026-06"
+      ],
+      "supporting_spans": [
+        {
+          "doc_id": "leadership-hq-2026-06",
+          "quote": "Trụ sở chính chuyển từ Quận 3, TP.HCM sang Tầng 12, tòa nhà Skyline, 123 Trần Duy Hưng, Cầu Giấy, Hà Nội, kể từ 15 tháng 6 năm 2026."
+        }
+      ],
+      "expected_entities": [
+        "LuminaOps"
+      ],
+      "expected_hops": [],
+      "forbidden_doc_ids": [
+        "topic-summary-pseudo"
+      ],
+      "notes": "Handbook HQ is stale; current answer must come from the June 2026 update."
+    },
+    {
+      "id": "l1-02",
+      "difficulty": "l1_extractive",
+      "question": "CEO hiện tại của LuminaOps là ai?",
+      "answerable": true,
+      "gold_answer": "Phạm Đức Long, nhận chức CEO từ 15/06/2026. Trần Minh Khang chuyển sang Chủ tịch HĐQT.",
+      "supporting_doc_ids": [
+        "leadership-hq-2026-06"
+      ],
+      "supporting_spans": [
+        {
+          "doc_id": "leadership-hq-2026-06",
+          "quote": "Ông Phạm Đức Long nhận chức Tổng Giám đốc (CEO) LuminaOps kể từ 15 tháng 6 năm 2026."
+        }
+      ],
+      "expected_entities": [
+        "Phạm Đức Long",
+        "Trần Minh Khang",
+        "LuminaOps"
+      ],
+      "expected_hops": [],
+      "forbidden_doc_ids": [
+        "topic-summary-pseudo"
+      ],
+      "notes": "Do not treat handbook CEO Trần Minh Khang as current."
+    },
+    {
+      "id": "l1-03",
+      "difficulty": "l1_extractive",
+      "question": "Sản phẩm chính của LuminaOps tên gì?",
+      "answerable": true,
+      "gold_answer": "ShelfFlow.",
+      "supporting_doc_ids": [
+        "handbook"
+      ],
+      "supporting_spans": [
+        {
+          "doc_id": "handbook",
+          "quote": "Sản phẩm chính mang tên ShelfFlow, một hệ thống quản lý kho (WMS) cho doanh nghiệp vừa và nhỏ."
+        }
+      ],
+      "expected_entities": [
+        "LuminaOps",
+        "ShelfFlow"
+      ],
+      "expected_hops": [],
+      "forbidden_doc_ids": [
+        "topic-summary-pseudo"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "l1-04",
+      "difficulty": "l1_extractive",
+      "question": "CTO của LuminaOps là ai?",
+      "answerable": true,
+      "gold_answer": "Lê Hà An.",
+      "supporting_doc_ids": [
+        "handbook"
+      ],
+      "supporting_spans": [
+        {
+          "doc_id": "handbook",
+          "quote": "Giám đốc Công nghệ (CTO) là bà Lê Hà An."
+        }
+      ],
+      "expected_entities": [
+        "Lê Hà An",
+        "LuminaOps"
+      ],
+      "expected_hops": [],
+      "forbidden_doc_ids": [
+        "topic-summary-pseudo"
+      ],
+      "notes": "CTO is unchanged by the June 2026 update."
+    },
+    {
+      "id": "l1-05",
+      "difficulty": "l1_extractive",
+      "question": "Kho vận hành của khách hàng Khang Minh đặt ở đâu?",
+      "answerable": true,
+      "gold_answer": "VSIP 1, Bình Dương.",
+      "supporting_doc_ids": [
+        "contract-khang-minh"
+      ],
+      "supporting_spans": [
+        {
+          "doc_id": "contract-khang-minh",
+          "quote": "Kho vận hành của Khang Minh đặt tại VSIP 1, Bình Dương."
+        }
+      ],
+      "expected_entities": [
+        "Công ty TNHH Thương mại Khang Minh"
+      ],
+      "expected_hops": [],
+      "forbidden_doc_ids": [
+        "topic-summary-pseudo"
+      ],
+      "notes": "Khang Minh is the customer, not CEO Trần Minh Khang."
+    },
+    {
+      "id": "l1-06",
+      "difficulty": "l1_extractive",
+      "question": "SLA uptime trong hợp đồng Nhật An Logistics là bao nhiêu?",
+      "answerable": true,
+      "gold_answer": "99.9% theo tháng dương lịch.",
+      "supporting_doc_ids": [
+        "contract-nhat-an"
+      ],
+      "supporting_spans": [
+        {
+          "doc_id": "contract-nhat-an",
+          "quote": "SLA uptime ShelfFlow đối với Nhật An Logistics là 99.9% theo tháng dương lịch."
+        }
+      ],
+      "expected_entities": [
+        "Nhật An Logistics",
+        "ShelfFlow"
+      ],
+      "expected_hops": [],
+      "forbidden_doc_ids": [
+        "topic-summary-pseudo"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "l2-01",
+      "difficulty": "l2_compare",
+      "question": "So sánh SLA uptime ShelfFlow của Khang Minh và Nhật An Logistics.",
+      "answerable": true,
+      "gold_answer": "Khang Minh 99.5%; Nhật An Logistics 99.9%. Nhật An cao hơn 0.4 điểm phần trăm.",
+      "supporting_doc_ids": [
+        "contract-khang-minh",
+        "contract-nhat-an"
+      ],
+      "supporting_spans": [
+        {
+          "doc_id": "contract-khang-minh",
+          "quote": "SLA uptime ShelfFlow đối với Khang Minh là 99.5% theo tháng dương lịch."
+        },
+        {
+          "doc_id": "contract-nhat-an",
+          "quote": "SLA uptime ShelfFlow đối với Nhật An Logistics là 99.9% theo tháng dương lịch."
+        }
+      ],
+      "expected_entities": [
+        "Công ty TNHH Thương mại Khang Minh",
+        "Nhật An Logistics"
+      ],
+      "expected_hops": [],
+      "forbidden_doc_ids": [
+        "topic-summary-pseudo"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "l2-02",
+      "difficulty": "l2_compare",
+      "question": "ShelfFlow và DockSync khác nhau như thế nào?",
+      "answerable": true,
+      "gold_answer": "ShelfFlow là WMS cốt lõi (tồn kho, soạn hàng, search SKU). DockSync là module lịch cửa dock và xe tải; khách phải có ShelfFlow mới bật DockSync.",
+      "supporting_doc_ids": [
+        "product-spec",
+        "handbook"
+      ],
+      "supporting_spans": [
+        {
+          "doc_id": "product-spec",
+          "quote": "ShelfFlow là WMS cốt lõi của LuminaOps."
+        },
+        {
+          "doc_id": "product-spec",
+          "quote": "DockSync là module lịch cửa dock và xe tải."
+        },
+        {
+          "doc_id": "handbook",
+          "quote": "Module bán kèm DockSync xếp lịch cửa dock và xe tải, không thay thế ShelfFlow."
+        }
+      ],
+      "expected_entities": [
+        "ShelfFlow",
+        "DockSync"
+      ],
+      "expected_hops": [],
+      "forbidden_doc_ids": [
+        "topic-summary-pseudo"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "l2-03",
+      "difficulty": "l2_compare",
+      "question": "Ai phụ trách Customer Success và ai là SRE/on-call lead?",
+      "answerable": true,
+      "gold_answer": "Customer Success: Nguyễn Quỳnh Chi. SRE/on-call lead: Võ Minh Tâm.",
+      "supporting_doc_ids": [
+        "org"
+      ],
+      "supporting_spans": [
+        {
+          "doc_id": "org",
+          "quote": "Head of Customer Success | Nguyễn Quỳnh Chi | Onboarding khách, phát sóng tính năng, SLA thương mại"
+        },
+        {
+          "doc_id": "org",
+          "quote": "SRE / On-call lead | Võ Minh Tâm | Trực sự cố, runbook, paging 24/7"
+        }
+      ],
+      "expected_entities": [
+        "Nguyễn Quỳnh Chi",
+        "Võ Minh Tâm"
+      ],
+      "expected_hops": [],
+      "forbidden_doc_ids": [
+        "topic-summary-pseudo"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "l2-04",
+      "difficulty": "l2_compare",
+      "question": "Sau ADR-014, tìm kiếm SKU trong ShelfFlow dùng công nghệ gì?",
+      "answerable": true,
+      "gold_answer": "PostgreSQL pgvector; thay Elasticsearch. Mỗi tenant một index riêng.",
+      "supporting_doc_ids": [
+        "adr-014",
+        "runbook-search"
+      ],
+      "supporting_spans": [
+        {
+          "doc_id": "adr-014",
+          "quote": "Tìm kiếm SKU trong ShelfFlow chuyển từ Elasticsearch sang PostgreSQL pgvector."
+        },
+        {
+          "doc_id": "runbook-search",
+          "quote": "Sau ADR-014, bước bắt buộc: xác nhận index pgvector của tenant đã rebuild. Elasticsearch không còn là đường search production."
+        }
+      ],
+      "expected_entities": [
+        "ADR-014",
+        "ShelfFlow"
+      ],
+      "expected_hops": [],
+      "forbidden_doc_ids": [
+        "topic-summary-pseudo"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "l2-05",
+      "difficulty": "l2_compare",
+      "question": "LuminaOps thành lập khi nào và quy mô nhân sự hiện tại là bao nhiêu?",
+      "answerable": true,
+      "gold_answer": "Thành lập tháng 3 năm 2024. Sổ tay ghi khoảng 80 người; bản cập nhật 15/06/2026 ghi 82 nhân sự — lấy 82 là số hiện tại.",
+      "supporting_doc_ids": [
+        "handbook",
+        "leadership-hq-2026-06"
+      ],
+      "supporting_spans": [
+        {
+          "doc_id": "handbook",
+          "quote": "LuminaOps là công ty phần mềm thành lập tháng 3 năm 2024 tại Việt Nam."
+        },
+        {
+          "doc_id": "leadership-hq-2026-06",
+          "quote": "Tại ngày hiệu lực, LuminaOps có 82 nhân sự."
+        }
+      ],
+      "expected_entities": [
+        "LuminaOps"
+      ],
+      "expected_hops": [],
+      "forbidden_doc_ids": [
+        "topic-summary-pseudo"
+      ],
+      "notes": "Headcount in the handbook is stale."
+    },
+    {
+      "id": "l2-06",
+      "difficulty": "l2_compare",
+      "question": "Roadmap Q3 2026 có hạng mục nào cho DockSync?",
+      "answerable": true,
+      "gold_answer": "DockSync SLA dashboard cho khách có từ 40 cửa dock trở lên, ưu tiên tenant đã bật DockSync (gồm KH-KM-019).",
+      "supporting_doc_ids": [
+        "roadmap-q3",
+        "slack-docksync"
+      ],
+      "supporting_spans": [
+        {
+          "doc_id": "roadmap-q3",
+          "quote": "DockSync SLA dashboard cho khách có từ 40 cửa dock trở lên, ưu tiên tenant đã bật DockSync (gồm KH-KM-019)."
+        },
+        {
+          "doc_id": "slack-docksync",
+          "quote": "Đã bật DockSync cho Khang Minh ngày 2026-03-18. Lý do: 42 cửa dock và lịch xe không khớp."
+        }
+      ],
+      "expected_entities": [
+        "DockSync",
+        "Công ty TNHH Thương mại Khang Minh"
+      ],
+      "expected_hops": [],
+      "forbidden_doc_ids": [
+        "topic-summary-pseudo"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "l3-01",
+      "difficulty": "l3_multihop",
+      "question": "Incident kho Khang Minh tháng 4/2026 bắt nguồn từ thay đổi kỹ thuật nào và ai phê duyệt thay đổi đó?",
+      "answerable": true,
+      "gold_answer": "INC-2026-04-12 do tenant KH-KM-019 chưa rebuild index sau rollout ADR-014 (Elasticsearch → pgvector, production 2026-04-01). ADR-014 do Lê Hà An phê duyệt.",
+      "supporting_doc_ids": [
+        "incident-khang-minh",
+        "adr-014"
+      ],
+      "supporting_spans": [
+        {
+          "doc_id": "incident-khang-minh",
+          "quote": "Rollout ADR-014 ngày 2026-04-01 chuyển search sang pgvector. Tenant KH-KM-019 chưa được rebuild index."
+        },
+        {
+          "doc_id": "adr-014",
+          "quote": "Người phê duyệt: Lê Hà An (CTO)"
+        }
+      ],
+      "expected_entities": [
+        "INC-2026-04-12",
+        "ADR-014",
+        "Lê Hà An",
+        "Công ty TNHH Thương mại Khang Minh"
+      ],
+      "expected_hops": [
+        {
+          "subject": "Công ty TNHH Thương mại Khang Minh",
+          "predicate": "affected_by",
+          "object": "INC-2026-04-12",
+          "evidence_doc_ids": [
+            "incident-khang-minh"
+          ]
+        },
+        {
+          "subject": "INC-2026-04-12",
+          "predicate": "caused_by",
+          "object": "ADR-014",
+          "evidence_doc_ids": [
+            "incident-khang-minh"
+          ]
+        },
+        {
+          "subject": "ADR-014",
+          "predicate": "approved_by",
+          "object": "Lê Hà An",
+          "evidence_doc_ids": [
+            "adr-014"
+          ]
+        }
+      ],
+      "forbidden_doc_ids": [
+        "topic-summary-pseudo"
+      ],
+      "notes": "Must not cite AWS outage from the derived summary."
+    },
+    {
+      "id": "l3-02",
+      "difficulty": "l3_multihop",
+      "question": "Ai quyết định bật DockSync cho Khang Minh và lý do gắn với vận hành kho của họ?",
+      "answerable": true,
+      "gold_answer": "Nguyễn Quỳnh Chi đề xuất và Lê Hà An đồng ý ngày 2026-03-18 vì kho Bình Dương có 42 cửa dock, xe chờ ngoài sân. Trần Minh Khang chỉ gọi khách; ông không phải pháp nhân Khang Minh.",
+      "supporting_doc_ids": [
+        "slack-docksync",
+        "contract-khang-minh",
+        "product-spec"
+      ],
+      "supporting_spans": [
+        {
+          "doc_id": "slack-docksync",
+          "quote": "Đã bật DockSync cho Khang Minh ngày 2026-03-18. Lý do: 42 cửa dock và lịch xe không khớp."
+        },
+        {
+          "doc_id": "contract-khang-minh",
+          "quote": "Kho Bình Dương có 42 cửa dock. Xe tải thường xếp hàng ngoài sân nếu lịch cửa không khớp."
+        },
+        {
+          "doc_id": "product-spec",
+          "quote": "Công ty khách **Công ty TNHH Thương mại Khang Minh** (mã tenant `KH-KM-019`) không phải là ông Trần Minh Khang (sáng lập LuminaOps)."
+        }
+      ],
+      "expected_entities": [
+        "DockSync",
+        "Nguyễn Quỳnh Chi",
+        "Lê Hà An",
+        "Trần Minh Khang",
+        "Công ty TNHH Thương mại Khang Minh"
+      ],
+      "expected_hops": [
+        {
+          "subject": "Công ty TNHH Thương mại Khang Minh",
+          "predicate": "operates_warehouse_with",
+          "object": "42 cửa dock",
+          "evidence_doc_ids": [
+            "contract-khang-minh"
+          ]
+        },
+        {
+          "subject": "Nguyễn Quỳnh Chi",
+          "predicate": "enabled",
+          "object": "DockSync",
+          "evidence_doc_ids": [
+            "slack-docksync"
+          ]
+        },
+        {
+          "subject": "Lê Hà An",
+          "predicate": "approved_enablement_of",
+          "object": "DockSync",
+          "evidence_doc_ids": [
+            "slack-docksync"
+          ]
+        }
+      ],
+      "forbidden_doc_ids": [
+        "topic-summary-pseudo"
+      ],
+      "notes": "Name collision: Khang the person vs Khang Minh the customer."
+    },
+    {
+      "id": "l3-03",
+      "difficulty": "l3_multihop",
+      "question": "Vì sao sự cố search 12/04/2026 làm kho Bình Dương không tìm được SKU?",
+      "answerable": true,
+      "gold_answer": "Kho Bình Dương là kho của Khang Minh (KH-KM-019). Sau ADR-014, tenant này chưa rebuild index pgvector nên search SKU hỏng dù tồn kho còn.",
+      "supporting_doc_ids": [
+        "incident-khang-minh",
+        "contract-khang-minh",
+        "adr-014"
+      ],
+      "supporting_spans": [
+        {
+          "doc_id": "incident-khang-minh",
+          "quote": "Nhân sự kho VSIP 1, Bình Dương không tìm được SKU trên ShelfFlow."
+        },
+        {
+          "doc_id": "contract-khang-minh",
+          "quote": "Kho vận hành của Khang Minh đặt tại VSIP 1, Bình Dương."
+        },
+        {
+          "doc_id": "adr-014",
+          "quote": "Tenant chưa rebuild sẽ không tìm được SKU dù dữ liệu tồn kho vẫn còn."
+        }
+      ],
+      "expected_entities": [
+        "Công ty TNHH Thương mại Khang Minh",
+        "INC-2026-04-12",
+        "ADR-014",
+        "ShelfFlow"
+      ],
+      "expected_hops": [
+        {
+          "subject": "Công ty TNHH Thương mại Khang Minh",
+          "predicate": "warehouse_at",
+          "object": "VSIP 1, Bình Dương",
+          "evidence_doc_ids": [
+            "contract-khang-minh"
+          ]
+        },
+        {
+          "subject": "INC-2026-04-12",
+          "predicate": "impacted",
+          "object": "VSIP 1, Bình Dương",
+          "evidence_doc_ids": [
+            "incident-khang-minh"
+          ]
+        },
+        {
+          "subject": "INC-2026-04-12",
+          "predicate": "caused_by_missing_rebuild_of",
+          "object": "ADR-014",
+          "evidence_doc_ids": [
+            "incident-khang-minh"
+          ]
+        }
+      ],
+      "forbidden_doc_ids": [
+        "topic-summary-pseudo"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "l3-04",
+      "difficulty": "l3_multihop",
+      "question": "Trong vụ bật DockSync, Trần Minh Khang và Công ty Khang Minh khác nhau thế nào?",
+      "answerable": true,
+      "gold_answer": "Công ty TNHH Thương mại Khang Minh (KH-KM-019) là khách, kho Bình Dương, được bật DockSync. Trần Minh Khang là CEO/sáng lập LuminaOps; trên Slack ông chỉ gọi báo khách, không phải pháp nhân khách.",
+      "supporting_doc_ids": [
+        "product-spec",
+        "slack-docksync",
+        "contract-khang-minh"
+      ],
+      "supporting_spans": [
+        {
+          "doc_id": "product-spec",
+          "quote": "Công ty khách **Công ty TNHH Thương mại Khang Minh** (mã tenant `KH-KM-019`) không phải là ông Trần Minh Khang (sáng lập LuminaOps)."
+        },
+        {
+          "doc_id": "slack-docksync",
+          "quote": "Khang sẽ gọi khách báo lịch go-live DockSync. (Đây là CEO Trần Minh Khang, không phải pháp nhân Khang Minh.)"
+        },
+        {
+          "doc_id": "contract-khang-minh",
+          "quote": "Mã khách: KH-KM-019"
+        }
+      ],
+      "expected_entities": [
+        "Trần Minh Khang",
+        "Công ty TNHH Thương mại Khang Minh",
+        "DockSync"
+      ],
+      "expected_hops": [
+        {
+          "subject": "Công ty TNHH Thương mại Khang Minh",
+          "predicate": "identified_as",
+          "object": "KH-KM-019",
+          "evidence_doc_ids": [
+            "contract-khang-minh"
+          ]
+        },
+        {
+          "subject": "Trần Minh Khang",
+          "predicate": "is_not",
+          "object": "Công ty TNHH Thương mại Khang Minh",
+          "evidence_doc_ids": [
+            "product-spec",
+            "slack-docksync"
+          ]
+        }
+      ],
+      "forbidden_doc_ids": [
+        "topic-summary-pseudo"
+      ],
+      "notes": "Atlas-style identity: same surface name, different entities."
+    },
+    {
+      "id": "l3-05",
+      "difficulty": "l3_multihop",
+      "question": "Nhật An Logistics có bị ảnh hưởng INC-2026-04-12 không? Vì sao?",
+      "answerable": true,
+      "gold_answer": "Không. Nhật An dùng tenant KH-NA-007, index đã rebuild, tách với KH-KM-019. Postmortem khẳng định không ảnh hưởng.",
+      "supporting_doc_ids": [
+        "incident-khang-minh",
+        "contract-nhat-an"
+      ],
+      "supporting_spans": [
+        {
+          "doc_id": "incident-khang-minh",
+          "quote": "Nhật An Logistics (KH-NA-007) không bị ảnh hưởng vì index tenant khác đã rebuild."
+        },
+        {
+          "doc_id": "contract-nhat-an",
+          "quote": "Index tìm kiếm của Nhật An là tenant `KH-NA-007`, tách biệt với tenant `KH-KM-019`."
+        }
+      ],
+      "expected_entities": [
+        "Nhật An Logistics",
+        "INC-2026-04-12",
+        "Công ty TNHH Thương mại Khang Minh"
+      ],
+      "expected_hops": [
+        {
+          "subject": "Nhật An Logistics",
+          "predicate": "uses_tenant",
+          "object": "KH-NA-007",
+          "evidence_doc_ids": [
+            "contract-nhat-an"
+          ]
+        },
+        {
+          "subject": "INC-2026-04-12",
+          "predicate": "did_not_affect",
+          "object": "Nhật An Logistics",
+          "evidence_doc_ids": [
+            "incident-khang-minh"
+          ]
+        }
+      ],
+      "forbidden_doc_ids": [
+        "topic-summary-pseudo"
+      ],
+      "notes": "The pseudo summary falsely says Nhật An was affected."
+    },
+    {
+      "id": "l3-06",
+      "difficulty": "l3_multihop",
+      "question": "Khi search ShelfFlow lỗi quá 30 phút phải escalate cho ai, và INC-2026-04-12 đã page ai?",
+      "answerable": true,
+      "gold_answer": "Runbook: page Võ Minh Tâm; quá 30 phút escalate Lê Hà An. Incident đã page Võ Minh Tâm.",
+      "supporting_doc_ids": [
+        "runbook-search",
+        "incident-khang-minh",
+        "org"
+      ],
+      "supporting_spans": [
+        {
+          "doc_id": "runbook-search",
+          "quote": "Khi CS nhận báo cáo “không tìm được SKU”, tạo P1 và page SRE on-call lead Võ Minh Tâm."
+        },
+        {
+          "doc_id": "runbook-search",
+          "quote": "Nếu sự cố kéo dài quá 30 phút, escalate cho CTO Lê Hà An."
+        },
+        {
+          "doc_id": "incident-khang-minh",
+          "quote": "Pager: Võ Minh Tâm"
+        }
+      ],
+      "expected_entities": [
+        "Võ Minh Tâm",
+        "Lê Hà An",
+        "INC-2026-04-12"
+      ],
+      "expected_hops": [
+        {
+          "subject": "search outage",
+          "predicate": "pages",
+          "object": "Võ Minh Tâm",
+          "evidence_doc_ids": [
+            "runbook-search"
+          ]
+        },
+        {
+          "subject": "search outage over 30 minutes",
+          "predicate": "escalates_to",
+          "object": "Lê Hà An",
+          "evidence_doc_ids": [
+            "runbook-search",
+            "org"
+          ]
+        },
+        {
+          "subject": "INC-2026-04-12",
+          "predicate": "paged",
+          "object": "Võ Minh Tâm",
+          "evidence_doc_ids": [
+            "incident-khang-minh"
+          ]
+        }
+      ],
+      "forbidden_doc_ids": [
+        "topic-summary-pseudo"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "l3-07",
+      "difficulty": "l3_multihop",
+      "question": "DockSync được bật cho Khang Minh trước hay sau rollout ADR-014, và incident xảy ra lúc nào so với hai mốc đó?",
+      "answerable": true,
+      "gold_answer": "Bật DockSync 2026-03-18, trước rollout ADR-014 2026-04-01. Incident 2026-04-12 sau rollout. DockSync vẫn mở trong lúc search hỏng.",
+      "supporting_doc_ids": [
+        "slack-docksync",
+        "adr-014",
+        "incident-khang-minh"
+      ],
+      "supporting_spans": [
+        {
+          "doc_id": "slack-docksync",
+          "quote": "Đã bật DockSync cho Khang Minh ngày 2026-03-18."
+        },
+        {
+          "doc_id": "adr-014",
+          "quote": "Rollout production: 2026-04-01."
+        },
+        {
+          "doc_id": "incident-khang-minh",
+          "quote": "Thời lượng: 3 giờ 12 phút, bắt đầu 2026-04-12 08:05 ICT"
+        }
+      ],
+      "expected_entities": [
+        "DockSync",
+        "ADR-014",
+        "INC-2026-04-12",
+        "Công ty TNHH Thương mại Khang Minh"
+      ],
+      "expected_hops": [
+        {
+          "subject": "DockSync",
+          "predicate": "enabled_on",
+          "object": "2026-03-18",
+          "evidence_doc_ids": [
+            "slack-docksync"
+          ]
+        },
+        {
+          "subject": "ADR-014",
+          "predicate": "rolled_out_on",
+          "object": "2026-04-01",
+          "evidence_doc_ids": [
+            "adr-014"
+          ]
+        },
+        {
+          "subject": "INC-2026-04-12",
+          "predicate": "started_on",
+          "object": "2026-04-12",
+          "evidence_doc_ids": [
+            "incident-khang-minh"
+          ]
+        }
+      ],
+      "forbidden_doc_ids": [
+        "topic-summary-pseudo"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "l3-08",
+      "difficulty": "l3_multihop",
+      "question": "Sau khi đổi CEO tháng 6/2026, ai vẫn chịu trách nhiệm kỹ thuật với ADR-014 và escalate sự cố search?",
+      "answerable": true,
+      "gold_answer": "CEO mới là Phạm Đức Long nhưng CTO vẫn Lê Hà An; trách nhiệm ADR và escalate sự cố không đổi.",
+      "supporting_doc_ids": [
+        "leadership-hq-2026-06",
+        "adr-014",
+        "runbook-search"
+      ],
+      "supporting_spans": [
+        {
+          "doc_id": "leadership-hq-2026-06",
+          "quote": "CTO vẫn là bà Lê Hà An; trách nhiệm kỹ thuật ADR và escalate sự cố không đổi."
+        },
+        {
+          "doc_id": "adr-014",
+          "quote": "Người phê duyệt: Lê Hà An (CTO)"
+        },
+        {
+          "doc_id": "runbook-search",
+          "quote": "Nếu sự cố kéo dài quá 30 phút, escalate cho CTO Lê Hà An."
+        }
+      ],
+      "expected_entities": [
+        "Phạm Đức Long",
+        "Lê Hà An",
+        "ADR-014"
+      ],
+      "expected_hops": [
+        {
+          "subject": "Phạm Đức Long",
+          "predicate": "is_ceo_from",
+          "object": "2026-06-15",
+          "evidence_doc_ids": [
+            "leadership-hq-2026-06"
+          ]
+        },
+        {
+          "subject": "Lê Hà An",
+          "predicate": "remains_cto_responsible_for",
+          "object": "ADR-014",
+          "evidence_doc_ids": [
+            "leadership-hq-2026-06",
+            "adr-014"
+          ]
+        }
+      ],
+      "forbidden_doc_ids": [
+        "topic-summary-pseudo"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "l4-01",
+      "difficulty": "l4_trap",
+      "question": "Doanh thu LuminaOps năm 2025 là bao nhiêu?",
+      "answerable": false,
+      "gold_answer": "Không có tài liệu nguồn nêu doanh thu 2025. Phải từ chối trả lời bằng số; roadmap chỉ nói số liệu doanh thu nằm ngoài phạm vi.",
+      "supporting_doc_ids": [],
+      "supporting_spans": [],
+      "expected_entities": [
+        "LuminaOps"
+      ],
+      "expected_hops": [],
+      "forbidden_doc_ids": [
+        "topic-summary-pseudo"
+      ],
+      "notes": "Unanswerable. Roadmap mentions revenue is out of scope but does not give a figure."
+    },
+    {
+      "id": "l4-02",
+      "difficulty": "l4_trap",
+      "question": "Incident Khang Minh tháng 4/2026 có phải do AWS outage không?",
+      "answerable": true,
+      "gold_answer": "Không. Nguyên nhân là tenant KH-KM-019 chưa rebuild index pgvector sau ADR-014. Bản tóm tắt chủ đề ghi AWS outage là giả, không được cite.",
+      "supporting_doc_ids": [
+        "incident-khang-minh"
+      ],
+      "supporting_spans": [
+        {
+          "doc_id": "incident-khang-minh",
+          "quote": "Không phải sự cố AWS. Nhật An Logistics (KH-NA-007) không bị ảnh hưởng vì index tenant khác đã rebuild."
+        }
+      ],
+      "expected_entities": [
+        "INC-2026-04-12",
+        "ADR-014"
+      ],
+      "expected_hops": [],
+      "forbidden_doc_ids": [
+        "topic-summary-pseudo"
+      ],
+      "notes": "Pseudo-evidence rejection. L4 with a true source answer."
+    },
+    {
+      "id": "l4-03",
+      "difficulty": "l4_trap",
+      "question": "CEO hiện tại của LuminaOps có phải là Trần Minh Khang không?",
+      "answerable": true,
+      "gold_answer": "Không. Từ 15/06/2026 CEO là Phạm Đức Long. Trần Minh Khang là Chủ tịch HĐQT. Sổ tay 2025 đã cũ.",
+      "supporting_doc_ids": [
+        "leadership-hq-2026-06"
+      ],
+      "supporting_spans": [
+        {
+          "doc_id": "leadership-hq-2026-06",
+          "quote": "Ông Trần Minh Khang thôi CEO và giữ vai trò Chủ tịch Hội đồng quản trị."
+        }
+      ],
+      "expected_entities": [
+        "Trần Minh Khang",
+        "Phạm Đức Long"
+      ],
+      "expected_hops": [],
+      "forbidden_doc_ids": [
+        "topic-summary-pseudo"
+      ],
+      "notes": "Stale-fact trap. Retrieving the handbook is allowed; answering from it as current is not."
+    },
+    {
+      "id": "l4-04",
+      "difficulty": "l4_trap",
+      "question": "Nhật An Logistics có bị downtime cùng Khang Minh vì AWS cluster chết không?",
+      "answerable": true,
+      "gold_answer": "Không. Không có AWS cluster outage. Nhật An (KH-NA-007) không bị INC-2026-04-12. Tóm tắt chủ đề bịa cả hai điểm.",
+      "supporting_doc_ids": [
+        "incident-khang-minh",
+        "contract-nhat-an"
+      ],
+      "supporting_spans": [
+        {
+          "doc_id": "incident-khang-minh",
+          "quote": "Không phải sự cố AWS. Nhật An Logistics (KH-NA-007) không bị ảnh hưởng vì index tenant khác đã rebuild."
+        },
+        {
+          "doc_id": "contract-nhat-an",
+          "quote": "Index tìm kiếm của Nhật An là tenant `KH-NA-007`, tách biệt với tenant `KH-KM-019`."
+        }
+      ],
+      "expected_entities": [
+        "Nhật An Logistics",
+        "INC-2026-04-12"
+      ],
+      "expected_hops": [],
+      "forbidden_doc_ids": [
+        "topic-summary-pseudo"
+      ],
+      "notes": "Compound distractor: false AWS cause and false Nhật An impact."
+    }
+  ],
+  "chunking": {
+    "fixed_size": 1200,
+    "fixed_overlap": 100,
+    "semantic_target": 900,
+    "semantic_overlap": 150,
+    "semantic_pre_context_limit": 50,
+    "semantic_hard_limit": 500
+  }
+}
