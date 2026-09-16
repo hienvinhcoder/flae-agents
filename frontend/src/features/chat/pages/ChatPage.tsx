@@ -13,27 +13,37 @@ export function ChatPage() {
   const defaultAgentQuery = useDefaultAgent(workspaceId);
 
   if (!workspaceId) {
-    return <ErrorState announce={false} message={t("SHELL.CHAT_WORKSPACE_REQUIRED")} title={t("AGENTS_UI.WORKSPACE_REQUIRED_TITLE")} />;
+    return (
+      <div className="p-6">
+        <ErrorState announce={false} message={t("SHELL.CHAT_WORKSPACE_REQUIRED")} title={t("AGENTS_UI.WORKSPACE_REQUIRED_TITLE")} />
+      </div>
+    );
   }
   if (defaultAgentQuery.isPending) {
-    return <div className="mx-auto max-w-7xl border-y border-ui-divider bg-ui-raised/35 p-8"><Skeleton label={t("AGENTS_UI.LOADING_CARD")} lines={7} /></div>;
+    return <div className="flex h-full min-h-0 items-center justify-center p-8"><Skeleton label={t("AGENTS_UI.LOADING_CARD")} lines={7} /></div>;
   }
   if (defaultAgentQuery.isError) {
     const globallyAnnounced = defaultAgentQuery.error instanceof AppError
       && defaultAgentQuery.error.kind === "server"
       && (defaultAgentQuery.error.status ?? 0) >= 500;
     return (
-      <ErrorState
-        announce={!globallyAnnounced}
-        message={t("CHAT_UI.DEFAULT_AGENT_ERROR")}
-        onRetry={() => void defaultAgentQuery.refetch()}
-        retryLabel={t("AGENTS_UI.RETRY")}
-        title={t("AGENTS_UI.LOAD_ERROR_TITLE")}
-      />
+      <div className="p-6">
+        <ErrorState
+          announce={!globallyAnnounced}
+          message={t("CHAT_UI.DEFAULT_AGENT_ERROR")}
+          onRetry={() => void defaultAgentQuery.refetch()}
+          retryLabel={t("AGENTS_UI.RETRY")}
+          title={t("AGENTS_UI.LOAD_ERROR_TITLE")}
+        />
+      </div>
     );
   }
   if (!defaultAgentQuery.data) {
-    return <ErrorState message={t("CHAT_UI.DEFAULT_AGENT_ERROR")} title={t("AGENTS_UI.LOAD_ERROR_TITLE")} />;
+    return (
+      <div className="p-6">
+        <ErrorState message={t("CHAT_UI.DEFAULT_AGENT_ERROR")} title={t("AGENTS_UI.LOAD_ERROR_TITLE")} />
+      </div>
+    );
   }
   return (
     <ChatExperience

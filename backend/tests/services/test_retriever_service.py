@@ -31,6 +31,11 @@ async def test_get_embedding():
             assert isinstance(emb, np.ndarray)
             assert np.array_equal(emb, np.array(mock_values, dtype="float32"))
             mock_client.aio.models.embed_content.assert_called_once()
+            call_kwargs = mock_client.aio.models.embed_content.call_args.kwargs
+            assert call_kwargs["model"] == "test_model"
+            assert call_kwargs["contents"] == "Hello test"
+            assert call_kwargs["config"] is not None
+            assert call_kwargs["config"].output_dimensionality == 3
 
 
 @pytest.mark.asyncio
@@ -79,6 +84,9 @@ async def test_vector_search_sql():
         assert isinstance(df.iloc[0]["embedding"], np.ndarray)
         assert df.iloc[0]["source_chunk_ids"] == ["chunk-1"]
         mock_session.execute.assert_called_once()
+        sql = str(mock_session.execute.await_args.args[0])
+        assert "CAST(:emb AS vector)" in sql
+        assert ":emb::vector" not in sql
 
 
 @pytest.mark.asyncio

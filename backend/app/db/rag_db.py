@@ -381,9 +381,9 @@ class DBManager:
                     source_document_id,
                     entity_ids,
                     relation_ids,
-                    1 - (embedding <=> :embedding::vector) as similarity
+                    1 - (embedding <=> CAST(:embedding AS vector)) as similarity
                 FROM {self.schema}.chunks
-                ORDER BY embedding <=> :embedding::vector
+                ORDER BY embedding <=> CAST(:embedding AS vector)
                 LIMIT :limit
             """)
             result = await session.execute(

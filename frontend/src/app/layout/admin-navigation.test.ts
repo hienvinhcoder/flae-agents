@@ -10,6 +10,7 @@ import { describe, expect, it } from "vitest";
 import {
   findActiveNavigationItem,
   findNavigationGroup,
+  isChatWorkbenchPath,
   navigationGroups,
 } from "./admin-navigation";
 import type {
@@ -111,5 +112,12 @@ describe("admin navigation", () => {
 
     expect(copiedItem).not.toBe(item);
     expect(findNavigationGroup(copiedItem)).toBe(navigationGroups[1]);
+  });
+
+  it("detects full-bleed chat workbench routes", () => {
+    expect(isChatWorkbenchPath("/dashboard/chat")).toBe(true);
+    expect(isChatWorkbenchPath("/dashboard/agents/agent-1/chat")).toBe(true);
+    expect(isChatWorkbenchPath("/dashboard/agents")).toBe(false);
+    expect(isChatWorkbenchPath("/dashboard/knowledge")).toBe(false);
   });
 });

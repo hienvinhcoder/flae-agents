@@ -145,6 +145,85 @@ async def test_chat_stream_reports_missing_agent_and_session() -> None:
 
 
 @pytest.mark.asyncio
+async def test_chat_stream_concatenates_list_content_blocks() -> None:
+    context = SessionContext()
+    agent = SimpleNamespace(model_name="model", temperature=0.2, system_prompt="prompt")
+    session = SimpleNamespace(id=uuid4())
+    chunk = SimpleNamespace(content=[
+        {"type": "text", "text": "Xin "},
+        {"type": "text", "text": "chao"},
+    ])
+    graph = EventGraph([
+        {
+            "event": "on_chat_model_stream",
+            "metadata": {"langgraph_node": "model"},
+            "data": {"chunk": chunk},
+        },
+    ])
+    create_message = AsyncMock()
+    with (
+        patch("app.services.chat.service.AsyncSessionLocal", return_value=context),
+        patch.object(AgentService, "get_agent", new=AsyncMock(return_value=agent)),
+        patch.object(
+            AgentService, "get_chat_session", new=AsyncMock(return_value=session)
+        ),
+        patch.object(AgentService, "create_message", new=create_message),
+        patch("app.services.chat.service.get_qa_agent_graph", return_value=graph),
+    ):
+        payloads = await collect_stream(**stream_args())
+    assert [payload["type"] for payload in payloads] == ["token", "done"]
+    assert payloads[0]["text"] == "Xin chao"
+    assert create_message.await_args_list[-1].kwargs["content"] == "Xin chao"
+
+
+@pytest.mark.asyncio
+async def test_chat_stream_emits_tool_events_and_search_citations() -> None:
+    context = SessionContext()
+    agent = SimpleNamespace(model_name="model", temperature=0.2, system_prompt="prompt")
+    session = SimpleNamespace(id=uuid4())
+    graph = EventGraph([
+        {"event": "on_tool_start", "name": "search_knowledge", "data": {}},
+        {
+            "event": "on_tool_end",
+            "name": "search_knowledge",
+            "data": {
+                "output": {
+                    "citations": [{
+                        "source_document": "Policy.pdf",
+                        "content": "Rule",
+                        "score": 0.9,
+                    }],
+                    "context": "Rule",
+                }
+            },
+        },
+        {
+            "event": "on_chat_model_stream",
+            "metadata": {"langgraph_node": "model"},
+            "data": {"chunk": SimpleNamespace(content="Based on policy")},
+        },
+    ])
+    create_message = AsyncMock()
+    with (
+        patch("app.services.chat.service.AsyncSessionLocal", return_value=context),
+        patch.object(AgentService, "get_agent", new=AsyncMock(return_value=agent)),
+        patch.object(
+            AgentService, "get_chat_session", new=AsyncMock(return_value=session)
+        ),
+        patch.object(AgentService, "create_message", new=create_message),
+        patch("app.services.chat.service.get_qa_agent_graph", return_value=graph),
+    ):
+        payloads = await collect_stream(**stream_args())
+    assert [payload["type"] for payload in payloads] == [
+        "tool", "tool", "citations", "token", "done",
+    ]
+    assert payloads[0] == {"type": "tool", "phase": "start", "name": "search_knowledge"}
+    assert payloads[1] == {"type": "tool", "phase": "end", "name": "search_knowledge"}
+    assert payloads[2]["citations"][0]["source_document"] == "Policy.pdf"
+    assert create_message.await_args_list[-1].kwargs["content"] == "Based on policy"
+
+
+@pytest.mark.asyncio
 async def test_chat_stream_emits_citations_tokens_and_persists_answer() -> None:
     context = SessionContext()
     agent = SimpleNamespace(model_name="model", temperature=0.2, system_prompt="prompt")
@@ -173,7 +252,7 @@ async def test_chat_stream_emits_citations_tokens_and_persists_answer() -> None:
         patch("app.services.chat.service.get_qa_agent_graph", return_value=graph),
     ):
         payloads = await collect_stream(**stream_args())
-    assert [payload["type"] for payload in payloads] == ["citations", "token", "done"]
+    assert [payload["type"] for payload in payloads] == ["tool", "citations", "token", "done"]
     assert create_message.await_count == 2
     assert create_message.await_args_list[-1].kwargs["content"] == "Hello"
 

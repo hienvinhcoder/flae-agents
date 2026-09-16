@@ -3,11 +3,8 @@ import { useTranslation } from "react-i18next";
 
 import { AppError } from "../../../core/api/errors";
 import { Button } from "../../../shared/ui/Button";
-import { Skeleton } from "../../../shared/ui/Skeleton";
 import { Toast, ToastViewport } from "../../../shared/ui/Toast";
 import type { AgentDetail } from "../../agents/types/agent";
-import { AgentAvatarIcon } from "../../agents/ui/agent-appearance";
-import { getAgentAvatarColor } from "../../agents/ui/agent-avatar-color";
 import {
   useConversationActions,
   useConversationMessages,
@@ -16,6 +13,7 @@ import {
 import { useChatStream } from "../hooks/use-chat-stream";
 import type { ChatMessage, ChatSession } from "../types/chat";
 import { ChatComposer } from "./ChatComposer";
+import { ChatToolbar } from "./ChatToolbar";
 import { ConversationMessages } from "./ConversationMessages";
 import { ConversationSidebar } from "./ConversationSidebar";
 
@@ -71,12 +69,14 @@ function ContextualChatExperience({
   const actions = useConversationActions(workspaceId, agentId);
   const [selection, setSelection] = useState<SelectionState>({ contextKey, sessionId: null });
   const [actionErrorState, setActionError] = useState<ActionError | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const selectedSessionId = selection.contextKey === contextKey ? selection.sessionId : null;
   const actionError = actionErrorState?.contextKey === contextKey ? actionErrorState : null;
   const sessions = sessionsQuery.data ?? EMPTY_SESSIONS;
   const activeSessionId = selectedSessionId && sessions.some((session) => session.id === selectedSessionId)
     ? selectedSessionId
     : sessions.at(0)?.id ?? null;
+  const activeSession = sessions.find((session) => session.id === activeSessionId) ?? null;
   const mountedRef = useRef(true);
   const createRequestRef = useRef(0);
   const deleteRequestRef = useRef(0);
@@ -90,6 +90,21 @@ function ContextualChatExperience({
       deleteRequestRef.current += 1;
     };
   }, []);
+
+  if (sessionsQuery.isError && !historyOpen) {
+    setHistoryOpen(true);
+  }
+
+  useEffect(() => {
+    if (!historyOpen) return undefined;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      setHistoryOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [historyOpen]);
 
   const messagesQuery = useConversationMessages(workspaceId, agentId, activeSessionId);
   const refetchMessages = messagesQuery.refetch;
@@ -165,62 +180,74 @@ function ContextualChatExperience({
   };
 
   return (
-    <section aria-label={ariaLabel} className="mx-auto grid min-h-[calc(100vh-10rem)] w-full max-w-[96rem] overflow-hidden border-y border-ui-divider bg-ui-raised/35 lg:h-[calc(100dvh-8rem)] lg:min-h-[36rem] lg:grid-cols-[19rem_minmax(0,1fr)]" role="region">
-      <ConversationSidebar
-        activeSessionId={activeSessionId}
+    <section
+      aria-label={ariaLabel}
+      className="relative flex h-full min-h-[32rem] w-full min-w-0 flex-col overflow-hidden"
+      role="region"
+    >
+      <ChatToolbar
+        agent={agent}
+        agentLoading={agentLoading}
         backHref={backHref}
         backLabel={backLabel}
         creating={actions.create.isPending}
-        deleting={actions.remove.isPending}
-        error={sessionsQuery.isError ? publicErrorMessage(sessionsQuery.error, t("CHAT_UI.HISTORY_LOAD_ERROR")) : null}
-        errorAnnounce={!isGloballyAnnouncedServerError(sessionsQuery.error)}
-        loading={sessionsQuery.isPending}
+        historyOpen={historyOpen}
         onCreate={() => void createSession()}
-        onDelete={(session) => void deleteSession(session)}
-        onRetry={() => void sessionsQuery.refetch()}
-        onSelect={(sessionId) => {
-          interactionGenerationRef.current += 1;
-          setSelection({ contextKey, sessionId });
-        }}
-        sessions={sessions}
+        onToggleHistory={() => setHistoryOpen((open) => !open)}
+        sessionTitle={activeSession?.title ?? null}
       />
-
-      <div className="flex min-h-[36rem] min-w-0 flex-col bg-ui-canvas h-[calc(100dvh-8rem)] lg:h-full lg:min-h-0">
-        <header className="flex min-h-16 items-center border-b border-ui-divider bg-ui-raised px-5">
-          {agentLoading ? <div className="w-52"><Skeleton label={t("AGENTS_UI.LOADING_CARD")} lines={2} /></div> : agent ? (
-            <div className="flex items-center gap-3">
-              <div aria-hidden className={`flex h-10 w-10 items-center justify-center rounded-xl ${getAgentAvatarColor(agent.avatar_color)}`}>
-                <AgentAvatarIcon className="h-5 w-5" icon={agent.avatar_icon} />
-              </div>
-              <div>
-                <h1 className="text-sm font-bold text-ui-ink">{agent.name}</h1>
-                <p className="mt-0.5 text-xs text-ui-ink-muted">{t("CHAT_UI.READY_ON_MODEL", { model: agent.model_name })}</p>
-              </div>
-            </div>
-          ) : null}
-        </header>
-
-        {actionError ? <p className="m-4 rounded-ui-control border border-state-danger bg-state-danger-soft p-3 text-sm text-state-danger" role={actionError.announce ? "alert" : undefined}>{actionError.message}</p> : null}
-        <ConversationMessages
+      {actionError ? (
+        <p
+          className="mx-4 mt-3 rounded-ui-control border border-state-danger bg-state-danger-soft px-3 py-2 text-sm text-state-danger"
+          role={actionError.announce ? "alert" : undefined}
+        >
+          {actionError.message}
+        </p>
+      ) : null}
+      <div className="relative flex min-h-0 flex-1">
+        <ConversationSidebar
           activeSessionId={activeSessionId}
-          agent={agent}
-          error={messagesQuery.isError ? publicErrorMessage(messagesQuery.error, t("CHAT_UI.MESSAGE_LOAD_ERROR")) : null}
-          errorAnnounce={!isGloballyAnnouncedServerError(messagesQuery.error)}
-          loading={messagesQuery.isPending}
-          messages={stream.messages}
-          onRetry={() => void messagesQuery.refetch()}
-          status={stream.status}
+          deleting={actions.remove.isPending}
+          error={sessionsQuery.isError ? publicErrorMessage(sessionsQuery.error, t("CHAT_UI.HISTORY_LOAD_ERROR")) : null}
+          errorAnnounce={!isGloballyAnnouncedServerError(sessionsQuery.error)}
+          loading={sessionsQuery.isPending}
+          onClose={() => setHistoryOpen(false)}
+          onDelete={(session) => void deleteSession(session)}
+          onRetry={() => void sessionsQuery.refetch()}
+          onSelect={(sessionId) => {
+            interactionGenerationRef.current += 1;
+            setSelection({ contextKey, sessionId });
+            if (!window.matchMedia?.("(min-width: 48rem)")?.matches) setHistoryOpen(false);
+          }}
+          open={historyOpen}
+          sessions={sessions}
         />
-        {activeSessionId && agent ? (
-          <>
-            {stream.error && stream.canRetry ? (
-              <div className="border-t border-ui-line bg-state-danger-soft px-4 py-2 text-center">
-                <Button aria-label={t("CHAT_UI.RETRY_MESSAGE")} onClick={() => void stream.retry()} variant="secondary">{t("CHAT_UI.RETRY_MESSAGE")}</Button>
-              </div>
-            ) : null}
-            <ChatComposer agentName={agent.name} onSend={(message) => void stream.send(message)} onStop={stream.stop} status={stream.status} />
-          </>
-        ) : null}
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <ConversationMessages
+            activeSessionId={activeSessionId}
+            activeToolName={stream.activeToolName}
+            agent={agent}
+            error={messagesQuery.isError ? publicErrorMessage(messagesQuery.error, t("CHAT_UI.MESSAGE_LOAD_ERROR")) : null}
+            errorAnnounce={!isGloballyAnnouncedServerError(messagesQuery.error)}
+            loading={messagesQuery.isPending}
+            messages={stream.messages}
+            onPromptSelect={(prompt) => void stream.send(prompt)}
+            onRetry={() => void messagesQuery.refetch()}
+            status={stream.status}
+          />
+          {activeSessionId && agent ? (
+            <>
+              {stream.error && stream.canRetry ? (
+                <div className="px-4 py-2 text-center">
+                  <Button aria-label={t("CHAT_UI.RETRY_MESSAGE")} onClick={() => void stream.retry()} variant="secondary">
+                    {t("CHAT_UI.RETRY_MESSAGE")}
+                  </Button>
+                </div>
+              ) : null}
+              <ChatComposer agentName={agent.name} onSend={(message) => void stream.send(message)} onStop={stream.stop} status={stream.status} />
+            </>
+          ) : null}
+        </div>
       </div>
       {stream.error ? (
         <ToastViewport><Toast duration={0} message={stream.error} tone="error" /></ToastViewport>

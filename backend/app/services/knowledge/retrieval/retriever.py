@@ -37,13 +37,17 @@ class RetrieverService:
     async def get_embedding(text_val: str) -> np.ndarray:
         """Tạo vector embedding cho một đoạn văn bản bất đồng bộ."""
         client = genai.Client(api_key=settings.GEMINI_API_KEY)
-        config_params = {}
-        if settings.EMBEDDING_DIMENSIONS:
-            config_params["output_dimensionality"] = settings.EMBEDDING_DIMENSIONS
+        dimensions = settings.EMBEDDING_DIMENSIONS
+        config = (
+            types.EmbedContentConfig(output_dimensionality=dimensions)
+            if dimensions
+            else None
+        )
 
         response = await client.aio.models.embed_content(
             model=settings.GEMINI_EMBEDDING_MODEL,
             contents=text_val,
+            config=config,
         )
         if not response.embeddings:
             raise ExternalServiceError("Không thể tạo embedding cho truy vấn.")
@@ -81,10 +85,10 @@ class RetrieverService:
         """Thực hiện tìm kiếm vector similarity trên PostgreSQL."""
         schema = rag_db_manager.schema
         sql = text(f"""
-            SELECT *, 1 - (embedding <=> :emb::vector) as similarity
+            SELECT *, 1 - (embedding <=> CAST(:emb AS vector)) as similarity
             FROM {schema}.{table_name}
             WHERE workspace_id = :workspace_id
-            ORDER BY embedding <=> :emb::vector
+            ORDER BY embedding <=> CAST(:emb AS vector)
             LIMIT :limit
         """)
 

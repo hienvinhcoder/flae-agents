@@ -21,8 +21,10 @@ def get_domain_id(name: str) -> str:
 def merge_domains(domains: list[dict]) -> list[dict]:
     """
     Merge duplicate domain names. Return list of merged domain dicts
-    with: name, description, source_chunk_ids, frequency, descriptions.
+    ready to upsert into knowledge_domains.
     """
+    from app.services.knowledge.discovery.topic_resolver import slugify
+
     grouped: dict[str, list[dict]] = {}
     for d in domains:
         key = clean_entity_name(d["name"]).lower()
@@ -30,9 +32,13 @@ def merge_domains(domains: list[dict]) -> list[dict]:
 
     merged = []
     for key, group in grouped.items():
-        # Pick name from most frequent or first
         name = clean_entity_name(group[0]["name"])
-        source_chunks = list({d["source_chunk_id"] for d in group if d.get("source_chunk_id")})
+        source_chunks = list({
+            cid
+            for d in group
+            for cid in ([d["source_chunk_id"]] if d.get("source_chunk_id") else d.get("source_chunk_ids") or [])
+            if cid
+        })
         descriptions = list(
             {
                 d["description"].strip()
@@ -40,13 +46,20 @@ def merge_domains(domains: list[dict]) -> list[dict]:
                 if d.get("description") and d["description"].strip()
             }
         )
+        description = " ".join(descriptions)
 
         merged.append(
             {
+                "domain_id": get_domain_id(name),
                 "name": name,
+                "slug": slugify(name) or key.replace(" ", "-"),
+                "description": description,
                 "descriptions": descriptions,
                 "source_chunk_ids": source_chunks,
                 "frequency": len(group),
+                "status": "needs_review",
+                "confidence": 1.0,
+                "embedding": None,
             }
         )
 

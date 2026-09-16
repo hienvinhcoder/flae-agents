@@ -66,4 +66,21 @@ describe("ConversationMessages reading position", () => {
     expect(viewport).toHaveAccessibleName("Conversation messages");
     expect(viewport).toHaveClass("min-h-0", "overflow-y-auto");
   });
+
+  it("keeps the empty thread as a centered Claude-style start surface", () => {
+    const onPromptSelect = vi.fn();
+    render(
+      <TestI18nProvider>
+        <ConversationMessages
+          {...baseProps}
+          loading={false}
+          onPromptSelect={onPromptSelect}
+        />
+      </TestI18nProvider>,
+    );
+
+    expect(screen.getByRole("heading", { name: /start with/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Summarize key decisions for this workspace." })).toBeInTheDocument();
+    expect(screen.getByTestId("message-viewport")).toHaveClass("justify-center");
+  });
 });

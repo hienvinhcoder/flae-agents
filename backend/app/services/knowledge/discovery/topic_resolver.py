@@ -99,7 +99,8 @@ def resolve_topic_assignments(
     chunk_embedding: List[float],
     llm_assignments: List[Dict[str, Any]],
     llm_candidates: List[Dict[str, Any]],
-    doc_id: str
+    doc_id: str,
+    domain_id: Optional[str] = None,
 ) -> List[str]:
     """
     Quyết định gán topic (resolve). Đồng bộ vì chạy trong Ingestion service.
@@ -260,9 +261,9 @@ def resolve_topic_assignments(
                 chunk_emb_str = str(chunk_embedding) if chunk_embedding else None
                 cur.execute(f"""
                     INSERT INTO {rag_db_manager.schema}.topics
-                    (workspace_id, topic_id, name, slug, type, status, confidence, embedding)
-                    VALUES (%s, %s, %s, %s, 'topic', 'needs_review', %s, %s::vector);
-                """, (workspace_id, topic_id, cand_name, slug, confidence, chunk_emb_str))
+                    (workspace_id, topic_id, name, slug, type, status, confidence, embedding, domain_id)
+                    VALUES (%s, %s, %s, %s, 'topic', 'needs_review', %s, %s::vector, %s);
+                """, (workspace_id, topic_id, cand_name, slug, confidence, chunk_emb_str, domain_id))
 
                 # Tạo membership
                 membership_id = f"mem-{uuid.uuid4()}"

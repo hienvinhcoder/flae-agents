@@ -103,3 +103,7 @@ export function findNavigationGroup(
     group.items.some((candidate) => candidate.to === item.to),
   );
 }
+
+export function isChatWorkbenchPath(pathname: string) {
+  return pathname === "/dashboard/chat" || /^\/dashboard\/agents\/[^/]+\/chat$/.test(pathname);
+}

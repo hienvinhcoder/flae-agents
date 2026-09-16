@@ -88,6 +88,59 @@ async def test_extract_entities_from_chunks_passes_glean_max():
         assert kwargs["glean_max"] == 2
 
 
+@pytest.mark.asyncio
+async def test_extract_entities_from_chunks_maps_domain_assignments():
+    from app.services.knowledge.ingestion.service import IngestionService
+
+    with patch("app.services.knowledge.ingestion.service.settings") as mock_settings, \
+         patch("app.services.knowledge.extraction.agent.graph.run_extraction_agent") as mock_run_agent:
+
+        mock_settings.GEMINI_API_KEY = "fake-key"
+        mock_settings.GEMINI_LLM_MODEL = "gemini-2.5-flash"
+        mock_settings.RAG_GLEAN_MAX = 0
+        mock_settings.RAG_ENTITY_TYPES = ["organization"]
+
+        mock_run_agent.return_value = (
+            {
+                "entities": [{
+                    "entity_id": "ent-1",
+                    "entity_name": "Flash AI",
+                    "entity_type": "organization",
+                    "description": "Startup",
+                    "source_chunk_id": "chunk_1",
+                }],
+                "relations": [],
+                "domain_assignments": [{
+                    "name": "Flash AI",
+                    "description": "Hoạt động của Flash AI",
+                    "source_chunk_id": "chunk_1",
+                }],
+                "topic_assignments": [],
+                "topic_candidates": [{
+                    "name": "FlashSearch",
+                    "confidence": 0.9,
+                    "reason": "Sản phẩm tìm kiếm",
+                }],
+            },
+            42,
+        )
+
+        chunks = [{"chunk_id": "chunk_1", "text": "Flash AI builds FlashSearch"}]
+        entities, relations, domains, tokens = await IngestionService.extract_entities_from_chunks(
+            chunks, "test-workspace-id"
+        )
+
+        assert len(entities) == 1
+        assert relations == []
+        assert tokens == 42
+        assert len(domains) == 1
+        assert domains[0]["name"] == "Flash AI"
+        assert domains[0]["domain_id"].startswith("dom-")
+        assert domains[0]["slug"]
+        assert domains[0]["description"] == "Hoạt động của Flash AI"
+        assert chunks[0]["topic_candidates"][0]["name"] == "FlashSearch"
+
+
 def test_fuse_and_save_success():
     from app.services.knowledge.ingestion.service import IngestionService
     from unittest.mock import patch

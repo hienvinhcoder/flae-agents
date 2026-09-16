@@ -96,6 +96,7 @@ describe("useChatStream", () => {
       citations: [{ content: "Coverage", source_document: "Benefits.pdf" }],
       content: "Health benefits",
     });
+    expect(result.current.activeToolName).toBeNull();
 
     act(() => {
       captured?.onEvent({ type: "done" });
@@ -103,6 +104,27 @@ describe("useChatStream", () => {
     });
     await waitFor(() => expect(result.current.status).toBe("completed"));
     expect(reloadMessages).toHaveBeenCalledOnce();
+  });
+
+  it("exposes the active tool name until the first token arrives", () => {
+    let captured: CapturedStream | undefined;
+    chatApi.streamChat.mockImplementation((options: CapturedStream) => {
+      captured = options;
+      return new Promise<void>(() => undefined);
+    });
+    const { result } = renderStreamHook();
+    act(() => { void result.current.send("Where is the policy?"); });
+
+    act(() => captured?.onEvent({ name: "search_knowledge", phase: "start", type: "tool" }));
+    expect(result.current.activeToolName).toBe("search_knowledge");
+    expect(result.current.status).toBe("streaming");
+
+    act(() => captured?.onEvent({ name: "search_knowledge", phase: "end", type: "tool" }));
+    expect(result.current.activeToolName).toBe("search_knowledge");
+
+    act(() => captured?.onEvent({ text: "The policy is in the handbook.", type: "token" }));
+    expect(result.current.activeToolName).toBeNull();
+    expect(result.current.messages.at(-1)?.content).toBe("The policy is in the handbook.");
   });
 
   it("replaces citations with each incoming event and deduplicates that event", () => {

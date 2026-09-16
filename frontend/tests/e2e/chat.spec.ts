@@ -8,7 +8,10 @@ test.beforeEach(async ({ page }) => {
 
 test('stops a connecting stream, retries a failure, and exposes citations', async ({ page }) => {
   await expect(page.getByRole('region', { name: 'Workspace assistant chat' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Open conversation history' })).toBeVisible();
+  await page.getByRole('button', { name: 'Open conversation history' }).click();
   await expect(page.getByRole('complementary', { name: 'Conversation history' })).toBeVisible();
+  await page.getByRole('button', { name: 'Close conversation history' }).click();
   await expect(page.getByTestId('message-viewport')).toHaveAccessibleName('Conversation messages');
   await expectNoA11yViolations(page);
   const composer = page.getByPlaceholder('Ask Research assistant...');
@@ -23,7 +26,6 @@ test('stops a connecting stream, retries a failure, and exposes citations', asyn
   await expect(page.getByRole('button', { name: 'Retry message' })).toBeVisible();
   await page.getByRole('button', { name: 'Retry message' }).click();
   await expect(page.getByText('The launch plan is grounded in the product guide.')).toBeVisible();
-  await page.getByRole('button', { name: 'Show 1 citation' }).click();
   await expect(page.getByRole('list', { name: 'Message citations' })).toContainText('Product guide');
 });
 

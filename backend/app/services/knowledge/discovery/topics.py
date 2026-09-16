@@ -343,13 +343,65 @@ class TopicService:
         chunk_embedding: List[float],
         llm_assignments: List[Dict[str, Any]],
         llm_candidates: List[Dict[str, Any]],
-        doc_id: str
+        doc_id: str,
+        domain_id: Optional[str] = None,
     ) -> List[str]:
         """
         Quyết định gán topic (resolve). Đồng bộ vì chạy trong Ingestion service.
         """
         from app.services.knowledge.discovery.topic_resolver import resolve_topic_assignments as _resolve
-        return _resolve(workspace_id, chunk_id, chunk_embedding, llm_assignments, llm_candidates, doc_id)
+        return _resolve(
+            workspace_id,
+            chunk_id,
+            chunk_embedding,
+            llm_assignments,
+            llm_candidates,
+            doc_id,
+            domain_id=domain_id,
+        )
+
+    @staticmethod
+    def resolve_topics_from_chunks(
+        *,
+        workspace_id: str,
+        chunks: List[Dict[str, Any]],
+        source_doc_id: str,
+    ) -> List[str]:
+        """Resolve topic candidates/assignments attached to extracted chunks."""
+        from app.services.knowledge.discovery.domains import get_domain_id
+
+        affected_topics: list[str] = []
+        for chunk in chunks:
+            cands = chunk.get("topic_candidates", [])
+            assigns = chunk.get("topic_assignments", [])
+            if not cands and not assigns:
+                continue
+            chunk_domains = chunk.get("domain_assignments") or []
+            domain_id = None
+            if chunk_domains and chunk_domains[0].get("name"):
+                domain_id = get_domain_id(chunk_domains[0]["name"])
+            try:
+                affected_topics.extend(
+                    TopicService.resolve_topic_assignments(
+                        workspace_id=workspace_id,
+                        chunk_id=chunk["chunk_id"],
+                        chunk_embedding=chunk.get("embedding") or [],
+                        llm_assignments=assigns,
+                        llm_candidates=cands,
+                        doc_id=source_doc_id,
+                        domain_id=domain_id,
+                    )
+                )
+            except Exception as ex:
+                logger.error("Lỗi khi xử lý topic cho chunk %s: %s", chunk.get("chunk_id"), ex)
+        unique_topics = list(set(affected_topics))
+        if unique_topics:
+            logger.info("Resolved %s topics from extraction candidates/assignments", len(unique_topics))
+        else:
+            logger.warning(
+                "No topics resolved after extraction (empty candidates/assignments or resolve failed)"
+            )
+        return unique_topics
 
     @staticmethod
     async def trigger_topic_updates_via_temporal(workspace_id: str, topic_ids: List[str]) -> None:

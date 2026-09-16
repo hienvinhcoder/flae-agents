@@ -93,6 +93,8 @@ test('opens an agent conversation in the chat workbench', async ({ page }) => {
   await page.getByRole('link', { name: /Start conversation.*Chat with Research assistant/ }).click();
 
   await expect(page.getByRole('region', { name: 'Message Research assistant' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Open conversation history' })).toBeVisible();
+  await page.getByRole('button', { name: 'Open conversation history' }).click();
   await expect(page.getByRole('complementary', { name: 'Conversation history' })).toBeVisible();
   await expect(page.getByTestId('message-viewport')).toHaveAccessibleName('Conversation messages');
   await expect(page.getByRole('link', { name: 'Back to AI agents' })).toHaveAttribute('href', '/dashboard/agents');

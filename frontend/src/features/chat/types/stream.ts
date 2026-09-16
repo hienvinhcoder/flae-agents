@@ -6,9 +6,12 @@ export interface StreamCitation {
   source_document: string;
 }
 
+export type StreamToolPhase = "start" | "end";
+
 export type StreamEvent =
   | { type: "token"; text: string }
   | { type: "citations"; citations: StreamCitation[] }
+  | { name: string; phase: StreamToolPhase; type: "tool" }
   | { type: "done" }
   | { type: "error"; detail: string };
 
@@ -64,6 +67,16 @@ export function parseStreamEvent(value: unknown): StreamEvent {
         throw protocolError();
       }
       return { text: event.text, type: "token" };
+    case "tool":
+      if (
+        !isExactObject(event, ["type", "phase", "name"])
+        || (event.phase !== "start" && event.phase !== "end")
+        || typeof event.name !== "string"
+        || !event.name
+      ) {
+        throw protocolError();
+      }
+      return { name: event.name, phase: event.phase, type: "tool" };
     case "citations":
       if (!isExactObject(event, ["type", "citations"]) || !Array.isArray(event.citations)) {
         throw protocolError();

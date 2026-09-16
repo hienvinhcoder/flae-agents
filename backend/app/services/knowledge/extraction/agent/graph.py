@@ -85,11 +85,13 @@ async def run_extraction_agent(
 
     result = await extraction_graph.ainvoke(initial_state)
 
+    domain_assignments = result.get("domain_assignments", [])
     output = {
         "entities": result.get("entities", []),
         "relations": result.get("relations", []),
         "topic_assignments": result.get("topic_assignments", []),
         "topic_candidates": result.get("topic_candidates", []),
-        "domain_assignments": result.get("domain_assignments", []),
+        "domain_assignments": domain_assignments,
+        "domains": domain_assignments,
     }
     return output, result.get("tokens_used", 0)

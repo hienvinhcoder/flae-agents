@@ -18,6 +18,23 @@ def _get_unique_id(text: str, prefix: str = "") -> str:
     return f"{prefix}{hashlib.md5(text.encode('utf-8')).hexdigest()}"
 
 
+def _parse_confidence_and_reason(parts: list[str]) -> tuple[float, str]:
+    """Parse confidence + reason from topic lines with 3 or 4 fields."""
+    if len(parts) >= 4:
+        try:
+            confidence = float(parts[2].strip()) if parts[2].strip() else 1.0
+        except ValueError:
+            confidence = 1.0
+        return confidence, parts[3].strip()
+    if len(parts) == 3:
+        token = parts[2].strip()
+        try:
+            return float(token), ""
+        except ValueError:
+            return 1.0, token
+    return 1.0, ""
+
+
 def _parse_llm_output(
     raw_text: str,
     chunk_id: str
@@ -63,29 +80,21 @@ def _parse_llm_output(
                 "description": parts[4].strip(),
                 "source_chunk_id": chunk_id
             })
-        elif category == 'topic_assignment' and len(parts) == 4:
-            try:
-                confidence_str = parts[2].strip()
-                confidence = float(confidence_str) if confidence_str else 1.0
-            except ValueError:
-                confidence = 1.0
+        elif category == 'topic_assignment' and len(parts) >= 3:
+            confidence, reason = _parse_confidence_and_reason(parts)
             topic_assignments.append({
                 "topic_id": parts[1].strip(),
                 "confidence": confidence,
-                "reason": parts[3].strip()
+                "reason": reason
             })
-        elif category == 'topic_candidate' and len(parts) == 4:
-            try:
-                confidence_str = parts[2].strip()
-                confidence = float(confidence_str) if confidence_str else 1.0
-            except ValueError:
-                confidence = 1.0
+        elif category == 'topic_candidate' and len(parts) >= 3:
+            confidence, reason = _parse_confidence_and_reason(parts)
             topic_candidates.append({
                 "name": parts[1].strip(),
                 "confidence": confidence,
-                "reason": parts[3].strip()
+                "reason": reason
             })
-        elif category == 'domain' and len(parts) == 3:
+        elif category == 'domain' and len(parts) >= 3:
             domain_assignments.append({
                 "name": parts[1].strip(),
                 "description": parts[2].strip(),

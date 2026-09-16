@@ -4,20 +4,14 @@ Port từ demo-app/examples-app (TGS-RAG) sang FLAE backend, hỗ trợ multi-te
 Pipeline: PDF→Markdown → Chunking → Embedding → Entity Extraction → Fusion → Save
 Tất cả các hàm trong module này là sync (sử dụng trong Temporal activities).
 """
-import re
 import numpy as np
 from typing import Dict, List, Optional, Tuple, Any
 
 from app.core.config import settings
 from app.core.logger import get_logger
 from app.core.exceptions import ExternalServiceError
-from app.services.knowledge.ingestion.parser import ParserService
 from app.services.knowledge.extraction.utils import update_graph_degrees
-from app.services.knowledge.ingestion.helpers import (
-    parse_extraction_output,
-    merge_entities,
-    merge_relations,
-)
+from app.services.knowledge.ingestion.helpers import merge_entities, merge_relations
 
 logger = get_logger(__name__)
 
@@ -260,24 +254,12 @@ class IngestionService:
             update_graph_degrees(rag_db_manager, workspace_id, touched_entity_ids)
 
         # 6. Gán và đề xuất Topics từ các chunks
-        affected_topics = []
         from app.services.knowledge.discovery.topics import TopicService
-        for chunk in chunks:
-            cands = chunk.get("topic_candidates", [])
-            assigns = chunk.get("topic_assignments", [])
-            if cands or assigns:
-                try:
-                    topics = TopicService.resolve_topic_assignments(
-                        workspace_id=workspace_id,
-                        chunk_id=chunk["chunk_id"],
-                        chunk_embedding=chunk.get("embedding") or [],
-                        llm_assignments=assigns,
-                        llm_candidates=cands,
-                        doc_id=source_doc_id
-                    )
-                    affected_topics.extend(topics)
-                except Exception as ex:
-                    logger.error(f"Lỗi khi xử lý topic cho chunk {chunk.get('chunk_id')}: {ex}")
+        affected_topics = TopicService.resolve_topics_from_chunks(
+            workspace_id=workspace_id,
+            chunks=chunks,
+            source_doc_id=source_doc_id,
+        )
 
         return {
             "chunk_count": chunk_count,
@@ -385,6 +367,7 @@ class IngestionService:
         import asyncio
         from app.services.knowledge.extraction.agent.graph import run_extraction_agent
         from app.services.knowledge.discovery.topics import TopicService
+        from app.services.knowledge.discovery.domains import merge_domains
 
         api_key = settings.GEMINI_API_KEY
         model_name = settings.GEMINI_LLM_MODEL
@@ -430,6 +413,9 @@ class IngestionService:
                 # Gắn kết quả topic assignments/candidates vào chunk để dùng ở bước fuse
                 chunk["topic_assignments"] = res.get("topic_assignments", [])
                 chunk["topic_candidates"] = res.get("topic_candidates", [])
+                chunk["domain_assignments"] = (
+                    res.get("domain_assignments") or res.get("domains") or []
+                )
 
                 return {"res": res, "tokens": tokens}
 
@@ -442,14 +428,20 @@ class IngestionService:
             total_tokens += tokens
             all_entities.extend(res.get("entities", []))
             all_relations.extend(res.get("relations", []))
-            all_domains.extend(res.get("domains", []))
+            all_domains.extend(res.get("domain_assignments") or res.get("domains") or [])
 
         # Merge duplicates
         merged_entities = merge_entities(all_entities)
         merged_relations = merge_relations(all_relations)
-
+        merged_domains = merge_domains(all_domains)
         logger.info(
-            f"Extraction complete via LangGraph: {len(merged_entities)} entities, "
-            f"{len(merged_relations)} relations, {len(all_domains)} domains, {total_tokens} tokens"
+            "Extraction complete via LangGraph: %s entities, %s relations, "
+            "%s domains, %s topic assignments, %s topic candidates, %s tokens",
+            len(merged_entities),
+            len(merged_relations),
+            len(merged_domains),
+            sum(len(c.get("topic_assignments") or []) for c in chunks),
+            sum(len(c.get("topic_candidates") or []) for c in chunks),
+            total_tokens,
         )
-        return merged_entities, merged_relations, all_domains, total_tokens
+        return merged_entities, merged_relations, merged_domains, total_tokens

@@ -129,13 +129,12 @@ describe('AppShell', () => {
     expect(await screen.findByRole('combobox', { name: 'Không gian làm việc' })).toHaveValue('ws-1');
     const main = screen.getByRole('main');
     expect(main).toHaveClass(
-      'min-h-[calc(100vh-4rem)]',
-      'px-4',
-      'py-5',
-      'sm:px-5',
-      'md:px-6',
-      'md:py-6',
-      'xl:px-8',
+      'flex',
+      'h-[calc(100dvh-4rem)]',
+      'min-h-0',
+      'flex-col',
+      'overflow-hidden',
+      'p-0',
     );
     const contentWrapper = main.parentElement;
     expect(contentWrapper).toHaveClass('md:pl-[72px]', 'lg:pl-64');

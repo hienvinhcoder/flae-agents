@@ -27,6 +27,11 @@ describe("ChatComposer", () => {
     expect(screen.getByRole("button", { name: "Send message" })).toHaveClass("min-h-10");
   });
 
+  it("renders a floating Claude-style composer dock", () => {
+    renderComposer();
+    expect(screen.getByTestId("chat-composer")).toHaveClass("max-w-3xl");
+  });
+
   it("keeps Shift+Enter as a newline", async () => {
     const user = userEvent.setup();
     const { onSend } = renderComposer();

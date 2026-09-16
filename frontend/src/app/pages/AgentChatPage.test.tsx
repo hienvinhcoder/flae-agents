@@ -64,21 +64,22 @@ describe("AgentChatPage", () => {
   });
 
   it("selects the first session and renders message citations", async () => {
-    const user = userEvent.setup();
     renderPage();
 
     expect(await screen.findByRole("heading", { name: "Research guide" })).toBeInTheDocument();
-    expect(await screen.findByText("Permanent employees are eligible.")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: /show 1 citation/i }));
+    expect((await screen.findAllByText("Permanent employees are eligible.")).length).toBeGreaterThan(0);
     expect(screen.getByText("Benefits.pdf")).toBeInTheDocument();
   });
 
   it("exposes the agent chat workbench landmarks", async () => {
+    const user = userEvent.setup();
     renderPage();
 
     expect(await screen.findByRole("region", { name: "Message Research guide" })).toBeInTheDocument();
-    expect(screen.getByRole("complementary", { name: "Conversation history" })).toBeInTheDocument();
+    expect(screen.queryByRole("complementary", { name: "Conversation history" })).not.toBeInTheDocument();
     expect(screen.getByTestId("message-viewport")).toHaveAccessibleName("Conversation messages");
+    await user.click(screen.getByRole("button", { name: "Open conversation history" }));
+    expect(screen.getByRole("complementary", { name: "Conversation history" })).toBeInTheDocument();
   });
 
   it("creates and selects a new session", async () => {
@@ -93,8 +94,9 @@ describe("AgentChatPage", () => {
 
     await user.click(screen.getByRole("button", { name: /new conversation/i }));
     await waitFor(() => expect(chatSessionsApi.createSession).toHaveBeenCalledWith(workspaceId, agentId, {}));
+    await user.click(screen.getByRole("button", { name: "Open conversation history" }));
     await waitFor(() =>
-      expect(screen.getAllByRole("button", { name: /^new conversation$/i })).toHaveLength(2),
+      expect(screen.getByRole("button", { current: true, name: /^new conversation$/i })).toBeInTheDocument(),
     );
   });
 
@@ -103,12 +105,13 @@ describe("AgentChatPage", () => {
     chatSessionsApi.deleteSession.mockResolvedValueOnce(false);
     vi.spyOn(window, "confirm").mockReturnValue(true);
     renderPage();
-    await screen.findByText("Benefits question");
+    await screen.findByRole("heading", { name: "Research guide" });
+    await user.click(screen.getByRole("button", { name: "Open conversation history" }));
 
     await user.click(screen.getByRole("button", { name: /delete benefits question/i }));
     expect(await screen.findByRole("alert")).toHaveTextContent(/could not be deleted/i);
-    expect(screen.getByText("Benefits question")).toBeInTheDocument();
-    expect(screen.getByText("Permanent employees are eligible.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Benefits question" })).toBeInTheDocument();
+    expect(screen.getAllByText("Permanent employees are eligible.").length).toBeGreaterThan(0);
   });
 
   it("uses safe copy without duplicating the global alert for a server mutation failure", async () => {
@@ -122,6 +125,7 @@ describe("AgentChatPage", () => {
     vi.spyOn(window, "confirm").mockReturnValue(true);
     renderPage();
     await screen.findByText("Benefits question");
+    await user.click(screen.getByRole("button", { name: "Open conversation history" }));
 
     await user.click(screen.getByRole("button", { name: /delete benefits question/i }));
 
@@ -138,6 +142,7 @@ describe("AgentChatPage", () => {
     vi.spyOn(window, "confirm").mockReturnValue(true);
     renderPage();
     await screen.findByText("Benefits question");
+    await user.click(screen.getByRole("button", { name: "Open conversation history" }));
 
     await user.click(screen.getByRole("button", { name: /delete benefits question/i }));
     expect(await screen.findByText("No conversations yet.")).toBeInTheDocument();

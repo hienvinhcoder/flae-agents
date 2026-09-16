@@ -27,6 +27,40 @@ def test_parse_llm_output():
     assert relations[0]["source_chunk_id"] == "chunk_99"
 
 
+def test_parse_llm_output_domain_and_topics():
+    raw_output = (
+        "entity<|#|>Flash AI<|#|>organization<|#|>Startup công nghệ\n"
+        "relation<|#|>Flash AI<|#|>FlashSearch<|#|>phát triển<|#|>Flash AI phát triển FlashSearch\n"
+        "domain<|#|>Flash AI<|#|>Hoạt động và sản phẩm của startup Flash AI\n"
+        "topic_assignment<|#|>topic_search<|#|>0.9<|#|>Liên quan FlashSearch\n"
+        "topic_candidate<|#|>Hybrid Cloud<|#|>0.8<|#|>Dự án kết nối AWS và GCP\n"
+        "<|COMPLETE|>"
+    )
+    ents, rels, assigns, cands, domains = _parse_llm_output(raw_output, "chunk_1")
+
+    assert len(ents) == 1
+    assert len(rels) == 1
+    assert len(domains) == 1
+    assert domains[0]["name"] == "Flash AI"
+    assert domains[0]["description"] == "Hoạt động và sản phẩm của startup Flash AI"
+    assert domains[0]["source_chunk_id"] == "chunk_1"
+    assert assigns[0]["topic_id"] == "topic_search"
+    assert cands[0]["name"] == "Hybrid Cloud"
+
+
+def test_parse_llm_output_topic_candidate_without_confidence():
+    raw_output = (
+        "topic_candidate<|#|>FlashSearch<|#|>Công cụ tìm kiếm AI của Flash AI\n"
+        "<|COMPLETE|>"
+    )
+    _, _, _, cands, _ = _parse_llm_output(raw_output, "chunk_1")
+
+    assert len(cands) == 1
+    assert cands[0]["name"] == "FlashSearch"
+    assert cands[0]["confidence"] == 1.0
+    assert cands[0]["reason"] == "Công cụ tìm kiếm AI của Flash AI"
+
+
 @pytest.mark.asyncio
 async def test_run_extraction_agent_no_gleaning():
     # Mock ChatGoogleGenerativeAI

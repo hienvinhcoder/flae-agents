@@ -16,3 +16,5 @@ demo-app/
 # Dependencies and editor artifacts
 node_modules/
 .cursor/
+
+.firebase/

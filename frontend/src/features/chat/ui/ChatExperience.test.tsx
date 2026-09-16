@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { TestI18nProvider } from "../../../../tests/TestI18nProvider";
@@ -50,10 +51,18 @@ function experience(queryClient: QueryClient, workspaceId: string, agent: AgentD
   return (
     <TestI18nProvider>
       <QueryClientProvider client={queryClient}>
-        <ChatExperience agent={agent} agentId={agent.id} ariaLabel="Workspace assistant chat" workspaceId={workspaceId} />
+        <MemoryRouter>
+          <ChatExperience agent={agent} agentId={agent.id} ariaLabel="Workspace assistant chat" workspaceId={workspaceId} />
+        </MemoryRouter>
       </QueryClientProvider>
     </TestI18nProvider>
   );
+}
+
+async function openHistory(user: ReturnType<typeof userEvent.setup>) {
+  if (screen.queryByRole("complementary", { name: "Conversation history" })) return;
+  await user.click(await screen.findByRole("button", { name: "Open conversation history" }));
+  expect(await screen.findByRole("complementary", { name: "Conversation history" })).toBeInTheDocument();
 }
 
 describe("ChatExperience mutation ownership", () => {
@@ -83,13 +92,16 @@ describe("ChatExperience mutation ownership", () => {
     vi.spyOn(window, "confirm").mockReturnValue(true);
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(experience(queryClient, workspaceOne, agentOne));
+    await openHistory(user);
     await user.click(await screen.findByRole("button", { name: "Session A" }));
+    await openHistory(user);
     await user.click(screen.getByRole("button", { name: "Delete Session A" }));
     await user.click(screen.getByRole("button", { name: "Session B" }));
 
     sessionsByContext.set(`${workspaceOne}:${agentOne.id}`, [sessionB, sessionC]);
     act(() => pendingDelete.resolve(true));
 
+    await openHistory(user);
     await waitFor(() => expect(screen.getByRole("button", { name: "Session B" })).toHaveAttribute("aria-current", "true"));
   });
 
@@ -105,7 +117,9 @@ describe("ChatExperience mutation ownership", () => {
     vi.spyOn(window, "confirm").mockReturnValue(true);
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(experience(queryClient, workspaceOne, agentOne));
+    await openHistory(user);
     await user.click(await screen.findByRole("button", { name: "Session B" }));
+    await openHistory(user);
     await user.click(screen.getByRole("button", { name: "Delete Session B" }));
 
     act(() => pendingDelete.resolve(true));
@@ -127,7 +141,9 @@ describe("ChatExperience mutation ownership", () => {
     vi.spyOn(window, "confirm").mockReturnValue(true);
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(experience(queryClient, workspaceOne, agentOne));
+    await openHistory(user);
     await user.click(await screen.findByRole("button", { name: "Session C" }));
+    await openHistory(user);
     await user.click(screen.getByRole("button", { name: "Delete Session C" }));
 
     act(() => pendingDelete.resolve(true));
@@ -147,6 +163,7 @@ describe("ChatExperience mutation ownership", () => {
     agentsApi.createSession.mockReturnValue(pendingCreate.promise);
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(experience(queryClient, workspaceOne, agentOne));
+    await openHistory(user);
     await screen.findByRole("button", { name: "Session A" });
     await user.click(screen.getByRole("button", { name: "New conversation" }));
     await user.click(screen.getByRole("button", { name: "Session B" }));
@@ -155,6 +172,7 @@ describe("ChatExperience mutation ownership", () => {
     act(() => pendingCreate.resolve(created));
 
     await waitFor(() => expect(screen.getByRole("button", { name: "New conversation" })).not.toHaveAttribute("aria-busy"));
+    await openHistory(user);
     expect(screen.getByRole("button", { name: "Session B" })).toHaveAttribute("aria-current", "true");
   });
 
@@ -171,6 +189,7 @@ describe("ChatExperience mutation ownership", () => {
     vi.spyOn(window, "confirm").mockReturnValue(true);
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(experience(queryClient, workspaceOne, agentOne));
+    await openHistory(user);
     await screen.findByRole("button", { name: "Session A" });
     await user.click(screen.getByRole("button", { name: "Delete Session A" }));
     await user.click(screen.getByRole("button", { name: "New conversation" }));
@@ -199,6 +218,7 @@ describe("ChatExperience mutation ownership", () => {
     vi.spyOn(window, "confirm").mockReturnValue(true);
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(experience(queryClient, workspaceOne, agentOne));
+    await openHistory(user);
     await screen.findByRole("button", { name: "Session A" });
     await user.click(screen.getByRole("button", { name: "New conversation" }));
     await user.click(screen.getByRole("button", { name: "Delete Session A" }));
@@ -226,6 +246,7 @@ describe("ChatExperience mutation ownership", () => {
     vi.spyOn(window, "confirm").mockReturnValue(true);
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(experience(queryClient, workspaceOne, agentOne));
+    await openHistory(user);
     await screen.findByRole("button", { name: "Session A" });
     await user.click(screen.getByRole("button", { name: "Delete Session A" }));
     await user.click(screen.getByRole("button", { name: "New conversation" }));
@@ -250,6 +271,7 @@ describe("ChatExperience mutation ownership", () => {
     agentsApi.createSession.mockReturnValue(pendingCreate.promise);
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(experience(queryClient, workspaceOne, agentOne), { reactStrictMode: true });
+    await openHistory(user);
     await screen.findByRole("button", { name: "Session A" });
     await user.click(screen.getByRole("button", { name: "New conversation" }));
 
@@ -257,6 +279,7 @@ describe("ChatExperience mutation ownership", () => {
     act(() => pendingCreate.resolve(created));
 
     await waitFor(() => expect(screen.getByRole("button", { name: "New conversation" })).not.toHaveAttribute("aria-busy"));
+    await openHistory(user);
     expect(screen.getByRole("button", { name: "Strict created" })).toHaveAttribute("aria-current", "true");
   });
 
@@ -274,11 +297,13 @@ describe("ChatExperience mutation ownership", () => {
     vi.spyOn(window, "confirm").mockReturnValue(true);
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const view = render(experience(queryClient, workspaceOne, agentOne));
+    await openHistory(user);
     await screen.findByRole("button", { name: "Context one" });
     await user.click(screen.getByRole("button", { name: "New conversation" }));
     await user.click(screen.getByRole("button", { name: "Delete Context one" }));
 
     view.rerender(experience(queryClient, workspaceTwo, agentTwo));
+    await openHistory(user);
     expect(await screen.findByRole("button", { name: "Context two primary" })).toHaveAttribute("aria-current", "true");
     act(() => {
       pendingCreate.resolve({ ...staleCreated, agent_id: agentOne.id, workspace_id: workspaceOne });
@@ -298,8 +323,8 @@ describe("ChatExperience mutation ownership", () => {
 
     const region = await screen.findByRole("region", { name: "Workspace assistant chat" });
     const viewport = screen.getByTestId("message-viewport");
-    expect(region).toHaveClass("lg:h-[calc(100dvh-8rem)]", "lg:min-h-[36rem]");
-    expect(viewport.parentElement).toHaveClass("h-[calc(100dvh-8rem)]", "min-h-[36rem]", "lg:h-full", "lg:min-h-0");
+    expect(region).toHaveClass("h-full", "min-h-[32rem]");
+    expect(viewport.parentElement).toHaveClass("min-h-0", "flex-1");
     expect(viewport).toHaveClass("min-h-0", "overflow-y-auto");
   });
 });

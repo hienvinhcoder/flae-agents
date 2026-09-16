@@ -19,6 +19,7 @@ interface SendOptions {
 }
 
 interface ChatStreamState {
+  activeToolName: string | null;
   contextKey: string;
   error: string | null;
   lastFailedInput: string | null;
@@ -74,6 +75,7 @@ export function useChatStream({
 }: UseChatStreamOptions) {
   const contextKey = `${workspaceId ?? ""}\u0000${agentId ?? ""}\u0000${sessionId ?? ""}`;
   const [streamState, setStreamState] = useState<ChatStreamState>({
+    activeToolName: null,
     contextKey,
     error: null,
     lastFailedInput: null,
@@ -89,6 +91,7 @@ export function useChatStream({
   const error = activeState?.error ?? null;
   const lastFailedInput = activeState?.lastFailedInput ?? null;
   const retryBaseMessages = activeState?.retryBaseMessages ?? null;
+  const activeToolName = activeState?.activeToolName ?? null;
 
   useEffect(() => {
     generationRef.current += 1;
@@ -120,6 +123,7 @@ export function useChatStream({
       ? retryBaseMessages
       : messages;
     setStreamState({
+      activeToolName: null,
       contextKey,
       error: null,
       lastFailedInput: null,
@@ -146,9 +150,18 @@ export function useChatStream({
       if (event.type === "token") {
         setStreamState((current) => current.contextKey !== contextKey ? current : {
           ...current,
+          activeToolName: null,
           status: "streaming",
         });
         updateAssistant((item) => ({ ...item, content: item.content + event.text }));
+      } else if (event.type === "tool") {
+        if (event.phase === "start") {
+          setStreamState((current) => current.contextKey !== contextKey ? current : {
+            ...current,
+            activeToolName: event.name,
+            status: "streaming",
+          });
+        }
       } else if (event.type === "citations") {
         setStreamState((current) => current.contextKey !== contextKey ? current : {
           ...current,
@@ -188,6 +201,7 @@ export function useChatStream({
       updateAssistant((item) => ({ ...item, content: failureMessage }));
       setStreamState((current) => current.contextKey !== contextKey ? current : {
         ...current,
+        activeToolName: null,
         error: failureMessage,
         lastFailedInput: isRetry ? null : message,
         status: "failed",
@@ -212,12 +226,14 @@ export function useChatStream({
     controllerRef.current = null;
     setStreamState((current) => current.contextKey !== contextKey ? current : {
       ...current,
+      activeToolName: null,
       error: null,
       status: "idle",
     });
   }, [contextKey]);
 
   return {
+    activeToolName,
     canRetry: lastFailedInput !== null,
     error,
     messages,
