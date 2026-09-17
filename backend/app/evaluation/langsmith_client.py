@@ -1,6 +1,6 @@
 """Thin, optional adapter around the installed LangSmith client."""
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from typing import cast
 from uuid import UUID
 
@@ -13,6 +13,7 @@ LangSmithTarget = (
     | UUID
     | str
 )
+LangSmithEvaluator = Callable[..., dict[str, object]]
 
 
 class LangSmithClientAdapter:
@@ -69,11 +70,22 @@ class LangSmithClientAdapter:
         experiment_prefix: str,
         metadata: dict[str, str],
         blocking: bool,
+        evaluators: list[object] | None = None,
     ) -> object:
+        langsmith_target = cast(LangSmithTarget, target)
+        if evaluators is None:
+            return self._client.evaluate(
+                langsmith_target,
+                data=data,
+                experiment_prefix=experiment_prefix,
+                metadata=metadata,
+                blocking=blocking,
+            )
         return self._client.evaluate(
-            cast(LangSmithTarget, target),
+            langsmith_target,
             data=data,
             experiment_prefix=experiment_prefix,
             metadata=metadata,
             blocking=blocking,
+            evaluators=cast(Sequence[LangSmithEvaluator], evaluators),
         )

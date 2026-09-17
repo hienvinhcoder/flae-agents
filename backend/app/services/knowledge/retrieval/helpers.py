@@ -242,11 +242,15 @@ def get_item_details(item: dict, chunk_map: dict | None = None, entity_map: dict
     else:
         data = chunk_map.get(item_id, {}) if chunk_map else {}
         doc_name = data.get("source_document_name", "N/A")
+        source_document_id = data.get("source_document_id")
         details.update(
             {
                 "type": "chunk",
                 "name": f"Chunk from {doc_name}",
                 "source_document": doc_name,
+                "source_document_id": (
+                    str(source_document_id) if source_document_id is not None else None
+                ),
                 "content": data.get("text", ""),
             }
         )

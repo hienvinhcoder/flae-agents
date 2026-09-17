@@ -47,6 +47,7 @@ dependencies = [
 migrate = "scripts.migrate:run_migrations"
 application-worker = "workers.application_worker:main"
 knowledge-worker = "workers.knowledge_worker:main"
+flae-evaluate-luminaops = "scripts.evaluate_luminaops:run"
 
 [tool.uv]
 package = true
