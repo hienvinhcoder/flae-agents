@@ -44,10 +44,8 @@ const resources = {
 };
 
 const defaultProps: AdminSidebarProps = {
-  desktopLayout: "expanded",
   mobileOpen: false,
   onCloseMobile: vi.fn(),
-  onToggleDesktop: vi.fn(),
 };
 
 type MediaQueryChangeListener = (event: MediaQueryListEvent) => void;
@@ -132,67 +130,51 @@ describe("AdminSidebar", () => {
     vi.unstubAllGlobals();
   });
 
-  it("uses the compact AI Company Memory brand from the reference shell", async () => {
-    await renderSidebar({ desktopLayout: "expanded" });
-
-    expect(screen.getByText("FLAE")).toBeInTheDocument();
-    expect(screen.getByText("AI Company Memory")).toBeInTheDocument();
-    expect(document.querySelector(".bg-primary.text-primary-foreground")).toBeInTheDocument();
-  });
-
-  it("renders flat expanded navigation and toggles the desktop layout", async () => {
-    const onToggleDesktop = vi.fn();
-    await renderSidebar({ onToggleDesktop });
+  it("renders a fixed icon rail without expanded desktop mode", async () => {
+    await renderSidebar();
 
     const sidebar = screen.getByTestId("admin-sidebar");
-    expect(sidebar).toHaveAttribute("data-desktop-layout", "expanded");
     expect(sidebar).toHaveClass(
-      "lg:w-64",
-      "border-sidebar-border",
-      "bg-sidebar",
-      "text-sidebar-foreground",
+      "w-14",
+      "border-border",
+      "bg-background",
+      "text-foreground",
     );
-    expect(within(sidebar).getByText("FLAE")).toBeInTheDocument();
-    expect(within(sidebar).getByText("AI Company Memory")).toBeInTheDocument();
-    expect(within(sidebar).queryByText("Focus")).not.toBeInTheDocument();
-    expect(within(sidebar).queryByText("Intelligence")).not.toBeInTheDocument();
-    const statusCard = within(sidebar).getByRole("region", {
-      name: "Indexing status",
-    });
-    expect(statusCard.parentElement).toHaveClass("hidden", "lg:block");
+    expect(sidebar).not.toHaveClass("lg:w-64");
+    expect(
+      within(sidebar).queryByRole("button", { name: "Collapse navigation" }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(sidebar).queryByRole("button", { name: "Expand navigation" }),
+    ).not.toBeInTheDocument();
+    expect(within(sidebar).queryByText("FLAE")).not.toBeInTheDocument();
+    expect(
+      within(sidebar).queryByText("Indexing status"),
+    ).not.toBeInTheDocument();
     const activeLink = within(sidebar).getByRole("link", { name: "AI Chat" });
     expect(activeLink).toHaveAttribute("aria-current", "page");
-    expect(activeLink).toHaveClass(
+    expect(activeLink).toHaveClass("bg-muted", "text-primary");
+    expect(activeLink).not.toHaveClass(
       "bg-sidebar-primary",
       "text-sidebar-primary-foreground",
     );
-    expect(activeLink.querySelector(".absolute")).toBeNull();
-
-    await userEvent.click(
-      within(sidebar).getByRole("button", { name: "Collapse navigation" }),
-    );
-    expect(onToggleDesktop).toHaveBeenCalledOnce();
   });
 
-  it("keeps collapsed destinations named and exposes the expand control", async () => {
-    await renderSidebar({ desktopLayout: "collapsed" });
+  it("keeps rail destinations named for assistive tech", async () => {
+    await renderSidebar();
 
     const sidebar = screen.getByTestId("admin-sidebar");
-    expect(sidebar).toHaveAttribute("data-desktop-layout", "collapsed");
     expect(
       within(sidebar).getByRole("link", { name: "Topics" }),
     ).toBeInTheDocument();
     expect(
-      within(sidebar).getByRole("button", { name: "Expand navigation" }),
+      within(sidebar).getByRole("link", { name: "Settings" }),
     ).toBeInTheDocument();
-    expect(
-      within(sidebar).queryByText("Indexing status"),
-    ).not.toBeInTheDocument();
   });
 
   it("portals visual rail tooltips outside the scrolling navigation", async () => {
     const user = userEvent.setup();
-    await renderSidebar({ desktopLayout: "collapsed" });
+    await renderSidebar();
 
     const sidebar = screen.getByTestId("admin-sidebar");
     const navigation = within(sidebar).getByRole("navigation", {
@@ -237,7 +219,7 @@ describe("AdminSidebar", () => {
 
   it("keeps a focused rail tooltip visible when the pointer leaves", async () => {
     const user = userEvent.setup();
-    await renderSidebar({ desktopLayout: "collapsed" });
+    await renderSidebar();
 
     const sidebar = screen.getByTestId("admin-sidebar");
     const link = within(sidebar).getByRole("link", {
@@ -255,7 +237,7 @@ describe("AdminSidebar", () => {
 
   it("keeps a hovered rail tooltip visible when the link blurs", async () => {
     const user = userEvent.setup();
-    await renderSidebar({ desktopLayout: "collapsed" });
+    await renderSidebar();
 
     const sidebar = screen.getByTestId("admin-sidebar");
     const link = within(sidebar).getByRole("link", {
@@ -271,33 +253,9 @@ describe("AdminSidebar", () => {
     expect(screen.queryByText("Topics")).not.toBeInTheDocument();
   });
 
-  it("clears mixed rail tooltip state when the desktop layout changes", async () => {
-    const user = userEvent.setup();
-    const view = await renderSidebar({ desktopLayout: "collapsed" });
-
-    const sidebar = screen.getByTestId("admin-sidebar");
-    const link = within(sidebar).getByRole("link", {
-      name: "Topics",
-    });
-
-    fireEvent.focus(link);
-    await user.hover(link);
-    expect(screen.getByTestId("admin-sidebar-tooltip")).toBeInTheDocument();
-
-    view.rerenderSidebar({ desktopLayout: "expanded" });
-    expect(
-      screen.queryByTestId("admin-sidebar-tooltip"),
-    ).not.toBeInTheDocument();
-
-    view.rerenderSidebar({ desktopLayout: "collapsed" });
-    expect(
-      screen.queryByTestId("admin-sidebar-tooltip"),
-    ).not.toBeInTheDocument();
-  });
-
   it("clears a visible rail tooltip when navigation scrolls", async () => {
     const user = userEvent.setup();
-    await renderSidebar({ desktopLayout: "collapsed" });
+    await renderSidebar();
 
     const sidebar = screen.getByTestId("admin-sidebar");
     const navigation = within(sidebar).getByRole("navigation", {
@@ -316,7 +274,7 @@ describe("AdminSidebar", () => {
 
   it("clears a visible rail tooltip when the viewport resizes", async () => {
     const user = userEvent.setup();
-    await renderSidebar({ desktopLayout: "collapsed" });
+    await renderSidebar();
 
     const sidebar = screen.getByTestId("admin-sidebar");
     const link = within(sidebar).getByRole("link", {
@@ -330,8 +288,8 @@ describe("AdminSidebar", () => {
     expect(screen.queryByText("Topics")).not.toBeInTheDocument();
   });
 
-  it("omits workspace chrome from the collapsed reference rail", async () => {
-    await renderSidebar({ desktopLayout: "collapsed" });
+  it("omits workspace chrome from the icon rail", async () => {
+    await renderSidebar();
 
     const sidebar = screen.getByTestId("admin-sidebar");
     expect(within(sidebar).queryByRole("group")).not.toBeInTheDocument();
@@ -349,7 +307,9 @@ describe("AdminSidebar", () => {
     view.rerenderSidebar({ mobileOpen: true, onCloseMobile });
 
     const dialog = screen.getByRole("dialog", { name: "Primary navigation" });
-    expect(dialog).toHaveClass("w-64", "bg-sidebar", "text-sidebar-foreground");
+    expect(dialog).toHaveClass("w-64", "bg-background", "text-foreground");
+    expect(within(dialog).getByText("FLAE")).toBeInTheDocument();
+    expect(within(dialog).getByText("AI Company Memory")).toBeInTheDocument();
     expect(
       within(dialog).queryByText("Indexing status"),
     ).not.toBeInTheDocument();

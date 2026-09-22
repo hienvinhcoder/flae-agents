@@ -502,7 +502,9 @@
     "LOGOUT_ERROR": "Unable to sign out. Please try again.",
     "LOADING_ROUTE": "Loading page",
     "ADD_SOURCE": "Add source",
-    "DEMO_ONLY": "Preview only; this action is not connected yet."
+    "DEMO_ONLY": "Preview only; this action is not connected yet.",
+    "THEME_LIGHT": "Switch to light mode",
+    "THEME_DARK": "Switch to dark mode"
   },
   "APP": {
     "ARIA": "FLAE application",

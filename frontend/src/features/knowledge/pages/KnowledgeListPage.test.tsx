@@ -154,16 +154,22 @@ describe("KnowledgeListPage", () => {
       name: /upload document/i,
     });
     expect(uploadButton).toHaveClass(
-      "flae-button-primary",
       "bg-primary-control",
       "text-primary-control-foreground",
     );
     expect(uploadButton).toHaveAttribute("data-variant", "primary");
+    expect(uploadButton).toHaveClass("border-transparent");
+    expect(
+      screen.getByRole("link", { name: /explore relationships/i }),
+    ).toHaveClass("border-border", "bg-card", "text-foreground");
     expect(
       screen.getByRole("button", { name: /add content/i }),
     ).toBeInTheDocument();
     expect(
       await screen.findByRole("table", { name: /knowledge documents/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 2, name: /memory sources/i }),
     ).toBeInTheDocument();
   });
 

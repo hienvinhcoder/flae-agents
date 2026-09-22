@@ -21,7 +21,7 @@ const resources = {
   vi: { translation: {
     NAV: { CHAT: 'AI Chat', AGENTS: 'Trợ lý', KNOWLEDGE: 'Tri thức', KNOWLEDGE_GRAPH: 'Đồ thị tri thức', TOPICS: 'Chủ đề', SETTINGS: 'Cài đặt' },
     COMMON: { LANGUAGE: 'Ngôn ngữ', LOGOUT: 'Đăng xuất' },
-    SHELL: { SKIP_CONTENT: 'Bỏ qua đến nội dung', OPEN_NAV: 'Mở điều hướng', CLOSE_NAV: 'Đóng điều hướng', CLOSE_NAV_OVERLAY: 'Đóng lớp điều hướng', COLLAPSE_NAV: 'Thu gọn điều hướng', EXPAND_NAV: 'Mở rộng điều hướng', PRIMARY_NAV: 'Điều hướng chính', NAV_GROUP_FOCUS: 'Tập trung', NAV_GROUP_INTELLIGENCE: 'Trí tuệ', NAV_GROUP_WORKSPACE: 'Không gian làm việc', KNOWLEDGE_GRAPH: 'Đồ thị tri thức', WORKSPACE: 'Không gian làm việc', LOADING_WORKSPACES: 'Đang tải không gian làm việc', INITIALIZING: 'Đang tải và đồng bộ không gian làm việc', NO_WORKSPACE: 'Không có không gian làm việc', LOAD_ERROR: 'Không thể tải không gian làm việc.', BRAND_SUBTITLE: 'Vận hành AI', SYNCING: 'Đang đồng bộ không gian làm việc', SYNC_SUCCESS: 'Đã đồng bộ không gian làm việc', SYNC_ERROR: 'Không thể đồng bộ; lựa chọn cục bộ vẫn được giữ', LOGGING_OUT: 'Đang đăng xuất', LOGOUT_ERROR: 'Không thể đăng xuất. Vui lòng thử lại.' },
+    SHELL: { SKIP_CONTENT: 'Bỏ qua đến nội dung', OPEN_NAV: 'Mở điều hướng', CLOSE_NAV: 'Đóng điều hướng', CLOSE_NAV_OVERLAY: 'Đóng lớp điều hướng', COLLAPSE_NAV: 'Thu gọn điều hướng', EXPAND_NAV: 'Mở rộng điều hướng', PRIMARY_NAV: 'Điều hướng chính', NAV_GROUP_FOCUS: 'Tập trung', NAV_GROUP_INTELLIGENCE: 'Trí tuệ', NAV_GROUP_WORKSPACE: 'Không gian làm việc', KNOWLEDGE_GRAPH: 'Đồ thị tri thức', WORKSPACE: 'Không gian làm việc', LOADING_WORKSPACES: 'Đang tải không gian làm việc', INITIALIZING: 'Đang tải và đồng bộ không gian làm việc', NO_WORKSPACE: 'Không có không gian làm việc', LOAD_ERROR: 'Không thể tải không gian làm việc.', BRAND_SUBTITLE: 'Vận hành AI', SYNCING: 'Đang đồng bộ không gian làm việc', SYNC_SUCCESS: 'Đã đồng bộ không gian làm việc', SYNC_ERROR: 'Không thể đồng bộ; lựa chọn cục bộ vẫn được giữ', LOGGING_OUT: 'Đang đăng xuất', LOGOUT_ERROR: 'Không thể đăng xuất. Vui lòng thử lại.', THEME_LIGHT: 'Chuyển sang chế độ sáng', THEME_DARK: 'Chuyển sang chế độ tối' },
     ERROR_PAGE: { TITLE: 'Đã xảy ra lỗi', RETRY: 'Thử lại' },
   } },
   en: { translation: { SHELL: {} } },
@@ -80,18 +80,43 @@ describe('AppShell', () => {
     vi.unstubAllGlobals();
   });
 
-  it('uses the shared approved dark glass theme without a feature-local token cascade', () => {
+  it('uses shared Linear-tight tokens without a feature-local theme cascade', () => {
     expect(appShellSource).not.toMatch(/admin-shell-theme/);
     expect(Object.keys(adminShellThemeStylesheets)).toHaveLength(0);
-    expect(sharedStylesheet).toMatch(/:root\s*\{[^}]*color-scheme:\s*dark;/s);
-    expect(sharedStylesheet).toContain('--color-primary:');
-    expect(sharedStylesheet).toContain('--color-primary-foreground:');
-    expect(sharedStylesheet).toContain('--background: #141009;');
-    expect(sharedStylesheet).toContain('--card: var(--glass-surface-strong);');
+    expect(sharedStylesheet).toMatch(/:root\s*\{[^}]*color-scheme:\s*light;/s);
+    expect(sharedStylesheet).toContain('--background: #FAFAF9;');
+    expect(sharedStylesheet).toContain('--primary: #EA580C;');
     expect(sharedStylesheet).toMatch(/--font-sans:\s*"Inter",/);
     expect(sharedStylesheet).toMatch(/--font-mono:\s*"JetBrains Mono",/);
-    expect(sharedStylesheet).toMatch(/--radius-control:\s*0\.625rem;/);
-    expect(sharedStylesheet).toMatch(/--radius-card:\s*0\.875rem;/);
+    expect(sharedStylesheet).toMatch(/--radius-control:\s*0\.375rem;/);
+    expect(sharedStylesheet).toMatch(/--radius-card:\s*0\.5rem;/);
+  });
+
+  it('renders hybrid top bar and icon rail', async () => {
+    useWorkspaceStore.getState().setCurrentWorkspaceId('ws-1');
+    const i18n = await createI18n(resources, 'vi');
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const Wrapper = ({ children }: PropsWithChildren) => <QueryClientProvider client={queryClient}><I18nextProvider i18n={i18n}><MemoryRouter initialEntries={['/dashboard/chat']}>{children}</MemoryRouter></I18nextProvider></QueryClientProvider>;
+    render(
+      <Routes>
+        <Route element={<AppShell fetchWorkspaces={() => Promise.resolve([
+          { id: 'ws-1', name: 'Platform', owner_uid: 'owner', created_at: null },
+        ])} syncSelection={() => Promise.resolve({ ...useAuthStore.getState().user!, current_workspace_id: 'ws-1' })} />} path="/dashboard">
+          <Route element={<h1>Current page</h1>} path="chat" />
+        </Route>
+      </Routes>,
+      { wrapper: Wrapper },
+    );
+
+    expect(screen.getByRole('banner')).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: 'Điều hướng chính' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /chat/i })).toBeInTheDocument();
+
+    const sidebar = screen.getByTestId('admin-sidebar');
+    expect(sidebar).toHaveClass('w-14');
+    expect(sidebar).not.toHaveClass('lg:w-64');
+    expect(screen.getByRole('main').parentElement).toHaveClass('md:pl-14');
+    expect(within(screen.getByRole('banner')).getByRole('button', { name: 'Chuyển sang chế độ tối' })).toBeInTheDocument();
   });
 
   it('offers responsive navigation and switches workspace without losing page context', async () => {
@@ -120,24 +145,24 @@ describe('AppShell', () => {
     expect(screen.getByRole('button', { name: 'Mở điều hướng' })).toBeInTheDocument();
     expect(screen.getByRole('navigation', { name: 'Điều hướng chính' })).toBeInTheDocument();
     const sidebar = screen.getByTestId('admin-sidebar');
-    expect(sidebar).toHaveAttribute('data-desktop-layout', 'expanded');
     expect(within(sidebar).getByRole('link', { name: 'AI Chat' })).toHaveAttribute('aria-current', 'page');
     const header = screen.getByRole('banner');
     expect(within(header).getByText('Tập trung')).toBeInTheDocument();
     expect(within(header).getByText('AI Chat')).toBeInTheDocument();
-    await userEvent.click(within(header).getByRole('button', { name: 'O' }));
-    expect(await screen.findByRole('combobox', { name: 'Không gian làm việc' })).toHaveValue('ws-1');
+    const workspaceSelector = await within(header).findByRole('combobox', { name: 'Không gian làm việc' });
+    expect(workspaceSelector).toHaveValue('ws-1');
     const main = screen.getByRole('main');
     expect(main).toHaveClass(
       'flex',
-      'h-[calc(100dvh-4rem)]',
+      'h-[calc(100dvh-3.5rem)]',
       'min-h-0',
       'flex-col',
       'overflow-hidden',
       'p-0',
     );
     const contentWrapper = main.parentElement;
-    expect(contentWrapper).toHaveClass('md:pl-[72px]', 'lg:pl-64');
+    expect(contentWrapper).toHaveClass('md:pl-14');
+    expect(contentWrapper).not.toHaveClass('lg:pl-64');
 
     await userEvent.click(screen.getByRole('button', { name: 'Mở điều hướng' }));
     const mobileNavigation = screen.getByRole('dialog', { name: 'Điều hướng chính' });
@@ -145,17 +170,10 @@ describe('AppShell', () => {
     await userEvent.click(within(mobileNavigation).getByRole('button', { name: 'Đóng điều hướng' }));
     expect(screen.queryByRole('dialog', { name: 'Điều hướng chính' })).not.toBeInTheDocument();
 
-    await userEvent.click(within(sidebar).getByRole('button', { name: 'Thu gọn điều hướng' }));
-
-    expect(sidebar).toHaveAttribute('data-desktop-layout', 'collapsed');
-    expect(localStorage.getItem('flae_admin_sidebar_layout')).toBe('collapsed');
-    expect(contentWrapper).toHaveClass('md:pl-[72px]', 'lg:pl-[72px]');
-    expect(contentWrapper).not.toHaveClass('lg:pl-64');
-    expect(within(sidebar).getByRole('link', { name: 'AI Chat' })).toHaveAttribute('aria-current', 'page');
+    expect(within(sidebar).queryByRole('button', { name: 'Thu gọn điều hướng' })).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Current page' })).toBeInTheDocument();
 
-    await userEvent.click(within(header).getByRole('button', { name: 'O' }));
-    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Không gian làm việc' }), 'ws-2');
+    await userEvent.selectOptions(workspaceSelector, 'ws-2');
 
     await waitFor(() => expect(syncSelection).toHaveBeenCalledWith('ws-2'));
     expect(screen.getByRole('heading', { name: 'Current page' })).toBeInTheDocument();
@@ -180,22 +198,6 @@ describe('AppShell', () => {
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Điều hướng chính' })).not.toBeInTheDocument());
   });
 
-  it('restores a collapsed desktop navigation preference', async () => {
-    localStorage.setItem('flae_admin_sidebar_layout', 'collapsed');
-    useWorkspaceStore.getState().setCurrentWorkspaceId('ws-1');
-    const i18n = await createI18n(resources, 'vi');
-    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    const wrapper = ({ children }: PropsWithChildren) => <QueryClientProvider client={queryClient}><I18nextProvider i18n={i18n}><MemoryRouter initialEntries={['/dashboard/chat']}>{children}</MemoryRouter></I18nextProvider></QueryClientProvider>;
-    render(<Routes><Route element={<AppShell fetchWorkspaces={() => Promise.resolve([
-      { id: 'ws-1', name: 'Platform', owner_uid: 'owner', created_at: null },
-    ])} syncSelection={() => Promise.resolve({ ...useAuthStore.getState().user!, current_workspace_id: 'ws-1' })} />} path="/dashboard"><Route element={<h1>Current page</h1>} path="chat" /></Route></Routes>, { wrapper });
-
-    const sidebar = screen.getByTestId('admin-sidebar');
-    expect(sidebar).toHaveAttribute('data-desktop-layout', 'collapsed');
-    expect(within(sidebar).getByRole('button', { name: 'Mở rộng điều hướng' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Current page' })).toBeInTheDocument();
-  });
-
   it('announces manual workspace synchronization and retains the selection after failure', async () => {
     useWorkspaceStore.getState().setCurrentWorkspaceId('ws-1');
     useAuthStore.getState().setAuthenticated({
@@ -212,7 +214,6 @@ describe('AppShell', () => {
       { id: 'ws-2', name: 'Research', owner_uid: 'owner', created_at: null },
     ])} syncSelection={syncSelection} />} path="/dashboard"><Route element={<h1>Current page</h1>} path="chat" /></Route></Routes>, { wrapper });
 
-    await userEvent.click(screen.getByRole('button', { name: 'O' }));
     const selector = await screen.findByRole('combobox', { name: 'Không gian làm việc' });
     await userEvent.selectOptions(selector, 'ws-2');
     expect(selector).toHaveValue('ws-2');

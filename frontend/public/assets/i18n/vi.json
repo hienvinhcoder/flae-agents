@@ -502,7 +502,9 @@
     "LOGOUT_ERROR": "Không thể đăng xuất. Vui lòng thử lại.",
     "LOADING_ROUTE": "Đang tải trang",
     "ADD_SOURCE": "Thêm nguồn",
-    "DEMO_ONLY": "Chỉ là bản xem trước; thao tác này chưa được kết nối."
+    "DEMO_ONLY": "Chỉ là bản xem trước; thao tác này chưa được kết nối.",
+    "THEME_LIGHT": "Chuyển sang chế độ sáng",
+    "THEME_DARK": "Chuyển sang chế độ tối"
   },
   "APP": {
     "ARIA": "Ứng dụng FLAE",

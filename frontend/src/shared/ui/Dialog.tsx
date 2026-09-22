@@ -34,7 +34,7 @@ export function Dialog({ children, closeLabel = 'Close dialog', description, dis
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-background/85 p-4" role="presentation">
+    <div className="fixed inset-0 z-50 grid place-items-center bg-background/50 p-4" role="presentation">
       <div
         aria-describedby={description ? descriptionId : undefined}
         aria-labelledby={titleId}

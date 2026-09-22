@@ -8,16 +8,19 @@ import { Button } from '../../shared/ui/Button';
 import { Skeleton } from '../../shared/ui/Skeleton';
 import type { LogoutController, WorkspaceSyncStatus } from './header-types';
 
-export interface HeaderUtilitiesProps {
+export interface WorkspaceSwitcherProps {
   currentWorkspaceId: string | null;
+  onSelectWorkspace: (workspaceId: string) => void;
+  syncStatus: WorkspaceSyncStatus;
+  workspaces: Workspace[];
+  workspacesPending: boolean;
+}
+
+export interface HeaderUtilitiesProps {
   language: string;
   logoutController?: LogoutController;
   onChangeLanguage: (language: string) => void;
-  onSelectWorkspace: (workspaceId: string) => void;
-  syncStatus: WorkspaceSyncStatus;
   user: User | null;
-  workspaces: Workspace[];
-  workspacesPending: boolean;
 }
 
 function userInitials(name: string) {
@@ -31,16 +34,64 @@ function userInitials(name: string) {
   );
 }
 
-export function HeaderUtilities({
+export function WorkspaceSwitcher({
   currentWorkspaceId,
+  onSelectWorkspace,
+  syncStatus,
+  workspaces,
+  workspacesPending,
+}: WorkspaceSwitcherProps) {
+  const { t } = useTranslation();
+
+  if (workspacesPending) {
+    return (
+      <div className="flex min-h-9 min-w-[8rem] items-center rounded-ui-control border border-border bg-card px-3 md:min-w-[10rem]">
+        <Skeleton label={t('SHELL.LOADING_WORKSPACES')} lines={1} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative min-w-0 max-w-[12rem] sm:max-w-[14rem]">
+      <label className="sr-only" htmlFor="admin-header-workspace">
+        {t('SHELL.WORKSPACE')}
+      </label>
+      <select
+        className="min-h-9 w-full appearance-none truncate rounded-ui-control border border-border bg-card py-1.5 pl-3 pr-8 text-sm font-medium text-foreground outline-none transition-colors hover:bg-accent focus-visible:shadow-ui-focus disabled:opacity-60 [&>option]:bg-card [&>option]:text-foreground"
+        disabled={workspaces.length === 0 || syncStatus === 'syncing'}
+        id="admin-header-workspace"
+        onChange={(event) => onSelectWorkspace(event.target.value)}
+        value={currentWorkspaceId ?? ''}
+      >
+        {workspaces.length === 0 ? (
+          <option value="">{t('SHELL.NO_WORKSPACE')}</option>
+        ) : null}
+        {workspaces.map((workspace) => (
+          <option key={workspace.id} value={workspace.id}>
+            {workspace.name}
+          </option>
+        ))}
+      </select>
+      {syncStatus === 'syncing' ? (
+        <Loader2
+          aria-hidden
+          className="absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-primary motion-reduce:animate-none"
+        />
+      ) : (
+        <ChevronDown
+          aria-hidden
+          className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+        />
+      )}
+    </div>
+  );
+}
+
+export function HeaderUtilities({
   language,
   logoutController,
   onChangeLanguage,
-  onSelectWorkspace,
-  syncStatus,
   user,
-  workspaces,
-  workspacesPending,
 }: HeaderUtilitiesProps) {
   const { t } = useTranslation();
   const initials = user ? userInitials(user.full_name) : 'U';
@@ -91,7 +142,7 @@ export function HeaderUtilities({
         aria-label={initials}
         className={`grid h-9 w-9 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground outline-none transition-all hover:brightness-110 active:scale-95 focus-visible:shadow-ui-focus ${
           profileMenuOpen
-            ? 'ring-2 ring-primary ring-offset-2 ring-offset-background shadow-lg shadow-primary/25'
+            ? 'ring-2 ring-primary ring-offset-2 ring-offset-background'
             : ''
         }`}
         onClick={() => setProfileMenuOpen((isOpen) => !isOpen)}
@@ -103,14 +154,14 @@ export function HeaderUtilities({
       {profileMenuOpen ? (
         <div
           aria-label={`${t('SHELL.WORKSPACE')} · ${t('COMMON.LANGUAGE')}`}
-          className="absolute right-0 top-12 z-50 w-72 rounded-ui-dialog border border-glass-line bg-glass-surface-strong p-4 text-foreground shadow-ui-overlay backdrop-blur-glass-lg transition-all"
+          className="absolute right-0 top-11 z-50 w-72 rounded-ui-dialog border border-border bg-card p-4 text-foreground shadow-ui-overlay"
           id="admin-profile-menu-panel"
           ref={menuRef}
           role="dialog"
         >
           {user ? (
-            <div className="mb-3.5 flex items-center gap-3 border-b border-border/60 pb-3">
-              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/20 text-sm font-semibold text-primary ring-1 ring-primary/30">
+            <div className="mb-3.5 flex items-center gap-3 border-b border-border pb-3">
+              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/15 text-sm font-semibold text-primary">
                 {initials}
               </div>
               <div className="min-w-0 flex-1">
@@ -121,53 +172,12 @@ export function HeaderUtilities({
           ) : null}
 
           <div className="grid gap-1.5">
-            <label className="text-xs font-medium text-muted-foreground" htmlFor="admin-header-workspace">
-              {t('SHELL.WORKSPACE')}
-            </label>
-            {workspacesPending ? (
-              <div className="flex min-h-10 items-center rounded-ui-control border border-border/60 bg-secondary/40 px-3">
-                <Skeleton label={t('SHELL.LOADING_WORKSPACES')} lines={1} />
-              </div>
-            ) : (
-              <div className="relative">
-                <select
-                  className="min-h-10 w-full appearance-none truncate rounded-ui-control border border-glass-line bg-glass-surface py-2 pl-3 pr-9 text-sm font-medium text-foreground outline-none transition-colors hover:bg-glass-surface-strong focus:border-primary focus:bg-glass-surface-strong focus:ring-1 focus:ring-primary/40 [&>option]:bg-glass-canvas [&>option]:text-foreground"
-                  disabled={workspaces.length === 0 || syncStatus === 'syncing'}
-                  id="admin-header-workspace"
-                  onChange={(event) => onSelectWorkspace(event.target.value)}
-                  value={currentWorkspaceId ?? ''}
-                >
-                  {workspaces.length === 0 ? (
-                    <option value="">{t('SHELL.NO_WORKSPACE')}</option>
-                  ) : null}
-                  {workspaces.map((workspace) => (
-                    <option key={workspace.id} value={workspace.id}>
-                      {workspace.name}
-                    </option>
-                  ))}
-                </select>
-                {syncStatus === 'syncing' ? (
-                  <Loader2
-                    aria-hidden
-                    className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-primary motion-reduce:animate-none"
-                  />
-                ) : (
-                  <ChevronDown
-                    aria-hidden
-                    className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-                  />
-                )}
-              </div>
-            )}
-          </div>
-
-          <div className="mt-3 grid gap-1.5">
             <label className="text-xs font-medium text-muted-foreground" htmlFor="admin-header-language">
               {t('COMMON.LANGUAGE')}
             </label>
             <div className="relative">
               <select
-                className="min-h-10 w-full appearance-none rounded-ui-control border border-glass-line bg-glass-surface py-2 pl-3 pr-9 text-sm font-medium text-foreground outline-none transition-colors hover:bg-glass-surface-strong focus:border-primary focus:bg-glass-surface-strong focus:ring-1 focus:ring-primary/40 [&>option]:bg-glass-canvas [&>option]:text-foreground"
+                className="min-h-10 w-full appearance-none rounded-ui-control border border-border bg-card py-2 pl-3 pr-9 text-sm font-medium text-foreground outline-none transition-colors hover:bg-accent focus-visible:shadow-ui-focus [&>option]:bg-card [&>option]:text-foreground"
                 id="admin-header-language"
                 onChange={(event) => onChangeLanguage(event.target.value)}
                 value={language}
@@ -183,7 +193,7 @@ export function HeaderUtilities({
           </div>
 
           {logoutController ? (
-            <div className="mt-4 border-t border-border/60 pt-3">
+            <div className="mt-4 border-t border-border pt-3">
               <Button
                 aria-label={t('COMMON.LOGOUT')}
                 className="w-full justify-start text-muted-foreground hover:bg-destructive/10 hover:text-destructive active:bg-destructive/20"

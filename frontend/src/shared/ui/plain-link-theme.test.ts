@@ -27,15 +27,16 @@ function contrastRatio(foreground: string, background: string): number {
 
 describe("plain link theme contract", () => {
   it("maps anchors to the semantic link color with AA contrast on shared dark surfaces", () => {
-    const link = `#${["fb", "92", "3c"].join("")}`;
+    // Dark-theme --primary (#F97316); --color-link aliases var(--primary).
+    const link = `#${["f9", "73", "16"].join("")}`;
 
     expect(stylesheet).toMatch(/a\s*\{[^}]*color:\s*var\(--color-link\);/s);
-    expect(stylesheet).toContain("--color-link: var(--orb-amber);");
+    expect(stylesheet).toContain("--color-link: var(--primary);");
 
     const backgrounds = [
-      ["canvas", "#141009"],
-      ["glass surface", "#221e17"],
-      ["raised surface", "#2c2821"],
+      ["canvas", "#0C0A09"],
+      ["card surface", "#1C1917"],
+      ["raised surface", "#292524"],
     ] as const;
 
     for (const [name, background] of backgrounds) {

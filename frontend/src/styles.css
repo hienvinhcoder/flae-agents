@@ -1,51 +1,55 @@
 @import "tailwindcss";
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 
-  --background: #141009;
-  --foreground: #f5f0e8;
-  --card: var(--glass-surface-strong);
+  --background: #FAFAF9;
+  --foreground: #1C1917;
+  --card: #FFFFFF;
   --card-foreground: var(--foreground);
-  --popover: var(--glass-surface-strong);
+  --popover: #FFFFFF;
   --popover-foreground: var(--foreground);
-  /*
-   * --primary stays the deep accessible orange (not DESIGN.md's brighter
-   * #F97316) so white text on CTAs keeps WCAG AA contrast (~4.8:1). The
-   * brighter brand orange is expressed as glow/tint via --orb-primary.
-   */
-  --primary: oklch(70.487% 0.1867 47.604);
-  --primary-foreground: oklch(98.951% 0.009 78.283);
-  --primary-soft: rgb(249 115 22 / 0.16);
+  --primary: #EA580C;
+  --primary-foreground: #FFFFFF;
+  --primary-hover: #C2410C;
+  --primary-soft: rgb(234 88 12 / 0.12);
   --primary-control: var(--primary);
-  --primary-control-hover: color-mix(in oklch, var(--primary), var(--foreground) 10%);
-  --primary-control-active: color-mix(in oklch, var(--primary), var(--foreground) 18%);
+  --primary-control-hover: var(--primary-hover);
+  --primary-control-active: #9A3412;
   --primary-control-foreground: var(--primary-foreground);
-  --secondary: var(--glass-surface);
-  --secondary-foreground: var(--foreground);
-  --muted: rgb(255 251 245 / 0.08);
-  --muted-foreground: #b7ab9a;
-  --accent: var(--secondary);
+  --secondary: #F5F5F4;
+  --secondary-foreground: #1C1917;
+  --muted: #F5F5F4;
+  --muted-foreground: #78716C;
+  --accent: #F5F5F4;
   --accent-foreground: var(--foreground);
-  --destructive: oklch(0.62 0.21 27);
-  --destructive-foreground: var(--primary-foreground);
-  --border: rgb(255 251 245 / 0.12);
-  --input: var(--border);
-  --ring: var(--primary);
+  --destructive: #DC2626;
+  --destructive-foreground: #FFFFFF;
+  --border: #E7E5E4;
+  --input: #E7E5E4;
+  --ring: #EA580C;
+  --sidebar: #FAFAF9;
+  --sidebar-foreground: #1C1917;
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary);
+  --sidebar-accent: #F5F5F4;
+  --sidebar-border: #E7E5E4;
+  --sidebar-ring: var(--ring);
+
+  --font-display: var(--font-sans);
+  --radius-control: 0.375rem;
+  --radius-card: 0.5rem;
+  --radius-dialog: 0.75rem;
+  --radius-pill: 9999px;
+  --shadow-panel: none;
+  --shadow-overlay: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --focus-ring: 0 0 0 2px var(--background), 0 0 0 4px var(--ring);
+
   --chart-1: oklch(0.68 0.2 42);
   --chart-2: oklch(0.75 0.13 175);
   --chart-3: oklch(0.62 0.11 230);
   --chart-4: oklch(0.82 0.16 84);
   --chart-5: oklch(0.78 0.14 70);
-  /* Sidebar/nav surfaces follow the DESIGN.md nav-bar spec: umber at 0.65 + blur. */
-  --sidebar: rgb(20 16 9 / 0.65);
-  --sidebar-foreground: #eae3d6;
-  --sidebar-primary: var(--primary-soft);
-  --sidebar-primary-foreground: var(--orb-primary);
-  --sidebar-accent: color-mix(in oklch, var(--sidebar), var(--sidebar-foreground) 8%);
-  --sidebar-accent-foreground: var(--sidebar-foreground);
-  --sidebar-border: color-mix(in oklch, var(--sidebar), var(--sidebar-foreground) 12%);
-  --sidebar-ring: var(--ring);
 
   /* Compatibility aliases while feature modules migrate to canonical tokens. */
   --color-primary-cta: var(--primary-control);
@@ -66,7 +70,7 @@
   --color-text-disabled: color-mix(in oklch, var(--muted-foreground), var(--background) 28%);
   --color-on-primary: var(--primary-control-foreground);
   --color-on-primary-cta: var(--color-primary-cta-foreground);
-  --color-link: var(--orb-amber);
+  --color-link: var(--primary);
   --color-focus: var(--ring);
   --color-ai: var(--primary);
   --color-ai-soft: var(--primary-soft);
@@ -81,8 +85,6 @@
 
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
     "Segoe UI", sans-serif;
-  --font-display: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui,
-    -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Monaco,
     Consolas, "Liberation Mono", monospace;
 
@@ -112,17 +114,9 @@
   --radius-xs: 0.25rem;
   --radius-sm: 0.375rem;
   --radius-md: 0.625rem;
-  --radius-control: 0.625rem;
   --radius-lg: 0.875rem;
   --radius-xl: 1.125rem;
-  --radius-card: 0.875rem;
-  --radius-dialog: 1.125rem;
   --radius-hero: 1.5rem;
-  --radius-pill: 9999px;
-
-  --shadow-panel: var(--shadow-glass);
-  --shadow-overlay: var(--shadow-glass-pop);
-  --focus-ring: 0 0 0 4px color-mix(in oklch, var(--ring) 22%, transparent);
 
   --motion-fast: 150ms;
   --motion-normal: 200ms;
@@ -147,6 +141,43 @@
   --shadow-glass: 0 8px 32px rgb(0 0 0 / 0.35), inset 0 1px 0 var(--glass-highlight);
   --shadow-glass-pop: 0 16px 48px -12px rgb(0 0 0 / 0.5), inset 0 1px 0 var(--glass-highlight);
   --glow-primary: 0 0 24px rgb(249 115 22 / 0.35);
+}
+
+.dark {
+  color-scheme: dark;
+
+  --background: #0C0A09;
+  --foreground: #FAFAF9;
+  --card: #1C1917;
+  --card-foreground: var(--foreground);
+  --popover: #1C1917;
+  --popover-foreground: var(--foreground);
+  --primary: #F97316;
+  --primary-foreground: #0C0A09;
+  --primary-hover: #FB923C;
+  --primary-soft: rgb(249 115 22 / 0.16);
+  --primary-control: var(--primary);
+  --primary-control-hover: var(--primary-hover);
+  --primary-control-active: #FDBA74;
+  --primary-control-foreground: var(--primary-foreground);
+  --secondary: #1C1917;
+  --secondary-foreground: #FAFAF9;
+  --muted: #1C1917;
+  --muted-foreground: #A8A29E;
+  --accent: #292524;
+  --accent-foreground: var(--foreground);
+  --destructive: #F87171;
+  --destructive-foreground: #0C0A09;
+  --border: #292524;
+  --input: #292524;
+  --ring: #F97316;
+  --sidebar: #0C0A09;
+  --sidebar-foreground: #FAFAF9;
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary);
+  --sidebar-accent: #1C1917;
+  --sidebar-border: #292524;
+  --shadow-overlay: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 
 @theme inline {
@@ -338,11 +369,8 @@
     color: var(--primary-control-foreground);
     font-weight: 650;
     line-height: 1.25;
-    /* DESIGN.md primary CTA: soft ambient orange halo. */
-    box-shadow: var(--glow-primary);
     transition:
-      background-color var(--motion-fast) var(--ease-standard),
-      box-shadow var(--motion-fast) var(--ease-standard);
+      background-color var(--motion-fast) var(--ease-standard);
   }
 
   /*
@@ -354,13 +382,11 @@
     border-color: transparent;
     background: var(--primary-control);
     color: var(--primary-control-foreground);
-    box-shadow: var(--glow-primary);
   }
 
   .flae-button-primary:hover:not(:disabled),
   button[data-variant="primary"]:hover:not(:disabled) {
     background: var(--primary-control-hover);
-    box-shadow: 0 0 32px rgb(249 115 22 / 0.5);
   }
 
   .flae-button-primary:active:not(:disabled),
@@ -370,8 +396,7 @@
 
   .flae-button-primary:disabled,
   button[data-variant="primary"]:disabled {
-    /* DESIGN.md disabled: glow removed for flatness. */
-    box-shadow: none;
+    /* DESIGN.md disabled: flat appearance */
   }
 
   .flae-button-primary:disabled {
@@ -385,7 +410,6 @@
     background: var(--primary-control) !important;
     color: var(--primary-control-foreground) !important;
     opacity: 1 !important;
-    box-shadow: var(--glow-primary) !important;
   }
 
   .auth-grid {
@@ -454,8 +478,6 @@
     border: 1px solid var(--border);
     border-radius: var(--radius-card);
     background: var(--card);
-    backdrop-filter: blur(var(--glass-blur));
-    -webkit-backdrop-filter: blur(var(--glass-blur));
   }
 
   .text-metadata {
@@ -476,8 +498,8 @@
   .glass-field {
     position: relative;
     isolation: isolate;
-    background: var(--glass-canvas);
-    color: var(--glass-ink);
+    background: var(--background);
+    color: var(--foreground);
   }
 
   .glass-field::before {
@@ -486,63 +508,50 @@
     inset: 0;
     z-index: -1;
     pointer-events: none;
-    background:
-      radial-gradient(42rem 42rem at 12% 8%, rgb(249 115 22 / 0.32), transparent 62%),
-      radial-gradient(36rem 36rem at 88% 18%, rgb(251 146 60 / 0.2), transparent 60%),
-      radial-gradient(52rem 52rem at 68% 96%, rgb(124 45 18 / 0.42), transparent 64%);
+    background: var(--background);
   }
 
   .glass-panel {
-    border: 1px solid var(--glass-line);
+    border: 1px solid var(--border);
     border-radius: var(--radius-card);
-    background: var(--glass-surface);
-    box-shadow: var(--shadow-glass);
-    backdrop-filter: blur(var(--glass-blur));
-    -webkit-backdrop-filter: blur(var(--glass-blur));
+    background: var(--card);
   }
 
   .glass-panel-strong {
-    background: var(--glass-surface-strong);
-    backdrop-filter: blur(var(--glass-blur-lg));
-    -webkit-backdrop-filter: blur(var(--glass-blur-lg));
+    background: var(--card);
   }
 
   .glass-chip {
-    border: 1px solid var(--glass-line);
+    border: 1px solid var(--border);
     border-radius: var(--radius-control);
-    background: var(--glass-surface);
-    box-shadow: var(--shadow-glass);
-    backdrop-filter: blur(var(--glass-blur));
-    -webkit-backdrop-filter: blur(var(--glass-blur));
+    background: var(--card);
   }
 
   .glass-input {
-    border: 1px solid var(--glass-line);
-    background: rgb(20 16 9 / 0.35);
-    color: var(--glass-ink);
+    border: 1px solid var(--input);
+    background: var(--card);
+    color: var(--foreground);
     transition:
       border-color var(--motion-fast) var(--ease-standard),
       box-shadow var(--motion-fast) var(--ease-standard);
   }
 
   .glass-input::placeholder {
-    color: var(--glass-ink-muted);
+    color: var(--muted-foreground);
   }
 
   .glass-input:hover:not(:disabled) {
-    border-color: rgb(255 251 245 / 0.24);
+    border-color: var(--border);
   }
 
   .glass-input:focus-visible {
     outline: none;
-    border-color: var(--primary);
-    box-shadow:
-      0 0 0 3px rgb(249 115 22 / 0.25),
-      var(--glow-primary);
+    border-color: var(--ring);
+    box-shadow: var(--focus-ring);
   }
 
   .glass-input[aria-invalid="true"] {
-    border-color: var(--glass-danger);
+    border-color: var(--destructive);
   }
 
   .glass-input:disabled {
@@ -553,19 +562,16 @@
     border: 1px solid transparent;
     background: var(--primary);
     color: var(--primary-foreground);
-    box-shadow: var(--glow-primary);
     transition:
-      background-color var(--motion-fast) var(--ease-standard),
-      box-shadow var(--motion-fast) var(--ease-standard);
+      background-color var(--motion-fast) var(--ease-standard);
   }
 
   .glass-cta:hover:not(:disabled) {
-    background: color-mix(in oklch, var(--primary), white 8%);
-    box-shadow: 0 0 32px rgb(249 115 22 / 0.45);
+    background: var(--primary-hover);
   }
 
   .glass-cta:active:not(:disabled) {
-    background: color-mix(in oklch, var(--primary), black 8%);
+    background: var(--primary-control-active);
   }
 
   .glass-cta:disabled {
@@ -576,24 +582,22 @@
   .glass-cta:focus-visible,
   .glass-button:focus-visible,
   .glass-link:focus-visible {
-    outline: 2px solid var(--primary);
+    outline: 2px solid var(--ring);
     outline-offset: 2px;
   }
 
   .glass-button {
-    border: 1px solid var(--glass-line);
-    background: var(--glass-surface);
-    color: var(--glass-ink);
-    backdrop-filter: blur(var(--glass-blur));
-    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--border);
+    background: var(--secondary);
+    color: var(--secondary-foreground);
     transition:
       background-color var(--motion-fast) var(--ease-standard),
       border-color var(--motion-fast) var(--ease-standard);
   }
 
   .glass-button:hover:not(:disabled) {
-    background: var(--glass-surface-strong);
-    border-color: rgb(255 251 245 / 0.24);
+    background: var(--accent);
+    border-color: var(--border);
   }
 
   .glass-button:disabled {
@@ -602,7 +606,7 @@
   }
 
   .glass-link {
-    color: var(--orb-amber);
+    color: var(--primary);
     border-radius: var(--radius-sm);
   }
 
@@ -613,21 +617,19 @@
 
   .glass-divider {
     height: 1px;
-    background: var(--glass-line);
+    background: var(--border);
   }
 
   .glass-error {
-    border: 1px solid rgb(248 113 113 / 0.4);
-    background: rgb(127 29 29 / 0.28);
-    color: var(--glass-danger);
-    backdrop-filter: blur(var(--glass-blur));
-    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--destructive);
+    background: var(--card);
+    color: var(--destructive);
   }
 
   .glass-grid {
     background-image:
-      linear-gradient(rgb(255 251 245 / 0.05) 1px, transparent 1px),
-      linear-gradient(90deg, rgb(255 251 245 / 0.05) 1px, transparent 1px);
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
     background-size: 32px 32px;
   }
 }

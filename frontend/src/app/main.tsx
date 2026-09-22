@@ -12,6 +12,7 @@ import { App } from './App';
 import { AppProviders } from './providers/AppProviders';
 import { createAppRouter } from './router/router';
 import '../core/config/env';
+import { applyStoredTheme } from '../core/stores/theme-store';
 import { initializeI18n } from '../shared/i18n';
 import '../styles.css';
 
@@ -22,6 +23,7 @@ if (!rootElement) {
 }
 
 await initializeI18n();
+applyStoredTheme();
 const router = createAppRouter();
 
 createRoot(rootElement).render(
