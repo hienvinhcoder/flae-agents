@@ -1,3 +1,4 @@
+import { Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import type { DocumentStatus } from "../types/knowledge";
@@ -10,10 +11,17 @@ const labels: Record<DocumentStatus, string> = {
 };
 
 const tones: Record<DocumentStatus, string> = {
-  completed: "border-state-success bg-state-success-soft text-state-success",
-  failed: "border-state-danger bg-state-danger-soft text-state-danger",
-  pending: "border-state-warning bg-state-warning-soft text-state-warning",
-  processing: "border-state-info bg-state-info-soft text-state-info",
+  completed: "bg-state-success-soft text-state-success",
+  failed: "bg-state-danger-soft text-state-danger",
+  pending: "bg-state-warning-soft text-state-warning",
+  processing: "bg-state-warning-soft text-state-warning",
+};
+
+const dots: Record<DocumentStatus, string> = {
+  completed: "bg-state-success",
+  failed: "bg-state-danger",
+  pending: "bg-state-warning",
+  processing: "bg-state-warning",
 };
 
 export function StatusBadge({ status }: { status: DocumentStatus }) {
@@ -21,8 +29,13 @@ export function StatusBadge({ status }: { status: DocumentStatus }) {
 
   return (
     <span
-      className={`inline-flex rounded-ui-status border px-2.5 py-1 text-xs font-semibold ${tones[status]}`}
+      className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[12px] font-medium ${tones[status]}`}
     >
+      {status === "processing" ? (
+        <Loader2 aria-hidden className="h-3 w-3 animate-spin" />
+      ) : (
+        <span aria-hidden className={`h-1.5 w-1.5 rounded-full ${dots[status]}`} />
+      )}
       {t(labels[status])}
     </span>
   );

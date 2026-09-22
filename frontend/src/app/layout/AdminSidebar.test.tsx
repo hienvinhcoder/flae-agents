@@ -135,7 +135,7 @@ describe("AdminSidebar", () => {
 
     const sidebar = screen.getByTestId("admin-sidebar");
     expect(sidebar).toHaveClass(
-      "w-14",
+      "w-[56px]",
       "border-border",
       "bg-background",
       "text-foreground",
@@ -147,7 +147,7 @@ describe("AdminSidebar", () => {
     expect(
       within(sidebar).queryByRole("button", { name: "Expand navigation" }),
     ).not.toBeInTheDocument();
-    expect(within(sidebar).queryByText("FLAE")).not.toBeInTheDocument();
+    expect(within(sidebar).queryByRole("link", { name: "FLAE" })).not.toBeInTheDocument();
     expect(
       within(sidebar).queryByText("Indexing status"),
     ).not.toBeInTheDocument();

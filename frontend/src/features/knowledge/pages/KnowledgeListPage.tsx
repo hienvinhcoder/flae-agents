@@ -194,25 +194,22 @@ export function KnowledgeListPage() {
   }
 
   return (
-    <section className="mx-auto flex w-full max-w-7xl flex-col gap-6">
+    <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <PageHeader
         actions={
           <>
             <Link
-              className="inline-flex min-h-10 items-center gap-2 rounded-ui-control border border-border bg-card px-4 py-2 font-semibold text-foreground no-underline transition-colors duration-150 hover:bg-secondary motion-reduce:transition-none"
+              className="inline-flex h-9 items-center gap-2 rounded-md border border-border bg-card px-3 text-[13px] font-medium text-foreground no-underline transition-colors hover:bg-muted"
               to="graph"
             >
-              <Network aria-hidden className="h-4 w-4 text-primary" strokeWidth={1.75} />
+              <Network aria-hidden className="h-4 w-4 text-muted-foreground" strokeWidth={1.75} />
               {t("KNOWLEDGE.OPEN_GRAPH")}
             </Link>
             <Button onClick={() => setTextOpen(true)} variant="secondary">
-              <PencilLine aria-hidden className="h-4 w-4" />
+              <PencilLine aria-hidden className="h-4 w-4 text-muted-foreground" />
               {t("KNOWLEDGE.ADD_TEXT")}
             </Button>
-            <Button
-              onClick={() => setUploadOpen(true)}
-              variant="primary"
-            >
+            <Button onClick={() => setUploadOpen(true)} variant="primary">
               <FilePlus2 aria-hidden className="h-4 w-4" />
               {t("KNOWLEDGE.UPLOAD_FILE")}
             </Button>
@@ -223,88 +220,63 @@ export function KnowledgeListPage() {
         title={t("KNOWLEDGE.TITLE")}
       />
 
-      <section
-        aria-labelledby="knowledge-documents-title"
-        className="overflow-hidden rounded-ui-panel border border-border bg-card"
-      >
-        <div className="flex flex-col gap-2 p-5 sm:flex-row sm:items-end sm:justify-between sm:p-6">
-          <div className="min-w-0">
-            <h2
-              className="text-xl font-semibold tracking-[-0.01em] text-foreground"
-              id="knowledge-documents-title"
-            >
-              {t("KNOWLEDGE.LIBRARY_TITLE")}
-            </h2>
-            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-              {t("KNOWLEDGE.TABLE_DESCRIPTION")}
-            </p>
-          </div>
-          <p className="shrink-0 text-sm font-medium tabular-nums text-muted-foreground">
-            {t("KNOWLEDGE.RESULT_COUNT", {
-              count: filteredDocuments.length,
-              total: documents.length,
-            })}
-          </p>
-        </div>
+      <KnowledgeLibraryToolbar
+        hasActiveFilters={Boolean(search.trim()) || status !== "all"}
+        onClearFilters={() => {
+          setSearch("");
+          setStatus("all");
+        }}
+        onSearchChange={setSearch}
+        onStatusChange={setStatus}
+        onViewModeChange={handleSetViewMode}
+        resultCount={filteredDocuments.length}
+        search={search}
+        status={status}
+        totalCount={documents.length}
+        viewMode={viewMode}
+      />
 
-        {documents.length > 0 ? (
-          <KnowledgeLibraryToolbar
-            hasActiveFilters={Boolean(search.trim()) || status !== "all"}
-            onClearFilters={() => {
-              setSearch("");
-              setStatus("all");
-            }}
-            onSearchChange={setSearch}
-            onStatusChange={setStatus}
-            onViewModeChange={handleSetViewMode}
-            search={search}
-            status={status}
-            viewMode={viewMode}
+      {knowledge.documents.isError ? (
+        <ErrorState
+          message={
+            errorMessage(knowledge.documents.error) ??
+            t("KNOWLEDGE.LOAD_ERROR")
+          }
+          onRetry={() => void knowledge.documents.refetch()}
+          retryLabel={t("KNOWLEDGE.RETRY_LIST")}
+          title={t("KNOWLEDGE.LOAD_ERROR")}
+        />
+      ) : viewMode === "grid" ? (
+        <div className="rounded-lg border border-border bg-card p-5 sm:p-6">
+          <DocumentGrid
+            documents={filteredDocuments}
+            emptyMessage={t(
+              documents.length === 0
+                ? "KNOWLEDGE.EMPTY_STATE_DESC"
+                : "KNOWLEDGE.FILTER_EMPTY_DESCRIPTION",
+            )}
+            isLoading={knowledge.documents.isPending}
+            onDelete={(document) => void remove(document.id, document.title)}
+            onRetry={retry}
+            onView={(document) => setSelectedDocumentId(document.id)}
+            retryingDocumentIds={pendingRetryIds}
           />
-        ) : null}
-
-        <div className={viewMode === "grid" ? "p-5 sm:p-6" : ""}>
-          {knowledge.documents.isError ? (
-            <ErrorState
-              message={
-                errorMessage(knowledge.documents.error) ??
-                t("KNOWLEDGE.LOAD_ERROR")
-              }
-              onRetry={() => void knowledge.documents.refetch()}
-              retryLabel={t("KNOWLEDGE.RETRY_LIST")}
-              title={t("KNOWLEDGE.LOAD_ERROR")}
-            />
-          ) : viewMode === "grid" ? (
-            <DocumentGrid
-              documents={filteredDocuments}
-              emptyMessage={t(
-                documents.length === 0
-                  ? "KNOWLEDGE.EMPTY_STATE_DESC"
-                  : "KNOWLEDGE.FILTER_EMPTY_DESCRIPTION",
-              )}
-              isLoading={knowledge.documents.isPending}
-              onDelete={(document) => void remove(document.id, document.title)}
-              onRetry={retry}
-              onView={(document) => setSelectedDocumentId(document.id)}
-              retryingDocumentIds={pendingRetryIds}
-            />
-          ) : (
-            <DocumentTable
-              documents={filteredDocuments}
-              emptyMessage={t(
-                documents.length === 0
-                  ? "KNOWLEDGE.EMPTY_STATE_DESC"
-                  : "KNOWLEDGE.FILTER_EMPTY_DESCRIPTION",
-              )}
-              isLoading={knowledge.documents.isPending}
-              onDelete={(document) => void remove(document.id, document.title)}
-              onRetry={retry}
-              onView={(document) => setSelectedDocumentId(document.id)}
-              retryingDocumentIds={pendingRetryIds}
-            />
-          )}
         </div>
-      </section>
+      ) : (
+        <DocumentTable
+          documents={filteredDocuments}
+          emptyMessage={t(
+            documents.length === 0
+              ? "KNOWLEDGE.EMPTY_STATE_DESC"
+              : "KNOWLEDGE.FILTER_EMPTY_DESCRIPTION",
+          )}
+          isLoading={knowledge.documents.isPending}
+          onDelete={(document) => void remove(document.id, document.title)}
+          onRetry={retry}
+          onView={(document) => setSelectedDocumentId(document.id)}
+          retryingDocumentIds={pendingRetryIds}
+        />
+      )}
 
       {retryErrors.size > 0 || errorMessage(knowledge.remove.error) ? (
         <div className="mt-4 grid gap-1 text-state-danger" role="alert">

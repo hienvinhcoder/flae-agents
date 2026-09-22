@@ -49,8 +49,8 @@ describe("DocumentTable", () => {
     const mobileDocument = screen.getByRole("article", {
       name: /product guide/i,
     });
-    expect(within(mobileDocument).getByText("Completed")).toBeInTheDocument();
-    expect(mobileDocument).toHaveTextContent("4 chunks");
+    expect(within(mobileDocument).getByText("Indexed")).toBeInTheDocument();
+    expect(mobileDocument).toHaveTextContent("MARKDOWN");
   });
 
   it("formats document dates using the active locale", () => {
@@ -68,13 +68,15 @@ describe("DocumentTable", () => {
       </I18nextProvider>,
     );
 
-    const expectedDate = new Intl.DateTimeFormat("vi").format(
-      new Date(document.created_at),
-    );
+    const expectedDate = new Intl.DateTimeFormat("vi", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }).format(new Date(document.created_at));
     const table = within(screen.getByRole("table"));
     expect(table.getByText(expectedDate)).toBeInTheDocument();
     expect(
-      table.getByRole("columnheader", { name: "Khối văn bản" }),
+      table.getByRole("columnheader", { name: "Nguồn" }),
     ).toBeInTheDocument();
   });
 
@@ -94,8 +96,8 @@ describe("DocumentTable", () => {
     );
 
     expect(
-      screen.getAllByText("No documents match the current search and status filters."),
-    ).toHaveLength(2);
+      screen.getByText("No documents match the current search and status filters."),
+    ).toBeInTheDocument();
   });
 
   it("localizes the loading state label", () => {

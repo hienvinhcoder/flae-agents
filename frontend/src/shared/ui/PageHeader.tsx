@@ -20,25 +20,27 @@ export function PageHeader({ actions, description, eyebrow, metadata, title, tit
   return (
     <header
       aria-labelledby={resolvedTitleId}
-      className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"
+      className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
     >
       <div className="min-w-0">
-        {hasRenderableContent(eyebrow) ? <p className="text-metadata">{eyebrow}</p> : null}
+        {hasRenderableContent(eyebrow) ? (
+          <p className="mb-1 text-[12px] font-medium text-muted-foreground">{eyebrow}</p>
+        ) : null}
         <h1
-          className="mt-2 text-[clamp(1.75rem,3vw,2rem)] font-semibold leading-tight tracking-[-0.02em] text-foreground"
+          className="text-[24px] font-semibold leading-tight tracking-[-0.01em] text-foreground"
           id={resolvedTitleId}
         >
           {title}
         </h1>
         {hasRenderableContent(description) ? (
-          <div className="mt-2 max-w-3xl text-secondary-foreground">{description}</div>
+          <div className="mt-1 max-w-3xl text-[14px] text-muted-foreground">{description}</div>
         ) : null}
         {hasRenderableContent(metadata) ? (
-          <div className="mt-3 text-sm text-muted-foreground">{metadata}</div>
+          <div className="mt-2 text-[13px] text-muted-foreground">{metadata}</div>
         ) : null}
       </div>
       {hasRenderableContent(actions) ? (
-        <div className="flex shrink-0 flex-wrap items-center gap-3">{actions}</div>
+        <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>
       ) : null}
     </header>
   );

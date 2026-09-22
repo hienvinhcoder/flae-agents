@@ -45,19 +45,19 @@ export function WorkspaceSwitcher({
 
   if (workspacesPending) {
     return (
-      <div className="flex min-h-9 min-w-[8rem] items-center rounded-ui-control border border-border bg-card px-3 md:min-w-[10rem]">
+      <div className="flex h-8 min-w-[8rem] items-center rounded-md px-2 md:min-w-[10rem]">
         <Skeleton label={t('SHELL.LOADING_WORKSPACES')} lines={1} />
       </div>
     );
   }
 
   return (
-    <div className="relative min-w-0 max-w-[12rem] sm:max-w-[14rem]">
+    <div className="relative min-w-0 max-w-[14rem]">
       <label className="sr-only" htmlFor="admin-header-workspace">
         {t('SHELL.WORKSPACE')}
       </label>
       <select
-        className="min-h-9 w-full appearance-none truncate rounded-ui-control border border-border bg-card py-1.5 pl-3 pr-8 text-sm font-medium text-foreground outline-none transition-colors hover:bg-accent focus-visible:shadow-ui-focus disabled:opacity-60 [&>option]:bg-card [&>option]:text-foreground"
+        className="h-8 w-full appearance-none truncate rounded-md border-0 bg-transparent py-1.5 pl-2 pr-7 text-[13px] font-medium text-foreground outline-none transition-colors hover:bg-muted focus-visible:bg-muted disabled:opacity-60 [&>option]:bg-card [&>option]:text-foreground"
         disabled={workspaces.length === 0 || syncStatus === 'syncing'}
         id="admin-header-workspace"
         onChange={(event) => onSelectWorkspace(event.target.value)}
@@ -140,7 +140,7 @@ export function HeaderUtilities({
         aria-expanded={profileMenuOpen}
         aria-haspopup="dialog"
         aria-label={initials}
-        className={`grid h-9 w-9 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground outline-none transition-all hover:brightness-110 active:scale-95 focus-visible:shadow-ui-focus ${
+        className={`grid h-7 w-7 place-items-center rounded-full bg-border text-[12px] font-medium text-foreground outline-none transition-all hover:brightness-95 active:scale-95 focus-visible:shadow-ui-focus ${
           profileMenuOpen
             ? 'ring-2 ring-primary ring-offset-2 ring-offset-background'
             : ''

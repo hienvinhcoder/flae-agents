@@ -98,7 +98,7 @@ describe("AdminHeader", () => {
     await renderHeader(createProps());
 
     const banner = screen.getByRole("banner");
-    expect(banner).toHaveClass("h-14");
+    expect(banner).toHaveClass("h-[52px]");
     expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "MCP" })).not.toBeInTheDocument();
     expect(

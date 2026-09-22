@@ -113,10 +113,11 @@ describe('AppShell', () => {
     expect(screen.getByRole('link', { name: /chat/i })).toBeInTheDocument();
 
     const sidebar = screen.getByTestId('admin-sidebar');
-    expect(sidebar).toHaveClass('w-14');
+    expect(sidebar).toHaveClass('w-[56px]');
     expect(sidebar).not.toHaveClass('lg:w-64');
-    expect(screen.getByRole('main').parentElement).toHaveClass('md:pl-14');
+    expect(screen.getByRole('main')).toHaveClass('flex-1');
     expect(within(screen.getByRole('banner')).getByRole('button', { name: 'Chuyển sang chế độ tối' })).toBeInTheDocument();
+    expect(within(screen.getByRole('banner')).getByRole('link', { name: 'FLAE' })).toBeInTheDocument();
   });
 
   it('offers responsive navigation and switches workspace without losing page context', async () => {
@@ -154,15 +155,17 @@ describe('AppShell', () => {
     const main = screen.getByRole('main');
     expect(main).toHaveClass(
       'flex',
-      'h-[calc(100dvh-3.5rem)]',
       'min-h-0',
+      'min-w-0',
+      'flex-1',
       'flex-col',
       'overflow-hidden',
       'p-0',
     );
     const contentWrapper = main.parentElement;
-    expect(contentWrapper).toHaveClass('md:pl-14');
+    expect(contentWrapper).toHaveClass('flex', 'flex-1', 'overflow-hidden');
     expect(contentWrapper).not.toHaveClass('lg:pl-64');
+    expect(screen.getByTestId('admin-sidebar')).toHaveClass('w-[56px]');
 
     await userEvent.click(screen.getByRole('button', { name: 'Mở điều hướng' }));
     const mobileNavigation = screen.getByRole('dialog', { name: 'Điều hướng chính' });

@@ -52,40 +52,65 @@ export function AppShell({ fetchWorkspaces, logoutController, syncSelection }: A
           : null;
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <a className="fixed left-4 top-3 z-[60] -translate-y-20 rounded-ui-control bg-primary-control px-4 py-2 font-semibold text-primary-control-foreground transition-transform duration-200 focus:translate-y-0" href="#main-content">{t('SHELL.SKIP_CONTENT')}</a>
-      <AdminSidebar
-        mobileOpen={navigationOpen}
-        onCloseMobile={closeNavigation}
+    <div className="flex min-h-screen flex-col bg-background text-foreground antialiased">
+      <a className="fixed left-4 top-3 z-[60] -translate-y-20 rounded-md bg-primary-control px-4 py-2 text-[13px] font-semibold text-primary-control-foreground transition-transform duration-200 focus:translate-y-0" href="#main-content">{t('SHELL.SKIP_CONTENT')}</a>
+
+      <AdminHeader
+        currentWorkspaceId={currentWorkspaceId}
+        language={i18n.resolvedLanguage ?? 'vi'}
+        logoutController={logoutController}
+        onChangeLanguage={(language) => void i18n.changeLanguage(language)}
+        onOpenNavigation={openNavigation}
+        onSelectWorkspace={(workspaceId) => void selectWorkspace(workspaceId).catch(() => undefined)}
+        pageLabel={pageLabel}
+        sectionLabel={sectionLabel}
+        syncStatus={syncStatus}
+        user={user}
+        workspaces={workspaces.data ?? []}
+        workspacesPending={workspaces.isPending}
       />
 
-      <div className="md:pl-14">
-        <AdminHeader
-          currentWorkspaceId={currentWorkspaceId}
-          language={i18n.resolvedLanguage ?? 'vi'}
-          logoutController={logoutController}
-          onChangeLanguage={(language) => void i18n.changeLanguage(language)}
-          onOpenNavigation={openNavigation}
-          onSelectWorkspace={(workspaceId) => void selectWorkspace(workspaceId).catch(() => undefined)}
-          pageLabel={pageLabel}
-          sectionLabel={sectionLabel}
-          syncStatus={syncStatus}
-          user={user}
-          workspaces={workspaces.data ?? []}
-          workspacesPending={workspaces.isPending}
-        />
+      {syncMessage ? (
+        <div
+          aria-live="polite"
+          className={`border-b px-4 py-2 text-[13px] md:px-6 ${
+            syncStatus === 'error'
+              ? 'border-state-danger bg-state-danger-soft text-state-danger'
+              : 'border-border bg-muted text-muted-foreground'
+          }`}
+          role="status"
+        >
+          {syncMessage}
+        </div>
+      ) : null}
+      {logoutController?.error ? (
+        <div className="border-b border-state-danger bg-state-danger-soft px-4 py-2 text-[13px] text-state-danger md:px-6" role="alert">
+          {t('SHELL.LOGOUT_ERROR')}
+        </div>
+      ) : null}
 
-        {syncMessage ? <div aria-live="polite" className={`border-b px-4 py-2 text-sm md:px-6 ${syncStatus === 'error' ? 'border-state-danger bg-state-danger-soft text-state-danger' : 'border-border bg-muted text-muted-foreground'}`} role="status">{syncMessage}</div> : null}
-        {logoutController?.error ? <div className="border-b border-state-danger bg-state-danger-soft px-4 py-2 text-state-danger md:px-6" role="alert">{t('SHELL.LOGOUT_ERROR')}</div> : null}
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        <AdminSidebar mobileOpen={navigationOpen} onCloseMobile={closeNavigation} />
 
         <main
-          className={isChatWorkbenchPath(location.pathname)
-            ? 'flex h-[calc(100dvh-3.5rem)] min-h-0 flex-col overflow-hidden p-0'
-            : 'min-h-[calc(100vh-3.5rem)] px-4 py-5 md:px-6'}
+          className={
+            isChatWorkbenchPath(location.pathname)
+              ? 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-0'
+              : 'min-w-0 flex-1 overflow-y-auto p-6'
+          }
           id="main-content"
           tabIndex={-1}
         >
-          {workspaces.isError ? <ErrorState message={t('SHELL.LOAD_ERROR')} onRetry={() => void workspaces.refetch()} retryLabel={t('ERROR_PAGE.RETRY')} title={t('ERROR_PAGE.TITLE')} /> : <Outlet />}
+          {workspaces.isError ? (
+            <ErrorState
+              message={t('SHELL.LOAD_ERROR')}
+              onRetry={() => void workspaces.refetch()}
+              retryLabel={t('ERROR_PAGE.RETRY')}
+              title={t('ERROR_PAGE.TITLE')}
+            />
+          ) : (
+            <Outlet />
+          )}
         </main>
       </div>
     </div>

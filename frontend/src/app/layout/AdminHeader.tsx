@@ -1,4 +1,4 @@
-import { Menu, Sparkles } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
@@ -42,44 +42,46 @@ export function AdminHeader({
   const { t } = useTranslation();
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-background px-3 md:px-4">
-      <button
-        aria-label={t('SHELL.OPEN_NAV')}
-        className="grid min-h-10 min-w-10 place-items-center rounded-ui-control text-foreground transition-colors hover:bg-accent md:hidden"
-        onClick={onOpenNavigation}
-        type="button"
-      >
-        <Menu aria-hidden className="h-5 w-5" />
-      </button>
-
-      <Link
-        aria-label="FLAE"
-        className="flex min-w-0 items-center gap-2 text-foreground no-underline"
-        to="/dashboard/chat"
-      >
-        <span
-          aria-hidden
-          className="grid h-8 w-8 shrink-0 place-items-center rounded-ui-control bg-primary text-primary-foreground"
+    <header className="z-10 flex h-[52px] shrink-0 items-center justify-between border-b border-border bg-background px-4">
+      <div className="flex min-w-0 items-center gap-3">
+        <button
+          aria-label={t('SHELL.OPEN_NAV')}
+          className="grid h-9 w-9 place-items-center rounded-md text-foreground transition-colors hover:bg-muted md:hidden"
+          onClick={onOpenNavigation}
+          type="button"
         >
-          <Sparkles className="h-4 w-4" />
-        </span>
-        <strong className="truncate text-sm font-semibold tracking-tight">FLAE</strong>
-      </Link>
+          <Menu aria-hidden className="h-5 w-5" />
+        </button>
 
-      <WorkspaceSwitcher
-        currentWorkspaceId={currentWorkspaceId}
-        onSelectWorkspace={onSelectWorkspace}
-        syncStatus={syncStatus}
-        workspaces={workspaces}
-        workspacesPending={workspacesPending}
-      />
+        <Link
+          aria-label="FLAE"
+          className="hidden items-center gap-2 border-r border-border pr-4 text-foreground no-underline md:flex"
+          to="/dashboard/chat"
+        >
+          <span
+            aria-hidden
+            className="grid h-6 w-6 place-items-center rounded bg-primary text-[12px] font-bold text-primary-foreground"
+          >
+            F
+          </span>
+          <span className="text-[14px] font-semibold tracking-tight">FLAE</span>
+        </Link>
+
+        <WorkspaceSwitcher
+          currentWorkspaceId={currentWorkspaceId}
+          onSelectWorkspace={onSelectWorkspace}
+          syncStatus={syncStatus}
+          workspaces={workspaces}
+          workspacesPending={workspacesPending}
+        />
+      </div>
 
       <div className="sr-only">
         <span>{sectionLabel}</span>
         <strong>{pageLabel}</strong>
       </div>
 
-      <div className="ml-auto flex min-w-0 items-center gap-2">
+      <div className="flex shrink-0 items-center gap-2">
         <ThemeToggle />
         <HeaderUtilities
           language={language}

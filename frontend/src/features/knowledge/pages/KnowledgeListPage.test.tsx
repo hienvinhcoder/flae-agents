@@ -133,15 +133,18 @@ describe("KnowledgeListPage", () => {
       screen.getAllByText(
         "No documents match the current search and status filters.",
       ),
-    ).toHaveLength(2);
+    ).toHaveLength(1);
 
     await user.click(screen.getByRole("button", { name: "Clear filters" }));
 
     expect(
       screen.getByRole("searchbox", { name: /search documents/i }),
     ).toHaveValue("");
-    expect(table.getByText("Product roadmap")).toBeInTheDocument();
-    expect(table.getByText("Incident handbook")).toBeInTheDocument();
+    const restoredTable = within(
+      await screen.findByRole("table", { name: /knowledge documents/i }),
+    );
+    expect(restoredTable.getByText("Product roadmap")).toBeInTheDocument();
+    expect(restoredTable.getByText("Incident handbook")).toBeInTheDocument();
   });
 
   it("groups knowledge actions in the page header and keeps the table caption", async () => {
@@ -158,10 +161,10 @@ describe("KnowledgeListPage", () => {
       "text-primary-control-foreground",
     );
     expect(uploadButton).toHaveAttribute("data-variant", "primary");
-    expect(uploadButton).toHaveClass("border-transparent");
+    expect(uploadButton).toHaveClass("border-transparent", "h-9");
     expect(
       screen.getByRole("link", { name: /explore relationships/i }),
-    ).toHaveClass("border-border", "bg-card", "text-foreground");
+    ).toHaveClass("border-border", "bg-card", "text-foreground", "h-9", "text-[13px]");
     expect(
       screen.getByRole("button", { name: /add content/i }),
     ).toBeInTheDocument();
@@ -169,7 +172,7 @@ describe("KnowledgeListPage", () => {
       await screen.findByRole("table", { name: /knowledge documents/i }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { level: 2, name: /memory sources/i }),
+      screen.getByRole("searchbox", { name: /search/i }),
     ).toBeInTheDocument();
   });
 

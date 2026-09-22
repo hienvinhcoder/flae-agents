@@ -1,9 +1,15 @@
-import { Eye, RotateCcw, Trash2 } from "lucide-react";
+import {
+  BookOpen,
+  Eye,
+  FileCode2,
+  FileText,
+  RotateCcw,
+  Trash2,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "../../../shared/ui/Button";
 import { Skeleton } from "../../../shared/ui/Skeleton";
-import { Table, type TableColumn } from "../../../shared/ui/Table";
 import type { KnowledgeDocument } from "../types/knowledge";
 import { StatusBadge } from "./StatusBadge";
 
@@ -17,21 +23,19 @@ interface DocumentTableProps {
   retryingDocumentIds: ReadonlySet<string>;
 }
 
-interface DocumentActionsProps {
-  document: KnowledgeDocument;
-  isRetrying: boolean;
-  onDelete: (document: KnowledgeDocument) => void;
-  onRetry: (document: KnowledgeDocument) => void;
-  onView: (document: KnowledgeDocument) => void;
+function DocumentIcon({ type }: { type: KnowledgeDocument["document_type"] }) {
+  if (type === "manual_input") {
+    return <BookOpen aria-hidden className="h-4 w-4 shrink-0 text-muted-foreground" />;
+  }
+  if (type === "markdown" || type === "text") {
+    return <FileCode2 aria-hidden className="h-4 w-4 shrink-0 text-muted-foreground" />;
+  }
+  return <FileText aria-hidden className="h-4 w-4 shrink-0 text-muted-foreground" />;
 }
 
-function documentTypeLabel(
-  document: KnowledgeDocument,
-  manualTextLabel: string,
-) {
-  return document.document_type === "manual_input"
-    ? manualTextLabel
-    : document.document_type.toUpperCase();
+function sourceLabel(document: KnowledgeDocument, manualTextLabel: string) {
+  if (document.document_type === "manual_input") return manualTextLabel;
+  return document.document_type.toUpperCase();
 }
 
 function DocumentActions({
@@ -40,18 +44,25 @@ function DocumentActions({
   onDelete,
   onRetry,
   onView,
-}: DocumentActionsProps) {
+}: {
+  document: KnowledgeDocument;
+  isRetrying: boolean;
+  onDelete: (document: KnowledgeDocument) => void;
+  onRetry: (document: KnowledgeDocument) => void;
+  onView: (document: KnowledgeDocument) => void;
+}) {
   const { t } = useTranslation();
 
   return (
-    <div className="flex flex-wrap justify-end gap-1">
+    <div className="flex justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
       {document.status === "failed" ? (
         <Button
           aria-label={t("KNOWLEDGE.RETRY_DOCUMENT", { title: document.title })}
-          className="min-w-11 px-3 transition-colors duration-200 hover:bg-primary-soft hover:text-primary"
+          className="h-8 w-8 min-h-8 min-w-8 p-0"
           isLoading={isRetrying}
           loadingText={t("KNOWLEDGE.STATUS_PROCESSING")}
           onClick={() => onRetry(document)}
+          size="icon"
           variant="ghost"
         >
           <RotateCcw aria-hidden className="h-4 w-4" />
@@ -59,16 +70,18 @@ function DocumentActions({
       ) : null}
       <Button
         aria-label={t("KNOWLEDGE.OPEN_DOCUMENT", { title: document.title })}
-        className="min-w-11 px-3 transition-colors duration-200 hover:bg-primary-soft hover:text-primary"
+        className="h-8 w-8 min-h-8 min-w-8 p-0"
         onClick={() => onView(document)}
+        size="icon"
         variant="ghost"
       >
         <Eye aria-hidden className="h-4 w-4" />
       </Button>
       <Button
         aria-label={t("KNOWLEDGE.DELETE_DOCUMENT", { title: document.title })}
-        className="min-w-11 px-3 transition-colors duration-200 hover:bg-state-danger-soft hover:text-state-danger"
+        className="h-8 w-8 min-h-8 min-w-8 p-0 hover:bg-state-danger-soft hover:text-state-danger"
         onClick={() => onDelete(document)}
+        size="icon"
         variant="ghost"
       >
         <Trash2 aria-hidden className="h-4 w-4" />
@@ -90,96 +103,112 @@ export function DocumentTable({
 
   if (isLoading) {
     return (
-      <div className="border-y border-border bg-card/45 p-6">
+      <div className="rounded-lg border border-border bg-card p-6">
         <Skeleton label={t("KNOWLEDGE.LOADING_DOCUMENTS")} lines={5} />
       </div>
     );
   }
 
-  const columns: readonly TableColumn<KnowledgeDocument>[] = [
-    {
-      header: t("KNOWLEDGE.TABLE_TITLE"),
-      key: "document",
-      render: (document) => (
-        <div>
-          <strong className="block font-semibold text-foreground">{document.title}</strong>
-          <span className="block max-w-xs truncate text-sm text-muted-foreground">
-            {document.description ||
-              document.file_name ||
-              t("KNOWLEDGE.NO_DESCRIPTION")}
-          </span>
-        </div>
-      ),
-    },
-    {
-      header: t("KNOWLEDGE.TABLE_TYPE"),
-      key: "type",
-      render: (document) =>
-        documentTypeLabel(document, t("KNOWLEDGE.MANUAL_TEXT")),
-    },
-    {
-      header: t("KNOWLEDGE.TABLE_STATUS"),
-      key: "status",
-      render: (document) => <StatusBadge status={document.status} />,
-    },
-    {
-      header: t("KNOWLEDGE.TABLE_CHUNKS"),
-      key: "chunks",
-      render: (document) => document.chunk_count ?? "-",
-    },
-    {
-      header: t("KNOWLEDGE.TABLE_DATE"),
-      key: "created",
-      render: (document) =>
-        new Intl.DateTimeFormat(
-          i18n.resolvedLanguage ?? i18n.language,
-        ).format(new Date(document.updated_at)),
-    },
-    {
-      header: t("KNOWLEDGE.TABLE_ACTIONS"),
-      key: "actions",
-      render: (document) => (
-        <DocumentActions
-          document={document}
-          isRetrying={retryingDocumentIds.has(document.id)}
-          onDelete={onDelete}
-          onRetry={onRetry}
-          onView={onView}
-        />
-      ),
-    },
-  ];
+  if (documents.length === 0) {
+    return (
+      <div className="rounded-lg border border-border bg-card px-4 py-10 text-center text-[13px] text-muted-foreground">
+        {emptyMessage}
+      </div>
+    );
+  }
 
   return (
-    <Table
-      caption={t("KNOWLEDGE.TABLE_CAPTION")}
-      columns={columns}
-      emptyMessage={emptyMessage}
-      getRowKey={(document) => document.id}
-      renderMobileRow={(document) => (
-        <article
-          aria-label={document.title}
-          className="rounded-ui-control border border-border bg-card p-4"
-        >
-          <div className="flex items-start justify-between gap-3">
-            <strong className="text-foreground">{document.title}</strong>
-            <StatusBadge status={document.status} />
-          </div>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {document.chunk_count ?? 0} {t("KNOWLEDGE.CHUNKS_SHORT")}
-          </p>
-          <div className="mt-3">
-            <DocumentActions
-              document={document}
-              isRetrying={retryingDocumentIds.has(document.id)}
-              onDelete={onDelete}
-              onRetry={onRetry}
-              onView={onView}
-            />
-          </div>
-        </article>
-      )}
-      rows={documents}
-    />
+    <div className="overflow-hidden rounded-lg border border-border bg-card">
+      <div className="hidden overflow-x-auto md:block">
+        <table className="w-full border-collapse text-left text-[13px]">
+          <caption className="sr-only">{t("KNOWLEDGE.TABLE_CAPTION")}</caption>
+          <thead className="border-b border-border bg-muted text-muted-foreground">
+            <tr>
+              <th className="px-4 py-3 font-medium" scope="col">
+                {t("KNOWLEDGE.TABLE_TITLE")}
+              </th>
+              <th className="px-4 py-3 font-medium" scope="col">
+                {t("KNOWLEDGE.TABLE_TYPE")}
+              </th>
+              <th className="px-4 py-3 font-medium" scope="col">
+                {t("KNOWLEDGE.TABLE_STATUS")}
+              </th>
+              <th className="px-4 py-3 text-right font-medium" scope="col">
+                {t("KNOWLEDGE.TABLE_DATE")}
+              </th>
+              <th className="w-28 px-4 py-3" scope="col">
+                <span className="sr-only">{t("KNOWLEDGE.TABLE_ACTIONS")}</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {documents.map((document) => (
+              <tr
+                className="group transition-colors hover:bg-muted"
+                key={document.id}
+              >
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-2 font-medium text-foreground">
+                    <DocumentIcon type={document.document_type} />
+                    <span className="truncate">{document.title}</span>
+                  </div>
+                </td>
+                <td className="px-4 py-3 text-muted-foreground">
+                  {sourceLabel(document, t("KNOWLEDGE.MANUAL_TEXT"))}
+                </td>
+                <td className="px-4 py-3">
+                  <StatusBadge status={document.status} />
+                </td>
+                <td className="px-4 py-3 text-right font-mono text-[12px] text-muted-foreground">
+                  {new Intl.DateTimeFormat(
+                    i18n.resolvedLanguage ?? i18n.language,
+                    { month: "short", day: "numeric", year: "numeric" },
+                  ).format(new Date(document.created_at))}
+                </td>
+                <td className="px-4 py-3 text-right">
+                  <DocumentActions
+                    document={document}
+                    isRetrying={retryingDocumentIds.has(document.id)}
+                    onDelete={onDelete}
+                    onRetry={onRetry}
+                    onView={onView}
+                  />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="grid gap-3 p-3 md:hidden">
+        {documents.map((document) => (
+          <article
+            aria-label={document.title}
+            className="rounded-md border border-border bg-card p-4"
+            key={document.id}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-2 font-medium text-foreground">
+                <DocumentIcon type={document.document_type} />
+                <span className="truncate">{document.title}</span>
+              </div>
+              <StatusBadge status={document.status} />
+            </div>
+            <p className="mt-2 text-[13px] text-muted-foreground">
+              {sourceLabel(document, t("KNOWLEDGE.MANUAL_TEXT"))}
+            </p>
+            <div className="mt-3 opacity-100">
+              <DocumentActions
+                document={document}
+                isRetrying={retryingDocumentIds.has(document.id)}
+                onDelete={onDelete}
+                onRetry={onRetry}
+                onView={onView}
+              />
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
   );
 }
