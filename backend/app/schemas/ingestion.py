@@ -148,23 +148,17 @@ class IngestionBootstrapInput(IngestionModel):
     source_type: str = Field(default="knowledge_base", min_length=1, max_length=100)
     source_modified_at: datetime
     content_checksum: Checksum = Field(pattern=r"^sha256:[0-9a-f]{64}$")
-    acl_checksum: Checksum | None = Field(
-        default=None, pattern=r"^sha256:[0-9a-f]{64}$"
-    )
+    acl_checksum: Checksum | None = Field(default=None, pattern=r"^sha256:[0-9a-f]{64}$")
     acl_scope: Literal["workspace", "restricted"] = "workspace"
     acl_principal_ids: tuple[str, ...] = Field(default=(), max_length=10_000)
     pipeline_version: str = Field(default="v1", min_length=1, max_length=200)
     parser_version: str = Field(default="markdown-v1", min_length=1, max_length=200)
-    chunker_version: str = Field(default="structure-v1", min_length=1, max_length=200)
+    chunker_version: str = Field(default="chonkie-pipeline-v1", min_length=1, max_length=200)
 
     @model_validator(mode="after")
     def validate_connector_acl(self) -> IngestionBootstrapInput:
-        if self.acl_scope == "restricted" and (
-            self.acl_checksum is None or not self.acl_principal_ids
-        ):
-            raise ValueError(
-                "restricted ingestion requires an ACL checksum and principals"
-            )
+        if self.acl_scope == "restricted" and (self.acl_checksum is None or not self.acl_principal_ids):
+            raise ValueError("restricted ingestion requires an ACL checksum and principals")
         if any(not principal.strip() for principal in self.acl_principal_ids):
             raise ValueError("ACL principals must be non-empty")
         return self
@@ -179,6 +173,7 @@ class IngestionWorkflowOutput(IngestionModel):
 
 class ExtractAndFuseInput(IngestionModel):
     """Input for the extract-and-fuse activity that runs after publish."""
+
     workspace_id: str
     source_doc_id: str
     chunk_count: int = Field(ge=0)
@@ -186,6 +181,7 @@ class ExtractAndFuseInput(IngestionModel):
 
 class ExtractAndFuseResult(IngestionModel):
     """Output from the extract-and-fuse activity."""
+
     entity_count: int = Field(ge=0)
     relation_count: int = Field(ge=0)
     domain_count: int = Field(ge=0)

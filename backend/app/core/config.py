@@ -20,10 +20,17 @@ class RAGSettings:
     CHUNKING_STRATEGY: str = 'semantic'
     FIXED_SIZE: int = 1200
     FIXED_OVERLAP: int = 100
+    # Pipeline: recursive(markdown) first, then SemanticChunker.
+    RECURSIVE_SIZE: int = 2048
     SEMANTIC_TARGET: int = 900
-    SEMANTIC_OVERLAP: int = 150
-    SEMANTIC_PRE_CONTEXT_LIMIT: int = 50
-    SEMANTIC_HARD_LIMIT: int = 500
+    # Lower threshold → larger groups. skip_window merges similar non-adjacent groups.
+    SEMANTIC_THRESHOLD: float = 0.45
+    SEMANTIC_MIN_SENTENCES: int = 3
+    SEMANTIC_MIN_CHARS_PER_SENTENCE: int = 50
+    SEMANTIC_SKIP_WINDOW: int = 1
+    SEMANTIC_SIMILARITY_WINDOW: int = 3
+    SEMANTIC_FILTER_WINDOW: int = 7
+    SEMANTIC_FILTER_TOLERANCE: float = 0.15
     GLEAN_MAX: int = 0
 
     # Summarization Configs
@@ -112,10 +119,15 @@ class Settings(BaseSettings):
     RAG_CHUNKING_STRATEGY: str = rag_settings.CHUNKING_STRATEGY
     RAG_FIXED_SIZE: int = rag_settings.FIXED_SIZE
     RAG_FIXED_OVERLAP: int = rag_settings.FIXED_OVERLAP
+    RAG_RECURSIVE_SIZE: int = rag_settings.RECURSIVE_SIZE
     RAG_SEMANTIC_TARGET: int = rag_settings.SEMANTIC_TARGET
-    RAG_SEMANTIC_OVERLAP: int = rag_settings.SEMANTIC_OVERLAP
-    RAG_SEMANTIC_PRE_CONTEXT_LIMIT: int = rag_settings.SEMANTIC_PRE_CONTEXT_LIMIT
-    RAG_SEMANTIC_HARD_LIMIT: int = rag_settings.SEMANTIC_HARD_LIMIT
+    RAG_SEMANTIC_THRESHOLD: float = rag_settings.SEMANTIC_THRESHOLD
+    RAG_SEMANTIC_MIN_SENTENCES: int = rag_settings.SEMANTIC_MIN_SENTENCES
+    RAG_SEMANTIC_MIN_CHARS_PER_SENTENCE: int = rag_settings.SEMANTIC_MIN_CHARS_PER_SENTENCE
+    RAG_SEMANTIC_SKIP_WINDOW: int = rag_settings.SEMANTIC_SKIP_WINDOW
+    RAG_SEMANTIC_SIMILARITY_WINDOW: int = rag_settings.SEMANTIC_SIMILARITY_WINDOW
+    RAG_SEMANTIC_FILTER_WINDOW: int = rag_settings.SEMANTIC_FILTER_WINDOW
+    RAG_SEMANTIC_FILTER_TOLERANCE: float = rag_settings.SEMANTIC_FILTER_TOLERANCE
     RAG_SUMMARIZATION_THRESHOLD: int = int(os.getenv('RAG_SUMMARIZATION_THRESHOLD', str(rag_settings.SUMMARIZATION_THRESHOLD)))
     RAG_SUMMARIZATION_LENGTH: int = int(os.getenv('RAG_SUMMARIZATION_LENGTH', str(rag_settings.SUMMARIZATION_LENGTH)))
     RAG_GLEAN_MAX: int = int(os.getenv('RAG_GLEAN_MAX', str(rag_settings.GLEAN_MAX)))

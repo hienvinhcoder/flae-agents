@@ -1,19 +1,58 @@
 """
 Service chia nhỏ văn bản (Chunking) cho Knowledge Base.
-Tách từ ingestion_service.py để đảm bảo giới hạn kích thước file.
+
+Strategies (Chonkie):
+- fixed    → TokenChunker (cl100k)
+- markdown → RecursiveChunker markdown recipe
+- semantic → Pipeline: recursive(markdown) → SemanticChunker + Gemini
 """
 import re
 from hashlib import sha256
 from typing import Dict, List, Optional
 
+import tiktoken
+from chonkie import Pipeline, RecursiveChunker, TokenChunker
+
 from app.core.config import settings
 from app.core.logger import get_logger
-from app.services.knowledge.ingestion.parser import ParserService
-from app.utils.token import get_token_count
 from app.schemas.agent_memory import SectionLocation
 from app.schemas.ingestion import ParsedBaseChunk
+from app.services.knowledge.ingestion.chonkie_embeddings import FlaeGeminiEmbeddings
+from app.services.knowledge.ingestion.parser import ParserService
+from app.utils.token import get_token_count
 
 logger = get_logger(__name__)
+
+_ENCODING: Optional[tiktoken.Encoding] = None
+_GEMINI_EMBEDDINGS: Optional[FlaeGeminiEmbeddings] = None
+
+
+def _cl100k() -> tiktoken.Encoding:
+    global _ENCODING
+    if _ENCODING is None:
+        _ENCODING = tiktoken.get_encoding("cl100k_base")
+    return _ENCODING
+
+
+def _gemini_embeddings() -> FlaeGeminiEmbeddings:
+    global _GEMINI_EMBEDDINGS
+    if _GEMINI_EMBEDDINGS is None:
+        _GEMINI_EMBEDDINGS = FlaeGeminiEmbeddings()
+    return _GEMINI_EMBEDDINGS
+
+
+def _to_raw_chunks(file_hash: str, texts_and_tokens: list[tuple[str, int]]) -> List[Dict]:
+    chunks: list[dict] = []
+    for text, token_count in texts_and_tokens:
+        cleaned = text.strip()
+        if not cleaned:
+            continue
+        chunks.append({
+            "chunk_id": f"{file_hash}_{len(chunks)}",
+            "text": cleaned,
+            "token_count": token_count if token_count > 0 else get_token_count(cleaned),
+        })
+    return chunks
 
 
 class ChunkingService:
@@ -66,7 +105,7 @@ class ChunkingService:
         chunk_size: Optional[int] = None,
         chunk_overlap: Optional[int] = None,
     ) -> List[Dict]:
-        """Chia khối theo kích thước token cố định."""
+        """Fixed-size token windows via Chonkie TokenChunker."""
         if not text:
             return []
 
@@ -75,25 +114,47 @@ class ChunkingService:
         if chunk_overlap is None:
             chunk_overlap = settings.RAG_FIXED_OVERLAP
 
-        import tiktoken
-        encoding = tiktoken.get_encoding("cl100k_base")
-        tokens = encoding.encode(text)
-        chunks = []
-        step = max(1, chunk_size - chunk_overlap)
+        chunker = TokenChunker(
+            tokenizer=_cl100k(),
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+        )
+        raw = [
+            (chunk.text, int(chunk.token_count))
+            for chunk in chunker.chunk(text)
+        ]
+        chunks = _to_raw_chunks(file_hash, raw)
+        logger.info(f"Fixed (Chonkie TokenChunker): {len(chunks)} chunks created")
+        return chunks
 
-        for i in range(0, len(tokens), step):
-            chunk_tokens = tokens[i : i + chunk_size]
-            chunk_text = encoding.decode(chunk_tokens, errors="replace").strip("\ufffd").strip()
-            if not chunk_text:
-                continue
+    @staticmethod
+    def chunk_text_markdown(
+        text: str,
+        file_hash: str,
+        chunk_size: Optional[int] = None,
+        chunk_overlap: Optional[int] = None,
+        min_chunk_tokens: Optional[int] = None,
+    ) -> List[Dict]:
+        """Markdown recursive chunking via Chonkie recipe (no overlap refine)."""
+        del chunk_overlap, min_chunk_tokens
+        if not text:
+            return []
 
-            chunks.append({
-                "chunk_id": f"{file_hash}_{len(chunks)}",
-                "text": chunk_text,
-                "token_count": len(chunk_tokens),
-            })
+        if chunk_size is None:
+            chunk_size = settings.RAG_RECURSIVE_SIZE
 
-        logger.info(f"Fixed chunking: {len(chunks)} chunks created")
+        chunker = RecursiveChunker.from_recipe(
+            "markdown",
+            lang="en",
+            tokenizer=_cl100k(),
+            chunk_size=chunk_size,
+        )
+        raw = [
+            (chunk.text, int(chunk.token_count))
+            for chunk in chunker.chunk(text)
+        ]
+        chunks = _to_raw_chunks(file_hash, raw)
+        logger.info(f"Markdown (Chonkie Recursive): {len(chunks)} chunks created")
         return chunks
 
     @staticmethod
@@ -101,101 +162,57 @@ class ChunkingService:
         text: str,
         file_hash: str,
         target_size: Optional[int] = None,
-        overlap_target: Optional[int] = None,
-        pre_context_limit: Optional[int] = None,
-        hard_limit: Optional[int] = None,
+        *,
+        threshold: Optional[float] = None,
+        recursive_size: Optional[int] = None,
     ) -> List[Dict]:
-        """Chia khối theo ngữ nghĩa (heading-aware)."""
+        """Chonkie Pipeline: recursive(markdown) → SemanticChunker + Gemini."""
         if not text:
             return []
 
+        if recursive_size is None:
+            recursive_size = settings.RAG_RECURSIVE_SIZE
         if target_size is None:
             target_size = settings.RAG_SEMANTIC_TARGET
-        if overlap_target is None:
-            overlap_target = settings.RAG_SEMANTIC_OVERLAP
-        if pre_context_limit is None:
-            pre_context_limit = settings.RAG_SEMANTIC_PRE_CONTEXT_LIMIT
-        if hard_limit is None:
-            hard_limit = settings.RAG_SEMANTIC_HARD_LIMIT
+        if threshold is None:
+            threshold = settings.RAG_SEMANTIC_THRESHOLD
 
-        separators_regex = r"(\n##+\s.*)"
-        blocks = re.split(separators_regex, text)
-        structured_blocks: list[str] = []
-        i = 0
-        while i < len(blocks):
-            block = blocks[i].strip()
-            if not block:
-                i += 1
-            elif re.match(separators_regex, block) and i + 1 < len(blocks):
-                structured_blocks.append(f"{block}\n\n{blocks[i + 1].strip()}")
-                i += 2
-            else:
-                structured_blocks.append(block)
-                i += 1
-
-        if not structured_blocks:
-            return [{"chunk_id": f"{file_hash}_0", "text": text, "token_count": get_token_count(text)}] if text.strip() else []
-
-        base_chunks: list[list[str]] = []
-        current_base: list[str] = []
-        current_tokens = 0
-
-        for block in structured_blocks:
-            block_tokens = get_token_count(block)
-            if block_tokens > target_size:
-                if current_base:
-                    base_chunks.append(current_base)
-                base_chunks.append([block])
-                current_base = []
-                current_tokens = 0
-            elif current_tokens + block_tokens > target_size and current_base:
-                base_chunks.append(current_base)
-                current_base = [block]
-                current_tokens = block_tokens
-            else:
-                current_base.append(block)
-                current_tokens += block_tokens
-
-        if current_base:
-            base_chunks.append(current_base)
-
-        final_chunks = []
-        for idx, current_blocks in enumerate(base_chunks):
-            final_blocks = list(current_blocks)
-
-            if idx > 0:
-                prev_blocks = base_chunks[idx - 1]
-                last_unit = prev_blocks[-1]
-                last_unit_tokens = get_token_count(last_unit)
-                overlap_prepend: list[str] = []
-
-                if last_unit_tokens <= hard_limit:
-                    if last_unit_tokens > overlap_target:
-                        overlap_prepend.append(last_unit)
-                        if len(prev_blocks) > 1:
-                            pre_ctx = prev_blocks[-2]
-                            if get_token_count(pre_ctx) <= pre_context_limit:
-                                overlap_prepend.insert(0, pre_ctx)
-                    else:
-                        current_overlap = 0
-                        for prev_block in reversed(prev_blocks):
-                            pb_tokens = get_token_count(prev_block)
-                            if current_overlap + pb_tokens > overlap_target:
-                                break
-                            overlap_prepend.insert(0, prev_block)
-                            current_overlap += pb_tokens
-
-                final_blocks = overlap_prepend + final_blocks
-
-            final_text = "\n\n".join(final_blocks)
-            final_chunks.append({
-                "chunk_id": f"{file_hash}_{len(final_chunks)}",
-                "text": final_text,
-                "token_count": get_token_count(final_text),
-            })
-
-        logger.info(f"Semantic chunking: {len(final_chunks)} chunks created")
-        return final_chunks
+        pipe = (
+            Pipeline()
+            .chunk_with(
+                "recursive",
+                tokenizer=_cl100k(),
+                chunk_size=recursive_size,
+                recipe="markdown",
+                lang="en",
+            )
+            .chunk_with(
+                "semantic",
+                embedding_model=_gemini_embeddings(),
+                chunk_size=target_size,
+                threshold=threshold,
+                similarity_window=settings.RAG_SEMANTIC_SIMILARITY_WINDOW,
+                min_sentences_per_chunk=settings.RAG_SEMANTIC_MIN_SENTENCES,
+                min_characters_per_sentence=settings.RAG_SEMANTIC_MIN_CHARS_PER_SENTENCE,
+                skip_window=settings.RAG_SEMANTIC_SKIP_WINDOW,
+                filter_window=settings.RAG_SEMANTIC_FILTER_WINDOW,
+                filter_tolerance=settings.RAG_SEMANTIC_FILTER_TOLERANCE,
+                delim=[". ", "! ", "? ", "\n\n"],
+                include_delim="prev",
+            )
+        )
+        doc = pipe.run(texts=text)
+        raw = [
+            (chunk.text, int(chunk.token_count))
+            for chunk in doc.chunks
+        ]
+        chunks = _to_raw_chunks(file_hash, raw)
+        logger.info(
+            "Semantic (Pipeline recursive→Gemini): "
+            f"{len(chunks)} chunks (recursive_size={recursive_size}, "
+            f"semantic_size={target_size})"
+        )
+        return chunks
 
     @staticmethod
     def _chunk_document_raw(
@@ -212,7 +229,11 @@ class ChunkingService:
         cleaned = ParserService.preprocess_text(text)
         if strategy == "semantic":
             return ChunkingService.chunk_text_semantic(
-                cleaned, file_hash, target_size=chunk_size, overlap_target=chunk_overlap
+                cleaned, file_hash, target_size=chunk_size
+            )
+        if strategy == "markdown":
+            return ChunkingService.chunk_text_markdown(
+                cleaned, file_hash, chunk_size=chunk_size, chunk_overlap=chunk_overlap
             )
         return ChunkingService.chunk_text_fixed(
             cleaned, file_hash, chunk_size=chunk_size, chunk_overlap=chunk_overlap

@@ -1,4 +1,4 @@
-import { X } from "lucide-react";
+import { PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
 import { type KeyboardEvent, type RefObject, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, useLocation } from "react-router-dom";
@@ -10,17 +10,22 @@ import {
 } from "./admin-navigation";
 import { RailTooltipPortal } from "./RailTooltipPortal";
 import { type TooltipInteraction, useRailTooltip } from "./use-rail-tooltip";
+import type { SidebarLayout } from "./use-sidebar-layout";
 
 export interface AdminSidebarProps {
+  desktopLayout: SidebarLayout;
   mobileOpen: boolean;
   onCloseMobile: () => void;
+  onToggleDesktop: () => void;
 }
 
 interface SidebarContentProps {
   activePath: string | undefined;
   closeButtonRef?: RefObject<HTMLButtonElement | null>;
+  desktopLayout: SidebarLayout;
   onCloseMobile?: () => void;
   onSelectMobile?: () => void;
+  onToggleDesktop?: () => void;
   presentation: "desktop" | "mobile";
 }
 
@@ -66,6 +71,7 @@ function BrandIdentity() {
 
 function NavigationItems({
   activePath,
+  expanded,
   hideTooltip,
   items,
   onSelect,
@@ -73,6 +79,7 @@ function NavigationItems({
   showTooltip,
 }: {
   activePath: string | undefined;
+  expanded: boolean;
   hideTooltip?: (target: HTMLElement, interaction: TooltipInteraction) => void;
   items: readonly AdminNavigationItem[];
   onSelect?: () => void;
@@ -85,6 +92,8 @@ function NavigationItems({
 }) {
   const { t } = useTranslation();
   const isDesktop = presentation === "desktop";
+  const showLabels = !isDesktop || expanded;
+  const useTooltips = isDesktop && !expanded;
 
   return items.map((item) => {
     const label = t(item.key);
@@ -92,36 +101,53 @@ function NavigationItems({
     const Icon = item.icon;
 
     return (
-      <div className="group relative" key={item.to}>
+      <div className="group relative w-full" key={item.to}>
         <NavLink
           aria-label={label}
           className={`relative flex items-center text-[13px] no-underline transition-colors duration-200 motion-reduce:transition-none ${
-            isDesktop
-              ? "h-10 w-10 justify-center rounded-md"
-              : "min-h-10 gap-3 rounded-md px-3 py-2"
+            isDesktop && !expanded
+              ? "mx-auto h-10 w-10 justify-center rounded-md"
+              : "min-h-10 w-full gap-3 rounded-md px-3 py-2"
           } ${
             isActive
               ? "bg-muted font-medium text-primary"
               : "bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground"
           }`}
           end
-          onBlur={(event) => hideTooltip?.(event.currentTarget, "focus")}
+          onBlur={(event) =>
+            useTooltips
+              ? hideTooltip?.(event.currentTarget, "focus")
+              : undefined
+          }
           onClick={onSelect}
           onFocus={(event) =>
-            showTooltip?.(event.currentTarget, label, "focus")
+            useTooltips
+              ? showTooltip?.(event.currentTarget, label, "focus")
+              : undefined
           }
           onMouseEnter={(event) =>
-            showTooltip?.(event.currentTarget, label, "hover")
+            useTooltips
+              ? showTooltip?.(event.currentTarget, label, "hover")
+              : undefined
           }
-          onMouseLeave={(event) => hideTooltip?.(event.currentTarget, "hover")}
+          onMouseLeave={(event) =>
+            useTooltips
+              ? hideTooltip?.(event.currentTarget, "hover")
+              : undefined
+          }
           ref={(element) => {
             if (isActive) element?.setAttribute("aria-current", "page");
             else element?.removeAttribute("aria-current");
           }}
           to={item.to}
         >
-          <Icon aria-hidden="true" className={isDesktop ? "h-5 w-5" : "h-4 w-4 shrink-0"} />
-          {!isDesktop ? (
+          <Icon
+            aria-hidden="true"
+            className={
+              isDesktop && !expanded ? "h-5 w-5" : "h-4 w-4 shrink-0"
+            }
+          />
+          {showLabels ? (
             <span className="min-w-0 truncate">{label}</span>
           ) : null}
         </NavLink>
@@ -133,15 +159,18 @@ function NavigationItems({
 function SidebarContent({
   activePath,
   closeButtonRef,
+  desktopLayout,
   onCloseMobile,
   onSelectMobile,
+  onToggleDesktop,
   presentation,
 }: SidebarContentProps) {
   const { t } = useTranslation();
   const isMobile = presentation === "mobile";
+  const expanded = isMobile || desktopLayout === "expanded";
   const { clearTooltip, hideTooltip, showTooltip, tooltip } = useRailTooltip({
-    disabled: isMobile,
-    resetKey: "rail",
+    disabled: isMobile || expanded,
+    resetKey: desktopLayout,
   });
 
   return (
@@ -163,34 +192,67 @@ function SidebarContent({
 
       <nav
         aria-label={t("SHELL.PRIMARY_NAV")}
-        className={`flex min-h-0 flex-1 flex-col items-center gap-2 overflow-y-auto ${
-          isMobile ? "items-stretch px-3 pb-3" : "px-0 py-4"
+        className={`flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto ${
+          isMobile
+            ? "items-stretch px-3 pb-3"
+            : expanded
+              ? "items-stretch px-3 py-4"
+              : "items-center px-0 py-4"
         }`}
-        onScroll={!isMobile ? clearTooltip : undefined}
+        onScroll={!isMobile && !expanded ? clearTooltip : undefined}
       >
-        <div className={`flex flex-col gap-2 ${isMobile ? "" : "items-center"}`}>
+        <div
+          className={`flex flex-col gap-1 ${expanded || isMobile ? "w-full" : "items-center"}`}
+        >
           <NavigationItems
             activePath={activePath}
-            hideTooltip={!isMobile ? hideTooltip : undefined}
+            expanded={expanded}
+            hideTooltip={!isMobile && !expanded ? hideTooltip : undefined}
             items={primaryNavigationItems}
             onSelect={isMobile ? onSelectMobile : undefined}
             presentation={presentation}
-            showTooltip={!isMobile ? showTooltip : undefined}
+            showTooltip={!isMobile && !expanded ? showTooltip : undefined}
           />
         </div>
         <div className="flex-1" />
-        <div className={`flex flex-col gap-2 ${isMobile ? "" : "items-center"}`}>
+        <div
+          className={`flex flex-col gap-1 ${expanded || isMobile ? "w-full" : "items-center"}`}
+        >
           <NavigationItems
             activePath={activePath}
-            hideTooltip={!isMobile ? hideTooltip : undefined}
+            expanded={expanded}
+            hideTooltip={!isMobile && !expanded ? hideTooltip : undefined}
             items={settingsNavigationItems}
             onSelect={isMobile ? onSelectMobile : undefined}
             presentation={presentation}
-            showTooltip={!isMobile ? showTooltip : undefined}
+            showTooltip={!isMobile && !expanded ? showTooltip : undefined}
           />
+          {!isMobile && onToggleDesktop ? (
+            <button
+              aria-label={
+                expanded ? t("SHELL.COLLAPSE_NAV") : t("SHELL.EXPAND_NAV")
+              }
+              className={`flex items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground ${
+                expanded
+                  ? "min-h-10 w-full gap-3 px-3 py-2 text-[13px]"
+                  : "h-10 w-10 justify-center"
+              }`}
+              onClick={onToggleDesktop}
+              type="button"
+            >
+              {expanded ? (
+                <PanelLeftClose aria-hidden className="h-4 w-4 shrink-0" />
+              ) : (
+                <PanelLeftOpen aria-hidden className="h-5 w-5" />
+              )}
+              {expanded ? (
+                <span className="truncate">{t("SHELL.COLLAPSE_NAV")}</span>
+              ) : null}
+            </button>
+          ) : null}
         </div>
       </nav>
-      {!isMobile ? (
+      {!isMobile && !expanded ? (
         <RailTooltipPortal hiddenAtLarge={false} tooltip={tooltip} />
       ) : null}
     </div>
@@ -198,8 +260,10 @@ function SidebarContent({
 }
 
 export function AdminSidebar({
+  desktopLayout,
   mobileOpen,
   onCloseMobile,
+  onToggleDesktop,
 }: AdminSidebarProps) {
   const { t } = useTranslation();
   const location = useLocation();
@@ -210,6 +274,7 @@ export function AdminSidebar({
   const navigationCloseRequestedRef = useRef(false);
   const previousPathnameRef = useRef(location.pathname);
   const restoreFocusOnCloseRef = useRef(true);
+  const expanded = desktopLayout === "expanded";
 
   useEffect(() => {
     const pathnameChanged = previousPathnameRef.current !== location.pathname;
@@ -292,11 +357,16 @@ export function AdminSidebar({
   return (
     <>
       <aside
-        className="hidden w-[56px] shrink-0 border-r border-border bg-background text-foreground md:flex md:flex-col"
+        className={`hidden shrink-0 border-r border-border bg-background text-foreground transition-[width] duration-200 motion-reduce:transition-none md:flex md:flex-col ${
+          expanded ? "w-64" : "w-[56px]"
+        }`}
+        data-layout={desktopLayout}
         data-testid="admin-sidebar"
       >
         <SidebarContent
           activePath={activeItem?.to}
+          desktopLayout={desktopLayout}
+          onToggleDesktop={onToggleDesktop}
           presentation="desktop"
         />
       </aside>
@@ -320,6 +390,7 @@ export function AdminSidebar({
             <SidebarContent
               activePath={activeItem?.to}
               closeButtonRef={closeButtonRef}
+              desktopLayout="expanded"
               onCloseMobile={onCloseMobile}
               onSelectMobile={closeMobileFromSelection}
               presentation="mobile"

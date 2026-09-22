@@ -11,6 +11,7 @@ import { ErrorState } from '../../shared/ui/ErrorState';
 import { AdminHeader, type LogoutController } from './AdminHeader';
 import { AdminSidebar } from './AdminSidebar';
 import { findActiveNavigationItem, findNavigationGroup, isChatWorkbenchPath } from './admin-navigation';
+import { useSidebarLayout } from './use-sidebar-layout';
 
 export interface AppShellProps {
   fetchWorkspaces: () => Promise<Workspace[]>;
@@ -22,6 +23,7 @@ export function AppShell({ fetchWorkspaces, logoutController, syncSelection }: A
   const { i18n, t } = useTranslation();
   const location = useLocation();
   const [navigationOpen, setNavigationOpen] = useState(false);
+  const { layout: sidebarLayout, toggle: toggleSidebarLayout } = useSidebarLayout();
   const currentWorkspaceId = useWorkspaceStore((state) => state.currentWorkspaceId);
   const syncStatus = useWorkspaceStore((state) => state.syncStatus);
   const clearSyncStatus = useWorkspaceStore((state) => state.clearSyncStatus);
@@ -90,7 +92,12 @@ export function AppShell({ fetchWorkspaces, logoutController, syncSelection }: A
       ) : null}
 
       <div className="flex min-h-0 flex-1 overflow-hidden">
-        <AdminSidebar mobileOpen={navigationOpen} onCloseMobile={closeNavigation} />
+        <AdminSidebar
+          desktopLayout={sidebarLayout}
+          mobileOpen={navigationOpen}
+          onCloseMobile={closeNavigation}
+          onToggleDesktop={toggleSidebarLayout}
+        />
 
         <main
           className={

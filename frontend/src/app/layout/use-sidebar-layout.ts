@@ -4,7 +4,7 @@ export type SidebarLayout = 'expanded' | 'collapsed';
 
 export const SIDEBAR_LAYOUT_STORAGE_KEY = 'flae_admin_sidebar_layout';
 
-const DEFAULT_SIDEBAR_LAYOUT: SidebarLayout = 'expanded';
+const DEFAULT_SIDEBAR_LAYOUT: SidebarLayout = 'collapsed';
 
 function readSidebarLayout(): SidebarLayout {
   try {

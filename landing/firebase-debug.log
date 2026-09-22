@@ -1,0 +1,43 @@
+[debug] [2026-09-08T12:52:37.242Z] ----------------------------------------------------------------------
+[debug] [2026-09-08T12:52:37.245Z] Command:       /usr/local/bin/node /Users/nguyenhienvinh/.npm-global/bin/firebase apps:list --project flae-ci
+[debug] [2026-09-08T12:52:37.245Z] CLI Version:   15.18.0
+[debug] [2026-09-08T12:52:37.246Z] Platform:      darwin
+[debug] [2026-09-08T12:52:37.246Z] Node Version:  v24.18.0
+[debug] [2026-09-08T12:52:37.246Z] Time:          Tue Sep 08 2026 19:52:37 GMT+0700 (Indochina Time)
+[debug] [2026-09-08T12:52:37.246Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-09-08T12:52:37.248Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[debug] [2026-09-08T12:52:37.457Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-09-08T12:52:37.457Z] > authorizing via signed-in user (vinh@talkwithaura.com)
+[debug] [2026-09-08T12:52:37.459Z] Checked if tokens are valid: false, expires at: 1779251384613
+[debug] [2026-09-08T12:52:37.459Z] Checked if tokens are valid: false, expires at: 1779251384613
+[debug] [2026-09-08T12:52:37.460Z] > refreshing access token with scopes: []
+[debug] [2026-09-08T12:52:37.460Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-09-08T12:52:37.461Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-09-08T12:52:37.611Z] *** [apiv2] error from fetch(https://firebase-public.firebaseio.com/cli.json, {"headers":{},"method":"GET"}): FetchError: request to https://firebase-public.firebaseio.com/cli.json failed, reason: read ECONNRESET
+[warn] ⚠  Unable to fetch the CLI MOTD and remote config. This is not a fatal error, but may indicate an issue with your network connection. 
+[debug] [2026-09-08T12:52:37.612Z] Failed to fetch MOTD FirebaseError: Failed to make request to https://firebase-public.firebaseio.com/cli.json
+[debug] [2026-09-08T12:52:38.858Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 400
+[debug] [2026-09-08T12:52:38.858Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[error] Authentication Error: Your credentials are no longer valid. Please run firebase login --reauth
+
+For CI servers and headless environments, generate a new token with firebase login:ci
+[error] Authentication Error: Your credentials are no longer valid. Please run firebase login --reauth
+
+For CI servers and headless environments, generate a new token with firebase login:ci
+[debug] [2026-09-08T12:52:38.859Z] Authentication Error: Your credentials are no longer valid. Please run firebase login --reauth
+
+For CI servers and headless environments, generate a new token with firebase login:ci
+[debug] [2026-09-08T12:52:40.069Z] FirebaseError: Authentication Error: Your credentials are no longer valid. Please run firebase login --reauth
+
+For CI servers and headless environments, generate a new token with firebase login:ci
+    at invalidCredentialError (/Users/nguyenhienvinh/.npm-global/lib/node_modules/firebase-tools/lib/auth.js:177:12)
+    at refreshTokens (/Users/nguyenhienvinh/.npm-global/lib/node_modules/firebase-tools/lib/auth.js:590:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getAccessToken (/Users/nguyenhienvinh/.npm-global/lib/node_modules/firebase-tools/lib/apiv2.js:52:18)
+    at async Client.addAuthHeader (/Users/nguyenhienvinh/.npm-global/lib/node_modules/firebase-tools/lib/apiv2.js:182:21)
+    at async Client.request (/Users/nguyenhienvinh/.npm-global/lib/node_modules/firebase-tools/lib/apiv2.js:129:34)
+    at async listFirebaseApps (/Users/nguyenhienvinh/.npm-global/lib/node_modules/firebase-tools/lib/management/apps.js:363:30)
+    at async Command.actionFn (/Users/nguyenhienvinh/.npm-global/lib/node_modules/firebase-tools/lib/commands/apps-list.js:43:16)
+[error] 
+[error] Error: Failed to list Firebase apps. See firebase-debug.log for more info.

@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "targets": {
+    "/dashboard/knowledge": {
+      "targetKind": "existing-ui",
+      "projectId": "be9b7b88-985c-4055-a978-90bbc6528b59",
+      "baselineDraftId": "5240aad4-eaf1-4595-9f35-87676a47ae8d",
+      "activeDraftId": "5240aad4-eaf1-4595-9f35-87676a47ae8d",
+      "designSystemPath": ".superdesign/design-system.md",
+      "referenceIds": [],
+      "contextFiles": [
+        ".superdesign/design-system.md",
+        ".superdesign/init/theme.md",
+        "frontend/src/features/knowledge/pages/KnowledgeListPage.tsx",
+        "frontend/src/features/knowledge/ui/KnowledgeLibraryToolbar.tsx",
+        "frontend/src/features/knowledge/ui/DocumentGrid.tsx",
+        "frontend/src/features/knowledge/ui/DocumentTable.tsx",
+        "frontend/src/features/knowledge/ui/StatusBadge.tsx",
+        "frontend/src/shared/ui/PageHeader.tsx",
+        "frontend/src/shared/ui/Button.tsx",
+        "frontend/src/shared/ui/Table.tsx",
+        "frontend/src/app/layout/AdminHeader.tsx",
+        "frontend/src/app/layout/AdminSidebar.tsx",
+        "frontend/src/app/layout/admin-navigation.ts"
+      ],
+      "fingerprints": {
+        ".superdesign/design-system.md": "02b524beb3ac5755db026ab910a4d867059eb20b05e2efeb38191e5a722c0e55",
+        ".superdesign/init/theme.md": "bed29ed2e960be873f0dbabf807a343aba0273dec267f4c1469f7ec69b0e66e6",
+        "frontend/src/features/knowledge/pages/KnowledgeListPage.tsx": "22932f82cf25fb62cf79bed07be6940934c6aff60051d282f58ee05135ca4d3a",
+        "frontend/src/features/knowledge/ui/KnowledgeLibraryToolbar.tsx": "5bcdbd43d4d238ebf8f156bb91d4fc309dac600f50064f211fad0812bd93ec59",
+        "frontend/src/features/knowledge/ui/DocumentGrid.tsx": "733134b764a671bbedfc8e9678d7953e1e54d464e5aa24ebc375330ca66e6549",
+        "frontend/src/features/knowledge/ui/DocumentTable.tsx": "16f17c70bff82f6f040b9fc06deb5957ef58d766f311a6b0d1b7bdc1d2a51158",
+        "frontend/src/features/knowledge/ui/StatusBadge.tsx": "069c5d42b616ff0eb043b1f2d21b640d4ec7e91bacd4f0ec078043a779ae6065",
+        "frontend/src/shared/ui/PageHeader.tsx": "6d88c1a654c14553b896b8d0ca644f044e5d8698717291ebd9f68ca8eeff5c05",
+        "frontend/src/shared/ui/Button.tsx": "d8e0a8a51103ea8bf42adf64cf6e1e05180f840a86443b97e113a65deae99842",
+        "frontend/src/shared/ui/Table.tsx": "b6b3bdd49bd0c36e0dd31d9a76b632015a1810a62bed8a537862fdc891f18b5c",
+        "frontend/src/app/layout/AdminHeader.tsx": "93ad8d6d46e65addafb895f13b2e2e39d5b6cf6bea2d4c99b90a661f7e54b3b9",
+        "frontend/src/app/layout/AdminSidebar.tsx": "ea5310c5312a027b36e4eb87b7be3e4830a3497d71b7a8e573d769352231d1ff",
+        "frontend/src/app/layout/admin-navigation.ts": "5694b1838935814e1af84368287c512ab9629ca88bd8a3698adf59cc5c6e443f"
+      },
+      "components": [],
+      "drafts": {
+        "5240aad4-eaf1-4595-9f35-87676a47ae8d": {
+          "title": "Current Knowledge Library",
+          "visualDirection": "faithful reproduction of FLAE glass dark Knowledge library",
+          "currentVersion": 1
+        }
+      },
+      "updatedAt": "2026-09-22T09:44:27.082220+00:00"
+    },
+    "/dashboard/knowledge-redesign": {
+      "targetKind": "new-ui",
+      "projectId": "e32120a5-2d85-471f-99c0-9ffd056e4421",
+      "activeDraftId": "864a5302-b3fb-4b24-a938-65e1fcfe1a03",
+      "designSystemPath": ".superdesign/design-system.md",
+      "referenceIds": [],
+      "contextFiles": [
+        ".superdesign/design-system.md"
+      ],
+      "fingerprints": {
+        ".superdesign/design-system.md": "85995aff6b2243a03602c73ec65c9e299abbc1ff527cf0650b1cf3fb279e60ef"
+      },
+      "components": [],
+      "drafts": {
+        "864a5302-b3fb-4b24-a938-65e1fcfe1a03": {
+          "title": "Shell + Knowledge \u2014 Light",
+          "visualDirection": "Linear-tight Clean Enterprise light",
+          "currentVersion": 1
+        },
+        "3f439c1f-7b95-4f8d-b1d0-d6005eb64dc6": {
+          "title": "Shell + Knowledge \u2014 Dark",
+          "visualDirection": "Linear-tight Clean Enterprise dark",
+          "parentDraftId": "864a5302-b3fb-4b24-a938-65e1fcfe1a03",
+          "currentVersion": 1
+        }
+      },
+      "updatedAt": "2026-09-22T09:52:32.914232+00:00"
+    }
+  }
+}

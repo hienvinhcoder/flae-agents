@@ -114,10 +114,13 @@ describe('AppShell', () => {
 
     const sidebar = screen.getByTestId('admin-sidebar');
     expect(sidebar).toHaveClass('w-[56px]');
-    expect(sidebar).not.toHaveClass('lg:w-64');
+    expect(sidebar).not.toHaveClass('w-64');
     expect(screen.getByRole('main')).toHaveClass('flex-1');
     expect(within(screen.getByRole('banner')).getByRole('button', { name: 'Chuyển sang chế độ tối' })).toBeInTheDocument();
     expect(within(screen.getByRole('banner')).getByRole('link', { name: 'FLAE' })).toBeInTheDocument();
+    expect(
+      within(sidebar).getByRole('button', { name: 'Mở rộng điều hướng' }),
+    ).toBeInTheDocument();
   });
 
   it('offers responsive navigation and switches workspace without losing page context', async () => {
@@ -164,16 +167,29 @@ describe('AppShell', () => {
     );
     const contentWrapper = main.parentElement;
     expect(contentWrapper).toHaveClass('flex', 'flex-1', 'overflow-hidden');
-    expect(contentWrapper).not.toHaveClass('lg:pl-64');
     expect(screen.getByTestId('admin-sidebar')).toHaveClass('w-[56px]');
+
+    await userEvent.click(
+      within(sidebar).getByRole('button', { name: 'Mở rộng điều hướng' }),
+    );
+    expect(screen.getByTestId('admin-sidebar')).toHaveClass('w-64');
+    expect(
+      within(screen.getByTestId('admin-sidebar')).getByRole('button', {
+        name: 'Thu gọn điều hướng',
+      }),
+    ).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Mở điều hướng' }));
     const mobileNavigation = screen.getByRole('dialog', { name: 'Điều hướng chính' });
     expect(mobileNavigation).toBeInTheDocument();
     await userEvent.click(within(mobileNavigation).getByRole('button', { name: 'Đóng điều hướng' }));
     expect(screen.queryByRole('dialog', { name: 'Điều hướng chính' })).not.toBeInTheDocument();
-
-    expect(within(sidebar).queryByRole('button', { name: 'Thu gọn điều hướng' })).not.toBeInTheDocument();
+    expect(screen.getByTestId('admin-sidebar')).toHaveClass('w-64');
+    expect(
+      within(screen.getByTestId('admin-sidebar')).getByRole('button', {
+        name: 'Thu gọn điều hướng',
+      }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Current page' })).toBeInTheDocument();
 
     await userEvent.selectOptions(workspaceSelector, 'ws-2');

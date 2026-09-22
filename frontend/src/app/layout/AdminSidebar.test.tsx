@@ -44,8 +44,10 @@ const resources = {
 };
 
 const defaultProps: AdminSidebarProps = {
+  desktopLayout: "collapsed",
   mobileOpen: false,
   onCloseMobile: vi.fn(),
+  onToggleDesktop: vi.fn(),
 };
 
 type MediaQueryChangeListener = (event: MediaQueryListEvent) => void;
@@ -140,12 +142,12 @@ describe("AdminSidebar", () => {
       "bg-background",
       "text-foreground",
     );
-    expect(sidebar).not.toHaveClass("lg:w-64");
+    expect(sidebar).not.toHaveClass("w-64");
+    expect(
+      within(sidebar).getByRole("button", { name: "Expand navigation" }),
+    ).toBeInTheDocument();
     expect(
       within(sidebar).queryByRole("button", { name: "Collapse navigation" }),
-    ).not.toBeInTheDocument();
-    expect(
-      within(sidebar).queryByRole("button", { name: "Expand navigation" }),
     ).not.toBeInTheDocument();
     expect(within(sidebar).queryByRole("link", { name: "FLAE" })).not.toBeInTheDocument();
     expect(
@@ -158,6 +160,25 @@ describe("AdminSidebar", () => {
       "bg-sidebar-primary",
       "text-sidebar-primary-foreground",
     );
+  });
+
+  it("expands the desktop rail to show navigation labels", async () => {
+    const onToggleDesktop = vi.fn();
+    await renderSidebar({
+      desktopLayout: "expanded",
+      onToggleDesktop,
+    });
+
+    const sidebar = screen.getByTestId("admin-sidebar");
+    expect(sidebar).toHaveClass("w-64");
+    expect(sidebar).toHaveAttribute("data-layout", "expanded");
+    expect(within(sidebar).getByText("AI Chat")).toBeInTheDocument();
+    expect(within(sidebar).getByText("Knowledge")).toBeInTheDocument();
+
+    await userEvent.click(
+      within(sidebar).getByRole("button", { name: "Collapse navigation" }),
+    );
+    expect(onToggleDesktop).toHaveBeenCalledOnce();
   });
 
   it("keeps rail destinations named for assistive tech", async () => {

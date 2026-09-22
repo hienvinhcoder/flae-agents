@@ -16,18 +16,18 @@ describe('useSidebarLayout', () => {
     vi.restoreAllMocks();
   });
 
-  it('defaults to expanded and persists each toggle', () => {
+  it('defaults to collapsed and persists each toggle', () => {
     const { result } = renderHook(() => useSidebarLayout());
 
-    expect(result.current.layout).toBe('expanded');
-
-    act(() => result.current.toggle());
     expect(result.current.layout).toBe('collapsed');
-    expect(localStorage.getItem(SIDEBAR_LAYOUT_STORAGE_KEY)).toBe('collapsed');
 
     act(() => result.current.toggle());
     expect(result.current.layout).toBe('expanded');
     expect(localStorage.getItem(SIDEBAR_LAYOUT_STORAGE_KEY)).toBe('expanded');
+
+    act(() => result.current.toggle());
+    expect(result.current.layout).toBe('collapsed');
+    expect(localStorage.getItem(SIDEBAR_LAYOUT_STORAGE_KEY)).toBe('collapsed');
   });
 
   it('persists rapid StrictMode toggles exactly once each', () => {
@@ -41,12 +41,12 @@ describe('useSidebarLayout', () => {
       result.current.toggle();
     });
 
-    expect(result.current.layout).toBe('expanded');
+    expect(result.current.layout).toBe('collapsed');
     expect(setItemSpy.mock.calls).toEqual([
-      [SIDEBAR_LAYOUT_STORAGE_KEY, 'collapsed'],
       [SIDEBAR_LAYOUT_STORAGE_KEY, 'expanded'],
+      [SIDEBAR_LAYOUT_STORAGE_KEY, 'collapsed'],
     ]);
-    expect(localStorage.getItem(SIDEBAR_LAYOUT_STORAGE_KEY)).toBe('expanded');
+    expect(localStorage.getItem(SIDEBAR_LAYOUT_STORAGE_KEY)).toBe('collapsed');
   });
 
   it.each<SidebarLayout>(['expanded', 'collapsed'])(
@@ -60,22 +60,22 @@ describe('useSidebarLayout', () => {
     },
   );
 
-  it('defaults to expanded when the stored layout is invalid', () => {
+  it('defaults to collapsed when the stored layout is invalid', () => {
     localStorage.setItem(SIDEBAR_LAYOUT_STORAGE_KEY, 'compact');
 
     const { result } = renderHook(() => useSidebarLayout());
 
-    expect(result.current.layout).toBe('expanded');
+    expect(result.current.layout).toBe('collapsed');
   });
 
-  it('defaults to expanded when reading storage fails', () => {
+  it('defaults to collapsed when reading storage fails', () => {
     vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
       throw new DOMException('Storage unavailable', 'SecurityError');
     });
 
     const { result } = renderHook(() => useSidebarLayout());
 
-    expect(result.current.layout).toBe('expanded');
+    expect(result.current.layout).toBe('collapsed');
   });
 
   it('keeps toggling in memory when writing storage fails', () => {
@@ -90,11 +90,11 @@ describe('useSidebarLayout', () => {
 
     expect(setItemSpy).toHaveBeenCalledWith(
       SIDEBAR_LAYOUT_STORAGE_KEY,
-      'collapsed',
+      'expanded',
     );
-    expect(result.current.layout).toBe('collapsed');
+    expect(result.current.layout).toBe('expanded');
 
     act(() => result.current.toggle());
-    expect(result.current.layout).toBe('expanded');
+    expect(result.current.layout).toBe('collapsed');
   });
 });

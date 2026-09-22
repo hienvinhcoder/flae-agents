@@ -55,7 +55,8 @@ def test_luminaops_current_facts_and_traps() -> None:
     assert "Không phải sự cố AWS" in aws_trap.supporting_spans[0].quote
 
 
-def test_luminaops_documents_split_under_tgs_chunking() -> None:
+def test_luminaops_documents_split_under_chonkie_chunking() -> None:
+    """Offline split checks use fixed + markdown (semantic needs Gemini API)."""
     dataset = load_luminaops_dataset()
     profile = dataset.chunking
     for doc in dataset.documents:
@@ -67,19 +68,16 @@ def test_luminaops_documents_split_under_tgs_chunking() -> None:
         fixed = ChunkingService.chunk_text_fixed(
             text, "eval", profile.fixed_size, profile.fixed_overlap
         )
-        semantic = ChunkingService.chunk_text_semantic(
+        markdown = ChunkingService.chunk_text_markdown(
             text,
             "eval",
             profile.semantic_target,
-            profile.semantic_overlap,
-            profile.semantic_pre_context_limit,
-            profile.semantic_hard_limit,
         )
         assert len(fixed) >= doc.min_fixed_chunks, (
             f"{doc.doc_id}: fixed {len(fixed)} < {doc.min_fixed_chunks}"
         )
-        assert len(semantic) >= doc.min_semantic_chunks, (
-            f"{doc.doc_id}: semantic {len(semantic)} < {doc.min_semantic_chunks}"
+        assert len(markdown) >= doc.min_semantic_chunks, (
+            f"{doc.doc_id}: markdown {len(markdown)} < {doc.min_semantic_chunks}"
         )
         if len(fixed) >= 2:
             assert all(chunk["token_count"] <= profile.fixed_size for chunk in fixed)
@@ -94,27 +92,22 @@ def test_luminaops_oversized_heading_exceeds_semantic_target() -> None:
     assert get_token_count(section) > dataset.chunking.semantic_target
 
 
-def test_luminaops_hard_limit_skips_overlap_into_next_section() -> None:
+def test_luminaops_chonkie_keeps_section_markers_findable() -> None:
+    """Hard-limit probe docs still produce chunks covering successive sections."""
     dataset = load_luminaops_dataset()
     doc = next(item for item in dataset.documents if item.chunk_probe == ChunkProbe.hard_limit_unit)
     text = read_document_text(dataset, doc.doc_id)
     assert HARD_LIMIT_MARKER in text
     assert NEXT_AFTER_HARD_LIMIT in text
-    table_block = _heading_block(text, "Phụ lục danh sách cửa dock VSIP 1")
-    assert get_token_count(table_block) > dataset.chunking.semantic_hard_limit
-    assert get_token_count(table_block) > dataset.chunking.semantic_target
 
-    semantic = ChunkingService.chunk_text_semantic(
+    markdown = ChunkingService.chunk_text_markdown(
         text,
         "eval",
         dataset.chunking.semantic_target,
-        dataset.chunking.semantic_overlap,
-        dataset.chunking.semantic_pre_context_limit,
-        dataset.chunking.semantic_hard_limit,
     )
-    next_chunks = [chunk["text"] for chunk in semantic if NEXT_AFTER_HARD_LIMIT in chunk["text"]]
-    assert next_chunks, "expected a semantic chunk for the section after the dock table"
-    assert all(HARD_LIMIT_MARKER not in chunk for chunk in next_chunks)
+    joined = "\n".join(chunk["text"] for chunk in markdown)
+    assert HARD_LIMIT_MARKER in joined
+    assert NEXT_AFTER_HARD_LIMIT in joined
 
 
 def _heading_block(text: str, heading: str) -> str:
