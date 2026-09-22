@@ -10,12 +10,13 @@ describe('Button', () => {
 
     const button = screen.getByRole('button', { name: 'Upload document' });
     expect(button).toHaveClass(
-      'flae-button-primary',
+      'rounded-ui-control',
       'bg-primary-control',
       'text-primary-control-foreground',
       'hover:bg-primary-control-hover',
       'active:bg-primary-control-active',
     );
+    expect(button).not.toHaveClass('flae-button-primary');
     expect(button).toHaveAttribute('data-variant', 'primary');
     expect(button).not.toHaveClass('button-primary');
   });

@@ -11,7 +11,6 @@ import { ErrorState } from '../../shared/ui/ErrorState';
 import { AdminHeader, type LogoutController } from './AdminHeader';
 import { AdminSidebar } from './AdminSidebar';
 import { findActiveNavigationItem, findNavigationGroup, isChatWorkbenchPath } from './admin-navigation';
-import { useSidebarLayout } from './use-sidebar-layout';
 
 export interface AppShellProps {
   fetchWorkspaces: () => Promise<Workspace[]>;
@@ -23,7 +22,6 @@ export function AppShell({ fetchWorkspaces, logoutController, syncSelection }: A
   const { i18n, t } = useTranslation();
   const location = useLocation();
   const [navigationOpen, setNavigationOpen] = useState(false);
-  const { layout: sidebarLayout, toggle: toggleSidebarLayout } = useSidebarLayout();
   const currentWorkspaceId = useWorkspaceStore((state) => state.currentWorkspaceId);
   const syncStatus = useWorkspaceStore((state) => state.syncStatus);
   const clearSyncStatus = useWorkspaceStore((state) => state.clearSyncStatus);
@@ -54,16 +52,14 @@ export function AppShell({ fetchWorkspaces, logoutController, syncSelection }: A
           : null;
 
   return (
-    <div className="glass-field min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground">
       <a className="fixed left-4 top-3 z-[60] -translate-y-20 rounded-ui-control bg-primary-control px-4 py-2 font-semibold text-primary-control-foreground transition-transform duration-200 focus:translate-y-0" href="#main-content">{t('SHELL.SKIP_CONTENT')}</a>
       <AdminSidebar
-        desktopLayout={sidebarLayout}
         mobileOpen={navigationOpen}
         onCloseMobile={closeNavigation}
-        onToggleDesktop={toggleSidebarLayout}
       />
 
-      <div className={`transition-[padding] duration-200 motion-reduce:transition-none md:pl-[72px] ${sidebarLayout === 'expanded' ? 'lg:pl-64' : 'lg:pl-[72px]'}`}>
+      <div className="md:pl-14">
         <AdminHeader
           currentWorkspaceId={currentWorkspaceId}
           language={i18n.resolvedLanguage ?? 'vi'}
@@ -79,13 +75,13 @@ export function AppShell({ fetchWorkspaces, logoutController, syncSelection }: A
           workspacesPending={workspaces.isPending}
         />
 
-        {syncMessage ? <div aria-live="polite" className={`border-b px-4 py-2 text-sm md:px-6 xl:px-8 ${syncStatus === 'error' ? 'border-state-danger bg-state-danger-soft text-state-danger' : 'border-ui-divider bg-ui-raised text-ui-ink-secondary'}`} role="status">{syncMessage}</div> : null}
-        {logoutController?.error ? <div className="border-b border-state-danger bg-state-danger-soft px-4 py-2 text-state-danger md:px-6 xl:px-8" role="alert">{t('SHELL.LOGOUT_ERROR')}</div> : null}
+        {syncMessage ? <div aria-live="polite" className={`border-b px-4 py-2 text-sm md:px-6 ${syncStatus === 'error' ? 'border-state-danger bg-state-danger-soft text-state-danger' : 'border-border bg-muted text-muted-foreground'}`} role="status">{syncMessage}</div> : null}
+        {logoutController?.error ? <div className="border-b border-state-danger bg-state-danger-soft px-4 py-2 text-state-danger md:px-6" role="alert">{t('SHELL.LOGOUT_ERROR')}</div> : null}
 
         <main
           className={isChatWorkbenchPath(location.pathname)
-            ? 'flex h-[calc(100dvh-4rem)] min-h-0 flex-col overflow-hidden p-0'
-            : 'min-h-[calc(100vh-4rem)] px-4 py-5 sm:px-5 md:px-6 md:py-6 xl:px-8'}
+            ? 'flex h-[calc(100dvh-3.5rem)] min-h-0 flex-col overflow-hidden p-0'
+            : 'min-h-[calc(100vh-3.5rem)] px-4 py-5 md:px-6'}
           id="main-content"
           tabIndex={-1}
         >

@@ -22,7 +22,7 @@ const variantClasses: Record<ButtonVariant, string> = {
   danger: 'border-destructive bg-destructive text-destructive-foreground hover:opacity-90',
   ghost: 'border-transparent bg-transparent text-muted-foreground hover:bg-accent hover:text-accent-foreground',
   outline: 'border-border bg-card text-foreground hover:bg-secondary',
-  primary: 'flae-button-primary border-transparent bg-primary-control text-primary-control-foreground hover:bg-primary-control-hover active:bg-primary-control-active',
+  primary: 'border-transparent bg-primary-control text-primary-control-foreground hover:bg-primary-control-hover active:bg-primary-control-active',
   secondary: 'border-border bg-secondary text-secondary-foreground hover:bg-accent',
 };
 

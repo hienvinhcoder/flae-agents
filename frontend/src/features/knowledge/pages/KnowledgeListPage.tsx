@@ -184,7 +184,7 @@ export function KnowledgeListPage() {
 
   if (!workspaceId) {
     return (
-      <section className="mx-auto w-full max-w-7xl">
+      <section className="mx-auto flex w-full max-w-7xl flex-col gap-6">
         <PageHeader
           description={t("KNOWLEDGE.WORKSPACE_REQUIRED")}
           title={t("KNOWLEDGE.TITLE")}
@@ -194,15 +194,15 @@ export function KnowledgeListPage() {
   }
 
   return (
-    <section className="mx-auto grid w-full max-w-7xl gap-6 md:gap-8">
+    <section className="mx-auto flex w-full max-w-7xl flex-col gap-6">
       <PageHeader
         actions={
           <>
             <Link
-              className="inline-flex min-h-10 items-center gap-2 rounded-ui-control border border-ui-line bg-ui-raised px-4 py-2 font-semibold text-ui-ink no-underline transition-colors duration-150 hover:border-ui-line-strong hover:bg-ui-interactive motion-reduce:transition-none"
+              className="inline-flex min-h-10 items-center gap-2 rounded-ui-control border border-border bg-card px-4 py-2 font-semibold text-foreground no-underline transition-colors duration-150 hover:bg-secondary motion-reduce:transition-none"
               to="graph"
             >
-              <Network aria-hidden className="h-4 w-4 text-brand-text" strokeWidth={1.75} />
+              <Network aria-hidden className="h-4 w-4 text-primary" strokeWidth={1.75} />
               {t("KNOWLEDGE.OPEN_GRAPH")}
             </Link>
             <Button onClick={() => setTextOpen(true)} variant="secondary">
@@ -225,21 +225,21 @@ export function KnowledgeListPage() {
 
       <section
         aria-labelledby="knowledge-documents-title"
-        className="overflow-hidden rounded-ui-panel border border-ui-divider bg-ui-raised"
+        className="overflow-hidden rounded-ui-panel border border-border bg-card"
       >
         <div className="flex flex-col gap-2 p-5 sm:flex-row sm:items-end sm:justify-between sm:p-6">
           <div className="min-w-0">
             <h2
-              className="text-xl font-semibold tracking-[-0.01em] text-ui-ink"
+              className="text-xl font-semibold tracking-[-0.01em] text-foreground"
               id="knowledge-documents-title"
             >
               {t("KNOWLEDGE.LIBRARY_TITLE")}
             </h2>
-            <p className="mt-1 max-w-2xl text-sm text-ui-ink-secondary">
+            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
               {t("KNOWLEDGE.TABLE_DESCRIPTION")}
             </p>
           </div>
-          <p className="shrink-0 text-sm font-medium tabular-nums text-ui-ink-muted">
+          <p className="shrink-0 text-sm font-medium tabular-nums text-muted-foreground">
             {t("KNOWLEDGE.RESULT_COUNT", {
               count: filteredDocuments.length,
               total: documents.length,

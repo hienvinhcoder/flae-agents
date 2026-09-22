@@ -24,7 +24,7 @@ export function SidebarStatusCard() {
         className="mt-3 h-1.5 overflow-hidden rounded-ui-status bg-sidebar-border"
         role="meter"
       >
-        <span className="block h-full w-4/5 rounded-ui-status bg-primary shadow-[var(--glow-primary)]" />
+        <span className="block h-full w-4/5 rounded-ui-status bg-primary" />
       </div>
       <p className="mt-2 text-xs tabular-nums text-sidebar-foreground/60">42,180 nodes · 128k edges</p>
     </section>

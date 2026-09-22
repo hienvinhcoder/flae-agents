@@ -1,9 +1,11 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { I18nextProvider } from "react-i18next";
-import { describe, expect, it, vi } from "vitest";
+import { MemoryRouter } from "react-router-dom";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { User } from "../../core/auth/user-schema";
+import { useThemeStore } from "../../core/stores/theme-store";
 import type { Workspace } from "../../features/settings/types/workspace";
 import { createI18n } from "../../shared/i18n";
 import { AdminHeader, type AdminHeaderProps } from "./AdminHeader";
@@ -22,6 +24,8 @@ const resources = {
         LOGGING_OUT: "Signing out",
         NO_WORKSPACE: "No workspace",
         OPEN_NAV: "Open navigation",
+        THEME_DARK: "Switch to dark mode",
+        THEME_LIGHT: "Switch to light mode",
         WORKSPACE: "Workspace",
       },
     },
@@ -77,31 +81,42 @@ async function renderHeader(props: AdminHeaderProps) {
   const i18n = await createI18n(resources, "en");
   return render(
     <I18nextProvider i18n={i18n}>
-      <AdminHeader {...props} />
+      <MemoryRouter>
+        <AdminHeader {...props} />
+      </MemoryRouter>
     </I18nextProvider>,
   );
 }
 
 describe("AdminHeader", () => {
-  it("renders the header without a search input and marks unavailable actions as inert", async () => {
-    await renderHeader(createProps());
-
-    expect(screen.getByRole("banner")).toHaveClass("h-16");
-    expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "MCP" })).toBeDisabled();
-    const addSourceButton = screen.getByRole("button", { name: "Add source" });
-    expect(addSourceButton).toBeDisabled();
-    expect(addSourceButton).toHaveClass(
-      "header-add-source",
-      "bg-primary-control",
-      "text-primary-control-foreground",
-    );
-    expect(screen.getByTestId("mcp-status-indicator")).toHaveClass(
-      "bg-chart-2",
-    );
+  beforeEach(() => {
+    useThemeStore.setState({ theme: "light" });
+    document.documentElement.classList.remove("dark");
   });
 
-  it("preserves workspace, language, user, and logout controls", async () => {
+  it("renders hybrid chrome without MCP or Add Source demo actions", async () => {
+    await renderHeader(createProps());
+
+    const banner = screen.getByRole("banner");
+    expect(banner).toHaveClass("h-14");
+    expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "MCP" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Add source" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "FLAE" })).toHaveAttribute(
+      "href",
+      "/dashboard/chat",
+    );
+    expect(
+      screen.getByRole("button", { name: "Switch to dark mode" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("combobox", { name: "Workspace" }),
+    ).toBeInTheDocument();
+  });
+
+  it("preserves language, user, and logout controls", async () => {
     await renderHeader(
       createProps({
         logoutController: {
@@ -114,9 +129,6 @@ describe("AdminHeader", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "WO" }));
 
-    expect(
-      screen.getByRole("combobox", { name: "Workspace" }),
-    ).toBeInTheDocument();
     expect(
       screen.getByRole("combobox", { name: "Language" }),
     ).toBeInTheDocument();
@@ -132,8 +144,6 @@ describe("AdminHeader", () => {
         user: { ...user, full_name: "Nguyen Vinh" },
       }),
     );
-
-    await userEvent.click(screen.getByRole("button", { name: "NV" }));
 
     expect(screen.getByText("Intelligence")).toBeInTheDocument();
     expect(screen.getByText("Knowledge base")).toBeInTheDocument();
@@ -161,14 +171,13 @@ describe("AdminHeader", () => {
     const onSelectWorkspace = vi.fn();
     await renderHeader(createProps({ onChangeLanguage, onSelectWorkspace }));
 
-    await userEvent.click(screen.getByRole("button", { name: "WO" }));
-
     await userEvent.selectOptions(
       screen.getByRole("combobox", { name: "Workspace" }),
       "workspace-2",
     );
     expect(onSelectWorkspace).toHaveBeenCalledWith("workspace-2");
 
+    await userEvent.click(screen.getByRole("button", { name: "WO" }));
     await userEvent.selectOptions(
       screen.getByRole("combobox", { name: "Language" }),
       "vi",
@@ -178,8 +187,6 @@ describe("AdminHeader", () => {
 
   it("announces workspace loading", async () => {
     await renderHeader(createProps({ workspacesPending: true }));
-
-    await userEvent.click(screen.getByRole("button", { name: "WO" }));
 
     expect(
       screen.getByRole("status", { name: "Loading workspaces" }),
@@ -194,8 +201,6 @@ describe("AdminHeader", () => {
       createProps({ currentWorkspaceId: null, workspaces: [] }),
     );
 
-    await userEvent.click(screen.getByRole("button", { name: "WO" }));
-
     const selector = screen.getByRole("combobox", { name: "Workspace" });
     expect(selector).toBeDisabled();
     expect(selector).toHaveDisplayValue("No workspace");
@@ -203,8 +208,6 @@ describe("AdminHeader", () => {
 
   it("disables workspace changes while synchronization is active", async () => {
     await renderHeader(createProps({ syncStatus: "syncing" }));
-
-    await userEvent.click(screen.getByRole("button", { name: "WO" }));
 
     expect(screen.getByRole("combobox", { name: "Workspace" })).toBeDisabled();
   });

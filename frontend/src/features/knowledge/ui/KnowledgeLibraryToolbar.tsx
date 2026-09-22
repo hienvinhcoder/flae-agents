@@ -30,19 +30,19 @@ export function KnowledgeLibraryToolbar({
   const { t } = useTranslation();
 
   return (
-    <div className="grid gap-4 border-b border-ui-divider bg-ui-panel/60 p-4 sm:p-5 lg:grid-cols-[minmax(16rem,1fr)_13rem_auto_auto] lg:items-end">
+    <div className="grid gap-4 border-b border-border bg-muted/60 p-4 sm:p-5 lg:grid-cols-[minmax(16rem,1fr)_13rem_auto_auto] lg:items-end">
       <div className="grid gap-2">
-        <label className="text-sm font-semibold text-ui-ink" htmlFor="knowledge-search">
+        <label className="text-sm font-semibold text-foreground" htmlFor="knowledge-search">
           {t("KNOWLEDGE.SEARCH_LABEL")}
         </label>
         <div className="relative">
           <Search
             aria-hidden
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ui-ink-muted"
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
             strokeWidth={1.75}
           />
           <input
-            className="min-h-10 w-full rounded-ui-control border border-ui-line bg-ui-raised py-2 pl-10 pr-3 text-sm text-ui-ink placeholder:text-ui-ink-muted hover:border-ui-line-strong focus:border-brand-text focus:outline-none"
+            className="min-h-10 w-full rounded-ui-control border border-border bg-card py-2 pl-10 pr-3 text-sm text-foreground placeholder:text-muted-foreground hover:border-foreground/40 focus:border-ring focus:outline-none"
             id="knowledge-search"
             onChange={(event) => onSearchChange(event.target.value)}
             placeholder={t("KNOWLEDGE.SEARCH_PLACEHOLDER")}
@@ -66,12 +66,12 @@ export function KnowledgeLibraryToolbar({
       />
 
       <div className="grid gap-2">
-        <span className="text-sm font-semibold text-ui-ink">
+        <span className="text-sm font-semibold text-foreground">
           {t("KNOWLEDGE.VIEW_MODE")}
         </span>
         <div
           aria-label={t("KNOWLEDGE.VIEW_MODE")}
-          className="inline-flex min-h-10 w-fit rounded-ui-control border border-ui-line bg-ui-raised p-1"
+          className="inline-flex min-h-10 w-fit rounded-ui-control border border-border bg-card p-1"
           role="group"
         >
           <button
@@ -79,8 +79,8 @@ export function KnowledgeLibraryToolbar({
             aria-pressed={viewMode === "grid"}
             className={`grid min-h-8 min-w-10 place-items-center rounded-ui-control transition-colors duration-150 motion-reduce:transition-none ${
               viewMode === "grid"
-                ? "bg-brand-soft text-brand-text"
-                : "text-ui-ink-muted hover:bg-ui-interactive hover:text-ui-ink"
+                ? "bg-primary-soft text-primary"
+                : "text-muted-foreground hover:bg-accent hover:text-foreground"
             }`}
             onClick={() => onViewModeChange("grid")}
             type="button"
@@ -92,8 +92,8 @@ export function KnowledgeLibraryToolbar({
             aria-pressed={viewMode === "list"}
             className={`grid min-h-8 min-w-10 place-items-center rounded-ui-control transition-colors duration-150 motion-reduce:transition-none ${
               viewMode === "list"
-                ? "bg-brand-soft text-brand-text"
-                : "text-ui-ink-muted hover:bg-ui-interactive hover:text-ui-ink"
+                ? "bg-primary-soft text-primary"
+                : "text-muted-foreground hover:bg-accent hover:text-foreground"
             }`}
             onClick={() => onViewModeChange("list")}
             type="button"

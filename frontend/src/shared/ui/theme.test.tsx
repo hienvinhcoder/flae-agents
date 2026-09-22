@@ -12,43 +12,42 @@ const typescriptSources = import.meta.glob<string>('../../**/*.{ts,tsx}', {
 });
 
 const referenceTokens = [
-  ['--background', '#141009'],
-  ['--foreground', '#f5f0e8'],
-  ['--card', 'var(--glass-surface-strong)'],
+  ['--background', '#FAFAF9'],
+  ['--foreground', '#1C1917'],
+  ['--card', '#FFFFFF'],
   ['--card-foreground', 'var(--foreground)'],
-  ['--popover', 'var(--glass-surface-strong)'],
+  ['--popover', '#FFFFFF'],
   ['--popover-foreground', 'var(--foreground)'],
-  ['--primary', 'oklch(70.487% 0.1867 47.604)'],
-  ['--primary-foreground', 'oklch(98.951% 0.009 78.283)'],
-  ['--primary-soft', 'rgb(249 115 22 / 0.16)'],
+  ['--primary', '#EA580C'],
+  ['--primary-foreground', '#FFFFFF'],
+  ['--primary-hover', '#C2410C'],
   ['--primary-control', 'var(--primary)'],
-  ['--primary-control-hover', 'color-mix(in oklch, var(--primary), var(--foreground) 10%)'],
-  ['--primary-control-active', 'color-mix(in oklch, var(--primary), var(--foreground) 18%)'],
+  ['--primary-control-hover', 'var(--primary-hover)'],
+  ['--primary-control-active', '#9A3412'],
   ['--primary-control-foreground', 'var(--primary-foreground)'],
-  ['--secondary', 'var(--glass-surface)'],
-  ['--secondary-foreground', 'var(--foreground)'],
-  ['--muted', 'rgb(255 251 245 / 0.08)'],
-  ['--muted-foreground', '#b7ab9a'],
-  ['--accent', 'var(--secondary)'],
+  ['--secondary', '#F5F5F4'],
+  ['--secondary-foreground', '#1C1917'],
+  ['--muted', '#F5F5F4'],
+  ['--muted-foreground', '#78716C'],
+  ['--accent', '#F5F5F4'],
   ['--accent-foreground', 'var(--foreground)'],
-  ['--destructive', 'oklch(0.62 0.21 27)'],
-  ['--destructive-foreground', 'var(--primary-foreground)'],
-  ['--border', 'rgb(255 251 245 / 0.12)'],
-  ['--input', 'var(--border)'],
-  ['--ring', 'var(--primary)'],
-  ['--sidebar', 'rgb(20 16 9 / 0.65)'],
-  ['--sidebar-foreground', '#eae3d6'],
-  ['--sidebar-primary', 'var(--primary-soft)'],
-  ['--sidebar-primary-foreground', 'var(--orb-primary)'],
-  ['--sidebar-accent', 'color-mix(in oklch, var(--sidebar), var(--sidebar-foreground) 8%)'],
-  ['--sidebar-border', 'color-mix(in oklch, var(--sidebar), var(--sidebar-foreground) 12%)'],
-  ['--radius-control', '0.625rem'],
-  ['--radius-card', '0.875rem'],
-  ['--radius-dialog', '1.125rem'],
+  ['--destructive', '#DC2626'],
+  ['--destructive-foreground', '#FFFFFF'],
+  ['--border', '#E7E5E4'],
+  ['--input', '#E7E5E4'],
+  ['--ring', '#EA580C'],
+  ['--sidebar', '#FAFAF9'],
+  ['--sidebar-foreground', '#1C1917'],
+  ['--sidebar-primary', 'var(--primary)'],
+  ['--sidebar-primary-foreground', 'var(--primary)'],
+  ['--sidebar-accent', '#F5F5F4'],
+  ['--sidebar-border', '#E7E5E4'],
+  ['--radius-control', '0.375rem'],
+  ['--radius-card', '0.5rem'],
+  ['--radius-dialog', '0.75rem'],
   ['--radius-pill', '9999px'],
-  ['--shadow-panel', 'var(--shadow-glass)'],
-  ['--shadow-overlay', 'var(--shadow-glass-pop)'],
-  ['--focus-ring', '0 0 0 4px color-mix(in oklch, var(--ring) 22%, transparent)'],
+  ['--shadow-panel', 'none'],
+  ['--shadow-overlay', '0 4px 16px rgba(0, 0, 0, 0.08)'],
 ] as const;
 
 function expectToken(token: string, value: string): void {
@@ -94,6 +93,16 @@ describe('theme contract', () => {
     for (const [token, value] of referenceTokens) {
       expectToken(token, value);
     }
+  });
+
+  it('uses light color-scheme on :root', () => {
+    expect(stylesheet).toMatch(/:root\s*\{[^}]*color-scheme:\s*light;/s);
+  });
+
+  it('defines dark-mode tokens under .dark', () => {
+    expect(stylesheet).toMatch(/\.dark\s*\{[^}]*--background:\s*#0C0A09;/s);
+    expect(stylesheet).toMatch(/\.dark\s*\{[^}]*--primary:\s*#F97316;/s);
+    expect(stylesheet).toMatch(/\.dark\s*\{[^}]*--card:\s*#1C1917;/s);
   });
 
   it('loads the primary-button theme through the main entry and Vite CSS pipeline', () => {

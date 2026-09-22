@@ -1,11 +1,12 @@
-import { Command, Menu, Plug } from 'lucide-react';
+import { Menu, Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 
 import type { User } from '../../core/auth/user-schema';
 import type { Workspace } from '../../features/settings/types/workspace';
-import { Button } from '../../shared/ui/Button';
-import { HeaderUtilities } from './HeaderUtilities';
+import { HeaderUtilities, WorkspaceSwitcher } from './HeaderUtilities';
 import type { LogoutController, WorkspaceSyncStatus } from './header-types';
+import { ThemeToggle } from './ThemeToggle';
 
 export type { LogoutController, WorkspaceSyncStatus } from './header-types';
 
@@ -41,60 +42,50 @@ export function AdminHeader({
   const { t } = useTranslation();
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-sidebar-border bg-sidebar px-3 backdrop-blur-glass sm:px-4 md:px-6 lg:px-8">
+    <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-background px-3 md:px-4">
       <button
         aria-label={t('SHELL.OPEN_NAV')}
-        className="glass-button grid min-h-10 min-w-10 place-items-center rounded-ui-control md:hidden"
+        className="grid min-h-10 min-w-10 place-items-center rounded-ui-control text-foreground transition-colors hover:bg-accent md:hidden"
         onClick={onOpenNavigation}
         type="button"
       >
         <Menu aria-hidden className="h-5 w-5" />
       </button>
+
+      <Link
+        aria-label="FLAE"
+        className="flex min-w-0 items-center gap-2 text-foreground no-underline"
+        to="/dashboard/chat"
+      >
+        <span
+          aria-hidden
+          className="grid h-8 w-8 shrink-0 place-items-center rounded-ui-control bg-primary text-primary-foreground"
+        >
+          <Sparkles className="h-4 w-4" />
+        </span>
+        <strong className="truncate text-sm font-semibold tracking-tight">FLAE</strong>
+      </Link>
+
+      <WorkspaceSwitcher
+        currentWorkspaceId={currentWorkspaceId}
+        onSelectWorkspace={onSelectWorkspace}
+        syncStatus={syncStatus}
+        workspaces={workspaces}
+        workspacesPending={workspacesPending}
+      />
+
       <div className="sr-only">
         <span>{sectionLabel}</span>
         <strong>{pageLabel}</strong>
       </div>
+
       <div className="ml-auto flex min-w-0 items-center gap-2">
-        <div className="hidden md:block">
-          <Button
-            aria-label="MCP"
-            className="font-normal text-ui-ink-muted disabled:opacity-100"
-            disabled
-            size="sm"
-            title={t('SHELL.DEMO_ONLY')}
-            variant="ghost"
-          >
-            <Command aria-hidden className="h-4 w-4" />
-            MCP
-            <span
-              aria-hidden
-              className="h-1.5 w-1.5 rounded-full bg-chart-2"
-              data-testid="mcp-status-indicator"
-            />
-          </Button>
-        </div>
-        <div className="hidden lg:block">
-          <Button
-            aria-label={t('SHELL.ADD_SOURCE')}
-            className="header-add-source"
-            disabled
-            pill
-            title={t('SHELL.DEMO_ONLY')}
-          >
-            <Plug aria-hidden className="h-4 w-4" />
-            {t('SHELL.ADD_SOURCE')}
-          </Button>
-        </div>
+        <ThemeToggle />
         <HeaderUtilities
-          currentWorkspaceId={currentWorkspaceId}
           language={language}
           logoutController={logoutController}
           onChangeLanguage={onChangeLanguage}
-          onSelectWorkspace={onSelectWorkspace}
-          syncStatus={syncStatus}
           user={user}
-          workspaces={workspaces}
-          workspacesPending={workspacesPending}
         />
       </div>
     </header>

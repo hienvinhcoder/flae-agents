@@ -48,7 +48,7 @@ function DocumentActions({
       {document.status === "failed" ? (
         <Button
           aria-label={t("KNOWLEDGE.RETRY_DOCUMENT", { title: document.title })}
-          className="min-w-11 px-3 transition-colors duration-200 hover:bg-brand-soft hover:text-brand-text"
+          className="min-w-11 px-3 transition-colors duration-200 hover:bg-primary-soft hover:text-primary"
           isLoading={isRetrying}
           loadingText={t("KNOWLEDGE.STATUS_PROCESSING")}
           onClick={() => onRetry(document)}
@@ -59,7 +59,7 @@ function DocumentActions({
       ) : null}
       <Button
         aria-label={t("KNOWLEDGE.OPEN_DOCUMENT", { title: document.title })}
-        className="min-w-11 px-3 transition-colors duration-200 hover:bg-brand-soft hover:text-brand-text"
+        className="min-w-11 px-3 transition-colors duration-200 hover:bg-primary-soft hover:text-primary"
         onClick={() => onView(document)}
         variant="ghost"
       >
@@ -90,7 +90,7 @@ export function DocumentTable({
 
   if (isLoading) {
     return (
-      <div className="border-y border-ui-divider bg-ui-raised/45 p-6">
+      <div className="border-y border-border bg-card/45 p-6">
         <Skeleton label={t("KNOWLEDGE.LOADING_DOCUMENTS")} lines={5} />
       </div>
     );
@@ -102,8 +102,8 @@ export function DocumentTable({
       key: "document",
       render: (document) => (
         <div>
-          <strong className="block font-semibold text-ui-ink">{document.title}</strong>
-          <span className="block max-w-xs truncate text-sm text-ui-ink-muted">
+          <strong className="block font-semibold text-foreground">{document.title}</strong>
+          <span className="block max-w-xs truncate text-sm text-muted-foreground">
             {document.description ||
               document.file_name ||
               t("KNOWLEDGE.NO_DESCRIPTION")}
@@ -159,13 +159,13 @@ export function DocumentTable({
       renderMobileRow={(document) => (
         <article
           aria-label={document.title}
-          className="rounded-ui-control border border-ui-divider bg-ui-raised p-4"
+          className="rounded-ui-control border border-border bg-card p-4"
         >
           <div className="flex items-start justify-between gap-3">
-            <strong className="text-ui-ink">{document.title}</strong>
+            <strong className="text-foreground">{document.title}</strong>
             <StatusBadge status={document.status} />
           </div>
-          <p className="mt-2 text-sm text-ui-ink-secondary">
+          <p className="mt-2 text-sm text-muted-foreground">
             {document.chunk_count ?? 0} {t("KNOWLEDGE.CHUNKS_SHORT")}
           </p>
           <div className="mt-3">

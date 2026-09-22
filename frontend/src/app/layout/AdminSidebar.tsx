@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Sparkles, X } from "lucide-react";
+import { Sparkles, X } from "lucide-react";
 import { type KeyboardEvent, type RefObject, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, useLocation } from "react-router-dom";
@@ -9,24 +9,18 @@ import {
   navigationGroups,
 } from "./admin-navigation";
 import { RailTooltipPortal } from "./RailTooltipPortal";
-import { SidebarStatusCard } from "./SidebarStatusCard";
-import type { SidebarLayout } from "./use-sidebar-layout";
 import { type TooltipInteraction, useRailTooltip } from "./use-rail-tooltip";
 
 export interface AdminSidebarProps {
-  desktopLayout: SidebarLayout;
   mobileOpen: boolean;
   onCloseMobile: () => void;
-  onToggleDesktop: () => void;
 }
 
 interface SidebarContentProps {
   activePath: string | undefined;
   closeButtonRef?: RefObject<HTMLButtonElement | null>;
-  desktopLayout?: SidebarLayout;
   onCloseMobile?: () => void;
   onSelectMobile?: () => void;
-  onToggleDesktop?: () => void;
   presentation: "desktop" | "mobile";
 }
 
@@ -47,40 +41,31 @@ const focusableSelector = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(",");
 
-function BrandIdentity({
-  expanded,
-  responsive,
-}: {
-  expanded: boolean;
-  responsive: boolean;
-}) {
+function BrandIdentity() {
   const { t } = useTranslation();
 
   return (
-    <div className="flex min-w-0 items-center gap-2.5 text-sidebar-foreground">
+    <div className="flex min-w-0 items-center gap-2.5 text-foreground">
       <span
         aria-hidden="true"
-        className="grid h-9 w-9 shrink-0 place-items-center rounded-ui-control bg-primary text-primary-foreground shadow-[var(--glow-primary)]"
+        className="grid h-9 w-9 shrink-0 place-items-center rounded-ui-control bg-primary text-primary-foreground"
       >
         <Sparkles className="h-5 w-5" />
       </span>
-      {expanded ? (
-        <span className={`min-w-0 ${responsive ? "hidden lg:block" : ""}`}>
-          <strong className="block truncate font-display font-semibold leading-tight tracking-tight">
-            FLAE
-          </strong>
-          <small className="block truncate text-[11px] leading-tight text-sidebar-foreground/60">
-            {t("SHELL.BRAND_SUBTITLE")}
-          </small>
-        </span>
-      ) : null}
+      <span className="min-w-0">
+        <strong className="block truncate text-sm font-semibold leading-tight tracking-tight">
+          FLAE
+        </strong>
+        <small className="block truncate text-[11px] leading-tight text-muted-foreground">
+          {t("SHELL.BRAND_SUBTITLE")}
+        </small>
+      </span>
     </div>
   );
 }
 
 function NavigationItems({
   activePath,
-  expanded,
   hideTooltip,
   items,
   onSelect,
@@ -88,7 +73,6 @@ function NavigationItems({
   showTooltip,
 }: {
   activePath: string | undefined;
-  expanded: boolean;
   hideTooltip?: (target: HTMLElement, interaction: TooltipInteraction) => void;
   items: readonly AdminNavigationItem[];
   onSelect?: () => void;
@@ -100,6 +84,7 @@ function NavigationItems({
   ) => void;
 }) {
   const { t } = useTranslation();
+  const isDesktop = presentation === "desktop";
 
   return items.map((item) => {
     const label = t(item.key);
@@ -110,16 +95,14 @@ function NavigationItems({
       <div className="group relative" key={item.to}>
         <NavLink
           aria-label={label}
-          className={`relative flex min-h-11 min-w-0 items-center rounded-ui-control border-l-2 py-2 text-sm no-underline transition-colors duration-200 motion-reduce:transition-none md:min-h-10 ${
-            expanded && presentation === "desktop"
-              ? "justify-center px-2 lg:justify-start lg:gap-3 lg:px-3"
-              : expanded
-                ? "gap-3 px-3"
-                : "justify-center px-2"
+          className={`relative flex min-h-10 min-w-0 items-center rounded-ui-control py-2 text-sm no-underline transition-colors duration-200 motion-reduce:transition-none ${
+            isDesktop
+              ? "justify-center px-2"
+              : "gap-3 px-3"
           } ${
             isActive
-              ? "border-orb-primary bg-sidebar-primary font-medium text-sidebar-primary-foreground"
-              : "border-transparent bg-transparent text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+              ? "bg-muted font-medium text-primary"
+              : "bg-transparent text-muted-foreground hover:bg-accent hover:text-foreground"
           }`}
           end
           onBlur={(event) => hideTooltip?.(event.currentTarget, "focus")}
@@ -139,12 +122,8 @@ function NavigationItems({
           to={item.to}
         >
           <Icon aria-hidden="true" className="h-4 w-4 shrink-0" />
-          {expanded ? (
-            <span
-              className={`min-w-0 truncate ${presentation === "desktop" ? "hidden lg:block" : ""}`}
-            >
-              {label}
-            </span>
+          {!isDesktop ? (
+            <span className="min-w-0 truncate">{label}</span>
           ) : null}
         </NavLink>
       </div>
@@ -155,65 +134,43 @@ function NavigationItems({
 function SidebarContent({
   activePath,
   closeButtonRef,
-  desktopLayout = "expanded",
   onCloseMobile,
   onSelectMobile,
-  onToggleDesktop,
   presentation,
 }: SidebarContentProps) {
   const { t } = useTranslation();
   const isMobile = presentation === "mobile";
-  const expanded = isMobile || desktopLayout === "expanded";
-  const responsiveExpansion = !isMobile && expanded;
   const { clearTooltip, hideTooltip, showTooltip, tooltip } = useRailTooltip({
     disabled: isMobile,
-    resetKey: desktopLayout,
+    resetKey: "rail",
   });
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div
-        className={`flex min-h-[84px] items-center justify-between gap-2 ${expanded ? "px-6 py-6" : "px-3 py-6"}`}
-      >
-        <BrandIdentity expanded={expanded} responsive={responsiveExpansion} />
-        {isMobile ? (
+      {isMobile ? (
+        <div className="flex min-h-[84px] items-center justify-between gap-2 px-6 py-6">
+          <BrandIdentity />
           <button
             aria-label={t("SHELL.CLOSE_NAV")}
-            className="grid min-h-11 min-w-11 shrink-0 place-items-center rounded-ui-control text-sidebar-foreground/70 transition-colors duration-200 hover:bg-sidebar-accent hover:text-sidebar-foreground motion-reduce:transition-none"
+            className="grid min-h-11 min-w-11 shrink-0 place-items-center rounded-ui-control text-muted-foreground transition-colors duration-200 hover:bg-accent hover:text-foreground motion-reduce:transition-none"
             onClick={onCloseMobile}
             ref={closeButtonRef}
             type="button"
           >
             <X aria-hidden="true" className="h-5 w-5" />
           </button>
-        ) : (
-          <button
-            aria-label={
-              desktopLayout === "expanded"
-                ? t("SHELL.COLLAPSE_NAV")
-                : t("SHELL.EXPAND_NAV")
-            }
-            className={`hidden min-h-9 min-w-9 shrink-0 place-items-center rounded-ui-control text-sidebar-foreground/60 transition-colors duration-200 hover:bg-sidebar-accent hover:text-sidebar-foreground motion-reduce:transition-none lg:grid ${expanded ? "" : "absolute left-[18px] top-[76px]"}`}
-            onClick={onToggleDesktop}
-            type="button"
-          >
-            {desktopLayout === "expanded" ? (
-              <ChevronLeft aria-hidden="true" className="h-4 w-4" />
-            ) : (
-              <ChevronRight aria-hidden="true" className="h-4 w-4" />
-            )}
-          </button>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="h-14 shrink-0" />
+      )}
 
       <nav
         aria-label={t("SHELL.PRIMARY_NAV")}
-        className="mt-2 grid min-h-0 flex-1 content-start gap-0.5 overflow-y-auto px-3 pb-3"
+        className={`mt-1 grid min-h-0 flex-1 content-start gap-0.5 overflow-y-auto pb-3 ${isMobile ? "px-3" : "px-2"}`}
         onScroll={!isMobile ? clearTooltip : undefined}
       >
         <NavigationItems
           activePath={activePath}
-          expanded={expanded}
           hideTooltip={!isMobile ? hideTooltip : undefined}
           items={primaryNavigationItems}
           onSelect={isMobile ? onSelectMobile : undefined}
@@ -222,36 +179,26 @@ function SidebarContent({
         />
       </nav>
 
-      <div className={`${expanded ? "p-4" : "p-3"}`}>
-        {!isMobile && expanded ? (
-          <div className="hidden lg:block">
-            <SidebarStatusCard />
-          </div>
-        ) : null}
-        <div className={expanded && !isMobile ? "mt-3" : ""}>
-          <NavigationItems
-            activePath={activePath}
-            expanded={expanded}
-            hideTooltip={!isMobile ? hideTooltip : undefined}
-            items={settingsNavigationItems}
-            onSelect={isMobile ? onSelectMobile : undefined}
-            presentation={presentation}
-            showTooltip={!isMobile ? showTooltip : undefined}
-          />
-        </div>
+      <div className={isMobile ? "p-4" : "p-2 pb-3"}>
+        <NavigationItems
+          activePath={activePath}
+          hideTooltip={!isMobile ? hideTooltip : undefined}
+          items={settingsNavigationItems}
+          onSelect={isMobile ? onSelectMobile : undefined}
+          presentation={presentation}
+          showTooltip={!isMobile ? showTooltip : undefined}
+        />
       </div>
       {!isMobile ? (
-        <RailTooltipPortal hiddenAtLarge={expanded} tooltip={tooltip} />
+        <RailTooltipPortal hiddenAtLarge={false} tooltip={tooltip} />
       ) : null}
     </div>
   );
 }
 
 export function AdminSidebar({
-  desktopLayout,
   mobileOpen,
   onCloseMobile,
-  onToggleDesktop,
 }: AdminSidebarProps) {
   const { t } = useTranslation();
   const location = useLocation();
@@ -344,16 +291,11 @@ export function AdminSidebar({
   return (
     <>
       <aside
-        className={`fixed inset-y-0 left-0 z-40 hidden w-[72px] border-r border-sidebar-border bg-sidebar text-sidebar-foreground backdrop-blur-glass transition-[width] duration-200 motion-reduce:transition-none md:flex md:flex-col ${
-          desktopLayout === "expanded" ? "lg:w-64" : "lg:w-[72px]"
-        }`}
-        data-desktop-layout={desktopLayout}
+        className="fixed inset-y-0 left-0 z-40 hidden w-14 border-r border-border bg-background text-foreground md:flex md:flex-col"
         data-testid="admin-sidebar"
       >
         <SidebarContent
           activePath={activeItem?.to}
-          desktopLayout={desktopLayout}
-          onToggleDesktop={onToggleDesktop}
           presentation="desktop"
         />
       </aside>
@@ -362,14 +304,14 @@ export function AdminSidebar({
         <>
           <button
             aria-label={t("SHELL.CLOSE_NAV_OVERLAY")}
-            className="fixed inset-0 z-30 bg-ui-ink/35 md:hidden"
+            className="fixed inset-0 z-30 bg-foreground/35 md:hidden"
             onClick={onCloseMobile}
             type="button"
           />
           <div
             aria-label={t("SHELL.PRIMARY_NAV")}
             aria-modal="true"
-            className="fixed inset-y-0 left-0 z-40 w-64 rounded-r-ui-panel border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-ui-overlay backdrop-blur-glass md:hidden"
+            className="fixed inset-y-0 left-0 z-40 w-64 rounded-r-ui-panel border-r border-border bg-background text-foreground shadow-ui-overlay md:hidden"
             onKeyDown={handleDialogKeyDown}
             ref={dialogRef}
             role="dialog"
