@@ -44,30 +44,30 @@ describe("UploadDialog", () => {
     const file = new File(["# Guide"], "guide.md", { type: "text/markdown" });
 
     await user.upload(screen.getByLabelText(/document file/i), file);
-    await user.clear(screen.getByLabelText(/document title/i));
-    await user.type(screen.getByLabelText(/document title/i), "Product guide");
+    await user.clear(screen.getByLabelText(/title/i));
+    await user.type(screen.getByLabelText(/title/i), "Product guide");
     await user.type(screen.getByLabelText(/description/i), "Reference");
-    await user.click(screen.getByRole("button", { name: /^upload$/i }));
+    await user.click(screen.getByRole("button", { name: /upload document/i }));
     await waitFor(() => expect(onSubmit).toHaveBeenCalledOnce());
     rerender(dialog(true));
 
     expect(screen.queryByRole("button", { name: /close dialog/i })).not.toBeInTheDocument();
     expect(screen.getByLabelText(/document file/i)).toBeDisabled();
-    expect(screen.getByLabelText(/document title/i)).toBeDisabled();
+    expect(screen.getByLabelText(/title/i)).toBeDisabled();
     expect(screen.getByLabelText(/description/i)).toBeDisabled();
     expect(screen.getByRole("button", { name: /cancel/i })).toBeDisabled();
-    expect(screen.getByLabelText(/document title/i)).toHaveValue("Product guide");
+    expect(screen.getByLabelText(/title/i)).toHaveValue("Product guide");
 
     screen.getByRole("dialog", { name: /upload document/i }).focus();
     await user.keyboard("{Escape}");
     await user.click(screen.getByRole("button", { name: /cancel/i }));
     expect(onClose).not.toHaveBeenCalled();
-    expect(screen.getByLabelText(/document title/i)).toHaveValue("Product guide");
+    expect(screen.getByLabelText(/title/i)).toHaveValue("Product guide");
 
     submission.resolve();
     await waitFor(() => expect(onClose).toHaveBeenCalledOnce());
     expect(screen.getByLabelText(/document file/i)).toHaveValue("");
-    expect(screen.getByLabelText(/document title/i)).toHaveValue("");
+    expect(screen.getByLabelText(/title/i)).toHaveValue("");
   });
 
   it("preserves entered values after submission fails", async () => {
@@ -86,12 +86,12 @@ describe("UploadDialog", () => {
 
     const file = new File(["# Guide"], "guide.md", { type: "text/markdown" });
     await user.upload(screen.getByLabelText(/document file/i), file);
-    await user.clear(screen.getByLabelText(/document title/i));
-    await user.type(screen.getByLabelText(/document title/i), "Product guide");
-    await user.click(screen.getByRole("button", { name: /^upload$/i }));
+    await user.clear(screen.getByLabelText(/title/i));
+    await user.type(screen.getByLabelText(/title/i), "Product guide");
+    await user.click(screen.getByRole("button", { name: /upload document/i }));
 
     await waitFor(() => expect(onSubmit).toHaveBeenCalledOnce());
-    expect(screen.getByLabelText(/document title/i)).toHaveValue("Product guide");
+    expect(screen.getByLabelText(/title/i)).toHaveValue("Product guide");
   });
 
   it('renders dropzone helper copy', () => {
@@ -105,8 +105,13 @@ describe("UploadDialog", () => {
         />
       </TestI18nProvider>,
     );
-    expect(screen.getByText(/Drop file here or browse/i)).toBeInTheDocument();
-    expect(screen.getByText(/PDF, Markdown, or text · up to 50 MB$/i)).toBeInTheDocument();
+    expect(screen.getByText(/Drop file here or click to browse/i)).toBeInTheDocument();
+    expect(screen.getByText("PDF")).toBeInTheDocument();
+    expect(screen.getByText("MD")).toBeInTheDocument();
+    expect(screen.getByText("TXT")).toBeInTheDocument();
+    expect(screen.getByText(/Max size 50 MB/i)).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: /upload document/i })).toHaveClass("max-w-xl", "p-0");
+    expect(screen.getByText(/Add knowledge directly to your workspace/i)).toBeInTheDocument();
   });
 
   it("renders controls and required validation in Vietnamese", async () => {
@@ -125,10 +130,10 @@ describe("UploadDialog", () => {
     expect(screen.getByRole("dialog", { name: "Tải lên tài liệu" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Đóng hộp thoại" })).toBeInTheDocument();
     expect(screen.getByLabelText("Tệp tài liệu")).toBeInTheDocument();
-    expect(screen.getByLabelText("Tiêu đề tài liệu")).toBeInTheDocument();
-    expect(screen.getByLabelText("Mô tả")).toBeInTheDocument();
+    expect(screen.getByLabelText("Tiêu đề")).toBeInTheDocument();
+    expect(screen.getByLabelText(/Mô tả/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Hủy" })).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: /^Tải lên$/ }));
+    await user.click(screen.getByRole("button", { name: /^Tải lên tài liệu$/ }));
     expect(await screen.findByText("Chọn một tài liệu.")).toBeInTheDocument();
     expect(screen.getByText("Nhập tiêu đề tài liệu.")).toBeInTheDocument();
   });

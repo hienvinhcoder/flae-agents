@@ -41,12 +41,7 @@ async def search_knowledge(query: str, config: RunnableConfig) -> KnowledgeToolR
         return {"context": "", "citations": []}
 
     try:
-        results, _ = await RetrieverService.retrieve(
-            workspace_id=workspace_id,
-            query=query,
-            top_k_chunks=5,
-            top_k_paths=5,
-        )
+        results, _ = await RetrieverService.retrieve(workspace_id=workspace_id, query=query)
 
         citations: list[KnowledgeCitation] = []
         context_parts = []
@@ -54,8 +49,7 @@ async def search_knowledge(query: str, config: RunnableConfig) -> KnowledgeToolR
         for idx, chunk in enumerate(results.get("top_chunks", [])):
             content = chunk.get("content", "")
             source = chunk.get("source_document", "Tài liệu không tên")
-            citations.append({"source_document": source, "content": content,
-                              "score": chunk.get("score")})
+            citations.append({"source_document": source, "content": content, "score": chunk.get("score")})
             context_parts.append(f"[{idx+1}] Nguồn: {source}\n{content}")
 
         paths = results.get("top_paths", [])
@@ -99,9 +93,7 @@ async def get_domain_topics(domain_id: str, config: RunnableConfig) -> dict:
         return {"domain": None, "topics": []}
 
     try:
-        detail = await DomainService.get_domain(
-            workspace_id=workspace_id, domain_id=domain_id
-        )
+        detail = await DomainService.get_domain(workspace_id=workspace_id, domain_id=domain_id)
         return {"domain": detail, "topics": detail.get("topics", []) if detail else []}
     except Exception:
         logger.error("get_domain_topics failed")
@@ -120,6 +112,7 @@ async def get_topic_detail(topic_id: str, config: RunnableConfig) -> dict:
 
     try:
         from app.db.database import AsyncSessionLocal
+
         async with AsyncSessionLocal() as db:
             detail = await TopicService.get_topic_detail(
                 workspace_id=workspace_id,

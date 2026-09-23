@@ -6,6 +6,7 @@ import type { KnowledgeDocument } from "../types/knowledge";
 import { StatusBadge } from "./StatusBadge";
 
 interface DocumentGridProps {
+  deletingDocumentId: string | null;
   documents: readonly KnowledgeDocument[];
   emptyMessage: string;
   isLoading: boolean;
@@ -43,6 +44,7 @@ function getFileIcon(document: KnowledgeDocument) {
 }
 
 export function DocumentGrid({
+  deletingDocumentId,
   documents,
   emptyMessage,
   isLoading,
@@ -93,6 +95,7 @@ export function DocumentGrid({
   return (
     <div className="animate-ui-stagger grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
       {documents.map((document) => {
+        const isDeleting = deletingDocumentId === document.id;
         const isRetrying = retryingDocumentIds.has(document.id);
         const formattedDate = new Intl.DateTimeFormat(
           i18n.resolvedLanguage ?? i18n.language,
@@ -101,8 +104,9 @@ export function DocumentGrid({
         return (
           <article
             key={document.id}
+            aria-busy={isDeleting || undefined}
             aria-label={document.title}
-            className="group flex min-h-[210px] flex-col justify-between rounded-ui-panel border border-border bg-card p-5 transition-colors duration-150 hover:bg-muted motion-reduce:transition-none"
+            className={`group flex min-h-[210px] flex-col justify-between rounded-ui-panel border border-border bg-card p-5 transition-colors duration-150 hover:bg-muted motion-reduce:transition-none ${isDeleting ? "opacity-60" : ""}`}
           >
             <div>
               <div className="flex items-start justify-between gap-3">
@@ -144,6 +148,7 @@ export function DocumentGrid({
                   <Button
                     aria-label={t("KNOWLEDGE.RETRY_DOCUMENT", { title: document.title })}
                     className="h-9 min-w-9 px-2 transition-colors duration-200 hover:bg-primary-soft hover:text-primary"
+                    disabled={isDeleting}
                     isLoading={isRetrying}
                     loadingText={t("KNOWLEDGE.STATUS_PROCESSING")}
                     onClick={() => onRetry(document)}
@@ -155,6 +160,7 @@ export function DocumentGrid({
                 <Button
                   aria-label={t("KNOWLEDGE.OPEN_DOCUMENT", { title: document.title })}
                   className="h-9 min-w-9 px-2 transition-colors duration-200 hover:bg-primary-soft hover:text-primary"
+                  disabled={isDeleting}
                   onClick={() => onView(document)}
                   variant="ghost"
                 >
@@ -163,6 +169,8 @@ export function DocumentGrid({
                 <Button
                   aria-label={t("KNOWLEDGE.DELETE_DOCUMENT", { title: document.title })}
                   className="h-9 min-w-9 px-2 transition-colors duration-200 hover:bg-state-danger-soft hover:text-state-danger"
+                  isLoading={isDeleting}
+                  loadingText={t("KNOWLEDGE.DELETING")}
                   onClick={() => onDelete(document)}
                   variant="ghost"
                 >

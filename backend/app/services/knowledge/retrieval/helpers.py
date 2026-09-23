@@ -15,7 +15,6 @@ def minmax_scale(x: Any) -> np.ndarray:
     return (x_arr - x_min) / (x_max - x_min)
 
 
-
 def get_canonical_path_key(path: List[str]) -> frozenset:
     """Tạo key chuẩn hóa cho một đường dẫn để kiểm tra trùng lặp."""
     if len(path) < 2:
@@ -105,9 +104,7 @@ def score_paths_component_based(
     unique_entity_ids = {eid for path in paths for eid in path}
     unique_relation_ids = set()
 
-    entity_sim_map = batch_get_similarity(
-        list(unique_entity_ids), local_entity_map, query_embedding, "embedding"
-    )
+    entity_sim_map = batch_get_similarity(list(unique_entity_ids), local_entity_map, query_embedding, "embedding")
 
     for path in paths:
         for i in range(len(path) - 1):
@@ -117,9 +114,7 @@ def score_paths_component_based(
                 unique_relation_ids.add(rid)
 
     local_relation_map = {data["relation_id"]: data for data in local_edge_map.values()}
-    relation_sim_map = batch_get_similarity(
-        list(unique_relation_ids), local_relation_map, query_embedding, "embedding"
-    )
+    relation_sim_map = batch_get_similarity(list(unique_relation_ids), local_relation_map, query_embedding, "embedding")
 
     final_scored_paths = []
     entity_weight = settings.RAG_SCORING_ENTITY_DEGREE_WEIGHT
@@ -185,9 +180,7 @@ def score_chunks(
     top_k_rec_ids = {cid for cid, count in top_k_recs_to_score}
     all_candidate_ids_to_score_sim = list(initial_chunk_ids | top_k_rec_ids)
 
-    all_sim_scores = batch_get_similarity(
-        all_candidate_ids_to_score_sim, chunk_map, query_embedding, "embedding"
-    )
+    all_sim_scores = batch_get_similarity(all_candidate_ids_to_score_sim, chunk_map, query_embedding, "embedding")
 
     candidate_scores = {}
     for cid in all_candidate_ids_to_score_sim:
@@ -212,13 +205,9 @@ def score_chunks(
     else:
         scoring_df["norm_rec"] = scoring_df["rec_score"].apply(lambda x: 1.0 if x > 0 else 0.0)
 
-    scoring_df["final_score"] = (chunk_alpha * scoring_df["norm_sim"]) + (
-        (1 - chunk_alpha) * scoring_df["norm_rec"]
-    )
+    scoring_df["final_score"] = (chunk_alpha * scoring_df["norm_sim"]) + ((1 - chunk_alpha) * scoring_df["norm_rec"])
     raw_records = scoring_df.reset_index().rename(columns={"index": "id"}).to_dict("records")
-    final_chunk_scores_list = [
-        {str(k): v for k, v in record.items()} for record in raw_records
-    ]
+    final_chunk_scores_list = [{str(k): v for k, v in record.items()} for record in raw_records]
 
     return list(candidate_scores.keys()), final_chunk_scores_list
 
@@ -241,16 +230,14 @@ def get_item_details(item: dict, chunk_map: dict | None = None, entity_map: dict
         )
     else:
         data = chunk_map.get(item_id, {}) if chunk_map else {}
-        doc_name = data.get("source_document_name", "N/A")
-        source_document_id = data.get("source_document_id")
+        doc_name = data.get("source_document_name") or data.get("source_name") or "N/A"
+        source_document_id = data.get("source_document_id") or data.get("document_id")
         details.update(
             {
                 "type": "chunk",
                 "name": f"Chunk from {doc_name}",
                 "source_document": doc_name,
-                "source_document_id": (
-                    str(source_document_id) if source_document_id is not None else None
-                ),
+                "source_document_id": (str(source_document_id) if source_document_id is not None else None),
                 "content": data.get("text", ""),
             }
         )
@@ -295,8 +282,6 @@ def get_path_details(path_info: dict, entity_map: dict, edge_map: dict) -> dict:
     if path_info.get("endorsing_bridges"):
         details["endorsing_bridges"] = []
         for bridge in path_info["endorsing_bridges"]:
-            bridge_readable = " -> ".join(
-                [entity_map.get(eid, {}).get("entity_name", "Unknown") for eid in bridge]
-            )
+            bridge_readable = " -> ".join([entity_map.get(eid, {}).get("entity_name", "Unknown") for eid in bridge])
             details["endorsing_bridges"].append(bridge_readable)
     return details

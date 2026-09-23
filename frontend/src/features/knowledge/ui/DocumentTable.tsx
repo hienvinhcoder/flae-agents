@@ -14,6 +14,7 @@ import type { KnowledgeDocument } from "../types/knowledge";
 import { StatusBadge } from "./StatusBadge";
 
 interface DocumentTableProps {
+  deletingDocumentId: string | null;
   documents: readonly KnowledgeDocument[];
   emptyMessage: string;
   isLoading: boolean;
@@ -40,12 +41,14 @@ function sourceLabel(document: KnowledgeDocument, manualTextLabel: string) {
 
 function DocumentActions({
   document,
+  isDeleting,
   isRetrying,
   onDelete,
   onRetry,
   onView,
 }: {
   document: KnowledgeDocument;
+  isDeleting: boolean;
   isRetrying: boolean;
   onDelete: (document: KnowledgeDocument) => void;
   onRetry: (document: KnowledgeDocument) => void;
@@ -54,11 +57,14 @@ function DocumentActions({
   const { t } = useTranslation();
 
   return (
-    <div className="flex justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+    <div
+      className={`flex justify-end gap-0.5 transition-opacity focus-within:opacity-100 ${isDeleting ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+    >
       {document.status === "failed" ? (
         <Button
           aria-label={t("KNOWLEDGE.RETRY_DOCUMENT", { title: document.title })}
           className="h-8 w-8 min-h-8 min-w-8 p-0"
+          disabled={isDeleting}
           isLoading={isRetrying}
           loadingText={t("KNOWLEDGE.STATUS_PROCESSING")}
           onClick={() => onRetry(document)}
@@ -71,6 +77,7 @@ function DocumentActions({
       <Button
         aria-label={t("KNOWLEDGE.OPEN_DOCUMENT", { title: document.title })}
         className="h-8 w-8 min-h-8 min-w-8 p-0"
+        disabled={isDeleting}
         onClick={() => onView(document)}
         size="icon"
         variant="ghost"
@@ -79,7 +86,9 @@ function DocumentActions({
       </Button>
       <Button
         aria-label={t("KNOWLEDGE.DELETE_DOCUMENT", { title: document.title })}
-        className="h-8 w-8 min-h-8 min-w-8 p-0 hover:bg-state-danger-soft hover:text-state-danger"
+        className="h-8 min-h-8 min-w-8 px-2 hover:bg-state-danger-soft hover:text-state-danger"
+        isLoading={isDeleting}
+        loadingText={t("KNOWLEDGE.DELETING")}
         onClick={() => onDelete(document)}
         size="icon"
         variant="ghost"
@@ -91,6 +100,7 @@ function DocumentActions({
 }
 
 export function DocumentTable({
+  deletingDocumentId,
   documents,
   emptyMessage,
   isLoading,
@@ -142,9 +152,12 @@ export function DocumentTable({
             </tr>
           </thead>
           <tbody className="animate-ui-stagger divide-y divide-border">
-            {documents.map((document) => (
+            {documents.map((document) => {
+              const isDeleting = deletingDocumentId === document.id;
+              return (
               <tr
-                className="group transition-colors hover:bg-muted"
+                aria-busy={isDeleting || undefined}
+                className={`group transition-colors hover:bg-muted ${isDeleting ? "opacity-60" : ""}`}
                 key={document.id}
               >
                 <td className="px-4 py-3">
@@ -168,6 +181,7 @@ export function DocumentTable({
                 <td className="px-4 py-3 text-right">
                   <DocumentActions
                     document={document}
+                    isDeleting={isDeleting}
                     isRetrying={retryingDocumentIds.has(document.id)}
                     onDelete={onDelete}
                     onRetry={onRetry}
@@ -175,16 +189,20 @@ export function DocumentTable({
                   />
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>
 
       <div className="grid gap-3 p-3 md:hidden">
-        {documents.map((document) => (
+        {documents.map((document) => {
+          const isDeleting = deletingDocumentId === document.id;
+          return (
           <article
+            aria-busy={isDeleting || undefined}
             aria-label={document.title}
-            className="rounded-md border border-border bg-card p-4"
+            className={`rounded-md border border-border bg-card p-4 ${isDeleting ? "opacity-60" : ""}`}
             key={document.id}
           >
             <div className="flex items-start justify-between gap-3">
@@ -200,6 +218,7 @@ export function DocumentTable({
             <div className="mt-3 opacity-100">
               <DocumentActions
                 document={document}
+                isDeleting={isDeleting}
                 isRetrying={retryingDocumentIds.has(document.id)}
                 onDelete={onDelete}
                 onRetry={onRetry}
@@ -207,7 +226,8 @@ export function DocumentTable({
               />
             </div>
           </article>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

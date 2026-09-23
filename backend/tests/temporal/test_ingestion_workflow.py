@@ -15,6 +15,8 @@ from app.schemas.ingestion import (
     BaseBatchReference,
     BaseStagePlan,
     DocumentIngestionStatusInput,
+    ExtractAndFuseInput,
+    ExtractAndFuseResult,
     IngestionWorkflowInput,
     PrepareBaseStageInput,
     PublishBaseInput,
@@ -138,6 +140,12 @@ async def test_workflow_retries_transient_batches_and_bounds_fanout() -> None:
             published=True,
         )
 
+    @activity.defn(name="extract_and_fuse_activity")
+    async def extract(_command: ExtractAndFuseInput) -> ExtractAndFuseResult:
+        return ExtractAndFuseResult(
+            entity_count=0, relation_count=0, domain_count=0, tokens_used=0
+        )
+
     async with await WorkflowEnvironment.start_time_skipping(
         data_converter=pydantic_data_converter
     ) as environment:
@@ -145,7 +153,7 @@ async def test_workflow_retries_transient_batches_and_bounds_fanout() -> None:
             environment.client,
             task_queue="ingestion-test",
             workflows=[IngestionWorkflow],
-            activities=[update_status, prepare, embed, publish],
+            activities=[update_status, prepare, embed, publish, extract],
         ):
             handle = await environment.client.start_workflow(
                 IngestionWorkflow.run,
@@ -213,13 +221,14 @@ async def test_workflow_does_not_retry_permanent_input_failure() -> None:
 
 
 @pytest.mark.asyncio
-async def test_workflow_cancellation_reaches_heartbeat_activity() -> None:
+async def test_workflow_cancellation_marks_document_failed() -> None:
     source = _source()
     started = asyncio.Event()
+    statuses: list[str] = []
 
     @activity.defn(name="update_document_status_activity")
-    async def update_status(_command: DocumentIngestionStatusInput) -> None:
-        return None
+    async def update_status(command: DocumentIngestionStatusInput) -> None:
+        statuses.append(command.status)
 
     @activity.defn(name="prepare_base_stage_activity")
     async def wait_for_cancel(_command: PrepareBaseStageInput) -> BaseStagePlan:
@@ -247,3 +256,5 @@ async def test_workflow_cancellation_reaches_heartbeat_activity() -> None:
             await handle.cancel()
             with pytest.raises(WorkflowFailureError):
                 await handle.result()
+
+    assert statuses == ["processing", "failed"]

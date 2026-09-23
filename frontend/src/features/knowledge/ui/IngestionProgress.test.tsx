@@ -44,8 +44,15 @@ describe("IngestionProgress", () => {
       </I18nextProvider>,
     );
 
-    expect(screen.getByRole("heading", { name: "Thống kê xử lý" })).toBeInTheDocument();
-    expect(screen.getByText("4 khối văn bản, 3 thực thể, 2 mối quan hệ")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Chỉ số ingestion" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("4")).toBeInTheDocument();
+    expect(screen.getByText("3")).toBeInTheDocument();
+    expect(screen.getByText("2")).toBeInTheDocument();
+    expect(screen.getByText("Khối")).toBeInTheDocument();
+    expect(screen.getByText("Thực thể")).toBeInTheDocument();
+    expect(screen.getByText("Quan hệ")).toBeInTheDocument();
     expect(screen.getByText("Thời gian xử lý 1.5 giây")).toBeInTheDocument();
   });
 });

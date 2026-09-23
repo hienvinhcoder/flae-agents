@@ -70,6 +70,30 @@ describe('Dialog', () => {
     expect(dialog).toHaveFocus();
   });
 
+  it('applies composer layout classes when layout is composer', () => {
+    render(
+      <Dialog layout="composer" onClose={vi.fn()} open size="xl" title="Composer">
+        <p>Body</p>
+      </Dialog>,
+    );
+    const dialog = screen.getByRole('dialog', { name: 'Composer' });
+    expect(dialog).toHaveClass('p-0', 'max-w-xl');
+    expect(dialog.parentElement).toHaveClass('bg-foreground/10');
+  });
+
+  it('portals the overlay to document.body above shell overflow', () => {
+    render(
+      <div className="overflow-hidden">
+        <Dialog onClose={vi.fn()} open title="Portaled">
+          <p>Body</p>
+        </Dialog>
+      </div>,
+    );
+    const dialog = screen.getByRole('dialog', { name: 'Portaled' });
+    expect(dialog.parentElement?.parentElement).toBe(document.body);
+    expect(dialog.parentElement).toHaveClass('z-[100]');
+  });
+
   it('applies xl max width when size is xl', () => {
     render(
       <Dialog onClose={vi.fn()} open size="xl" title="Wide">

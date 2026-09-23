@@ -24,4 +24,22 @@ describe('Input', () => {
     expect(input).toHaveAttribute('aria-invalid', 'true');
     expect(input).toHaveAccessibleDescription('Use your work email Enter a valid email');
   });
+
+  it('applies compact density tokens for Linear-tight forms', () => {
+    render(<Input density="compact" label="Title" />);
+    expect(screen.getByRole('textbox', { name: 'Title' })).toHaveClass(
+      'min-h-9',
+      'text-[13px]',
+      'shadow-sm',
+    );
+  });
+
+  it('appends optional hint to the accessible name', () => {
+    render(
+      <Input density="compact" label="Description" optionalHint="optional" />,
+    );
+    expect(
+      screen.getByRole('textbox', { name: /description \(optional\)/i }),
+    ).toBeInTheDocument();
+  });
 });

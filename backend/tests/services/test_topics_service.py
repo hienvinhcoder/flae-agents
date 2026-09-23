@@ -43,9 +43,7 @@ def rag_session(*results: object) -> tuple[AsyncMock, MagicMock]:
 async def test_topic_summary_skips_missing_topic() -> None:
     session, manager = rag_session(scalar_result(None))
 
-    with patch(
-        "app.services.knowledge.discovery.topic_summary.rag_db_manager", manager
-    ):
+    with patch("app.services.knowledge.discovery.topic_summary.rag_db_manager", manager):
         result = await TopicSummaryService().update("workspace-1", "topic-1")
 
     assert result == {"status": "skipped", "reason": "Topic not found"}
@@ -53,44 +51,34 @@ async def test_topic_summary_skips_missing_topic() -> None:
 
 
 @pytest.mark.asyncio
-async def test_topic_summary_completes_queue_when_evidence_is_missing() -> None:
+async def test_topic_summary_skips_when_evidence_is_missing() -> None:
     topic = SimpleNamespace(name="Architecture")
     session, manager = rag_session(
         scalar_result(topic),
-        MagicMock(),
         memberships_result(),
-        MagicMock(),
     )
 
-    with patch(
-        "app.services.knowledge.discovery.topic_summary.rag_db_manager", manager
-    ):
+    with patch("app.services.knowledge.discovery.topic_summary.rag_db_manager", manager):
         result = await TopicSummaryService().update("workspace-1", "topic-1")
 
     assert result == {"status": "skipped", "reason": "No evidence"}
-    assert session.commit.await_count == 2
-    assert session.execute.await_count == 4
-    assert "completed" in str(session.execute.await_args_list[-1].args[0].compile().params)
+    session.commit.assert_not_awaited()
+    assert session.execute.await_count == 2
 
 
 @pytest.mark.asyncio
-async def test_topic_summary_marks_queue_failed_on_provider_error() -> None:
+async def test_topic_summary_raises_on_provider_error() -> None:
     topic = SimpleNamespace(name="Architecture")
     membership = SimpleNamespace(member_type="chunk", member_id="chunk-1")
-    chunks = [("Evidence",)]
     session, manager = rag_session(
         scalar_result(topic),
-        MagicMock(),
         memberships_result(membership),
-        chunks,
-        MagicMock(),
+        [("Evidence",)],
     )
     provider_error = RuntimeError("provider unavailable")
 
     with (
-        patch(
-            "app.services.knowledge.discovery.topic_summary.rag_db_manager", manager
-        ),
+        patch("app.services.knowledge.discovery.topic_summary.rag_db_manager", manager),
         patch.object(
             TopicSummaryService,
             "_generate_summary",
@@ -101,8 +89,7 @@ async def test_topic_summary_marks_queue_failed_on_provider_error() -> None:
         await TopicSummaryService().update("workspace-1", "topic-1")
 
     assert error.value.__cause__ is provider_error
-    assert session.commit.await_count == 2
-    assert "failed" in str(session.execute.await_args_list[-1].args[0].compile().params)
+    session.commit.assert_not_awaited()
 
 
 @pytest.mark.asyncio
@@ -111,17 +98,13 @@ async def test_topic_summary_preserves_provider_application_error() -> None:
     membership = SimpleNamespace(member_type="chunk", member_id="chunk-1")
     session, manager = rag_session(
         scalar_result(topic),
-        MagicMock(),
         memberships_result(membership),
         [("Evidence",)],
-        MagicMock(),
     )
     provider_error = ExternalServiceError("Gemini unavailable")
 
     with (
-        patch(
-            "app.services.knowledge.discovery.topic_summary.rag_db_manager", manager
-        ),
+        patch("app.services.knowledge.discovery.topic_summary.rag_db_manager", manager),
         patch.object(
             TopicSummaryService,
             "_generate_summary",
@@ -132,12 +115,11 @@ async def test_topic_summary_preserves_provider_application_error() -> None:
         await TopicSummaryService().update("workspace-1", "topic-1")
 
     assert error.value is provider_error
-    assert session.commit.await_count == 2
-    assert "failed" in str(session.execute.await_args_list[-1].args[0].compile().params)
+    session.commit.assert_not_awaited()
 
 
 @pytest.mark.asyncio
-async def test_topic_summary_updates_topic_embedding_and_queue() -> None:
+async def test_topic_summary_updates_topic_and_embedding() -> None:
     events: list[str] = []
     topic = SimpleNamespace(
         name="Architecture",
@@ -150,10 +132,8 @@ async def test_topic_summary_updates_topic_embedding_and_queue() -> None:
     results = iter(
         [
             scalar_result(topic),
-            MagicMock(),
             memberships_result(membership),
             [("Evidence",)],
-            MagicMock(),
         ]
     )
     session = AsyncMock()
@@ -187,9 +167,7 @@ async def test_topic_summary_updates_topic_embedding_and_queue() -> None:
         return function(*args)  # type: ignore[operator]
 
     with (
-        patch(
-            "app.services.knowledge.discovery.topic_summary.rag_db_manager", manager
-        ),
+        patch("app.services.knowledge.discovery.topic_summary.rag_db_manager", manager),
         patch.object(
             TopicSummaryService,
             "_generate_summary",
@@ -215,13 +193,10 @@ async def test_topic_summary_updates_topic_embedding_and_queue() -> None:
     assert events == [
         "execute",
         "execute",
-        "commit",
-        "execute",
         "execute",
         "to_thread",
         "provider",
         "embedding",
-        "execute",
         "commit",
     ]
 
@@ -237,7 +212,7 @@ async def test_pre_filter_topics():
 
     mock_rows = [
         MockRow("topic-1", "Machine Learning", "topic", "AI summary", 0.85),
-        MockRow("topic-2", "Artificial Intelligence", "domain", "AI summary", 0.72)
+        MockRow("topic-2", "Artificial Intelligence", "domain", "AI summary", 0.72),
     ]
     mock_execute_res.__iter__.return_value = mock_rows
     mock_session.execute = AsyncMock(return_value=mock_execute_res)
@@ -247,10 +222,7 @@ async def test_pre_filter_topics():
 
     with patch("app.services.knowledge.discovery.topic_resolver.rag_db_manager", mock_db_manager):
         candidates = await TopicService.pre_filter_topics(
-            workspace_id=workspace_id,
-            chunk_embedding=chunk_embedding,
-            text_content=text_content,
-            entity_names=[]
+            workspace_id=workspace_id, chunk_embedding=chunk_embedding, text_content=text_content, entity_names=[]
         )
 
         assert len(candidates) == 2
@@ -264,17 +236,15 @@ def test_resolve_topic_assignments_auto_assign():
     doc_id = "doc-1"
     chunk_embedding = [0.1, 0.2, 0.3]
 
-    llm_assignments = [
-        {"topic_id": "topic-ml", "confidence": 0.9}
-    ]
+    llm_assignments = [{"topic_id": "topic-ml", "confidence": 0.9}]
 
     mock_conn = MagicMock()
     mock_cursor = MagicMock()
 
     # fetchone trả về lần lượt (entity_ids, relation_ids) và sau đó là vector similarity
     mock_cursor.fetchone.side_effect = [
-        (["ent-1"], ["rel-1"]), # Lần gọi 1: entity_ids, relation_ids
-        (0.85,)                 # Lần gọi 2: vector similarity
+        (["ent-1"], ["rel-1"]),  # Lần gọi 1: entity_ids, relation_ids
+        (0.85,),  # Lần gọi 2: vector similarity
     ]
     mock_cursor.fetchall.return_value = []
     mock_conn.cursor.return_value = mock_cursor
@@ -289,7 +259,7 @@ def test_resolve_topic_assignments_auto_assign():
             chunk_embedding=chunk_embedding,
             llm_assignments=llm_assignments,
             llm_candidates=[],
-            doc_id=doc_id
+            doc_id=doc_id,
         )
 
         assert len(affected_topics) == 1
@@ -314,22 +284,21 @@ async def test_merge_topics():
     mock_res = MagicMock()
     mock_res.scalar_one_or_none.return_value = mock_topic_target
 
-    mock_res.scalars.return_value.all.side_effect = [
-        [mock_topic_src1],
-        []
-    ]
+    mock_res.scalars.return_value.all.side_effect = [[mock_topic_src1], []]
     mock_session.execute.return_value = mock_res
 
     mock_db_manager = MagicMock()
     mock_db_manager.get_async_session.return_value.__aenter__.return_value = mock_session
 
-    with patch("app.services.knowledge.discovery.topics.rag_db_manager", mock_db_manager), \
-         patch("app.services.knowledge.discovery.topics.TopicService.trigger_topic_updates_via_temporal", AsyncMock()) as mock_trigger:
+    with (
+        patch("app.services.knowledge.discovery.topics.rag_db_manager", mock_db_manager),
+        patch(
+            "app.services.knowledge.discovery.topics.TopicService.trigger_topic_updates_via_temporal", AsyncMock()
+        ) as mock_trigger,
+    ):
 
         success = await TopicService.merge_topics(
-            workspace_id=workspace_id,
-            target_topic_id=target_topic_id,
-            source_topic_ids=source_topic_ids
+            workspace_id=workspace_id, target_topic_id=target_topic_id, source_topic_ids=source_topic_ids
         )
 
         assert success is True

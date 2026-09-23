@@ -35,6 +35,7 @@ describe("DocumentTable", () => {
     render(
       <TestI18nProvider>
         <DocumentTable
+          deletingDocumentId={null}
           documents={[document]}
           emptyMessage="No documents"
           isLoading={false}
@@ -57,6 +58,7 @@ describe("DocumentTable", () => {
     render(
       <I18nextProvider i18n={vietnameseI18n}>
         <DocumentTable
+          deletingDocumentId={null}
           documents={[document]}
           emptyMessage="Không có tài liệu"
           isLoading={false}
@@ -84,6 +86,7 @@ describe("DocumentTable", () => {
     render(
       <TestI18nProvider>
         <DocumentTable
+          deletingDocumentId={null}
           documents={[]}
           emptyMessage="No documents match the current search and status filters."
           isLoading={false}
@@ -104,6 +107,7 @@ describe("DocumentTable", () => {
     render(
       <I18nextProvider i18n={vietnameseI18n}>
         <DocumentTable
+          deletingDocumentId={null}
           documents={[]}
           emptyMessage="Không có tài liệu"
           isLoading
@@ -118,5 +122,30 @@ describe("DocumentTable", () => {
     expect(
       screen.getByRole("status", { name: "Đang tải tài liệu tri thức" }),
     ).toBeInTheDocument();
+  });
+
+  it("shows deleting progress on the delete action", () => {
+    render(
+      <TestI18nProvider>
+        <DocumentTable
+          deletingDocumentId={document.id}
+          documents={[document]}
+          emptyMessage="No documents"
+          isLoading={false}
+          onDelete={vi.fn()}
+          onRetry={vi.fn()}
+          onView={vi.fn()}
+          retryingDocumentIds={new Set()}
+        />
+      </TestI18nProvider>,
+    );
+
+    const table = within(screen.getByRole("table"));
+    const deleteButton = table.getByRole("button", {
+      name: /delete product guide/i,
+    });
+    expect(deleteButton).toBeDisabled();
+    expect(deleteButton).toHaveAttribute("aria-busy", "true");
+    expect(deleteButton).toHaveTextContent("Deleting");
   });
 });

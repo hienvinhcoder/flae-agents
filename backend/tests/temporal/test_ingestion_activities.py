@@ -65,6 +65,130 @@ async def test_run_sync_with_heartbeats_propagates_callable_timeout_error(
         )
 
 
+@pytest.mark.asyncio
+async def test_run_coro_with_heartbeats_reports_progress_while_blocked(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    heartbeats: list[object] = []
+    details = {"stage": "extract", "completed": 0, "total": 3}
+    monkeypatch.setattr(ingestion, "HEARTBEAT_INTERVAL_SECONDS", 0.001)
+    monkeypatch.setattr(ingestion.activity, "heartbeat", heartbeats.append)
+
+    async def blocked_coro() -> str:
+        await asyncio.sleep(0.02)
+        return "extracted"
+
+    result = await ingestion._run_coro_with_heartbeats(
+        blocked_coro(),
+        heartbeat_details=details,
+    )
+
+    assert result == "extracted"
+    assert len(heartbeats) >= 2
+    assert all(heartbeat == details for heartbeat in heartbeats)
+
+
+@pytest.mark.asyncio
+async def test_extract_and_fuse_activity_heartbeats_during_long_extraction(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.schemas.ingestion import ExtractAndFuseInput, ExtractAndFuseResult
+
+    heartbeats: list[object] = []
+    monkeypatch.setattr(ingestion, "HEARTBEAT_INTERVAL_SECONDS", 0.001)
+    monkeypatch.setattr(ingestion.activity, "heartbeat", heartbeats.append)
+    monkeypatch.setattr(
+        ingestion.IngestionService,
+        "load_published_chunks",
+        AsyncMock(
+            return_value=[
+                {"chunk_id": "c1", "text": "alpha", "embedding": [0.1]},
+                {"chunk_id": "c2", "text": "beta", "embedding": [0.2]},
+            ]
+        ),
+    )
+
+    async def slow_extract(**_kwargs: object) -> tuple[list, list, list, int]:
+        await asyncio.sleep(0.025)
+        return [{"name": "A"}], [], [], 10
+
+    monkeypatch.setattr(
+        ingestion.IngestionService,
+        "extract_entities_from_chunks",
+        slow_extract,
+    )
+    monkeypatch.setattr(
+        ingestion.IngestionService,
+        "fuse_and_save",
+        MagicMock(),
+    )
+
+    result = await ingestion.extract_and_fuse_activity(
+        ExtractAndFuseInput(
+            workspace_id=str(uuid4()),
+            source_doc_id=str(uuid4()),
+            chunk_count=2,
+        )
+    )
+
+    assert isinstance(result, ExtractAndFuseResult)
+    assert result.entity_count == 1
+    extract_heartbeats = [
+        hb
+        for hb in heartbeats
+        if isinstance(hb, dict) and hb.get("stage") == "extract"
+    ]
+    assert len(extract_heartbeats) >= 2
+
+
+@pytest.mark.asyncio
+async def test_extract_and_fuse_activity_heartbeats_during_long_fuse(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.schemas.ingestion import ExtractAndFuseInput, ExtractAndFuseResult
+
+    heartbeats: list[object] = []
+    monkeypatch.setattr(ingestion, "HEARTBEAT_INTERVAL_SECONDS", 0.001)
+    monkeypatch.setattr(ingestion.activity, "heartbeat", heartbeats.append)
+    monkeypatch.setattr(
+        ingestion.IngestionService,
+        "load_published_chunks",
+        AsyncMock(
+            return_value=[{"chunk_id": "c1", "text": "alpha", "embedding": [0.1]}]
+        ),
+    )
+    monkeypatch.setattr(
+        ingestion.IngestionService,
+        "extract_entities_from_chunks",
+        AsyncMock(return_value=([{"name": "A"}], [{"name": "r1"}], [], 5)),
+    )
+
+    def slow_fuse(*_args: object, **_kwargs: object) -> dict:
+        import time
+
+        time.sleep(0.025)
+        return {}
+
+    monkeypatch.setattr(ingestion.IngestionService, "fuse_and_save", slow_fuse)
+
+    result = await ingestion.extract_and_fuse_activity(
+        ExtractAndFuseInput(
+            workspace_id=str(uuid4()),
+            source_doc_id=str(uuid4()),
+            chunk_count=1,
+        )
+    )
+
+    assert isinstance(result, ExtractAndFuseResult)
+    assert result.entity_count == 1
+    fuse_heartbeats = [
+        hb
+        for hb in heartbeats
+        if isinstance(hb, dict) and hb.get("stage") == "fuse"
+    ]
+    assert len(fuse_heartbeats) >= 2
+
+
 def _source(content: bytes = b"# Architecture\n\nEvidence") -> SourceRevisionReference:
     return SourceRevisionReference(
         workspace_id=uuid4(),

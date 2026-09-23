@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "../../../shared/ui/Button";
 import { Dialog } from "../../../shared/ui/Dialog";
 import { Input } from "../../../shared/ui/Input";
+import { Textarea } from "../../../shared/ui/Textarea";
 import {
   createManualDocumentSchema,
   type ManualDocumentForm,
@@ -19,6 +20,10 @@ interface TextInputDialogProps {
   onSubmit: (payload: ManualDocumentForm) => Promise<void>;
   open: boolean;
 }
+
+const footerButtonClassName =
+  "!h-8 !min-h-8 rounded-ui-control !px-3.5 text-[13px] shadow-sm";
+
 
 export function TextInputDialog({
   error,
@@ -69,45 +74,68 @@ export function TextInputDialog({
       closeLabel={t("SHELL.CLOSE_DIALOG")}
       description={t("KNOWLEDGE.MANUAL_DESCRIPTION")}
       dismissible={!isSubmitting}
+      layout="composer"
       onClose={requestClose}
       open={open}
+      size="xl"
       title={t("KNOWLEDGE.ADD_TEXT")}
     >
-      <form className="grid gap-5" noValidate onSubmit={(event) => void submit(event)}>
-        <Input
-          error={errors.title?.message}
-          disabled={isSubmitting}
-          label={t("KNOWLEDGE.DOCUMENT_TITLE_LABEL")}
-          {...register("title")}
-        />
-        <Input
-          error={errors.description?.message}
-          disabled={isSubmitting}
-          label={t("KNOWLEDGE.DESCRIPTION_LABEL")}
-          {...register("description")}
-        />
-        <div className="grid gap-2">
-          <label className="font-semibold text-foreground" htmlFor="manual-content">
-            {t("KNOWLEDGE.CONTENT_LABEL")}
-          </label>
-          <textarea
-            aria-describedby={errors.content_text ? "manual-content-error" : undefined}
-            aria-invalid={Boolean(errors.content_text)}
-            className="min-h-44 w-full resize-y rounded-ui-control border border-input bg-card px-3 py-3 text-foreground shadow-none transition-colors duration-200 placeholder:text-muted-foreground hover:border-ui-line-strong focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25 motion-reduce:transition-none"
-            disabled={isSubmitting}
-            id="manual-content"
-            {...register("content_text")}
-          />
-          {errors.content_text ? (
-            <p className="text-sm text-destructive" id="manual-content-error">
-              {errors.content_text.message}
-            </p>
-          ) : null}
+      <form
+        className="flex min-h-0 flex-1 flex-col"
+        noValidate
+        onSubmit={(event) => void submit(event)}
+      >
+        <div className="max-h-[60vh] overflow-y-auto p-6">
+          <div className="grid gap-6">
+            <Input
+              density="compact"
+              disabled={isSubmitting}
+              error={errors.title?.message}
+              id="manual-title"
+              label={t("KNOWLEDGE.COMPOSER_TITLE_LABEL")}
+              {...register("title")}
+            />
+            <Input
+              density="compact"
+              disabled={isSubmitting}
+              error={errors.description?.message}
+              id="manual-description"
+              label={t("KNOWLEDGE.COMPOSER_DESCRIPTION_LABEL")}
+              optionalHint={t("KNOWLEDGE.OPTIONAL_HINT")}
+              placeholder={t("KNOWLEDGE.DESCRIPTION_PLACEHOLDER")}
+              {...register("description")}
+            />
+            <Textarea
+              disabled={isSubmitting}
+              error={errors.content_text?.message}
+              id="manual-content"
+              label={t("KNOWLEDGE.CONTENT_LABEL")}
+              placeholder={t("KNOWLEDGE.CONTENT_PLACEHOLDER")}
+              {...register("content_text")}
+            />
+            {error ? (
+              <p className="text-sm text-destructive" role="alert">
+                {error}
+              </p>
+            ) : null}
+          </div>
         </div>
-        {error ? <p className="text-state-danger" role="alert">{error}</p> : null}
-        <div className="flex justify-end gap-3">
-          <Button disabled={isSubmitting} onClick={requestClose} type="button" variant="secondary">{t("KNOWLEDGE.CANCEL")}</Button>
-          <Button isLoading={isSubmitting} loadingText={t("KNOWLEDGE.SAVING_CONTENT")} type="submit">
+        <div className="sticky bottom-0 flex shrink-0 items-center justify-end gap-3 border-t border-border/50 bg-secondary/30 px-6 py-4">
+          <Button
+            className={footerButtonClassName}
+            disabled={isSubmitting}
+            onClick={requestClose}
+            type="button"
+            variant="secondary"
+          >
+            {t("KNOWLEDGE.CANCEL")}
+          </Button>
+          <Button
+            className={footerButtonClassName}
+            isLoading={isSubmitting}
+            loadingText={t("KNOWLEDGE.SAVING_CONTENT")}
+            type="submit"
+          >
             {t("KNOWLEDGE.SAVE_CONTENT")}
           </Button>
         </div>

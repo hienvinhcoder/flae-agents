@@ -1,85 +1,200 @@
-"""Topic summary service: generates/updates topic summaries via LLM."""
+"""Topic summary generation and persistence."""
 
 from __future__ import annotations
 
+import asyncio
+import json
+from datetime import datetime, timezone
+
+from sqlalchemy import and_, select, text
+
 from app.core.config import settings
+from app.core.exceptions import ExternalServiceError
 from app.core.logger import get_logger
+from app.db.rag_db import rag_db_manager
+from app.models.rag.topics import Topic, TopicMembership
 
 logger = get_logger(__name__)
 
 
 class TopicSummaryService:
-    """Generates or refreshes a topic's summary by reading its members and calling LLM."""
+    """Generates or refreshes a topic's summary from its membership evidence."""
 
-    async def update(self, *, workspace_id: str, topic_id: str) -> dict[str, object]:
-        """Re-summarize a single topic. Returns metrics dict."""
-        from app.services.knowledge.discovery.topics import TopicService
-
-        topic = await TopicService.get_topic_detail(
-            workspace_id=workspace_id,
-            topic_id_or_slug=topic_id,
+    async def update(self, workspace_id: str, topic_id: str) -> dict[str, object]:
+        logger.info(
+            "Starting topic summary update for topic %s in workspace %s",
+            topic_id,
+            workspace_id,
         )
-        if topic is None:
-            logger.warning("Topic %s not found for summary update", topic_id)
-            return {"updated": False}
 
-        # Collect evidence text from memberships
-        members = topic.get("memberships", [])
-        if not members:
-            return {"updated": False, "reason": "no_members"}
-
-        texts = [
-            m.get("summary", "") or m.get("name", "")
-            for m in members
-            if m.get("summary") or m.get("name")
-        ]
-        if not texts:
-            return {"updated": False, "reason": "no_text"}
-
-        combined = "\n".join(texts[:20])  # limit to avoid token explosion
-
-        # Generate summary via LLM
-        api_key = settings.GEMINI_API_KEY
-        model_name = settings.GEMINI_LLM_MODEL
-        if not api_key:
-            logger.warning("GEMINI_API_KEY not set, skipping summary generation")
-            return {"updated": False, "reason": "no_api_key"}
-
-        try:
-            from google import genai
-
-            client = genai.Client(api_key=api_key)
-            prompt = (
-                f"You are a knowledge curator. Summarize the following content about "
-                f"'{topic.get('name', '')}' into a concise 2-3 sentence summary.\n\n"
-                f"Content:\n{combined}"
-            )
-            response = client.models.generate_content(
-                model=model_name,
-                contents=prompt,
-            )
-            summary = (response.text or "").strip()
-            if not summary:
-                return {"updated": False, "reason": "empty_response"}
-
-            # Update topic summary in DB
-            from app.db.rag_db import rag_db_manager
-            from sqlalchemy import text as sql_text
-
-            async with rag_db_manager.get_async_session(workspace_id) as session:
-                await session.execute(
-                    sql_text(
-                        f"UPDATE {rag_db_manager.schema}.topics "
-                        "SET summary = :summary, updated_at = NOW() "
-                        "WHERE workspace_id = :ws_id AND topic_id = :t_id"
-                    ),
-                    {"summary": summary, "ws_id": workspace_id, "t_id": topic_id},
+        async with rag_db_manager.get_async_session(workspace_id) as session:
+            topic_result = await session.execute(
+                select(Topic).where(
+                    and_(
+                        Topic.workspace_id == workspace_id,
+                        Topic.topic_id == topic_id,
+                    )
                 )
-                await session.commit()
+            )
+            topic = topic_result.scalar_one_or_none()
+            if topic is None:
+                logger.warning("Topic %s was not found in the RAG database", topic_id)
+                return {"status": "skipped", "reason": "Topic not found"}
 
-            logger.info("Topic %s summary updated", topic_id)
-            return {"updated": True, "summary_length": len(summary)}
+            membership_result = await session.execute(
+                select(TopicMembership).where(
+                    and_(
+                        TopicMembership.workspace_id == workspace_id,
+                        TopicMembership.topic_id == topic_id,
+                        TopicMembership.status == "active",
+                    )
+                )
+            )
+            memberships = membership_result.scalars().all()
 
-        except Exception as exc:
-            logger.error("Failed to update topic summary for %s: %s", topic_id, exc)
-            return {"updated": False, "error": str(exc)}
+            chunk_ids: list[str] = []
+            entity_ids: list[str] = []
+            relation_ids: list[str] = []
+            for membership in memberships:
+                if membership.member_type == "chunk":
+                    chunk_ids.append(membership.member_id)
+                elif membership.member_type == "entity":
+                    entity_ids.append(membership.member_id)
+                elif membership.member_type == "relationship":
+                    relation_ids.append(membership.member_id)
+
+            chunks_text: list[str] = []
+            if chunk_ids:
+                chunks_result = await session.execute(
+                    text(
+                        f"SELECT text FROM {rag_db_manager.schema}.chunks "
+                        "WHERE workspace_id = :ws_id AND chunk_id = ANY(:chunk_ids)"
+                    ),
+                    {"ws_id": workspace_id, "chunk_ids": chunk_ids},
+                )
+                chunks_text = [row[0] for row in chunks_result if row[0]]
+
+            entities_info: list[str] = []
+            if entity_ids:
+                entities_result = await session.execute(
+                    text(
+                        f"SELECT entity_name, entity_type, description FROM "
+                        f"{rag_db_manager.schema}.entities "
+                        "WHERE workspace_id = :ws_id AND entity_id = ANY(:ent_ids)"
+                    ),
+                    {"ws_id": workspace_id, "ent_ids": entity_ids},
+                )
+                entities_info = [f"- {row[0]} ({row[1]}): {row[2]}" for row in entities_result if row[0]]
+
+            relations_info: list[str] = []
+            if relation_ids:
+                relations_result = await session.execute(
+                    text(
+                        f"SELECT source_name, target_name, keywords, description FROM "
+                        f"{rag_db_manager.schema}.relationships "
+                        "WHERE workspace_id = :ws_id AND relation_id = ANY(:rel_ids)"
+                    ),
+                    {"ws_id": workspace_id, "rel_ids": relation_ids},
+                )
+                relations_info = [f"- {row[0]} -> {row[1]} ({row[2]}): {row[3]}" for row in relations_result if row[0]]
+
+            if not chunks_text and not entities_info:
+                logger.warning("No evidence was found for topic %s", topic.name)
+                return {"status": "skipped", "reason": "No evidence"}
+
+            prompt = self._build_prompt(topic.name, chunks_text, entities_info, relations_info)
+            try:
+                summary_text, current_state_text = await asyncio.to_thread(
+                    self._generate_summary,
+                    prompt,
+                )
+            except ExternalServiceError:
+                logger.exception("Topic summary provider failed for topic %s", topic_id)
+                raise
+            except Exception as error:
+                logger.exception("Topic summary provider failed for topic %s", topic_id)
+                raise ExternalServiceError("Topic summary provider unavailable") from error
+
+            topic.summary = summary_text
+            topic.current_state = current_state_text
+            topic.updated_at = datetime.now(timezone.utc)
+
+            if summary_text:
+                try:
+                    embedding = await self._generate_embedding(topic.name, summary_text)
+                    if embedding is not None:
+                        topic.embedding = embedding
+                except Exception:
+                    logger.warning(
+                        "Could not update the embedding for topic %s",
+                        topic.name,
+                        exc_info=True,
+                    )
+
+            await session.commit()
+
+        logger.info("Topic summary updated successfully for topic %s", topic.name)
+        return {"status": "completed", "topic_id": topic_id}
+
+    @staticmethod
+    def _build_prompt(
+        topic_name: str,
+        chunks_text: list[str],
+        entities_info: list[str],
+        relations_info: list[str],
+    ) -> str:
+        chunks = "\n---\n".join(chunks_text[:15])
+        entities = "\n".join(entities_info[:30])
+        relations = "\n".join(relations_info[:30])
+        language = "Vietnamese" if getattr(settings, "DEFAULT_LANGUAGE", "vi") == "vi" else "English"
+        return f"""
+You are an AI Architect. Analyze the following knowledge chunks and graph components grouped under the topic "{topic_name}".
+Generate a high-quality summary and current state description of this topic in {language}.
+
+Entities:
+{entities}
+
+Relationships:
+{relations}
+
+Chunks of text:
+{chunks}
+
+Output strictly as a JSON object with two fields:
+1. "summary": A comprehensive markdown summary of the topic.
+2. "current_state": A brief description of the current status/developments of this topic.
+
+Do not output any markdown formatting other than the JSON itself.
+"""
+
+    @staticmethod
+    def _generate_summary(prompt: str) -> tuple[str, str]:
+        from google import genai
+        from google.genai import types
+
+        client = genai.Client(api_key=settings.GEMINI_API_KEY)
+        response = client.models.generate_content(
+            model=settings.GEMINI_LLM_MODEL,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                temperature=0.2,
+            ),
+        )
+        if response.text is None:
+            raise ValueError("Gemini API returned an empty response")
+        payload = json.loads(response.text)
+        return payload.get("summary", ""), payload.get("current_state", "")
+
+    @staticmethod
+    async def _generate_embedding(topic_name: str, summary_text: str) -> list[float] | None:
+        from app.services.knowledge.ingestion.service import IngestionService
+
+        embeddings, _ = await asyncio.to_thread(
+            IngestionService.generate_embeddings,
+            [f"{topic_name}\n{summary_text}"],
+            "topics",
+        )
+        if embeddings and embeddings[0] is not None:
+            return embeddings[0]
+        return None

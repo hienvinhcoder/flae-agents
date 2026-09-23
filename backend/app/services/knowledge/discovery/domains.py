@@ -54,7 +54,6 @@ def merge_domains(domains: list[dict]) -> list[dict]:
                 "name": name,
                 "slug": slugify(name) or key.replace(" ", "-"),
                 "description": description,
-                "descriptions": descriptions,
                 "source_chunk_ids": source_chunks,
                 "frequency": len(group),
                 "status": "needs_review",

@@ -30,7 +30,11 @@ describe("TextInputDialog", () => {
       </TestI18nProvider>,
     );
     const area = screen.getByLabelText(/^content$/i);
-    expect(area).toHaveClass("min-h-44", "rounded-ui-control", "border-input");
+    expect(area).toHaveClass("min-h-[200px]", "rounded-ui-control", "border-input");
+    expect(screen.getByRole("dialog", { name: /add content/i })).toHaveClass(
+      "max-w-xl",
+      "p-0",
+    );
   });
 
   it("blocks dismissal and preserves values while submission is pending", async () => {
@@ -50,7 +54,7 @@ describe("TextInputDialog", () => {
     );
     const { rerender } = render(dialog(false));
 
-    await user.type(screen.getByLabelText(/document title/i), "Team principles");
+    await user.type(screen.getByLabelText(/^title$/i), "Team principles");
     await user.type(screen.getByLabelText(/description/i), "Reference");
     await user.type(screen.getByLabelText(/^content$/i), "Prefer durable decisions.");
     await user.click(screen.getByRole("button", { name: /save content/i }));
@@ -58,7 +62,7 @@ describe("TextInputDialog", () => {
     rerender(dialog(true));
 
     expect(screen.queryByRole("button", { name: /close dialog/i })).not.toBeInTheDocument();
-    expect(screen.getByLabelText(/document title/i)).toBeDisabled();
+    expect(screen.getByLabelText(/^title$/i)).toBeDisabled();
     expect(screen.getByLabelText(/description/i)).toBeDisabled();
     expect(screen.getByLabelText(/^content$/i)).toBeDisabled();
     expect(screen.getByRole("button", { name: /cancel/i })).toBeDisabled();
@@ -89,7 +93,7 @@ describe("TextInputDialog", () => {
       </TestI18nProvider>,
     );
 
-    await user.type(screen.getByLabelText(/document title/i), "Team principles");
+    await user.type(screen.getByLabelText(/^title$/i), "Team principles");
     await user.type(screen.getByLabelText(/^content$/i), "Prefer durable decisions.");
     await user.click(screen.getByRole("button", { name: /save content/i }));
 
@@ -112,8 +116,8 @@ describe("TextInputDialog", () => {
 
     expect(screen.getByRole("dialog", { name: "Nhập nội dung" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Đóng hộp thoại" })).toBeInTheDocument();
-    expect(screen.getByLabelText("Tiêu đề tài liệu")).toBeInTheDocument();
-    expect(screen.getByLabelText("Mô tả")).toBeInTheDocument();
+    expect(screen.getByLabelText("Tiêu đề")).toBeInTheDocument();
+    expect(screen.getByLabelText(/Mô tả/)).toBeInTheDocument();
     expect(screen.getByLabelText("Nội dung")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Hủy" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Lưu nội dung" }));

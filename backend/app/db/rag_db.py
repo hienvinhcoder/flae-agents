@@ -170,6 +170,10 @@ class DBManager:
             # Gán cột định danh workspace_id
             df_to_save["workspace_id"] = workspace_id
 
+            # One INSERT cannot ON CONFLICT-update the same PK twice.
+            if pk_col in df_to_save.columns:
+                df_to_save = df_to_save.drop_duplicates(subset=[pk_col], keep="last")
+
             def to_vector_str(x):
                 if x is None or (isinstance(x, float) and pd.isna(x)):
                     return None

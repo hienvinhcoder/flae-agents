@@ -193,8 +193,9 @@ describe("KnowledgeListPage", () => {
     expect(
       detail.getByRole("heading", { name: "Product roadmap" }),
     ).toBeInTheDocument();
-    expect(detail.getByText(/12 chunks/i)).toBeInTheDocument();
-    expect(detail.getByText(/4.2 seconds/i)).toBeInTheDocument();
+    expect(detail.getByText("12")).toBeInTheDocument();
+    expect(detail.getByText(/chunks/i)).toBeInTheDocument();
+    expect(detail.getByText(/4\.2 seconds/i)).toBeInTheDocument();
   });
 
   it("validates upload metadata and submits a supported file", async () => {
@@ -209,18 +210,31 @@ describe("KnowledgeListPage", () => {
     await screen.findByRole("table", { name: /knowledge documents/i });
 
     await user.click(screen.getByRole("button", { name: /upload document/i }));
-    await user.click(screen.getByRole("button", { name: /^upload$/i }));
+    const uploadDialog = await screen.findByRole("dialog", {
+      name: /upload document/i,
+    });
+    await user.click(
+      within(uploadDialog).getByRole("button", { name: /^upload document$/i }),
+    );
     expect(await screen.findByText(/select a document/i)).toBeInTheDocument();
     expect(runtimeApi.uploadDocument).not.toHaveBeenCalled();
 
     const file = new File(["# Architecture"], "architecture.md", {
       type: "text/markdown",
     });
-    await user.upload(screen.getByLabelText(/document file/i), file);
-    await user.clear(screen.getByLabelText(/document title/i));
-    await user.type(screen.getByLabelText(/document title/i), "Architecture");
-    await user.type(screen.getByLabelText(/description/i), "System guide");
-    await user.click(screen.getByRole("button", { name: /^upload$/i }));
+    await user.upload(
+      within(uploadDialog).getByLabelText(/document file/i),
+      file,
+    );
+    await user.clear(within(uploadDialog).getByLabelText(/^title$/i));
+    await user.type(within(uploadDialog).getByLabelText(/^title$/i), "Architecture");
+    await user.type(
+      within(uploadDialog).getByLabelText(/description/i),
+      "System guide",
+    );
+    await user.click(
+      within(uploadDialog).getByRole("button", { name: /^upload document$/i }),
+    );
 
     await waitFor(() =>
       expect(runtimeApi.uploadDocument).toHaveBeenCalledWith("ws-1", {
@@ -250,7 +264,7 @@ describe("KnowledgeListPage", () => {
     expect(await screen.findByText(/enter a document title/i)).toBeInTheDocument();
     expect(screen.getByText(/enter document content/i)).toBeInTheDocument();
 
-    await user.type(screen.getByLabelText(/document title/i), "Team principles");
+    await user.type(screen.getByLabelText(/^title$/i), "Team principles");
     await user.type(screen.getByLabelText(/^content$/i), "Prefer durable decisions.");
     await user.click(screen.getByRole("button", { name: /save content/i }));
 
@@ -347,6 +361,40 @@ describe("KnowledgeListPage", () => {
       temporal_workflow_id: "workflow-retry",
       title: incident.title,
     });
+  });
+
+  it("shows deleting progress after confirm while the request is pending", async () => {
+    const user = userEvent.setup();
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    let resolveDelete: ((value: boolean) => void) | undefined;
+    runtimeApi.deleteDocument.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveDelete = resolve;
+        }),
+    );
+    renderPage();
+    const table = within(
+      await screen.findByRole("table", { name: /knowledge documents/i }),
+    );
+
+    await user.click(
+      table.getByRole("button", { name: /delete incident handbook/i }),
+    );
+    const pendingDelete = table.getByRole("button", {
+      name: /delete incident handbook/i,
+    });
+    await waitFor(() => expect(pendingDelete).toBeDisabled());
+    expect(pendingDelete).toHaveAttribute("aria-busy", "true");
+    expect(pendingDelete).toHaveTextContent("Deleting");
+    expect(confirm).toHaveBeenCalled();
+
+    resolveDelete?.(true);
+    await waitFor(() =>
+      expect(
+        table.getByRole("button", { name: /delete incident handbook/i }),
+      ).not.toBeDisabled(),
+    );
   });
 
   it("tracks concurrent retries per document and blocks duplicate requests", async () => {

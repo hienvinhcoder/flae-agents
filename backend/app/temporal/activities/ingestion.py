@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from hashlib import sha256
 from typing import TypeVar
 from urllib.parse import unquote, urlsplit
@@ -48,6 +48,24 @@ async def _run_sync_with_heartbeats(
     heartbeat_details: object,
 ) -> R:
     task = asyncio.create_task(asyncio.to_thread(function, *args))
+    while True:
+        try:
+            return await asyncio.wait_for(
+                asyncio.shield(task), timeout=HEARTBEAT_INTERVAL_SECONDS
+            )
+        except TimeoutError:
+            if task.done():
+                return task.result()
+            activity.heartbeat(heartbeat_details)
+
+
+async def _run_coro_with_heartbeats(
+    coro: Awaitable[R],
+    *,
+    heartbeat_details: object,
+) -> R:
+    """Keep Temporal heartbeats alive while an async operation runs."""
+    task = asyncio.ensure_future(coro)
     while True:
         try:
             return await asyncio.wait_for(
@@ -211,25 +229,36 @@ async def extract_and_fuse_activity(
             entity_count=0, relation_count=0, domain_count=0, tokens_used=0
         )
 
-    activity.heartbeat({"stage": "extract", "completed": 0, "total": len(chunks)})
+    extract_heartbeat = {
+        "stage": "extract",
+        "completed": 0,
+        "total": len(chunks),
+    }
+    activity.heartbeat(extract_heartbeat)
 
-    # 3. Extract entities, relations, domains
-    entities, relations, domains, tokens = await IngestionService.extract_entities_from_chunks(
-        chunks=chunks,
-        workspace_id=command.workspace_id,
+    # 3. Extract entities, relations, domains (LLM can exceed heartbeat timeout)
+    entities, relations, domains, tokens = await _run_coro_with_heartbeats(
+        IngestionService.extract_entities_from_chunks(
+            chunks=chunks,
+            workspace_id=command.workspace_id,
+        ),
+        heartbeat_details=extract_heartbeat,
     )
 
-    activity.heartbeat({"stage": "fuse", "completed": len(chunks)})
+    fuse_heartbeat = {"stage": "fuse", "completed": len(chunks)}
+    activity.heartbeat(fuse_heartbeat)
 
-    # 4. Fuse and save to knowledge graph
+    # 4. Fuse and save to knowledge graph (sync LLM/DB — offload so heartbeats continue)
     if entities or relations or domains:
-        IngestionService.fuse_and_save(
-            workspace_id=command.workspace_id,
-            chunks=chunks,
-            entities=entities,
-            relations=relations,
-            source_doc_id=command.source_doc_id,
-            domains=domains if domains else None,
+        await _run_sync_with_heartbeats(
+            IngestionService.fuse_and_save,
+            command.workspace_id,
+            chunks,
+            entities,
+            relations,
+            command.source_doc_id,
+            domains if domains else None,
+            heartbeat_details=fuse_heartbeat,
         )
 
     logger.info(

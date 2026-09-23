@@ -32,11 +32,19 @@ export function DocumentDetailPanel({
   onRetry,
   open,
 }: DocumentDetailPanelProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const addedLabel = document
+    ? new Intl.DateTimeFormat(i18n.language, {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      }).format(new Date(document.created_at))
+    : null;
 
   return (
     <Dialog
       closeLabel={t("SHELL.CLOSE_DIALOG")}
+      dismissible={!isDeleting}
       onClose={onClose}
       open={open}
       size="xl"
@@ -49,53 +57,72 @@ export function DocumentDetailPanel({
         <ErrorState message={error} title={t("KNOWLEDGE.DOCUMENT_LOAD_ERROR")} />
       ) : null}
       {document ? (
-        <div className="grid max-h-[70vh] gap-5 overflow-y-auto pr-1">
-          <div className="flex flex-wrap items-center gap-3 border-b border-border pb-4">
+        <div className="flex max-h-[70vh] flex-col gap-6 overflow-y-auto pr-1">
+          <div className="flex flex-wrap items-center gap-3">
             <StatusBadge status={document.status} />
-            <span className="text-sm text-muted-foreground">
+            <span className="rounded bg-secondary px-1.5 font-mono text-[12px] text-muted-foreground">
               {document.file_name || t("KNOWLEDGE.MANUAL_TEXT")}
             </span>
           </div>
           {document.description ? (
-            <p className="text-sm text-muted-foreground">{document.description}</p>
+            <p className="text-[14px] leading-relaxed text-foreground">
+              {document.description}
+            </p>
           ) : null}
           <IngestionProgress document={document} />
           {document.error_message ? (
-            <p className="rounded-ui-control border border-state-danger bg-state-danger-soft p-3 text-state-danger" role="alert">
+            <p
+              className="rounded-ui-control border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
+              role="alert"
+            >
               {document.error_message}
             </p>
           ) : null}
           {document.content_text ? (
             <section aria-labelledby="document-content-title">
-              <h3 className="font-semibold text-foreground" id="document-content-title">
-                {t("KNOWLEDGE.EXTRACTED_CONTENT")}
+              <h3
+                className="mb-2 text-[13px] font-medium text-foreground"
+                id="document-content-title"
+              >
+                {t("KNOWLEDGE.CONTENT_PREVIEW")}
               </h3>
-              <p className="mt-2 max-h-48 overflow-y-auto whitespace-pre-wrap rounded-ui-control border border-border bg-muted p-3 text-sm text-muted-foreground">
-                {document.content_text}
-              </p>
+              <div className="relative">
+                <p className="max-h-56 overflow-y-auto whitespace-pre-wrap rounded-lg border border-border bg-card p-4 font-mono text-[13px] leading-relaxed text-muted-foreground">
+                  {document.content_text}
+                </p>
+              </div>
             </section>
           ) : null}
-          <div className="flex flex-wrap justify-end gap-3 border-t border-border pt-4">
-            {document.status === "failed" ? (
+          <div className="-mx-1 flex flex-wrap items-center justify-between gap-3 border-t border-border/50 bg-secondary/30 px-1 pt-4">
+            {addedLabel ? (
+              <p className="text-[12px] text-muted-foreground">
+                {t("KNOWLEDGE.DETAIL_ADDED_ON", { date: addedLabel })}
+              </p>
+            ) : (
+              <span />
+            )}
+            <div className="flex flex-wrap justify-end gap-3">
+              {document.status === "failed" ? (
+                <Button
+                  isLoading={isRetrying}
+                  loadingText={t("KNOWLEDGE.RETRYING")}
+                  onClick={() => onRetry(document.id)}
+                  variant="secondary"
+                >
+                  <RotateCcw aria-hidden className="h-4 w-4" />
+                  {t("KNOWLEDGE.RETRY_INGESTION")}
+                </Button>
+              ) : null}
               <Button
-                isLoading={isRetrying}
-                loadingText={t("KNOWLEDGE.RETRYING")}
-                onClick={() => onRetry(document.id)}
-                variant="secondary"
+                isLoading={isDeleting}
+                loadingText={t("KNOWLEDGE.DELETING")}
+                onClick={() => onDelete(document.id)}
+                variant="danger"
               >
-                <RotateCcw aria-hidden className="h-4 w-4" />
-                {t("KNOWLEDGE.RETRY_INGESTION")}
+                <Trash2 aria-hidden className="h-4 w-4" />
+                {t("KNOWLEDGE.DELETE_DOCUMENT_ACTION")}
               </Button>
-            ) : null}
-            <Button
-              isLoading={isDeleting}
-              loadingText={t("KNOWLEDGE.DELETING")}
-              onClick={() => onDelete(document.id)}
-              variant="danger"
-            >
-              <Trash2 aria-hidden className="h-4 w-4" />
-              {t("KNOWLEDGE.DELETE_DOCUMENT_ACTION")}
-            </Button>
+            </div>
           </div>
         </div>
       ) : null}

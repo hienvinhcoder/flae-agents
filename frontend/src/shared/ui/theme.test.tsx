@@ -47,7 +47,7 @@ const referenceTokens = [
   ['--radius-dialog', '0.75rem'],
   ['--radius-pill', '9999px'],
   ['--shadow-panel', 'none'],
-  ['--shadow-overlay', '0 4px 16px rgba(0, 0, 0, 0.08)'],
+  ['--shadow-overlay', '0 12px 32px -4px rgba(0, 0, 0, 0.08), 0 4px 16px -2px rgba(0, 0, 0, 0.04)'],
 ] as const;
 
 function expectToken(token: string, value: string): void {

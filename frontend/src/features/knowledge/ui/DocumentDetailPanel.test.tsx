@@ -62,8 +62,10 @@ describe("DocumentDetailPanel", () => {
     expect(screen.getByRole("dialog")).toHaveClass("max-w-xl");
     expect(screen.getByRole("button", { name: "Đóng hộp thoại" })).toBeInTheDocument();
     expect(screen.getByText("Văn bản nhập thủ công")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Nội dung đã trích xuất" })).toBeInTheDocument();
-    expect(screen.getByText("4 khối văn bản, 3 thực thể, 2 mối quan hệ")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Xem trước nội dung" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Chỉ số ingestion" })).toBeInTheDocument();
+    expect(screen.getByText("4")).toBeInTheDocument();
+    expect(screen.getByText("Khối")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Xử lý lại" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Xóa tài liệu" })).toBeInTheDocument();
   });

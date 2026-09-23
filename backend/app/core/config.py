@@ -3,13 +3,13 @@ from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from dotenv import load_dotenv
 
-BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'))
-ROOT_DIR = os.path.abspath(os.path.join(BASE_DIR, '../'))
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
+ROOT_DIR = os.path.abspath(os.path.join(BASE_DIR, "../"))
 
 # Thử load .env từ backend/ hoặc root/
-env_file_path = os.path.join(BASE_DIR, '.env')
+env_file_path = os.path.join(BASE_DIR, ".env")
 if not os.path.exists(env_file_path):
-    env_file_path = os.path.join(ROOT_DIR, '.env')
+    env_file_path = os.path.join(ROOT_DIR, ".env")
 
 if os.path.exists(env_file_path):
     load_dotenv(env_file_path)
@@ -17,11 +17,13 @@ if os.path.exists(env_file_path):
 
 class RAGSettings:
     """Cấu hình chunking, ingestion và retrieval cho Knowledge Base (RAG)."""
-    CHUNKING_STRATEGY: str = 'semantic'
+
+    # Strategies: fixed | markdown (Chonkie RecursiveChunker) | semantic
+    CHUNKING_STRATEGY: str = "markdown"
     FIXED_SIZE: int = 1200
     FIXED_OVERLAP: int = 100
-    # Pipeline: recursive(markdown) first, then SemanticChunker.
-    RECURSIVE_SIZE: int = 2048
+    # RecursiveChunker markdown recipe (also used as first stage of semantic pipeline).
+    RECURSIVE_SIZE: int = 1200
     SEMANTIC_TARGET: int = 900
     # Lower threshold → larger groups. skip_window merges similar non-adjacent groups.
     SEMANTIC_THRESHOLD: float = 0.45
@@ -38,7 +40,7 @@ class RAGSettings:
     SUMMARIZATION_LENGTH: int = 300
 
     # Graph Retrieval Configs
-    RETRIEVAL_TOP_P: int = 3
+    RETRIEVAL_TOP_P: int = 5
     RETRIEVAL_BFS_DEPTH: int = 3
     RETRIEVAL_TOP_K_ORPHANS_TO_BRIDGE: int = 3
     RETRIEVAL_BEAM_WIDTH: int = 20
@@ -55,9 +57,21 @@ class RAGSettings:
     SCORING_TOP_REC_K: int = 4
 
     ENTITY_TYPES: list[str] = [
-        "person", "organization", "location", "event", "product", "concept",
-        "equipment", "category", "project", "system", "document", "role",
-        "process", "metric", "other"
+        "person",
+        "organization",
+        "location",
+        "event",
+        "product",
+        "concept",
+        "equipment",
+        "category",
+        "project",
+        "system",
+        "document",
+        "role",
+        "process",
+        "metric",
+        "other",
     ]
 
 
@@ -65,55 +79,47 @@ rag_settings = RAGSettings()
 
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = os.getenv('PROJECT_NAME', 'FASTAPI BASE FIRESTORE')
-    API_V1_STR: str = '/api/v1'
-    BACKEND_CORS_ORIGINS: list[str] = ['*']
-    ENVIRONMENT: str = os.getenv('ENVIRONMENT', 'local')
+    PROJECT_NAME: str = os.getenv("PROJECT_NAME", "FASTAPI BASE FIRESTORE")
+    API_V1_STR: str = "/api/v1"
+    BACKEND_CORS_ORIGINS: list[str] = ["*"]
+    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "local")
 
     # Database
-    POSTGRES_URL: str = os.getenv('POSTGRES_URL', 'postgresql+asyncpg://postgres:postgres@localhost:5432/flae_db')
-    RAG_DATABASE_URL: str = os.getenv('RAG_DATABASE_URL', 'postgresql+asyncpg://postgres:postgres@postgres:5432/rag_db')
-    RAG_DATABASE_APP_ROLE: str = os.getenv('RAG_DATABASE_APP_ROLE', 'flae_rag_app')
-    RAG_DATABASE_INGESTION_ROLE: str = os.getenv(
-        'RAG_DATABASE_INGESTION_ROLE', 'flae_rag_ingestion'
+    POSTGRES_URL: str = os.getenv("POSTGRES_URL", "postgresql+asyncpg://postgres:postgres@localhost:5432/flae_db")
+    RAG_DATABASE_URL: str = os.getenv("RAG_DATABASE_URL", "postgresql+asyncpg://postgres:postgres@postgres:5432/rag_db")
+    RAG_DATABASE_APP_ROLE: str = os.getenv("RAG_DATABASE_APP_ROLE", "flae_rag_app")
+    RAG_DATABASE_INGESTION_ROLE: str = os.getenv("RAG_DATABASE_INGESTION_ROLE", "flae_rag_ingestion")
+    AGENT_STATE_DATABASE_URL: str = os.getenv(
+        "AGENT_STATE_DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/flae_agent_state_db"
     )
-    AGENT_STATE_DATABASE_URL: str = os.getenv('AGENT_STATE_DATABASE_URL', 'postgresql://postgres:postgres@localhost:5432/flae_agent_state_db')
-    REDIS_URL: str = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+    REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
     # Temporal
-    TEMPORAL_HOST: str = os.getenv('TEMPORAL_HOST', 'localhost:7233')
-    TEMPORAL_NAMESPACE: str = os.getenv('TEMPORAL_NAMESPACE', 'default')
-    TEMPORAL_KNOWLEDGE_TASK_QUEUE: str = os.getenv(
-        'TEMPORAL_KNOWLEDGE_TASK_QUEUE', 'flae-knowledge-queue'
-    )
-    KNOWLEDGE_MAX_PARALLEL_BATCHES: int = int(
-        os.getenv('KNOWLEDGE_MAX_PARALLEL_BATCHES', '4')
-    )
-    KNOWLEDGE_MAX_CONCURRENT_WORKFLOWS: int = int(
-        os.getenv('KNOWLEDGE_MAX_CONCURRENT_WORKFLOWS', '20')
-    )
-    KNOWLEDGE_MAX_CONCURRENT_ACTIVITIES: int = int(
-        os.getenv('KNOWLEDGE_MAX_CONCURRENT_ACTIVITIES', '8')
-    )
+    TEMPORAL_HOST: str = os.getenv("TEMPORAL_HOST", "localhost:7233")
+    TEMPORAL_NAMESPACE: str = os.getenv("TEMPORAL_NAMESPACE", "default")
+    TEMPORAL_KNOWLEDGE_TASK_QUEUE: str = os.getenv("TEMPORAL_KNOWLEDGE_TASK_QUEUE", "flae-knowledge-queue")
+    KNOWLEDGE_MAX_PARALLEL_BATCHES: int = int(os.getenv("KNOWLEDGE_MAX_PARALLEL_BATCHES", "4"))
+    KNOWLEDGE_MAX_CONCURRENT_WORKFLOWS: int = int(os.getenv("KNOWLEDGE_MAX_CONCURRENT_WORKFLOWS", "20"))
+    KNOWLEDGE_MAX_CONCURRENT_ACTIVITIES: int = int(os.getenv("KNOWLEDGE_MAX_CONCURRENT_ACTIVITIES", "8"))
     KNOWLEDGE_TASK_QUEUE_ACTIVITIES_PER_SECOND: float = float(
-        os.getenv('KNOWLEDGE_TASK_QUEUE_ACTIVITIES_PER_SECOND', '10')
+        os.getenv("KNOWLEDGE_TASK_QUEUE_ACTIVITIES_PER_SECOND", "10")
     )
 
     # Firebase / GCP configuration
-    GOOGLE_APPLICATION_CREDENTIALS: str = os.getenv('GOOGLE_APPLICATION_CREDENTIALS', '')
-    FIREBASE_CLOCK_SKEW_SECONDS: int = int(os.getenv('FIREBASE_CLOCK_SKEW_SECONDS', '10'))
-    
+    GOOGLE_APPLICATION_CREDENTIALS: str = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "")
+    FIREBASE_CLOCK_SKEW_SECONDS: int = int(os.getenv("FIREBASE_CLOCK_SKEW_SECONDS", "10"))
+
     # Security
-    ENCRYPTION_KEY: str = os.getenv('ENCRYPTION_KEY', '') # 32 bytes base64 encoded for Fernet
+    ENCRYPTION_KEY: str = os.getenv("ENCRYPTION_KEY", "")  # 32 bytes base64 encoded for Fernet
 
     # Google Cloud Storage
-    GCS_BUCKET_NAME: str = os.getenv('GCS_BUCKET_NAME', 'flae-knowledge-base')
+    GCS_BUCKET_NAME: str = os.getenv("GCS_BUCKET_NAME", "flae-knowledge-base")
 
     # RAG Ingestion (Gemini)
-    GEMINI_API_KEY: str = os.getenv('GEMINI_API_KEY', '')
-    GEMINI_EMBEDDING_MODEL: str = os.getenv('GEMINI_EMBEDDING_MODEL', 'gemini-embedding-001')
-    GEMINI_LLM_MODEL: str = os.getenv('GEMINI_LLM_MODEL', 'gemini-2.5-flash')
-    EMBEDDING_DIMENSIONS: int = int(os.getenv('EMBEDDING_DIMENSIONS', '1024'))
+    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+    GEMINI_EMBEDDING_MODEL: str = os.getenv("GEMINI_EMBEDDING_MODEL", "gemini-embedding-001")
+    GEMINI_LLM_MODEL: str = os.getenv("GEMINI_LLM_MODEL", "gemini-2.5-flash")
+    EMBEDDING_DIMENSIONS: int = int(os.getenv("EMBEDDING_DIMENSIONS", "1024"))
 
     # RAG Ingestion Configs
     RAG_CHUNKING_STRATEGY: str = rag_settings.CHUNKING_STRATEGY
@@ -128,9 +134,11 @@ class Settings(BaseSettings):
     RAG_SEMANTIC_SIMILARITY_WINDOW: int = rag_settings.SEMANTIC_SIMILARITY_WINDOW
     RAG_SEMANTIC_FILTER_WINDOW: int = rag_settings.SEMANTIC_FILTER_WINDOW
     RAG_SEMANTIC_FILTER_TOLERANCE: float = rag_settings.SEMANTIC_FILTER_TOLERANCE
-    RAG_SUMMARIZATION_THRESHOLD: int = int(os.getenv('RAG_SUMMARIZATION_THRESHOLD', str(rag_settings.SUMMARIZATION_THRESHOLD)))
-    RAG_SUMMARIZATION_LENGTH: int = int(os.getenv('RAG_SUMMARIZATION_LENGTH', str(rag_settings.SUMMARIZATION_LENGTH)))
-    RAG_GLEAN_MAX: int = int(os.getenv('RAG_GLEAN_MAX', str(rag_settings.GLEAN_MAX)))
+    RAG_SUMMARIZATION_THRESHOLD: int = int(
+        os.getenv("RAG_SUMMARIZATION_THRESHOLD", str(rag_settings.SUMMARIZATION_THRESHOLD))
+    )
+    RAG_SUMMARIZATION_LENGTH: int = int(os.getenv("RAG_SUMMARIZATION_LENGTH", str(rag_settings.SUMMARIZATION_LENGTH)))
+    RAG_GLEAN_MAX: int = int(os.getenv("RAG_GLEAN_MAX", str(rag_settings.GLEAN_MAX)))
     RAG_ENTITY_TYPES: list[str] = rag_settings.ENTITY_TYPES
 
     # Graph Retrieval Configs
@@ -151,36 +159,35 @@ class Settings(BaseSettings):
     RAG_SCORING_TOP_REC_K: int = rag_settings.SCORING_TOP_REC_K
 
     # File upload limits
-    MAX_UPLOAD_SIZE_MB: int = int(os.getenv('MAX_UPLOAD_SIZE_MB', '50'))
+    MAX_UPLOAD_SIZE_MB: int = int(os.getenv("MAX_UPLOAD_SIZE_MB", "50"))
     ALLOWED_MIME_TYPES: list[str] = [
-        'application/pdf',
-        'text/markdown',
-        'text/plain',
-        'text/x-markdown',
+        "application/pdf",
+        "text/markdown",
+        "text/plain",
+        "text/x-markdown",
     ]
 
     model_config = SettingsConfigDict(
-        env_file=env_file_path if os.path.exists(env_file_path) else None,
-        env_file_encoding='utf-8',
-        extra='ignore'
+        env_file=env_file_path if os.path.exists(env_file_path) else None, env_file_encoding="utf-8", extra="ignore"
     )
 
     @field_validator(
-        'KNOWLEDGE_MAX_PARALLEL_BATCHES',
-        'KNOWLEDGE_MAX_CONCURRENT_WORKFLOWS',
-        'KNOWLEDGE_MAX_CONCURRENT_ACTIVITIES',
+        "KNOWLEDGE_MAX_PARALLEL_BATCHES",
+        "KNOWLEDGE_MAX_CONCURRENT_WORKFLOWS",
+        "KNOWLEDGE_MAX_CONCURRENT_ACTIVITIES",
     )
     @classmethod
     def validate_positive_knowledge_capacity(cls, value: int) -> int:
         if value < 1:
-            raise ValueError('knowledge capacity settings must be positive')
+            raise ValueError("knowledge capacity settings must be positive")
         return value
 
-    @field_validator('KNOWLEDGE_TASK_QUEUE_ACTIVITIES_PER_SECOND')
+    @field_validator("KNOWLEDGE_TASK_QUEUE_ACTIVITIES_PER_SECOND")
     @classmethod
     def validate_positive_knowledge_rate(cls, value: float) -> float:
         if value <= 0:
-            raise ValueError('knowledge activity rate must be positive')
+            raise ValueError("knowledge activity rate must be positive")
         return value
+
 
 settings = Settings()

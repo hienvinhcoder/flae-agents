@@ -643,6 +643,8 @@ def test_fuse_and_save_includes_domain_upsert():
         calls = mock_db.save_df.call_args_list
         domain_call = [c for c in calls if len(c.args) > 1 and c.args[1] == "knowledge_domains"]
         assert len(domain_call) >= 1, "knowledge_domains table should be saved"
+        saved_df = domain_call[0].args[0]
+        assert "descriptions" not in saved_df.columns
         assert result["domain_count"] == 1
 
 

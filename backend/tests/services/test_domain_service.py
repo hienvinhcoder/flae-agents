@@ -35,7 +35,21 @@ def test_merge_domains_groups_and_counts():
     tech = next(m for m in merged if m["name"] == "Tech")
     assert tech["frequency"] == 2
     assert set(tech["source_chunk_ids"]) == {"c1", "c2"}
-    assert len(tech["descriptions"]) == 2
+    assert "First" in tech["description"]
+    assert "Second" in tech["description"]
+    # Upsert payload must match knowledge_domains columns only
+    assert "descriptions" not in tech
+    assert set(tech.keys()) == {
+        "domain_id",
+        "name",
+        "slug",
+        "description",
+        "source_chunk_ids",
+        "frequency",
+        "status",
+        "confidence",
+        "embedding",
+    }
 
 
 def test_merge_domains_empty():

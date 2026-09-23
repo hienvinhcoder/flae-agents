@@ -181,6 +181,9 @@ export function KnowledgeListPage() {
       /* Mutation state renders a retryable error without leaking the rejection. */
     }
   };
+  const deletingDocumentId = knowledge.remove.isPending
+    ? (knowledge.remove.variables ?? null)
+    : null;
 
   if (!workspaceId) {
     return (
@@ -249,6 +252,7 @@ export function KnowledgeListPage() {
       ) : viewMode === "grid" ? (
         <div className="rounded-lg border border-border bg-card p-5 sm:p-6">
           <DocumentGrid
+            deletingDocumentId={deletingDocumentId}
             documents={filteredDocuments}
             emptyMessage={t(
               documents.length === 0
@@ -264,6 +268,7 @@ export function KnowledgeListPage() {
         </div>
       ) : (
         <DocumentTable
+          deletingDocumentId={deletingDocumentId}
           documents={filteredDocuments}
           emptyMessage={t(
             documents.length === 0
@@ -310,12 +315,19 @@ export function KnowledgeListPage() {
       <DocumentDetailPanel
         document={knowledge.selectedDocument}
         error={errorMessage(knowledge.document.error)}
-        isDeleting={knowledge.remove.isPending}
+        isDeleting={Boolean(
+          deletingDocumentId && deletingDocumentId === selectedDocumentId,
+        )}
         isLoading={knowledge.document.isPending}
         isRetrying={Boolean(
           selectedDocumentId && pendingRetryIds.has(selectedDocumentId),
         )}
-        onClose={() => setSelectedDocumentId(null)}
+        onClose={() => {
+          if (deletingDocumentId && deletingDocumentId === selectedDocumentId) {
+            return;
+          }
+          setSelectedDocumentId(null);
+        }}
         onDelete={(documentId) => {
           const title =
             knowledge.selectedDocument?.title ?? t("KNOWLEDGE.THIS_DOCUMENT");

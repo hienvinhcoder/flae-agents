@@ -379,12 +379,15 @@ def run_incremental_fusion(
     # 3. Placeholders & ID mapping cho Relations
     # ==========================================
     if final_relations:
-        name_to_id = {clean_entity_name(e["entity_name"]): e["entity_id"] for e in final_entities}
+        def _name_key(name: str) -> str:
+            return clean_entity_name(name).lower()
+
+        name_to_id = {_name_key(e["entity_name"]): e["entity_id"] for e in final_entities}
 
         needed_names = set()
         for r in final_relations:
-            needed_names.add(clean_entity_name(r["source_name"]))
-            needed_names.add(clean_entity_name(r["target_name"]))
+            needed_names.add(_name_key(r["source_name"]))
+            needed_names.add(_name_key(r["target_name"]))
 
         missing_names = [n for n in needed_names if n not in name_to_id]
 
@@ -396,10 +399,13 @@ def run_incremental_fusion(
                 conn = db_manager.get_conn()
                 cur = conn.cursor()
                 cur.execute(f"SET app.current_workspace_id = %s;", (workspace_id,))
-                cur.execute(f"SELECT entity_name, entity_id FROM {db_manager.schema}.entities WHERE entity_name IN ('{miss_str}')")
+                cur.execute(
+                    f"SELECT entity_name, entity_id FROM {db_manager.schema}.entities "
+                    f"WHERE lower(entity_name) IN ('{miss_str}')"
+                )
                 rows = cur.fetchall()
                 for row in rows:
-                    name_to_id[clean_entity_name(row[0])] = row[1]
+                    name_to_id[_name_key(row[0])] = row[1]
                     touched_entity_ids.add(cast(str, row[1]))
                 cur.close()
                 conn.close()
@@ -412,10 +418,17 @@ def run_incremental_fusion(
             for name in real_missing:
                 name_clean = clean_entity_name(name)
                 eid = get_entity_id(name_clean)
-                name_to_id[name_clean] = eid
+                # Skip if this entity_id is already present (case-variant of an existing name).
+                if eid in {e["entity_id"] for e in final_entities}:
+                    name_to_id[_name_key(name_clean)] = eid
+                    continue
+                name_to_id[_name_key(name_clean)] = eid
                 rel_chunks = [
                     c for r in final_relations
-                    if name_clean in (clean_entity_name(r.get("source_name", "")), clean_entity_name(r.get("target_name", "")))
+                    if _name_key(name_clean) in (
+                        _name_key(r.get("source_name", "")),
+                        _name_key(r.get("target_name", "")),
+                    )
                     for c in r.get("source_chunk_ids", [])
                     if isinstance(c, str) and c.strip()
                 ]
@@ -432,7 +445,11 @@ def run_incremental_fusion(
             final_entities.extend(new_placeholders)
 
         for r in final_relations:
-            r["source_id"] = name_to_id.get(clean_entity_name(r["source_name"]), get_entity_id(r["source_name"]))
-            r["target_id"] = name_to_id.get(clean_entity_name(r["target_name"]), get_entity_id(r["target_name"]))
+            r["source_id"] = name_to_id.get(
+                _name_key(r["source_name"]), get_entity_id(r["source_name"])
+            )
+            r["target_id"] = name_to_id.get(
+                _name_key(r["target_name"]), get_entity_id(r["target_name"])
+            )
 
     return final_entities, final_relations, total_tokens, touched_entity_ids
