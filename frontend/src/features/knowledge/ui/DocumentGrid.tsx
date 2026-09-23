@@ -91,7 +91,7 @@ export function DocumentGrid({
   }
 
   return (
-    <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="animate-ui-stagger grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
       {documents.map((document) => {
         const isRetrying = retryingDocumentIds.has(document.id);
         const formattedDate = new Intl.DateTimeFormat(

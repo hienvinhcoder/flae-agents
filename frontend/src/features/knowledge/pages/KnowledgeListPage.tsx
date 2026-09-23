@@ -194,7 +194,7 @@ export function KnowledgeListPage() {
   }
 
   return (
-    <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+    <section className="mx-auto flex w-full max-w-6xl animate-ui-enter flex-col gap-6">
       <PageHeader
         actions={
           <>

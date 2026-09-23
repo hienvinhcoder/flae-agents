@@ -39,6 +39,7 @@ export function DocumentDetailPanel({
       closeLabel={t("SHELL.CLOSE_DIALOG")}
       onClose={onClose}
       open={open}
+      size="xl"
       title={document?.title ?? t("KNOWLEDGE.DOCUMENT_DETAILS")}
     >
       {isLoading ? (
@@ -49,14 +50,14 @@ export function DocumentDetailPanel({
       ) : null}
       {document ? (
         <div className="grid max-h-[70vh] gap-5 overflow-y-auto pr-1">
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3 border-b border-border pb-4">
             <StatusBadge status={document.status} />
-            <span className="text-sm text-ui-ink-muted">
+            <span className="text-sm text-muted-foreground">
               {document.file_name || t("KNOWLEDGE.MANUAL_TEXT")}
             </span>
           </div>
           {document.description ? (
-            <p className="text-ui-ink-secondary">{document.description}</p>
+            <p className="text-sm text-muted-foreground">{document.description}</p>
           ) : null}
           <IngestionProgress document={document} />
           {document.error_message ? (
@@ -66,15 +67,15 @@ export function DocumentDetailPanel({
           ) : null}
           {document.content_text ? (
             <section aria-labelledby="document-content-title">
-              <h3 className="font-semibold text-ui-ink" id="document-content-title">
+              <h3 className="font-semibold text-foreground" id="document-content-title">
                 {t("KNOWLEDGE.EXTRACTED_CONTENT")}
               </h3>
-              <p className="mt-2 max-h-48 overflow-y-auto whitespace-pre-wrap rounded-ui-control border border-ui-divider bg-ui-raised p-3 text-sm text-ui-ink-secondary">
+              <p className="mt-2 max-h-48 overflow-y-auto whitespace-pre-wrap rounded-ui-control border border-border bg-muted p-3 text-sm text-muted-foreground">
                 {document.content_text}
               </p>
             </section>
           ) : null}
-          <div className="flex flex-wrap justify-end gap-3 border-t border-ui-divider pt-4">
+          <div className="flex flex-wrap justify-end gap-3 border-t border-border pt-4">
             {document.status === "failed" ? (
               <Button
                 isLoading={isRetrying}

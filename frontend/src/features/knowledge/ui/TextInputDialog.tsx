@@ -87,19 +87,19 @@ export function TextInputDialog({
           {...register("description")}
         />
         <div className="grid gap-2">
-          <label className="font-semibold text-ui-ink" htmlFor="manual-content">
+          <label className="font-semibold text-foreground" htmlFor="manual-content">
             {t("KNOWLEDGE.CONTENT_LABEL")}
           </label>
           <textarea
             aria-describedby={errors.content_text ? "manual-content-error" : undefined}
             aria-invalid={Boolean(errors.content_text)}
-            className="min-h-44 resize-y rounded-ui-control border border-ui-line bg-ui-raised px-3 py-2 text-ui-ink transition-colors duration-200 placeholder:text-ui-ink-muted hover:border-ui-line-strong motion-reduce:transition-none"
+            className="min-h-44 w-full resize-y rounded-ui-control border border-input bg-card px-3 py-3 text-foreground shadow-none transition-colors duration-200 placeholder:text-muted-foreground hover:border-ui-line-strong focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25 motion-reduce:transition-none"
             disabled={isSubmitting}
             id="manual-content"
             {...register("content_text")}
           />
           {errors.content_text ? (
-            <p className="text-sm text-state-danger" id="manual-content-error">
+            <p className="text-sm text-destructive" id="manual-content-error">
               {errors.content_text.message}
             </p>
           ) : null}

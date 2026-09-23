@@ -23,6 +23,16 @@ function deferred<T>() {
 }
 
 describe("TextInputDialog", () => {
+  it("renders an intentional content editor surface", () => {
+    render(
+      <TestI18nProvider>
+        <TextInputDialog isSubmitting={false} onClose={vi.fn()} onSubmit={vi.fn()} open />
+      </TestI18nProvider>,
+    );
+    const area = screen.getByLabelText(/^content$/i);
+    expect(area).toHaveClass("min-h-44", "rounded-ui-control", "border-input");
+  });
+
   it("blocks dismissal and preserves values while submission is pending", async () => {
     const user = userEvent.setup();
     const submission = deferred<void>();

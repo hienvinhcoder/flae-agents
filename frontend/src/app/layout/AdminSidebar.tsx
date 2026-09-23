@@ -104,7 +104,7 @@ function NavigationItems({
       <div className="group relative w-full" key={item.to}>
         <NavLink
           aria-label={label}
-          className={`relative flex items-center text-[13px] no-underline transition-colors duration-200 motion-reduce:transition-none ${
+          className={`relative flex items-center text-[13px] no-underline transition-colors duration-150 motion-reduce:transition-none ${
             isDesktop && !expanded
               ? "mx-auto h-10 w-10 justify-center rounded-md"
               : "min-h-10 w-full gap-3 rounded-md px-3 py-2"
@@ -232,7 +232,7 @@ function SidebarContent({
               aria-label={
                 expanded ? t("SHELL.COLLAPSE_NAV") : t("SHELL.EXPAND_NAV")
               }
-              className={`flex items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground ${
+              className={`flex items-center rounded-md text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground motion-reduce:transition-none ${
                 expanded
                   ? "min-h-10 w-full gap-3 px-3 py-2 text-[13px]"
                   : "h-10 w-10 justify-center"

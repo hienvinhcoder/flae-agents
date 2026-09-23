@@ -1,5 +1,5 @@
 import { createRef } from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -68,5 +68,46 @@ describe('Dialog', () => {
     expect(dialog).toHaveFocus();
     await userEvent.tab({ shift: true });
     expect(dialog).toHaveFocus();
+  });
+
+  it('applies xl max width when size is xl', () => {
+    render(
+      <Dialog onClose={vi.fn()} open size="xl" title="Wide">
+        <p>Body</p>
+      </Dialog>,
+    );
+    expect(screen.getByRole('dialog', { name: 'Wide' })).toHaveClass('max-w-xl');
+  });
+
+  it('stays mounted with exit animation class when closing and unmounts after timeout', () => {
+    vi.useFakeTimers();
+    const onClose = vi.fn();
+    const { rerender } = render(
+      <Dialog onClose={onClose} open title="Animated">
+        <button type="button">Inside</button>
+      </Dialog>,
+    );
+    expect(screen.getByRole('dialog', { name: 'Animated' })).toBeInTheDocument();
+
+    // When open becomes false, dialog should stay mounted with exit animation
+    rerender(
+      <Dialog onClose={onClose} open={false} title="Animated">
+        <button type="button">Inside</button>
+      </Dialog>,
+    );
+
+    const dialog = screen.getByRole('dialog', { name: 'Animated' });
+    expect(dialog).toBeInTheDocument();
+    expect(dialog).toHaveClass('animate-ui-panel-out');
+    
+    // Advance timers to trigger fallback timeout (300ms)
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+    
+    // Dialog should now be unmounted
+    expect(screen.queryByRole('dialog', { name: 'Animated' })).not.toBeInTheDocument();
+    
+    vi.useRealTimers();
   });
 });

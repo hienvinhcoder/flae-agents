@@ -44,6 +44,7 @@ describe("UploadDialog", () => {
     const file = new File(["# Guide"], "guide.md", { type: "text/markdown" });
 
     await user.upload(screen.getByLabelText(/document file/i), file);
+    await user.clear(screen.getByLabelText(/document title/i));
     await user.type(screen.getByLabelText(/document title/i), "Product guide");
     await user.type(screen.getByLabelText(/description/i), "Reference");
     await user.click(screen.getByRole("button", { name: /^upload$/i }));
@@ -85,11 +86,27 @@ describe("UploadDialog", () => {
 
     const file = new File(["# Guide"], "guide.md", { type: "text/markdown" });
     await user.upload(screen.getByLabelText(/document file/i), file);
+    await user.clear(screen.getByLabelText(/document title/i));
     await user.type(screen.getByLabelText(/document title/i), "Product guide");
     await user.click(screen.getByRole("button", { name: /^upload$/i }));
 
     await waitFor(() => expect(onSubmit).toHaveBeenCalledOnce());
     expect(screen.getByLabelText(/document title/i)).toHaveValue("Product guide");
+  });
+
+  it('renders dropzone helper copy', () => {
+    render(
+      <TestI18nProvider>
+        <UploadDialog
+          isSubmitting={false}
+          onClose={vi.fn()}
+          onSubmit={vi.fn()}
+          open
+        />
+      </TestI18nProvider>,
+    );
+    expect(screen.getByText(/Drop file here or browse/i)).toBeInTheDocument();
+    expect(screen.getByText(/PDF, Markdown, or text · up to 50 MB$/i)).toBeInTheDocument();
   });
 
   it("renders controls and required validation in Vietnamese", async () => {

@@ -120,9 +120,8 @@ describe("KnowledgeListPage", () => {
   it("distinguishes filtered results from an empty knowledge base", async () => {
     const user = userEvent.setup();
     renderPage();
-    const table = within(
-      await screen.findByRole("table", { name: /knowledge documents/i }),
-    );
+    
+    await screen.findByRole("table", { name: /knowledge documents/i });
 
     await user.type(
       screen.getByRole("searchbox", { name: /search documents/i }),
@@ -218,6 +217,7 @@ describe("KnowledgeListPage", () => {
       type: "text/markdown",
     });
     await user.upload(screen.getByLabelText(/document file/i), file);
+    await user.clear(screen.getByLabelText(/document title/i));
     await user.type(screen.getByLabelText(/document title/i), "Architecture");
     await user.type(screen.getByLabelText(/description/i), "System guide");
     await user.click(screen.getByRole("button", { name: /^upload$/i }));

@@ -1,5 +1,5 @@
 import { X } from 'lucide-react';
-import { useEffect, useId, useRef, type PropsWithChildren } from 'react';
+import { useCallback, useEffect, useId, useRef, useState, type PropsWithChildren } from 'react';
 
 export interface DialogProps extends PropsWithChildren {
   closeLabel?: string;
@@ -7,6 +7,7 @@ export interface DialogProps extends PropsWithChildren {
   dismissible?: boolean;
   onClose: () => void;
   open: boolean;
+  size?: 'lg' | 'xl';
   title: string;
 }
 
@@ -16,30 +17,84 @@ function focusableElements(container: HTMLElement) {
   )].filter((element) => !element.hasAttribute('hidden'));
 }
 
-export function Dialog({ children, closeLabel = 'Close dialog', description, dismissible = true, onClose, open, title }: DialogProps) {
+const sizeClass = { lg: 'max-w-lg', xl: 'max-w-xl' } as const;
+
+const EXIT_FALLBACK_MS = 300; // Aligned with --motion-fast/normal duration for jsdom/test environments where animationend may not fire
+
+export function Dialog({
+  children,
+  closeLabel = 'Close dialog',
+  description,
+  dismissible = true,
+  onClose,
+  open,
+  size = 'lg',
+  title,
+}: DialogProps) {
   const titleId = useId();
   const descriptionId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
+  const exitTimeoutRef = useRef<number | null>(null);
+  const [present, setPresent] = useState(open);
+  const [phase, setPhase] = useState<'in' | 'out'>(open ? 'in' : 'out');
+
+  const clearExitTimeout = useCallback(() => {
+    if (exitTimeoutRef.current) {
+      clearTimeout(exitTimeoutRef.current);
+      exitTimeoutRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
-    if (!open) return undefined;
-    returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    if (open) {
+      clearExitTimeout();
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Required for Dialog enter animation state management
+      setPresent(true);
+      setPhase('in');
+    } else if (present) {
+      setPhase('out');
+      // Start fallback timeout for environments where animationend may not fire
+      exitTimeoutRef.current = setTimeout(() => {
+        setPresent(false);
+      }, EXIT_FALLBACK_MS);
+    }
+    return clearExitTimeout;
+  }, [open, present, clearExitTimeout]);
+
+  useEffect(() => {
+    if (!present || phase !== 'in') return undefined;
+    returnFocusRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const panel = panelRef.current;
     const elements = focusableElements(panel ?? document.body);
-    (elements.find((element) => !element.hasAttribute('data-dialog-close')) ?? elements[0] ?? panel)?.focus();
+    (elements.find((el) => !el.hasAttribute('data-dialog-close')) ?? elements[0] ?? panel)?.focus();
     return () => returnFocusRef.current?.focus();
-  }, [open]);
+  }, [present, phase]);
 
-  if (!open) return null;
+  if (!present) return null;
+
+  const overlayMotion = phase === 'in' ? 'animate-ui-overlay' : 'animate-ui-overlay-out';
+  const panelMotion = phase === 'in' ? 'animate-ui-panel' : 'animate-ui-panel-out';
+  const isExiting = phase === 'out';
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-background/50 p-4" role="presentation">
+    <div
+      className={`fixed inset-0 z-50 grid place-items-center bg-background/50 p-4 ${overlayMotion} ${isExiting ? 'pointer-events-none' : ''}`}
+      role="presentation"
+    >
       <div
         aria-describedby={description ? descriptionId : undefined}
         aria-labelledby={titleId}
         aria-modal="true"
-        className="w-full max-w-lg rounded-ui-dialog border border-border bg-popover p-5 text-popover-foreground shadow-ui-overlay sm:p-6"
+        className={`w-full ${sizeClass[size]} rounded-ui-dialog border border-border bg-popover p-5 text-popover-foreground shadow-ui-overlay sm:p-6 ${panelMotion}`}
+        inert={isExiting ? '' : undefined}
+        onAnimationEnd={(event) => {
+          if (phase === 'out' && event.target === event.currentTarget) {
+            clearExitTimeout();
+            setPresent(false);
+          }
+        }}
         onKeyDown={(event) => {
           if (event.key === 'Escape' && dismissible) {
             event.preventDefault();

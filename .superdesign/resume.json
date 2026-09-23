@@ -75,6 +75,63 @@
         }
       },
       "updatedAt": "2026-09-22T09:52:32.914232+00:00"
+    },
+    "/dashboard/knowledge/modals": {
+      "targetKind": "existing-ui",
+      "projectId": "32ddb001-9adc-4eaa-96c2-939818038c80",
+      "baselineDraftId": "54e24ba4-a6a7-447a-861c-1fd2f27c26b3",
+      "activeDraftId": "d28ee3de-2af4-48fd-95b9-dd79a4a2b531",
+      "designSystemPath": ".superdesign/design-system.md",
+      "referenceIds": [],
+      "contextFiles": [
+        ".superdesign/design-system.md",
+        ".superdesign/init/theme.md",
+        "frontend/src/shared/ui/Dialog.tsx",
+        "frontend/src/features/knowledge/ui/UploadDialog.tsx",
+        "frontend/src/features/knowledge/ui/TextInputDialog.tsx",
+        "frontend/src/features/knowledge/ui/DocumentDetailPanel.tsx",
+        "frontend/src/shared/ui/Button.tsx",
+        "frontend/src/shared/ui/Input.tsx",
+        "frontend/src/features/knowledge/ui/StatusBadge.tsx",
+        "frontend/src/features/knowledge/ui/IngestionProgress.tsx",
+        "frontend/src/shared/ui/ErrorState.tsx",
+        "frontend/src/shared/ui/Skeleton.tsx"
+      ],
+      "fingerprints": {
+        ".superdesign/design-system.md": "85995aff6b2243a03602c73ec65c9e299abbc1ff527cf0650b1cf3fb279e60ef",
+        ".superdesign/init/theme.md": "bed29ed2e960be873f0dbabf807a343aba0273dec267f4c1469f7ec69b0e66e6",
+        "frontend/src/shared/ui/Dialog.tsx": "251016fbf3a080feb2d6eb09a153a31d005010964c222153568dc14f702c21db",
+        "frontend/src/features/knowledge/ui/UploadDialog.tsx": "952b2fd605e02190fffff300ef3e01d2d5e08221d64773bd4a4238cf8f71890f",
+        "frontend/src/features/knowledge/ui/TextInputDialog.tsx": "18c99bd72a8bbafba513d1590007e4b279bf32866e5f348051bbad574e07ae70",
+        "frontend/src/features/knowledge/ui/DocumentDetailPanel.tsx": "3e65c80602d3a7def7c712f17716b63d03b5d3a89e4b0252bd7ccf776b1a87bb",
+        "frontend/src/shared/ui/Button.tsx": "a68cdeeeb7341ed55b31434b5eb96b5ad5a7038074ea9d258ba7cf7fb59acafe",
+        "frontend/src/shared/ui/Input.tsx": "f1b859cba39abee9b0465ec10dada7054c1b584d3bed4d6e4f8fdef67bdbdaf0",
+        "frontend/src/features/knowledge/ui/StatusBadge.tsx": "69a8927b4bb1bb145e9c1b453484b142acc5453862f1d9de058ccb793b223137",
+        "frontend/src/features/knowledge/ui/IngestionProgress.tsx": "66ea15851ccdd27c48a3f6138b758a0752468ead028f113f15872119ea14995c",
+        "frontend/src/shared/ui/ErrorState.tsx": "3910dd979e7ae69bdaeb55fb20030cfe7058c8bf872294712f135e85ed0ac03c",
+        "frontend/src/shared/ui/Skeleton.tsx": "0ddc9add81054046ac26dc1ffa31743b7912e841494f5cde7909365fe12153c8"
+      },
+      "components": [],
+      "drafts": {
+        "54e24ba4-a6a7-447a-861c-1fd2f27c26b3": {
+          "title": "FLAE Knowledge Dialogs - Refined",
+          "visualDirection": "Linear-tight polish + CSS motion cues",
+          "currentVersion": 2
+        },
+        "d28ee3de-2af4-48fd-95b9-dd79a4a2b531": {
+          "title": "FLAE Knowledge Dialogs - Linear Dropzone",
+          "visualDirection": "Linear dropzone composer \u2014 full modal UX redesign",
+          "parentDraftId": "54e24ba4-a6a7-447a-861c-1fd2f27c26b3",
+          "currentVersion": 1
+        },
+        "e007874e-916c-469a-b9eb-647a5ed3877e": {
+          "title": "FLAE Knowledge Dialogs \u2014 Stepper Ingest",
+          "visualDirection": "Linear stepper ingest \u2014 full modal UX redesign",
+          "parentDraftId": "54e24ba4-a6a7-447a-861c-1fd2f27c26b3",
+          "currentVersion": 1
+        }
+      },
+      "updatedAt": "2026-09-22T13:03:31.266923+00:00"
     }
   }
 }

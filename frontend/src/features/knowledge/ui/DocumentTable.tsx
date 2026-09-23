@@ -141,7 +141,7 @@ export function DocumentTable({
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-border">
+          <tbody className="animate-ui-stagger divide-y divide-border">
             {documents.map((document) => (
               <tr
                 className="group transition-colors hover:bg-muted"

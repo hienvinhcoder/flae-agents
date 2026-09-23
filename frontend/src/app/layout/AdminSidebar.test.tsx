@@ -155,10 +155,10 @@ describe("AdminSidebar", () => {
     ).not.toBeInTheDocument();
     const activeLink = within(sidebar).getByRole("link", { name: "AI Chat" });
     expect(activeLink).toHaveAttribute("aria-current", "page");
-    expect(activeLink).toHaveClass("bg-muted", "text-primary");
-    expect(activeLink).not.toHaveClass(
-      "bg-sidebar-primary",
-      "text-sidebar-primary-foreground",
+    expect(activeLink.className).toMatch(/transition-colors/);
+    expect(activeLink).toHaveClass(
+      "bg-muted",
+      "text-primary",
     );
   });
 

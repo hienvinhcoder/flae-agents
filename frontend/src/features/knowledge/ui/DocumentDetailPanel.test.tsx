@@ -59,6 +59,7 @@ describe("DocumentDetailPanel", () => {
   it("localizes document content, metrics, and actions in Vietnamese", () => {
     renderPanel();
 
+    expect(screen.getByRole("dialog")).toHaveClass("max-w-xl");
     expect(screen.getByRole("button", { name: "Đóng hộp thoại" })).toBeInTheDocument();
     expect(screen.getByText("Văn bản nhập thủ công")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Nội dung đã trích xuất" })).toBeInTheDocument();

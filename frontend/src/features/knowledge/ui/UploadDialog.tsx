@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMemo, useRef, type FormEvent } from "react";
+import { useMemo, type FormEvent } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 
@@ -11,6 +11,7 @@ import {
   type UploadDocumentForm,
   type UploadDocumentInput,
 } from "../schemas/knowledge-schema";
+import { FileDropzone } from "./FileDropzone";
 
 interface UploadDialogProps {
   error?: string;
@@ -28,7 +29,6 @@ export function UploadDialog({
   open,
 }: UploadDialogProps) {
   const { t } = useTranslation();
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const schema = useMemo(
     () =>
       createUploadDocumentSchema({
@@ -44,15 +44,16 @@ export function UploadDialog({
   const {
     control,
     formState: { errors },
+    getValues,
     handleSubmit,
     register,
     reset,
+    setValue,
   } = useForm<UploadDocumentInput, unknown, UploadDocumentForm>({
     defaultValues: { description: "", title: "" },
     resolver: zodResolver(schema),
   });
   const resetAndClose = () => {
-    if (fileInputRef.current) fileInputRef.current.value = "";
     reset();
     onClose();
   };
@@ -88,31 +89,30 @@ export function UploadDialog({
         <Controller
           control={control}
           name="file"
-          render={({ field: { onChange, ref } }) => (
-            <div className="grid gap-2">
-              <label className="font-semibold text-ui-ink" htmlFor="knowledge-file">
-                {t("KNOWLEDGE.DOCUMENT_FILE_LABEL")}
-              </label>
-              <input
-                accept=".pdf,.md,.txt"
-                aria-describedby={errors.file ? "knowledge-file-error" : undefined}
-                aria-invalid={Boolean(errors.file)}
-                className="min-h-11 rounded-ui-control border border-ui-line bg-ui-raised px-3 py-2 text-ui-ink transition-colors duration-200 file:mr-3 file:rounded-ui-control file:border-0 file:bg-ui-interactive file:px-3 file:py-1 hover:border-ui-line-strong motion-reduce:transition-none"
-                disabled={isSubmitting}
-                id="knowledge-file"
-                onChange={(event) => onChange(event.target.files?.[0])}
-                ref={(element) => {
-                  fileInputRef.current = element;
-                  ref(element);
-                }}
-                type="file"
-              />
-              {errors.file ? (
-                <p className="text-sm text-state-danger" id="knowledge-file-error">
-                  {errors.file.message}
-                </p>
-              ) : null}
-            </div>
+          render={({ field: { onChange, value, name } }) => (
+            <FileDropzone
+              accept=".pdf,.md,.txt"
+              browseLabel={t('KNOWLEDGE.DROPZONE_BROWSE')}
+              clearLabel={t('KNOWLEDGE.FILE_CHIP_CLEAR')}
+              disabled={isSubmitting}
+              dropLabel={t('KNOWLEDGE.DROPZONE_TITLE')}
+              error={errors.file?.message}
+              file={value}
+              id="knowledge-file"
+              label={t('KNOWLEDGE.DOCUMENT_FILE_LABEL')}
+              name={name}
+              onClear={() => {
+                onChange(undefined);
+              }}
+              onFileChange={(file) => {
+                onChange(file);
+                if (file && !getValues('title').trim()) {
+                  const autofilledTitle = file.name.replace(/\.[^.]+$/, '');
+                  setValue('title', autofilledTitle, { shouldValidate: true });
+                }
+              }}
+              typesLabel={t('KNOWLEDGE.DROPZONE_TYPES')}
+            />
           )}
         />
         <Input
@@ -128,6 +128,9 @@ export function UploadDialog({
           {...register("description")}
         />
         {error ? <p className="text-state-danger" role="alert">{error}</p> : null}
+        {isSubmitting ? (
+          <p className="text-muted-foreground text-sm">{t('KNOWLEDGE.UPLOAD_PROGRESS')}</p>
+        ) : null}
         <div className="flex justify-end gap-3">
           <Button disabled={isSubmitting} onClick={requestClose} type="button" variant="secondary">{t("KNOWLEDGE.CANCEL")}</Button>
           <Button isLoading={isSubmitting} loadingText={t("KNOWLEDGE.UPLOADING")} type="submit">
